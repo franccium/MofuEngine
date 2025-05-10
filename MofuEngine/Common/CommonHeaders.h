@@ -1,0 +1,38 @@
+#pragma once
+// C/C++
+#include <stdint.h>
+#include <assert.h>
+#include <memory>
+#include <algorithm>
+#include <unordered_map>
+#include <string>
+#include <mutex>
+#include <typeinfo>
+
+// Custom
+#include "StandardTypes.h"
+#include "Utilities/DataStructures/DataStructures.h"
+#include "Utilities/Math.h"
+#include "id.h"
+
+#ifdef _DEBUG
+#define DEBUG_OP(expr) expr
+#else
+#define DEBUG_OP(expr)
+#endif
+
+#ifndef DISABLE_COPY
+#define DISABLE_COPY(T)\
+	explicit T(const T&) = delete;\
+	T& operator=(const T&) = delete;
+#endif
+
+#ifndef DISABLE_MOVE
+#define DISABLE_MOVE(T)\
+	explicit T(T&&) = delete;\
+	T& operator=(T&&) = delete;
+#endif
+
+#ifndef DISABLE_COPY_AND_MOVE
+#define DISABLE_COPY_AND_MOVE(T) DISABLE_COPY(T) DISABLE_MOVE(T)
+#endif

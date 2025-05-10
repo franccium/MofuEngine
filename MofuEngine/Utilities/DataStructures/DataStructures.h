@@ -1,0 +1,16 @@
+#pragma once
+#include "Vector.h"
+#include "FreeList.h"
+#include <deque>
+
+namespace mofu::util {
+}
+
+namespace mofu {
+template<typename T>
+using Vec = util::Vector<T, true>;
+
+template<typename T>
+using Deque = std::deque<T>;
+
+}

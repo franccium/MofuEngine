@@ -7,6 +7,10 @@
 #include <Windows.h>
 #include <crtdbg.h>
 
+extern bool MofuInitialize();
+extern void MofuUpdate();
+extern void MofuShutdown();
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 #if _DEBUG
@@ -22,9 +26,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			DispatchMessage(&msg);
 			is_running &= (msg.message != WM_QUIT);
 		}
-		// Update
+		MofuUpdate();
 	}
-	// Shutdown
+	MofuShutdown();
 	return 0;
 }
 
