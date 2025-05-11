@@ -3,6 +3,7 @@
 #include "Window.h"
 
 #ifdef _WIN64
+#define INCLUDE_WIN_PLATFORM_CODE
 #include "PlatformWin32.h"
 #elif
 // ...

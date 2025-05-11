@@ -79,7 +79,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -103,16 +103,34 @@
   <ItemGroup>
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\Main.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Core.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Interface.cpp" />
+    <ClCompile Include="Graphics\Renderer.cpp" />
+    <ClCompile Include="Platform\Platform.cpp" />
     <ClCompile Include="Platform\Win32Platform.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Graphics\D3D12\Shaders\CommonTypes.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\CommonHeaders.h" />
     <ClInclude Include="Common\id.h" />
     <ClInclude Include="Common\StandardTypes.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12CommonHeaders.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Core.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12DescriptorHeap.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Helpers.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Interface.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Resources.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
+    <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
+    <ClInclude Include="Graphics\GraphicsTypes.h" />
+    <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\PlatformWin32.h" />
     <ClInclude Include="Platform\Window.h" />

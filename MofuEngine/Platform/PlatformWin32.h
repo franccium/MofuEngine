@@ -8,4 +8,5 @@
 namespace mofu::platform {
 using WindowEventHandler = LRESULT(*)(HWND, UINT, WPARAM, LPARAM);
 using WindowHandle = HWND;
+
 }
