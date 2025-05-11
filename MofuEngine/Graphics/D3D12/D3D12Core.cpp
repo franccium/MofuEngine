@@ -12,7 +12,143 @@ namespace {
 
 class D3D12Command
 {
+public:
+    D3D12Command() = default;
+    DISABLE_COPY_AND_MOVE(D3D12Command);
+    explicit D3D12Command(DXDevice* const device, D3D12_COMMAND_LIST_TYPE type)
+    {
+        HRESULT hr{ S_OK };
 
+        D3D12_COMMAND_QUEUE_DESC desc{};
+        desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        desc.NodeMask = 0;
+        desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        desc.Type = type;
+        DXCall(hr = device->CreateCommandQueue(&desc, IID_PPV_ARGS(&_cmdQueue)));
+        if (FAILED(hr)) goto _error;
+        NAME_D3D12_OBJECT(_cmdQueue, type == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"GFX Command Queue"
+            : type == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command Queue" : L"Command Queue");
+
+        for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+        {
+            CommandFrame& frame{ _cmdFrames[i] };
+            DXCall(hr = device->CreateCommandAllocator(type, IID_PPV_ARGS(&frame.cmdAllocator)));
+            if (FAILED(hr)) goto _error;
+            NAME_D3D12_OBJECT_INDEXED(frame.cmdAllocator, i, type == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"GFX Command Allocator"
+                : type == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command Allocator" : L"Command Allocator");
+        }
+
+        DXCall(hr = device->CreateCommandList(0, type, _cmdFrames[0].cmdAllocator, nullptr, IID_PPV_ARGS(&_cmdList)));
+        if (FAILED(hr)) goto _error;
+        DXCall(_cmdList->Close());
+        NAME_D3D12_OBJECT(_cmdList, type == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"GFX Command List"
+            : type == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command List" : L"Command List");
+
+        DXCall(hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence)));
+        if (FAILED(hr)) goto _error;
+        NAME_D3D12_OBJECT(_fence, L"D3D12 Fence");
+
+#ifdef _WIN64
+        _fenceEvent = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
+#endif
+        assert(_fenceEvent);
+        return;
+
+    _error:
+        Release();
+    }
+
+    ~D3D12Command() { assert(!_cmdQueue && !_fence && !_cmdList); }
+
+    // wait for the current frame to be signalised and reset the command list and allocator
+    void BeginFrame()
+    {
+        CommandFrame& frame{ _cmdFrames[_frameIndex] };
+        frame.Wait(_fenceEvent, _fence);
+        // free the memory used by previously recorded commands
+        DXCall(frame.cmdAllocator->Reset());
+        // reopen the list for recording new commnads
+        DXCall(_cmdList->Reset(frame.cmdAllocator, nullptr));
+    }
+
+    // signal the fence with the new fence value
+    void EndFrame(const D3D12Surface& surface)
+    {
+        DXCall(_cmdList->Close());
+        ID3D12CommandList* const cmdLists[]{ _cmdList };
+        _cmdQueue->ExecuteCommandLists(_countof(cmdLists), &cmdLists[0]);
+
+        surface.Present();
+
+        ++_fenceValue;
+        CommandFrame& frame{ _cmdFrames[_frameIndex] };
+        frame.fenceValue = _fenceValue;
+        // if frame.fenceValue < signaled fence value, the GPU is done executing 
+        // the commands for this frame and we can reuse the frame for new commands
+        DXCall(_cmdQueue->Signal(_fence, _fenceValue));
+        _frameIndex = (_frameIndex + 1) % FRAME_BUFFER_COUNT;
+    }
+
+    void Flush()
+    {
+        for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+            _cmdFrames[i].Wait(_fenceEvent, _fence);
+        _frameIndex = 0;
+    }
+
+    void Release()
+    {
+        Flush();
+        core::Release(_fence);
+        _fenceValue = 0;
+        CloseHandle(_fenceEvent);
+        _fenceEvent = nullptr;
+
+        core::Release(_cmdQueue);
+        core::Release(_cmdList);
+        for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+            _cmdFrames[i].Release();
+    }
+
+    [[nodiscard]] constexpr ID3D12CommandQueue* const CommandQueue() const { return _cmdQueue; }
+    [[nodiscard]] constexpr DXGraphicsCommandList* const CommandList() const { return _cmdList; }
+    [[nodiscard]] constexpr u32 FrameIndex() const { return _frameIndex; }
+
+private:
+    struct CommandFrame
+    {
+        ID3D12CommandAllocator* cmdAllocator{ nullptr };
+        u64 fenceValue{ 0 };
+
+        void Wait(HANDLE fenceEvent, ID3D12Fence1* fence) const
+        {
+            assert(fenceEvent && fence);
+            // if current fence value is less than fenceValue, the GPU has not finished 
+            // executing the command lists, and hasn't reached the _cmdQueue->Singal() command
+            if (fence->GetCompletedValue() < fenceValue)
+            {
+                // wait for an event signaled once the fence's current value is equal fo fenceValue
+                DXCall(fence->SetEventOnCompletion(fenceValue, fenceEvent));
+                WaitForSingleObject(fenceEvent, INFINITE);
+            }
+        }
+
+        void Release()
+        {
+            core::Release(cmdAllocator);
+            fenceValue = 0;
+        }
+    };
+
+    CommandFrame _cmdFrames[FRAME_BUFFER_COUNT]{};
+    DXGraphicsCommandList* _cmdList{ nullptr };
+    ID3D12CommandQueue* _cmdQueue{ nullptr };
+    ID3D12Fence1* _fence{ nullptr };
+    u32 _frameIndex{ 0 };
+    u64 _fenceValue{ 0 };
+#ifdef _WIN64
+    HANDLE _fenceEvent{};
+#endif
 };
 
 constexpr D3D_FEATURE_LEVEL MINIMUM_FEATURE_LEVEL{ D3D_FEATURE_LEVEL_11_0 };
@@ -29,6 +165,12 @@ DescriptorHeap uavDescHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
 constexpr u32 DESC_HEAP_CAPACITY{ 512 };
 constexpr u32 SRV_DESC_HEAP_CAPACITY{ 4096 };
 
+ConstantBuffer constantBuffers[FRAME_BUFFER_COUNT];
+constexpr u32 CONSTANT_BUFFER_SIZE{ 1024 * 1024 };
+
+u32 deferredReleasesFlag[FRAME_BUFFER_COUNT]{};
+std::mutex deferredReleasesMutex{};
+Vec<IUnknown*> deferredReleases[FRAME_BUFFER_COUNT]{};
 
 bool 
 InitializeModules()
@@ -64,6 +206,44 @@ GetMaxSupportedFeatureLevel(DXAdapter* adapter)
     DXCall(device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &featureLevelData, sizeof(featureLevelData)));
     assert(featureLevelData.MaxSupportedFeatureLevel >= MINIMUM_FEATURE_LEVEL);
     return featureLevelData.MaxSupportedFeatureLevel;
+}
+
+bool
+InitializeDescriptorHeaps()
+{
+    bool result{ true };
+    result &= rtvDescHeap.Initialize(DESC_HEAP_CAPACITY, false);
+    result &= dsvDescHeap.Initialize(DESC_HEAP_CAPACITY, false);
+    result &= srvDescHeap.Initialize(SRV_DESC_HEAP_CAPACITY, true);
+    result &= uavDescHeap.Initialize(DESC_HEAP_CAPACITY, false);
+    if (!result) return false;
+    NAME_D3D12_OBJECT(rtvDescHeap.Heap(), L"RTV Descriptor Heap");
+    NAME_D3D12_OBJECT(dsvDescHeap.Heap(), L"DSV Descriptor Heap");
+    NAME_D3D12_OBJECT(srvDescHeap.Heap(), L"SRV Descriptor Heap");
+    NAME_D3D12_OBJECT(uavDescHeap.Heap(), L"UAV Descriptor Heap");
+    return true;
+}
+
+void __declspec(noinline)
+ProcessDeferredReleases(u32 frameId)
+{
+    std::lock_guard lock{ deferredReleasesMutex };
+    deferredReleasesFlag[frameId] = 0;
+
+    rtvDescHeap.ProcessDeferredFree(frameId);
+    dsvDescHeap.ProcessDeferredFree(frameId);
+    srvDescHeap.ProcessDeferredFree(frameId);
+    uavDescHeap.ProcessDeferredFree(frameId);
+
+    Vec<IUnknown*>& resourcesToFree{ deferredReleases[frameId] };
+    if (!resourcesToFree.empty())
+    {
+        for (auto& resource : resourcesToFree)
+        {
+            Release(resource);
+        }
+        resourcesToFree.clear();
+    }
 }
 
 } // anonymous namespace
@@ -113,8 +293,19 @@ Initialize()
     if (FAILED(hr)) return InitializeFailed();
     NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
 
-    
-    if (!InitializeModules) return false;
+    if (!InitializeDescriptorHeaps()) return InitializeFailed();
+
+    new (&gfxCommand) D3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
+    if (!gfxCommand.CommandQueue()) return InitializeFailed();
+
+    for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+    {
+        new (&constantBuffers[i]) ConstantBuffer(ConstantBuffer::DefaultInitInfo(CONSTANT_BUFFER_SIZE));
+        NAME_D3D12_OBJECT_INDEXED(constantBuffers[i].Buffer(), i, L"Global Constant Buffer");
+        if (!constantBuffers[i].Buffer()) return InitializeFailed();
+    }
+
+    if (!InitializeModules()) return InitializeFailed();
 
 #ifdef _DEBUG
     {
@@ -143,7 +334,33 @@ Shutdown()
 {
 }
 
-Surface 
+DXDevice* const Device() { return mainDevice; }
+
+DescriptorHeap& RtvHeap() { return rtvDescHeap; }
+DescriptorHeap& DsvHeap() { return dsvDescHeap; }
+DescriptorHeap& SrvHeap() { return srvDescHeap; }
+DescriptorHeap& UavHeap() { return uavDescHeap; }
+
+ConstantBuffer& CBuffer() { return constantBuffers[CurrentFrameIndex()]; }
+
+u32 CurrentFrameIndex() { return gfxCommand.FrameIndex(); }
+
+void SetHasDeferredReleases()
+{
+    deferredReleasesFlag[CurrentFrameIndex()] = 1;
+}
+
+namespace detail {
+void 
+DeferredRelease(IUnknown* resource)
+{
+    std::lock_guard lock{ deferredReleasesMutex };
+    deferredReleases[CurrentFrameIndex()].push_back(resource);
+    SetHasDeferredReleases();
+}
+} // namespace detail
+
+Surface
 CreateSurface(platform::Window window)
 {
     return Surface();

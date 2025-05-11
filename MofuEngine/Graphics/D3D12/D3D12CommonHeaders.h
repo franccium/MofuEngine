@@ -54,12 +54,18 @@ if (swprintf_s(full_name, L"%s[%llu]", name, (u64)index) > 0)\
 #endif
 
 using DXDevice = ID3D12Device10;
-using DXGIFactory = IDXGIFactory7;
 using DXGraphicsCommandList = ID3D12GraphicsCommandList7;
-using DXSwapChain = IDXGISwapChain4;
+using DXHeap = ID3D12Heap1;
 using DXResource = ID3D12Resource2;
 using DXDebug = ID3D12Debug6;
+
+using DXSwapChain = IDXGISwapChain4;
 using DXAdapter = IDXGIAdapter4;
+using DXGIFactory = IDXGIFactory7;
+
+namespace mofu::graphics::d3d12 {
+constexpr u32 FRAME_BUFFER_COUNT{ 3 };
+}
 
 #include "D3D12Resources.h"
 #include "D3D12Helpers.h"

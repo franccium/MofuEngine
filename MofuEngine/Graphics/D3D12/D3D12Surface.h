@@ -5,6 +5,7 @@ namespace mofu::graphics::d3d12 {
 class D3D12Surface
 {
 public:
+	void Present() const;
 
 	[[nodiscard]] constexpr u32 Width() const { return (u32)_viewport.Width; }
 	[[nodiscard]] constexpr u32 Height() const { return (u32)_viewport.Height; }
