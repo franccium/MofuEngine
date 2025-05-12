@@ -5,6 +5,8 @@
 #include "D3D12GPass.h"
 #include "D3D12PostProcess.h"
 
+#define ENABLE_GPU_BASED_VALIDATION 1
+
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
 
@@ -175,10 +177,12 @@ u32 deferredReleasesFlag[FRAME_BUFFER_COUNT]{};
 std::mutex deferredReleasesMutex{};
 Vec<IUnknown*> deferredReleases[FRAME_BUFFER_COUNT]{};
 
+d3dx::D3D12ResourceBarrierList resourceBarriers{};
+
 bool 
 InitializeModules()
 {
-    return shaders::Initialize && gpass::Initialize() && fx::Initialize();
+    return shaders::Initialize() && gpass::Initialize() && fx::Initialize();
 }
 
 bool 
@@ -272,6 +276,8 @@ Initialize()
             debugInterface->EnableDebugLayer();
         else
             OutputDebugStringA("\nWARNING: D3D12 Debug Interface is not available\n");
+
+        debugInterface->SetEnableGPUBasedValidation(ENABLE_GPU_BASED_VALIDATION);
 
         dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
     }
@@ -405,6 +411,82 @@ DeferredRelease(IUnknown* resource)
 void
 RenderSurface(surface_id id, FrameInfo frameInfo)
 {
+    gfxCommand.BeginFrame();
+    DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList() };
+
+    const u32 frameIndex{ CurrentFrameIndex() };
+
+    ConstantBuffer& cbuffer{ constantBuffers[frameIndex] };
+    cbuffer.Clear();
+
+    if (deferredReleasesFlag[frameIndex])
+    {
+        ProcessDeferredReleases(frameIndex);
+    }
+
+    const D3D12Surface& surface{ surfaces[id] };
+    DXResource* const currentBackBuffer{ surface.BackBuffer() };
+
+    D3D12FrameInfo d3d12FrameInfo
+    {
+        &frameInfo,
+        0,
+        surface.Width(),
+        surface.Height(),
+        0,
+        16.7f
+    };
+
+    gpass::SetBufferSize({ d3d12FrameInfo.surfaceWidth, d3d12FrameInfo.surfaceHeight });
+    d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
+
+    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
+    cmdList->SetDescriptorHeaps(1, &heaps[0]);
+
+    cmdList->RSSetViewports(1, surface.Viewport());
+    cmdList->RSSetScissorRects(1, surface.ScissorRect());
+
+    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
+    // Depth Prepass
+    gpass::AddTransitionsForDepthPrepass(barriers);
+    barriers.ApplyBarriers(cmdList);
+    gpass::SetRenderTargetsForDepthPrepass(cmdList);
+    gpass::DoDepthPrepass(cmdList, d3d12FrameInfo);
+
+    // Main GPass
+    gpass::AddTransitionsForGPass(barriers);
+    barriers.ApplyBarriers(cmdList);
+    gpass::SetRenderTargetsForGPass(cmdList);
+    gpass::Render(cmdList, d3d12FrameInfo);
+
+    //char debugMsg[256];
+    //sprintf_s(debugMsg, sizeof(debugMsg), "Descriptor Heap Bound: %p\n", srvDescHeap.Heap());
+    //OutputDebugStringA(debugMsg);
+
+
+    // Post Processing
+    gpass::AddTransitionsForPostProcess(barriers);
+    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
+    barriers.ApplyBarriers(cmdList);
+    //d3dx::TransitionResource(gpass::MainBuffer().Resource(), cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    //d3dx::TransitionResource(gpass::MainBuffer().Resource(), cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+    //sprintf_s(debugMsg, sizeof(debugMsg), "Render Target View Handle: %p\n", reinterpret_cast<void*>(surface.Rtv().ptr));
+    //OutputDebugStringA(debugMsg);
+    //sprintf_s(debugMsg, sizeof(debugMsg), "surface bacvkbuffer: %p\n", reinterpret_cast<void*>(surface.BackBuffer()));
+    //OutputDebugStringA(debugMsg);
+    //sprintf_s(debugMsg, sizeof(debugMsg), "gpass::MainBuffer().Rtv(0).ptr: %p\n", reinterpret_cast<void*>(gpass::MainBuffer().Rtv(0).ptr));
+    //OutputDebugStringA(debugMsg);
+    //sprintf_s(debugMsg, sizeof(debugMsg), "gpass::MainBuffer().Srv().cpuptr: %p\n", reinterpret_cast<void*>(gpass::MainBuffer().Srv().cpu.ptr));
+    //OutputDebugStringA(debugMsg);
+    //sprintf_s(debugMsg, sizeof(debugMsg), "gpass::MainBuffer().SRV().gpuptr: %p\n", reinterpret_cast<void*>(gpass::MainBuffer().Srv().gpu.ptr));
+    //OutputDebugStringA(debugMsg);
+
+    fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
+
+    d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+    gfxCommand.EndFrame(surface);
 }
 
 Surface

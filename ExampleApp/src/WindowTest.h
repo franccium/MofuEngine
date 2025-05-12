@@ -127,6 +127,16 @@ bool MofuInitialize()
 void MofuUpdate()
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	graphics::FrameInfo frameInfo{};
+	frameInfo.lastFrameTime = 16.7f;
+	frameInfo.averageFrameTime = 16.7f;
+	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)
+	{
+		if (renderSurfaces[i].surface.IsValid())
+		{
+			renderSurfaces[i].surface.Render(frameInfo);
+		}
+	}
 }
 
 void MofuShutdown()

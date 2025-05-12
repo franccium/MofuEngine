@@ -1,3 +1,5 @@
+#include "Common.hlsli"
+
 struct ShaderConstants
 {
     float Width;
@@ -5,12 +7,11 @@ struct ShaderConstants
     uint Frame;
 };
 
-ConstantBuffer<ShaderConstants> ShaderParams : register(b1);
+ConstantBuffer<ShaderConstants> ShaderParams : register(b1, space0);
 
 float4 ColorFillPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_Target0
 {
     const float2 invDim = float2(1.f / ShaderParams.Width, 1.f / ShaderParams.Height);
-    const float2 uv = (Position.xy) + invDim;
-    float3 color = float3(0.7f, 0.3f, 1.0f);
-    return float4(color, 1.f);
+    const float2 uv = (Position.xy) * invDim;
+    return float4(uv, 0.0f, 1.f);
 }

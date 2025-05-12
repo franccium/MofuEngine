@@ -20,4 +20,6 @@ private:
 	u8 _bytecode;
 } const* CompiledShaderPtr;
 
+bool LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size);
+
 }

@@ -1,9 +1,10 @@
 #include "D3D12Helpers.h"
+#include "D3D12Core.h"
+
+using namespace Microsoft::WRL;
 
 namespace mofu::graphics::d3d12::d3dx {
    
-// if the initial data is going to be changed later, we need it to be cpu-accessible,
-// if we only want to upload some data to be used by the GPU, isCpuAccessible should be set to false
 DXResource*
 CreateResourceBuffer(const void* data, u32 bufferSize, bool isCpuAccessible /* false */,
 	D3D12_RESOURCE_STATES state /* D3D12_RESOURCE_STATE_COMMON */,
@@ -35,7 +36,7 @@ CreateResourceBuffer(const void* data, u32 bufferSize, bool isCpuAccessible /* f
 	}
 	else
 	{
-		DXCall(core::Device()->CreateCommittedResource2(isCpuAccessible ? &HeapProperties.UploadHeap : &HeapProperties.DefaultHeap,
+		DXCall(core::Device()->CreateCommittedResource2(isCpuAccessible ? &HeapProperties.UPLOAD_HEAP : &HeapProperties.DEFAULT_HEAP,
 			D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &desc, resourceState, nullptr, nullptr, IID_PPV_ARGS(&resource)));
 	}
 
@@ -62,5 +63,73 @@ CreateResourceBuffer(const void* data, u32 bufferSize, bool isCpuAccessible /* f
 	return resource;
 }
 
+void 
+TransitionResource(DXResource* resource, DXGraphicsCommandList* cmdList, 
+	D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, 
+	D3D12_RESOURCE_BARRIER_FLAGS flags, u32 subresource)
+{
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = flags;
+	barrier.Transition.pResource = resource;
+	barrier.Transition.StateBefore = before;
+	barrier.Transition.StateAfter = after;
+	barrier.Transition.Subresource = subresource;
+
+	cmdList->ResourceBarrier(1, &barrier);
 }
 
+ID3D12RootSignature* 
+CreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC1& desc)
+{
+	D3D12_VERSIONED_ROOT_SIGNATURE_DESC versionedDesc{};
+	versionedDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+	versionedDesc.Desc_1_1 = desc;
+
+	HRESULT hr{ S_OK };
+	ComPtr<ID3DBlob> errorBlob{ nullptr };
+	ComPtr<ID3DBlob> rootSigBlob{ nullptr };
+	if (FAILED(hr = D3D12SerializeVersionedRootSignature(&versionedDesc, &rootSigBlob, &errorBlob)))
+	{
+		DEBUG_OP(const char* errorMsg{ errorBlob ? (const char*)errorBlob->GetBufferPointer() : "" });
+		DEBUG_LOG(errorMsg);
+		return nullptr;
+	}
+
+	ID3D12RootSignature* rootSig{ nullptr };
+	DXCall(hr = core::Device()->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), 
+		rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&rootSig)));
+	if (FAILED(hr))
+	{
+		core::Release(rootSig);
+	}
+
+	return rootSig;
+}
+
+ID3D12PipelineState* 
+CreatePipelineState(D3D12_PIPELINE_STATE_STREAM_DESC desc)
+{
+	assert(desc.SizeInBytes && desc.pPipelineStateSubobjectStream && desc.SizeInBytes >= sizeof(void*));
+
+	ID3D12PipelineState* pso{ nullptr };
+	DXCall(core::Device()->CreatePipelineState(&desc, IID_PPV_ARGS(&pso)));
+	assert(pso);
+	return pso;
+}
+
+ID3D12PipelineState* 
+CreatePipelineState(void* stream, u64 streamSize)
+{
+	assert(stream && streamSize);
+	D3D12_PIPELINE_STATE_STREAM_DESC desc{};
+	desc.SizeInBytes = streamSize;
+	desc.pPipelineStateSubobjectStream = stream;
+
+	ID3D12PipelineState* pso{ nullptr };
+	DXCall(core::Device()->CreatePipelineState(&desc, IID_PPV_ARGS(&pso)));
+	assert(pso);
+	return pso;
+}
+
+}

@@ -1,4 +1,5 @@
 #include "D3D12DescriptorHeap.h"
+#include <numeric>
 
 namespace mofu::graphics::d3d12 {
 bool 
@@ -23,10 +24,11 @@ DescriptorHeap::Initialize(u32 capacity, bool isShaderVisible)
 	if (FAILED(hr)) return false;
 
 	_freeHandles = std::make_unique<u32[]>(capacity);
-	for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _freeHandles[i] = i;
+	std::iota(_freeHandles.get(), _freeHandles.get() + capacity, 0u);
 
 	_capacity = capacity;
 	_descriptorCount = 0;
+	DEBUG_OP(for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) assert(_deferredFreeIndices[i].empty()));
 
 	_descriptorSize = device->GetDescriptorHandleIncrementSize(_type);
 	_cpuStart = _heap->GetCPUDescriptorHandleForHeapStart();

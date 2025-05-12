@@ -66,14 +66,14 @@ D3D12Surface::Resize(u32 width, u32 height)
     assert(_swapChain);
     for (u32 i{ 0 }; i < BUFFER_COUNT; ++i)
     {
-        core::Release(_renderTargetData[i].back_buffer);
+        core::Release(_renderTargetData[i].backBuffer);
     }
 
     const u32 flags{ _allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0u };
-    DXCall(_swapChain->ResizeBuffers(_currentBackBufferIndex, width, height, DXGI_FORMAT_UNKNOWN, flags));
+    DXCall(_swapChain->ResizeBuffers(BUFFER_COUNT, width, height, DXGI_FORMAT_UNKNOWN, flags));
     _currentBackBufferIndex = _swapChain->GetCurrentBackBufferIndex();
     Finalize();
-    DEBUG_LOG(L"D3D12Surface resized\n");
+    DEBUG_LOG("D3D12Surface resized\n");
 }
 
 void 
@@ -82,7 +82,7 @@ D3D12Surface::Release()
     for (u32 i{ 0 }; i < BUFFER_COUNT; ++i)
     {
         RenderTargetData& data{ _renderTargetData[i] };
-        core::Release(data.back_buffer);
+        core::Release(data.backBuffer);
         core::RtvHeap().FreeDescriptor(data.rtv);
     }
     core::Release(_swapChain);
@@ -94,14 +94,14 @@ D3D12Surface::Finalize()
     for (u32 i{ 0 }; i < BUFFER_COUNT; ++i)
     {
         RenderTargetData& data{ _renderTargetData[i] };
-        assert(!data.back_buffer);
-        DXCall(_swapChain->GetBuffer(i, IID_PPV_ARGS(&data.back_buffer)));
+        assert(!data.backBuffer);
+        DXCall(_swapChain->GetBuffer(i, IID_PPV_ARGS(&data.backBuffer)));
         D3D12_RENDER_TARGET_VIEW_DESC desc{};
         desc.Format = DEFAULT_BACK_BUFFER_FORMAT;
         desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
         desc.Texture2D.PlaneSlice = 0;
-        desc.Texture2D.PlaneSlice = 0;
-        core::Device()->CreateRenderTargetView(data.back_buffer, &desc, data.rtv.cpu);
+        desc.Texture2D.MipSlice = 0;
+        core::Device()->CreateRenderTargetView(data.backBuffer, &desc, data.rtv.cpu);
     }
 
     DXGI_SWAP_CHAIN_DESC desc{};

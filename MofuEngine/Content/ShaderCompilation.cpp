@@ -61,7 +61,7 @@ struct EngineShaderInfo
 
 constexpr EngineShaderInfo ENGINE_SHADER_FILES[]
 {
-    {EngineShader::FullscreenTriangleVS, {"FullscreenTriangle.hlsl", "FullscreenTrriangleVS", graphics::ShaderType::Vertex}},
+    {EngineShader::FullscreenTriangleVS, {"FullscreenTriangle.hlsl", "FullscreenTriangleVS", graphics::ShaderType::Vertex}},
     {EngineShader::ColorFillPS, {"ColorFill.hlsl", "ColorFillPS", graphics::ShaderType::Pixel}},
     {EngineShader::PostProcessPS, {"PostProcess.hlsl", "PostProcessPS", graphics::ShaderType::Pixel}},
 };
@@ -116,7 +116,7 @@ public:
         }
         else
         {
-            OutputDebugStringA("[Compilation Succeded]");
+            DEBUG_LOG("[Compilation Succeded]");
         }
         OutputDebugStringA("\n");
 
@@ -152,6 +152,10 @@ public:
 
         DxcCompiledShader result{ shader.Detach(), errors.Detach(), disassembly.Detach() };
         memcpy(&result.hash, &hashBuffer->HashDigest[0], _countof(hashBuffer->HashDigest));
+
+        char shaderSizeInfo[32];
+        sprintf_s(shaderSizeInfo, sizeof(shaderSizeInfo), "Shader size: %zu\n", buffer.Size);
+        DEBUG_LOG(shaderSizeInfo);
 
         return result;
     }
@@ -293,9 +297,9 @@ SaveCompiledShaders(Vec<DxcCompiledShader>& shaders)
     {
         void* const bytecode{ shader.bytecode->GetBufferPointer() };
         const u64 bytecodeLength{ shader.bytecode->GetBufferSize() };
-        file.write((char*)&bytecodeLength, sizeof(bytecodeLength));
-        file.write((char*)&shader.hash.HashDigest[0], _countof(shader.hash.HashDigest));
-        file.write((char*)&bytecode, bytecodeLength);
+        file.write(reinterpret_cast<const char*>(&bytecodeLength), sizeof(bytecodeLength));
+        file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
+        file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
     }
     file.close();
 

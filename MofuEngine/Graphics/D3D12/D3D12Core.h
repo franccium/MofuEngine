@@ -4,6 +4,17 @@
 namespace mofu::graphics::d3d12 {
 class DescriptorHeap;
 class ConstantBuffer;
+
+struct D3D12FrameInfo
+{
+	const FrameInfo* info{ nullptr };
+	D3D12_GPU_VIRTUAL_ADDRESS globalShaderData{ 0 }; // a pointer to a constant buffer that contains the view and projection matrices, etc.
+	u32 surfaceWidth{ 0 };
+	u32 surfaceHeight{ 0 };
+	u32 frameIndex{ 0 };
+	f32 deltaTime{ 16.7f };
+};
+
 }
 
 namespace mofu::graphics::d3d12::core {

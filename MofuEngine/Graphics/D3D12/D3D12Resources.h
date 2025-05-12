@@ -10,7 +10,7 @@ struct DescriptorHandle
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE cpu{};
 	D3D12_GPU_DESCRIPTOR_HANDLE gpu{};
-	u32 index{ U32_INVALID_ID };
+	u32 index{ U32_INVALID_ID }; //TODO: check
 
 	[[nodiscard]] constexpr bool IsValid() const { return cpu.ptr != 0; }
 	[[nodiscard]] constexpr bool IsShaderVisible() const { return gpu.ptr != 0; }
@@ -144,4 +144,148 @@ private:
 	std::mutex _mutex{};
 };
 
+struct D3D12TextureInitInfo
+{
+	DXResource* resource{ nullptr };
+	D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc{ nullptr };
+	D3D12_RESOURCE_DESC1* desc{ nullptr };
+	ID3D12Heap1* heap{ nullptr };
+	D3D12_RESOURCE_ALLOCATION_INFO1* allocationInfo{ nullptr };
+	D3D12_RESOURCE_STATES initialState{};
+	D3D12_CLEAR_VALUE clearValue{};
+};
+
+class D3D12Texture
+{
+public:
+	constexpr static u32 MAX_MIPS{ 14 };
+
+	D3D12Texture() = default;
+	explicit D3D12Texture(D3D12TextureInitInfo info);
+	DISABLE_COPY(D3D12Texture);
+	constexpr D3D12Texture(D3D12Texture&& o) : _resource{ o._resource }, _srv{ o._srv } { o.Reset(); }
+	constexpr D3D12Texture& operator=(D3D12Texture&& o)
+	{
+		assert(this != &o);
+		if (this != &o)
+		{
+			Release();
+			Move(o);
+		}
+		return *this;
+	}
+	~D3D12Texture() { Release(); }
+
+	void Release();
+
+	[[nodiscard]] constexpr DXResource* const Resource() const { return _resource; }
+	[[nodiscard]] constexpr DescriptorHandle Srv() const { return _srv; }
+
+private:
+	constexpr void Reset()
+	{
+		_resource = nullptr;
+		_srv = {};
+	}
+
+	constexpr void Move(D3D12Texture& o)
+	{
+		_resource = o._resource;
+		_srv = o._srv;
+		o.Reset();
+	}
+
+	DXResource* _resource{ nullptr };
+	DescriptorHandle _srv;
+};
+
+class D3D12RenderTexture
+{
+public:
+	D3D12RenderTexture() = default;
+	explicit D3D12RenderTexture(D3D12TextureInitInfo info);
+	DISABLE_COPY(D3D12RenderTexture);
+
+	constexpr D3D12RenderTexture(D3D12RenderTexture&& o) : _texture{ std::move(o._texture) }, _mipCount{ o._mipCount }
+	{
+		for (u32 i{ 0 }; i < _mipCount; ++i) _rtv[i] = o._rtv[i];
+		o.Reset();
+	}
+
+	constexpr D3D12RenderTexture& operator=(D3D12RenderTexture&& o)
+	{
+		assert(this != &o);
+		if (this != &o)
+		{
+			Release();
+			Move(o);
+		}
+		return *this;
+	}
+
+	~D3D12RenderTexture() { Release(); }
+
+	void Release();
+
+	[[nodiscard]] constexpr u32 MipCount() const { return _mipCount; }
+	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE Rtv(u32 mipIndex) const { assert(mipIndex < _mipCount);  return _rtv[mipIndex].cpu; }
+	[[nodiscard]] constexpr DescriptorHandle Srv() const { return _texture.Srv(); }
+	[[nodiscard]] constexpr DXResource* const Resource() const { return _texture.Resource(); }
+
+private:
+	constexpr void Reset()
+	{
+		for (u32 i{ 0 }; i < _mipCount; ++i) _rtv[i] = {};
+		_mipCount = 0;
+	}
+
+	constexpr void Move(D3D12RenderTexture& o)
+	{
+		_texture = std::move(o._texture);
+		_mipCount = o._mipCount;
+		for (u32 i{ 0 }; i < _mipCount; ++i) _rtv[i] = o._rtv[i];
+		o.Reset();
+	}
+
+	D3D12Texture _texture;
+	DescriptorHandle _rtv[D3D12Texture::MAX_MIPS]{};
+	u32 _mipCount{ 0 };
+};
+
+class D3D12DepthBuffer
+{
+public:
+	D3D12DepthBuffer() = default;
+	explicit D3D12DepthBuffer(D3D12TextureInitInfo info);
+	DISABLE_COPY(D3D12DepthBuffer);
+
+	constexpr D3D12DepthBuffer(D3D12DepthBuffer&& o) : _texture{ std::move(o._texture) }, _dsv{ o._dsv }
+	{
+		o._dsv = {};
+	}
+
+	constexpr D3D12DepthBuffer& operator=(D3D12DepthBuffer&& o)
+	{
+		assert(this != &o);
+		if (this != &o)
+		{
+			_texture = std::move(o._texture);
+			_dsv = o._dsv;
+			o._dsv = {};
+		}
+		return *this;
+	}
+
+	~D3D12DepthBuffer() { Release(); }
+
+	void Release();
+
+	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE Dsv() const { return _dsv.cpu; }
+	[[nodiscard]] constexpr DescriptorHandle Srv() const { return _texture.Srv(); }
+	[[nodiscard]] constexpr DXResource* const Resource() const { return _texture.Resource(); }
+
+private:
+	D3D12Texture _texture;
+	DescriptorHandle _dsv{};
+};
 }

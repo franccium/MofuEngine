@@ -1,5 +1,3 @@
-#include "Common.hlsli"
-
 struct VSOutput
 {
     noperspective float4 Position : SV_Position;
@@ -7,10 +5,10 @@ struct VSOutput
 };
 
 
-VSOutput FullscreenTrriangleVS(in uint VertexIdx : SV_VertexID)
+VSOutput FullscreenTriangleVS(in uint VertexIdx : SV_VertexID)
 {
     VSOutput output;
-    
+    float3 asaas = float3(0, 0, 0);
     const float2 tex = float2(uint2(VertexIdx, VertexIdx << 1) & 2);
     
     output.Position = float4(lerp(float2(-1, 1), float2(1, -1), tex), 0, 1);
