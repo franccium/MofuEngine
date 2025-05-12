@@ -1,6 +1,9 @@
 #include "D3D12Core.h"
 #include "D3D12Surface.h"
 #include "D3D12DescriptorHeap.h"
+#include "D3D12Shaders.h"
+#include "D3D12GPass.h"
+#include "D3D12PostProcess.h"
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
@@ -175,8 +178,7 @@ Vec<IUnknown*> deferredReleases[FRAME_BUFFER_COUNT]{};
 bool 
 InitializeModules()
 {
-    //TODO: return shaders::Initialize && gpass::Initialize();
-    return true;
+    return shaders::Initialize && gpass::Initialize() && fx::Initialize();
 }
 
 bool 
@@ -332,6 +334,46 @@ Initialize()
 void
 Shutdown()
 {
+    gfxCommand.Release();
+
+    for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+        ProcessDeferredReleases(i);
+
+    gpass::Shutdown();
+    fx::Shutdown();
+    shaders::Shutdown();
+
+    for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+        constantBuffers[i].Release();
+
+    rtvDescHeap.ProcessDeferredFree(0);
+    dsvDescHeap.ProcessDeferredFree(0);
+    srvDescHeap.ProcessDeferredFree(0);
+    uavDescHeap.ProcessDeferredFree(0);
+    rtvDescHeap.Release();
+    dsvDescHeap.Release();
+    srvDescHeap.Release();
+    uavDescHeap.Release();
+    ProcessDeferredReleases(0);
+
+    Release(dxgiFactory);
+#ifdef _DEBUG
+    if (mainDevice)
+    {
+        {
+            ComPtr<ID3D12InfoQueue> info_queue;
+            DXCall(mainDevice->QueryInterface(IID_PPV_ARGS(&info_queue)));
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, false);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, false);
+        }
+        ComPtr<ID3D12DebugDevice2> debugDeivce;
+        DXCall(mainDevice->QueryInterface(IID_PPV_ARGS(&debugDeivce)));
+        Release(mainDevice);
+        DXCall(debugDeivce->ReportLiveDeviceObjects(D3D12_RLDO_SUMMARY | D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL));
+    }
+#endif
+    Release(mainDevice);
 }
 
 DXDevice* const Device() { return mainDevice; }
@@ -360,25 +402,31 @@ DeferredRelease(IUnknown* resource)
 }
 } // namespace detail
 
+void
+RenderSurface(surface_id id, FrameInfo frameInfo)
+{
+}
+
 Surface
 CreateSurface(platform::Window window)
 {
-    return Surface();
+    surface_id id{ surfaces.add(window) };
+    surfaces[id].CreateSwapChain(dxgiFactory, gfxCommand.CommandQueue());
+    return Surface{ id };
 }
 
 void 
 RemoveSurface(surface_id id)
 {
-}
-
-void 
-RenderSurface(surface_id id, FrameInfo frameInfo)
-{
+    gfxCommand.Flush();
+    surfaces.remove(id);
 }
 
 void 
 ResizeSurface(surface_id id, u32 width, u32 height)
 {
+    gfxCommand.Flush();
+    surfaces[id].Resize(width, height);
 }
 
 u32 

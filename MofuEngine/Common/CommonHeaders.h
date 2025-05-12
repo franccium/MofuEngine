@@ -17,8 +17,10 @@
 
 #ifdef _DEBUG
 #define DEBUG_OP(expr) expr
+#define DEBUG_LOG(expr) OutputDebugString(L"*** Debug Log: "); OutputDebugString(expr)
 #else
 #define DEBUG_OP(expr)
+#define DEBUG_LOG(expr)
 #endif
 
 #ifndef DISABLE_COPY

@@ -17,7 +17,7 @@ public:
     constexpr explicit Surface(surface_id id) : _id{ id } {}
     constexpr Surface() = default;
     constexpr surface_id GetID() const { return _id; }
-    constexpr bool IsValid() const { return id::is_valid(_id); }
+    constexpr bool IsValid() const { return id::IsValid(_id); }
 
     void Resize(u32 width, u32 height) const;
     u32 Width() const;
@@ -79,6 +79,6 @@ Surface CreateSurface(platform::Window window);
 void RemoveSurface(surface_id id);
 
 const char* GetEngineShadersPath();
-
+const char* GetEngineShadersPath(GraphicsPlatform platform);
 
 }

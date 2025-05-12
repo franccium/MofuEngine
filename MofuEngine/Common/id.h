@@ -26,13 +26,13 @@ static_assert((sizeof(id_t) - sizeof(generation_type)) > 0);
 constexpr generation_type MAX_GENERATION{ (generation_type)(detail::GENERATION_MASK - 1) };
 
 constexpr inline bool
-is_valid(id_t id)
+IsValid(id_t id)
 {
 	return id != INVALID_ID;
 }
 
 constexpr inline id_t
-index(id_t forId)
+Index(id_t forId)
 {
 	id_t index{ forId & detail::INDEX_MASK };
 	assert(index != detail::INDEX_MASK);
@@ -40,7 +40,7 @@ index(id_t forId)
 }
 
 constexpr inline id_t
-generation(id_t forId)
+Generation(id_t forId)
 {
 	return (forId >> detail::INDEX_BITS) & detail::GENERATION_MASK;
 }

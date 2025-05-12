@@ -1,6 +1,7 @@
 #pragma once
 #include "D3D12CommonHeaders.h"
 #include "D3D12Core.h"
+#include "D3D12DescriptorHeap.h"
 
 // Provides utility classes for D3D12 resource management
 

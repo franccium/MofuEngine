@@ -7,6 +7,7 @@ namespace {
 constexpr const char* ENGINE_SHADERS_PATHS[]{
     ".\\shaders\\d3d12\\shaders.bin"
 };
+
 PlatformInterface gfxInterface;
 
 bool SetupPlatformInterface(GraphicsPlatform platform)
@@ -54,6 +55,40 @@ const char*
 GetEngineShadersPath()
 {
     return ENGINE_SHADERS_PATHS[(u32)gfxInterface.platform];
+}
+
+const char*
+GetEngineShadersPath(GraphicsPlatform platform)
+{
+    return ENGINE_SHADERS_PATHS[(u32)platform];
+}
+
+void 
+Surface::Resize(u32 width, u32 height) const
+{
+    assert(IsValid());
+    gfxInterface.surface.resize(_id, width, height);
+}
+
+u32 
+Surface::Width() const
+{
+    assert(IsValid());
+    return gfxInterface.surface.width(_id);
+}
+
+u32 
+Surface::Height() const
+{
+    assert(IsValid());
+    return gfxInterface.surface.height(_id);
+}
+
+void 
+Surface::Render(FrameInfo info) const
+{
+    assert(IsValid());
+    gfxInterface.surface.render(_id, info);
 }
 
 }

@@ -51,10 +51,25 @@
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12GPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12PostProcess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Content\ShaderCompilation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Graphics\D3D12\Shaders\CommonTypes.hlsli" />
+    <None Include="Graphics\D3D12\Shaders\Common.hlsli" />
+    <None Include="Graphics\D3D12\Shaders\CommonFunctions.hlsli" />
+    <None Include="Graphics\D3D12\Shaders\CommonConstants.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\StandardTypes.h">
@@ -123,5 +138,28 @@
     <ClInclude Include="Graphics\D3D12\D3D12DescriptorHeap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12Shaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12GPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12PostProcess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\ShaderCompilation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\ContentManagement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\IOStream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Graphics\D3D12\Shaders\FullscreenTriangle.hlsl" />
+    <FxCompile Include="Graphics\D3D12\Shaders\PostProcess.hlsl" />
+    <FxCompile Include="Graphics\D3D12\Shaders\ColorFill.hlsl" />
   </ItemGroup>
 </Project>

@@ -10,7 +10,7 @@ public:
 	constexpr explicit Window(window_id id) : _id{ id } {}
 	constexpr Window() = default;
 	constexpr window_id GetID() const { return _id; }
-	constexpr bool IsValid() const { return id::is_valid(_id); }
+	constexpr bool IsValid() const { return id::IsValid(_id); }
 
 	void SetFullscreen(bool isFullscreen) const;
 	bool IsFullscreen() const;
@@ -21,6 +21,7 @@ public:
 	u32 Width() const;
 	u32 Height() const;
 	bool IsClosed() const;
+	constexpr void Destroy() { _id = (window_id)id::INVALID_ID; }
 
 private:
 	window_id _id{ id::INVALID_ID };
