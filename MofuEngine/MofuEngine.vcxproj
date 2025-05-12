@@ -67,7 +67,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -106,6 +106,12 @@
     <ClCompile Include="Content\ShaderCompilation.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\Main.cpp" />
+    <ClCompile Include="External\imgui\include\imgui.cpp" />
+    <ClCompile Include="External\imgui\include\imgui_draw.cpp" />
+    <ClCompile Include="External\imgui\include\imgui_impl_dx12.cpp" />
+    <ClCompile Include="External\imgui\include\imgui_impl_win32.cpp" />
+    <ClCompile Include="External\imgui\include\imgui_tables.cpp" />
+    <ClCompile Include="External\imgui\include\imgui_widgets.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Core.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12DescriptorHeap.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12GPass.cpp" />
@@ -142,6 +148,14 @@
     <ClInclude Include="Common\StandardTypes.h" />
     <ClInclude Include="Content\ContentManagement.h" />
     <ClInclude Include="Content\ShaderCompilation.h" />
+    <ClInclude Include="External\imgui\include\imconfig.h" />
+    <ClInclude Include="External\imgui\include\imgui.h" />
+    <ClInclude Include="External\imgui\include\imgui_impl_dx12.h" />
+    <ClInclude Include="External\imgui\include\imgui_impl_win32.h" />
+    <ClInclude Include="External\imgui\include\imgui_internal.h" />
+    <ClInclude Include="External\imgui\include\imstb_rectpack.h" />
+    <ClInclude Include="External\imgui\include\imstb_textedit.h" />
+    <ClInclude Include="External\imgui\include\imstb_truetype.h" />
     <ClInclude Include="Graphics\D3D12\D3D12CommonHeaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Core.h" />
     <ClInclude Include="Graphics\D3D12\D3D12DescriptorHeap.h" />
@@ -182,6 +196,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="External\imgui\misc\imgui.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -8,6 +8,8 @@
 namespace mofu::graphics::d3d12 {
 struct DescriptorHandle
 {
+	constexpr DescriptorHandle() = default;
+	constexpr DescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle) { cpu = cpuHandle; gpu = gpuHandle; }
 	D3D12_CPU_DESCRIPTOR_HANDLE cpu{};
 	D3D12_GPU_DESCRIPTOR_HANDLE gpu{};
 	u32 index{ U32_INVALID_ID }; //TODO: check

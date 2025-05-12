@@ -4,6 +4,7 @@
 #include "D3D12Shaders.h"
 #include "D3D12GPass.h"
 #include "D3D12PostProcess.h"
+#include "imgui_impl_dx12.h"
 
 #define ENABLE_GPU_BASED_VALIDATION 1
 
@@ -334,6 +335,30 @@ Initialize()
     }
 #endif
 
+    ImGui_ImplDX12_InitInfo initInfo = {};
+    initInfo.Device = mainDevice;
+    initInfo.CommandQueue = gfxCommand.CommandQueue();
+    initInfo.NumFramesInFlight = FRAME_BUFFER_COUNT;
+    initInfo.RTVFormat = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
+    initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
+    initInfo.SrvDescriptorHeap = srvDescHeap.Heap();
+    initInfo.UserData = &srvDescHeap;
+    initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle,
+        D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle) {
+            DescriptorHeap* heap{ static_cast<DescriptorHeap*>(info->UserData) };
+            DescriptorHandle handle{ heap->AllocateDescriptor() };
+            *outCpuHandle = handle.cpu;
+            *outGpuHandle = handle.gpu;
+        };
+    initInfo.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo* info, 
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, 
+        D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { 
+            DescriptorHeap* heap{ static_cast<DescriptorHeap*>(info->UserData) };
+            DescriptorHandle handle{ cpu_handle, gpu_handle };
+            return heap->FreeDescriptor(handle);
+        };
+    ImGui_ImplDX12_Init(&initInfo);
+
     return true;
 }
 
@@ -459,30 +484,26 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     gpass::SetRenderTargetsForGPass(cmdList);
     gpass::Render(cmdList, d3d12FrameInfo);
 
-    //char debugMsg[256];
-    //sprintf_s(debugMsg, sizeof(debugMsg), "Descriptor Heap Bound: %p\n", srvDescHeap.Heap());
-    //OutputDebugStringA(debugMsg);
-
-
     // Post Processing
     gpass::AddTransitionsForPostProcess(barriers);
     barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
     barriers.ApplyBarriers(cmdList);
-    //d3dx::TransitionResource(gpass::MainBuffer().Resource(), cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    //d3dx::TransitionResource(gpass::MainBuffer().Resource(), cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-    //sprintf_s(debugMsg, sizeof(debugMsg), "Render Target View Handle: %p\n", reinterpret_cast<void*>(surface.Rtv().ptr));
-    //OutputDebugStringA(debugMsg);
-    //sprintf_s(debugMsg, sizeof(debugMsg), "surface bacvkbuffer: %p\n", reinterpret_cast<void*>(surface.BackBuffer()));
-    //OutputDebugStringA(debugMsg);
-    //sprintf_s(debugMsg, sizeof(debugMsg), "gpass::MainBuffer().Rtv(0).ptr: %p\n", reinterpret_cast<void*>(gpass::MainBuffer().Rtv(0).ptr));
-    //OutputDebugStringA(debugMsg);
-    //sprintf_s(debugMsg, sizeof(debugMsg), "gpass::MainBuffer().Srv().cpuptr: %p\n", reinterpret_cast<void*>(gpass::MainBuffer().Srv().cpu.ptr));
-    //OutputDebugStringA(debugMsg);
-    //sprintf_s(debugMsg, sizeof(debugMsg), "gpass::MainBuffer().SRV().gpuptr: %p\n", reinterpret_cast<void*>(gpass::MainBuffer().Srv().gpu.ptr));
-    //OutputDebugStringA(debugMsg);
 
     fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
+
+    static float f = 0.0f;
+    static int counter = 0;
+    ImGui::Begin("Hello, world!");
+    ImGui::Text("wow such text");
+    ImGui::SliderFloat("float", &f, 0.0f, 25.2f);
+    if (ImGui::Button("Button"))
+        counter++;
+    ImGui::SameLine();
+    ImGui::Text("counter = %d", counter);
+    ImGui::Text("lastFrameTime: %.3f", frameInfo.lastFrameTime);
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
 
     d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 

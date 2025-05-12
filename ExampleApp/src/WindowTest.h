@@ -3,6 +3,9 @@
 #include "Graphics/Renderer.h"
 #include "Content/ShaderCompilation.h"
 #include <thread>
+#include "External/imgui/include/imgui.h"
+#include "External/imgui/include/imgui_impl_win32.h"
+#include "External/imgui/include/imgui_impl_dx12.h"
 
 constexpr u32 WINDOW_COUNT{ 1 };
 
@@ -17,9 +20,13 @@ bool isResized{ false };
 bool MofuInitialize();
 void MofuShutdown();
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+
 LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	if (!isRunning) return DefWindowProc(hwnd, msg, wparam, lparam);
+
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) return true;
 
 	bool toggleFullscreen{ false };
 	switch (msg)
@@ -104,6 +111,13 @@ bool MofuInitialize()
 		if (MessageBox(nullptr, L"Failed to compile engine shaders", L"Error", MB_RETRYCANCEL) != IDRETRY) return false;
 	}
 
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	ImGui::StyleColorsDark();
+
 	if(!graphics::Initialize(graphics::GraphicsPlatform::Direct3D12)) return false;
 
 	platform::WindowInitInfo info[]
@@ -121,6 +135,8 @@ bool MofuInitialize()
 		renderSurfaces[i].surface = graphics::CreateSurface(renderSurfaces[i].window);
 	}
 
+	ImGui_ImplWin32_Init(renderSurfaces[0].window.Handle());
+
 	return true;
 }
 
@@ -130,6 +146,11 @@ void MofuUpdate()
 	graphics::FrameInfo frameInfo{};
 	frameInfo.lastFrameTime = 16.7f;
 	frameInfo.averageFrameTime = 16.7f;
+
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
 	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)
 	{
 		if (renderSurfaces[i].surface.IsValid())
@@ -142,6 +163,10 @@ void MofuUpdate()
 void MofuShutdown()
 {
 	if (!isRunning) return;
+
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 
 	for (u32 i = 0; i < WINDOW_COUNT; ++i)
 	{
