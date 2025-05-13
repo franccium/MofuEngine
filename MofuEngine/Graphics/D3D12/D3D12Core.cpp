@@ -4,9 +4,10 @@
 #include "D3D12Shaders.h"
 #include "D3D12GPass.h"
 #include "D3D12PostProcess.h"
-#include "imgui_impl_dx12.h"
+#include "D3D12GUI.h"
 
-#define ENABLE_GPU_BASED_VALIDATION 1
+#define ENABLE_GPU_BASED_VALIDATION 0
+#define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
@@ -335,29 +336,7 @@ Initialize()
     }
 #endif
 
-    ImGui_ImplDX12_InitInfo initInfo = {};
-    initInfo.Device = mainDevice;
-    initInfo.CommandQueue = gfxCommand.CommandQueue();
-    initInfo.NumFramesInFlight = FRAME_BUFFER_COUNT;
-    initInfo.RTVFormat = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
-    initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
-    initInfo.SrvDescriptorHeap = srvDescHeap.Heap();
-    initInfo.UserData = &srvDescHeap;
-    initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle,
-        D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle) {
-            DescriptorHeap* heap{ static_cast<DescriptorHeap*>(info->UserData) };
-            DescriptorHandle handle{ heap->AllocateDescriptor() };
-            *outCpuHandle = handle.cpu;
-            *outGpuHandle = handle.gpu;
-        };
-    initInfo.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo* info, 
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, 
-        D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { 
-            DescriptorHeap* heap{ static_cast<DescriptorHeap*>(info->UserData) };
-            DescriptorHandle handle{ cpu_handle, gpu_handle };
-            return heap->FreeDescriptor(handle);
-        };
-    ImGui_ImplDX12_Init(&initInfo);
+    if (!gui::Initialize(gfxCommand.CommandList(), gfxCommand.CommandQueue())) return InitializeFailed();
 
     return true;
 }
@@ -437,6 +416,8 @@ void
 RenderSurface(surface_id id, FrameInfo frameInfo)
 {
     gfxCommand.BeginFrame();
+
+
     DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList() };
 
     const u32 frameIndex{ CurrentFrameIndex() };
@@ -471,6 +452,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     cmdList->RSSetViewports(1, surface.Viewport());
     cmdList->RSSetScissorRects(1, surface.ScissorRect());
 
+    gui::SetupGUIFrame();
+
     barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
     // Depth Prepass
     gpass::AddTransitionsForDepthPrepass(barriers);
@@ -491,19 +474,80 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
 
-    static float f = 0.0f;
-    static int counter = 0;
-    ImGui::Begin("Hello, world!");
-    ImGui::Text("wow such text");
-    ImGui::SliderFloat("float", &f, 0.0f, 25.2f);
-    if (ImGui::Button("Button"))
-        counter++;
-    ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
-    ImGui::Text("lastFrameTime: %.3f", frameInfo.lastFrameTime);
-    ImGui::End();
-    ImGui::Render();
-    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
+    gui::RenderGUI(cmdList);
+#if RENDER_SCENE_ONTO_GUI_IMAGE
+    //TODO: make it work with post processing
+    gui::RenderTextureIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+#else
+
+#endif
+    gui::EndGUIFrame(cmdList);
+
+    d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+    gfxCommand.EndFrame(surface);
+}
+
+void
+RenderSurfaceNoGUI(surface_id id, FrameInfo frameInfo)
+{
+    gfxCommand.BeginFrame();
+
+
+    DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList() };
+
+    const u32 frameIndex{ CurrentFrameIndex() };
+
+    ConstantBuffer& cbuffer{ constantBuffers[frameIndex] };
+    cbuffer.Clear();
+
+    if (deferredReleasesFlag[frameIndex])
+    {
+        ProcessDeferredReleases(frameIndex);
+    }
+
+    const D3D12Surface& surface{ surfaces[id] };
+    DXResource* const currentBackBuffer{ surface.BackBuffer() };
+
+    D3D12FrameInfo d3d12FrameInfo
+    {
+        &frameInfo,
+        0,
+        surface.Width(),
+        surface.Height(),
+        0,
+        16.7f
+    };
+
+    gpass::SetBufferSize({ d3d12FrameInfo.surfaceWidth, d3d12FrameInfo.surfaceHeight });
+    d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
+
+    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
+    cmdList->SetDescriptorHeaps(1, &heaps[0]);
+
+    cmdList->RSSetViewports(1, surface.Viewport());
+    cmdList->RSSetScissorRects(1, surface.ScissorRect());
+
+
+    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
+    // Depth Prepass
+    gpass::AddTransitionsForDepthPrepass(barriers);
+    barriers.ApplyBarriers(cmdList);
+    gpass::SetRenderTargetsForDepthPrepass(cmdList);
+    gpass::DoDepthPrepass(cmdList, d3d12FrameInfo);
+
+    // Main GPass
+    gpass::AddTransitionsForGPass(barriers);
+    barriers.ApplyBarriers(cmdList);
+    gpass::SetRenderTargetsForGPass(cmdList);
+    gpass::Render(cmdList, d3d12FrameInfo);
+
+    // Post Processing
+    gpass::AddTransitionsForPostProcess(barriers);
+    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
+    barriers.ApplyBarriers(cmdList);
+
+    fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
 
     d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 

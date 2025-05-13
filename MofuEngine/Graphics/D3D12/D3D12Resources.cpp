@@ -85,9 +85,23 @@ D3D12Texture::Release()
 }
 
 ////////////////// RENDER TEXTURE ////////////////////////////////////////////////
-D3D12RenderTexture::D3D12RenderTexture(D3D12TextureInitInfo info) : _texture{ info }
+D3D12RenderTexture::D3D12RenderTexture(D3D12TextureInitInfo info)
 {
 	assert(info.desc);
+
+	//FIXME: temporary fix for embedding into a dockable ImGUI window
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.PlaneSlice = 0;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.f;
+	assert(!info.srvDesc && !info.resource);
+	info.srvDesc = &srvDesc;
+	_texture = D3D12Texture{ info };
+
 	_mipCount = Resource()->GetDesc1().MipLevels;
 	assert(_mipCount && _mipCount <= D3D12Texture::MAX_MIPS);
 	

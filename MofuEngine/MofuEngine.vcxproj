@@ -107,6 +107,7 @@
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\Main.cpp" />
     <ClCompile Include="External\imgui\include\imgui.cpp" />
+    <ClCompile Include="External\imgui\include\imgui_demo.cpp" />
     <ClCompile Include="External\imgui\include\imgui_draw.cpp" />
     <ClCompile Include="External\imgui\include\imgui_impl_dx12.cpp" />
     <ClCompile Include="External\imgui\include\imgui_impl_win32.cpp" />
@@ -115,6 +116,7 @@
     <ClCompile Include="Graphics\D3D12\D3D12Core.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12DescriptorHeap.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12GPass.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12GUI.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Helpers.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Interface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12PostProcess.cpp" />
@@ -160,6 +162,7 @@
     <ClInclude Include="Graphics\D3D12\D3D12Core.h" />
     <ClInclude Include="Graphics\D3D12\D3D12DescriptorHeap.h" />
     <ClInclude Include="Graphics\D3D12\D3D12GPass.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12GUI.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Helpers.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Interface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12PostProcess.h" />
