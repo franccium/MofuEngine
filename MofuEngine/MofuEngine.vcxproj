@@ -127,6 +127,7 @@
     <ClCompile Include="Platform\Platform.cpp" />
     <ClCompile Include="Platform\Win32Platform.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
+    <ClCompile Include="Utilities\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Graphics\D3D12\Shaders\Common.hlsli">
@@ -150,6 +151,7 @@
     <ClInclude Include="Common\StandardTypes.h" />
     <ClInclude Include="Content\ContentManagement.h" />
     <ClInclude Include="Content\ShaderCompilation.h" />
+    <ClInclude Include="Core\EngineModules.h" />
     <ClInclude Include="External\imgui\include\imconfig.h" />
     <ClInclude Include="External\imgui\include\imgui.h" />
     <ClInclude Include="External\imgui\include\imgui_impl_dx12.h" />
@@ -178,6 +180,7 @@
     <ClInclude Include="Utilities\DataStructures\DataStructures.h" />
     <ClInclude Include="Utilities\DataStructures\FreeList.h" />
     <ClInclude Include="Utilities\IOStream.h" />
+    <ClInclude Include="Utilities\Logger.h" />
     <ClInclude Include="Utilities\Math.h" />
     <ClInclude Include="Utilities\MathTypes.h" />
     <ClInclude Include="Utilities\DataStructures\Vector.h" />

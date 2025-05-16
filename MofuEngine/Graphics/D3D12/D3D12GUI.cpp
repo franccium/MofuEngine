@@ -2,6 +2,7 @@
 #include "D3D12Core.h"
 #include "D3D12Surface.h"
 #include "imgui_impl_dx12.h"
+#include "Utilities/Logger.h"
 
 namespace mofu::graphics::d3d12::gui {
 namespace {
@@ -38,21 +39,19 @@ RenderConfigWindow()
     ImGui::ShowDemoWindow();
 }
 
+
 void
 RenderLoggerWindow()
 {
-    //TODO: logger window
-    ImGui::Begin("Hello, world!");
-    static float f = 0.0f;
-    static int counter = 0;
-
-    ImGui::Text("wow such text");
-    ImGui::SliderFloat("float", &f, 0.0f, 25.2f);
-    if (ImGui::Button("Button"))
-        counter++;
-    ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
+    bool open = true;
+    ImGui::Begin("Logs", &open);
+    if (ImGui::SmallButton("[Debug] Add 5 entries"))
+    {
+        log::AddTestLogs();
+    }
     ImGui::End();
+
+    log::Draw("Logs", &open);
 }
 }
 

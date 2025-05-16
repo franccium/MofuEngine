@@ -53,12 +53,6 @@ DescriptorHeap::ProcessDeferredFree(u32 frameId)
 	Vec<u32>& indices{ _deferredFreeIndices[frameId] };
 	if (!indices.empty())
 	{
-		if (_capacity == 4096)
-		{
-			int a = 5;
-			OutputDebugStringA("ASdasd");
-			_descriptorCount += 1;
-		}
 		for (auto& id : indices)
 		{
 			--_descriptorCount;
@@ -74,11 +68,6 @@ DescriptorHeap::AllocateDescriptor()
 	std::lock_guard lock{ _mutex };
 	assert(_heap);
 	assert(_descriptorCount < _capacity);
-
-	if (_capacity == 4096)
-	{
-		OutputDebugStringA("Allocated SRV\n");
-	}
 
 	const u32 freeIndex{ _freeHandles[_descriptorCount] };
 	const u32 offset{ freeIndex * _descriptorSize };

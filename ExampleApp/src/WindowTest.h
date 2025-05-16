@@ -6,6 +6,7 @@
 #include "External/imgui/include/imgui.h"
 #include "External/imgui/include/imgui_impl_win32.h"
 #include "External/imgui/include/imgui_impl_dx12.h"
+#include "Core/EngineModules.h"
 
 constexpr u32 WINDOW_COUNT{ 1 };
 
@@ -106,6 +107,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 bool MofuInitialize()
 {
+	mofu::InitializeEngineModules();
 	while (!CompileEngineShaders())
 	{
 		if (MessageBox(nullptr, L"Failed to compile engine shaders", L"Error", MB_RETRYCANCEL) != IDRETRY) return false;
