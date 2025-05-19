@@ -19,11 +19,11 @@ constexpr id_t INVALID_ID{ id_t(-1) };
 constexpr u32 MIN_DELETED_ELEMENTS{ 1024 };
 
 // set generation_type to the smallest uint type that can hold GENERATION_BITS
-using generation_type = std::conditional_t<detail::GENERATION_BITS <= 16, std::conditional_t<detail::GENERATION_BITS <= 8, u8, u16>, u32>;
-static_assert(sizeof(generation_type) * 8 >= detail::GENERATION_BITS);
-static_assert((sizeof(id_t) - sizeof(generation_type)) > 0);
+using generation_t = std::conditional_t<detail::GENERATION_BITS <= 16, std::conditional_t<detail::GENERATION_BITS <= 8, u8, u16>, u32>;
+static_assert(sizeof(generation_t) * 8 >= detail::GENERATION_BITS);
+static_assert((sizeof(id_t) - sizeof(generation_t)) > 0);
 
-constexpr generation_type MAX_GENERATION{ (generation_type)(detail::GENERATION_MASK - 1) };
+constexpr generation_t MAX_GENERATION{ (generation_t)(detail::GENERATION_MASK - 1) };
 
 constexpr inline bool
 IsValid(id_t id)

@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\TestSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

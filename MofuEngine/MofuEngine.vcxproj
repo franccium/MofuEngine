@@ -106,6 +106,7 @@
     <ClCompile Include="Content\ShaderCompilation.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\Main.cpp" />
+    <ClCompile Include="Editor\EditorInterface.cpp" />
     <ClCompile Include="External\imgui\include\imgui.cpp" />
     <ClCompile Include="External\imgui\include\imgui_demo.cpp" />
     <ClCompile Include="External\imgui\include\imgui_draw.cpp" />
@@ -152,6 +153,14 @@
     <ClInclude Include="Content\ContentManagement.h" />
     <ClInclude Include="Content\ShaderCompilation.h" />
     <ClInclude Include="Core\EngineModules.h" />
+    <ClInclude Include="ECS\Component.h" />
+    <ClInclude Include="ECS\ECSCommon.h" />
+    <ClInclude Include="ECS\Entity.h" />
+    <ClInclude Include="ECS\EntityManager.h" />
+    <ClInclude Include="ECS\Scene.h" />
+    <ClInclude Include="ECS\System.h" />
+    <ClInclude Include="ECS\Transform.h" />
+    <ClInclude Include="Editor\EditorInterface.h" />
     <ClInclude Include="External\imgui\include\imconfig.h" />
     <ClInclude Include="External\imgui\include\imgui.h" />
     <ClInclude Include="External\imgui\include\imgui_impl_dx12.h" />
@@ -205,6 +214,9 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="External\imgui\misc\imgui.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ECS\implementationnotes.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

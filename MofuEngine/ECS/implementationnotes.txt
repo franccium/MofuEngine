@@ -1,0 +1,30 @@
+ECS design:
+
+Scene:
+EntityManager:
+
+
+Entities - identifiers, entity_id
+created in pools, long with all components that will be needed (components can have enity_id in their init data)
+
+Components - data
+can be added and removed at runtime
+
+Systems - logic, update function
+transform data
+can add and remove at runtime
+can enable and disable
+
+Cet - (CSet) a set of components
+a game object is an archetype
+
+Transform Component - position, rotation, scale
+possibly maintain a dirty list as a subrange
+but this requires rethinking transform/entity ties
+I actually need:
+LocalTransform - for the object, would let me resolve transform hierarchies - somehow store parent entity id, probably UINT_MAX for root
+WorldTransform - for rendering
+
+
+Scripting:
+systems iterate over Cets

@@ -3,6 +3,7 @@
 #include "D3D12Surface.h"
 #include "imgui_impl_dx12.h"
 #include "Utilities/Logger.h"
+#include "Editor/EditorInterface.h"
 
 namespace mofu::graphics::d3d12::gui {
 namespace {
@@ -81,7 +82,9 @@ Initialize(DXGraphicsCommandList* cmdList, ID3D12CommandQueue* queue)
             return heap->FreeDescriptor(handle);
         };
 
-    return ImGui_ImplDX12_Init(&initInfo);
+    if(!ImGui_ImplDX12_Init(&initInfo)) return false;
+
+    if (!editor::InitializeEditorGUI()) return false;
 }
 
 void 
@@ -95,6 +98,7 @@ RenderGUI(DXGraphicsCommandList* cmdList)
 {
     RenderConfigWindow();
     RenderLoggerWindow();
+	editor::RenderEditorGUI();
 }
 
 
