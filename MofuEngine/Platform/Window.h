@@ -17,7 +17,7 @@ public:
 	void* Handle() const;
 	void SetCaption(const wchar_t* caption) const;
 	void Resize(u32 width, u32 height) const;
-	math::u32v4 Size() const;
+	u32v4 Size() const;
 	u32 Width() const;
 	u32 Height() const;
 	bool IsClosed() const;

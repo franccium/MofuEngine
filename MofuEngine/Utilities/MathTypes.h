@@ -14,6 +14,9 @@ constexpr float INV_PI = 1.f / PI;
 constexpr float INV_TAU = 1.f / TAU;
 constexpr float EPSILON = 1e-5f;
 
+}
+
+namespace mofu {
 #ifdef _WIN64
 using v2 = DirectX::XMFLOAT2;
 using v2a = DirectX::XMFLOAT2A;

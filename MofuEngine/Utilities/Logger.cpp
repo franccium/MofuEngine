@@ -127,6 +127,7 @@ Draw(const char* title, bool* p_open)
                 if (Filter.PassFilter(line_start, line_end))
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, LOG_LEVEL_COLORS[level]);
+                    //ImGui::TextWrapped(line_start, line_end);
                     ImGui::TextUnformatted(line_start, line_end);
                     ImGui::PopStyleColor();
                 }
@@ -144,6 +145,7 @@ Draw(const char* title, bool* p_open)
                     const char* line_end = (line_no + 1 < LineOffsets.Size) ? (buf + LineOffsets[line_no + 1] - 1) : buf_end;
                     int level{ LogLevels[line_no] };
                     ImGui::PushStyleColor(ImGuiCol_Text, LOG_LEVEL_COLORS[level]);
+                    //ImGui::TextWrapped(line_start, line_end);
                     ImGui::TextUnformatted(line_start, line_end);
                     ImGui::PopStyleColor();
                 }

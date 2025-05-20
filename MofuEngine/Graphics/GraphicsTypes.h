@@ -2,13 +2,13 @@
 #include "Graphics/D3D12/D3D12CommonHeaders.h"
 
 namespace mofu::graphics::d3d12::hlsl {
-using float4x4 = math::m4x4a;
-using float4 = math::v4;
-using float3 = math::v3;
-using float2 = math::v2;
-using uint4 = math::u32v4;
-using uint3 = math::u32v3;
-using uint2 = math::u32v2;
+using float4x4 = m4x4a;
+using float4 = v4;
+using float3 = v3;
+using float2 = v2;
+using uint4 = u32v4;
+using uint3 = u32v3;
+using uint2 = u32v2;
 using uint = u32;
 #include "D3D12/Shaders/CommonTypes.hlsli"
 }

@@ -9,11 +9,11 @@ struct TestSystem : public ecs::system::System
 {
 	void Begin()
 	{
-		log::LogInfo("TestSystem::Begin");
+		log::Info("TestSystem::Begin");
 	}
 
 	void Update(f32 dt)
 	{
-		log::LogInfo("TestSystem::Update");
+		log::Info("TestSystem::Update");
 	}
 };

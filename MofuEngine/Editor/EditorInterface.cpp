@@ -1,5 +1,6 @@
 #include "EditorInterface.h"
 #include "imgui.h"
+#include "AssetBrowser.h"
 
 namespace mofu::editor {
 namespace {
@@ -92,9 +93,9 @@ static ExampleTreeNode* ExampleTree_CreateDemoTree()
     return node_L0;
 }
 
-struct SceneView
+struct SceneHierarchy
 {
-    ImGuiTextFilter     Filter;
+    ImGuiTextFilter Filter;
     ExampleTreeNode* VisibleNode = NULL;
 
     void Draw(ExampleTreeNode* root_node)
@@ -103,6 +104,7 @@ struct SceneView
         // - Currently using a table to benefit from RowBg feature
         if (ImGui::BeginChild("##tree", ImVec2(300, 0), ImGuiChildFlags_ResizeX | ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened))
         {
+            // draw the filter field
             ImGui::SetNextItemWidth(-FLT_MIN);
             ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_F, ImGuiInputFlags_Tooltip);
             ImGui::PushItemFlag(ImGuiItemFlags_NoNavDefaultFocus, true);
@@ -218,16 +220,15 @@ struct SceneView
     }
 };
 
-SceneView sceneView;
+SceneHierarchy sceneHierarchy;
 ExampleTreeNode* sceneTree;
 
 void
 RenderSceneView()
 {
-    ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Example: Property editor");
+    ImGui::Begin("Scene hierarchy");
 
-    sceneView.Draw(sceneTree);
+    sceneHierarchy.Draw(sceneTree);
 
     ImGui::End();
 }
@@ -245,13 +246,14 @@ InitializeSceneEditorView()
 bool
 InitializeEditorGUI()
 {
-    return InitializeSceneEditorView();
+    return InitializeSceneEditorView() && InitializeAssetBrowserGUI();
 }
 
 void 
 RenderEditorGUI()
 {
     RenderSceneView();
+	RenderAssetBrowserGUI();
 }
 
 }

@@ -24,17 +24,13 @@ struct WorldTransform
 // exposed to various systems as read-only or read-write
 struct LocalTransform
 {
-	math::v3 position{ 0.0f, 0.0f, 0.0f };
-	math::v3 rotation{ 0.0f, 0.0f, 0.0f };
-	math::v3 scale{ 1.0f, 1.0f, 1.0f };
-	math::v3 forward{ 0.0f, 0.0f, 1.0f };
+	v3 position{ 0.0f, 0.0f, 0.0f };
+	v3 rotation{ 0.0f, 0.0f, 0.0f };
+	v3 scale{ 1.0f, 1.0f, 1.0f };
+	v3 forward{ 0.0f, 0.0f, 1.0f };
 };
 
-struct TestComponent
-{
-	math::v4 data{};
-	u32 data2{};
-};
+
 
 struct TransformBlock
 {
@@ -43,7 +39,6 @@ struct TransformBlock
 
 	void ReserveSpace(u32 entityCount)
 	{
-		localTransforms.reserve(entityCount);
 	}
 };
 }

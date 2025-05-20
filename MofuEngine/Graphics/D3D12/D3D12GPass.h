@@ -30,8 +30,8 @@ void Shutdown();
 [[nodiscard]] const D3D12DepthBuffer& DepthBuffer();
 
 // needs to be called every frame to check whether the buffers should be resized in case of resizing the biggest window
-bool CreateBuffers(math::u32v2 size);
-void SetBufferSize(math::u32v2 size);
+bool CreateBuffers(u32v2 size);
+void SetBufferSize(u32v2 size);
 
 void DoDepthPrepass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info);
 void Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info);

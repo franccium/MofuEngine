@@ -43,7 +43,7 @@ Window::Resize(u32 width, u32 height) const
     return ResizeWindow(_id, width, height);
 }
 
-math::u32v4 
+u32v4 
 Window::Size() const
 {
     assert(IsValid());
@@ -54,7 +54,7 @@ u32
 Window::Width() const
 {
     assert(IsValid());
-    math::u32v4 size{ Size() };
+    u32v4 size{ Size() };
     return size.z - size.x;
 }
 
@@ -62,7 +62,7 @@ u32
 Window::Height() const
 {
     assert(IsValid());
-    math::u32v4 size{ Size() };
+    u32v4 size{ Size() };
     return size.w - size.y;
 }
 

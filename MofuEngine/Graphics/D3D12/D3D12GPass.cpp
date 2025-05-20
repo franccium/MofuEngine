@@ -4,11 +4,11 @@
 namespace mofu::graphics::d3d12::gpass {
 namespace {
 
-constexpr math::u32v2 INITIAL_DIMENSIONS{ 100, 100 };
+constexpr u32v2 INITIAL_DIMENSIONS{ 100, 100 };
 
 D3D12RenderTexture gpassMainBuffer{};
 D3D12DepthBuffer gpassDepthBuffer{};
-math::u32v2 dimensions{};
+u32v2 dimensions{};
 
 ID3D12RootSignature* gpassRootSig{ nullptr };
 ID3D12PipelineState* gpassPSO{ nullptr };
@@ -70,7 +70,7 @@ Shutdown()
 }
 
 bool 
-CreateBuffers(math::u32v2 size)
+CreateBuffers(u32v2 size)
 {
 	assert(size.x && size.y);
 
@@ -120,9 +120,9 @@ CreateBuffers(math::u32v2 size)
 }
 
 void 
-SetBufferSize(math::u32v2 size)
+SetBufferSize(u32v2 size)
 {
-	math::u32v2& d{ dimensions };
+	u32v2& d{ dimensions };
 	if (size.x > d.x || size.y > d.y)
 	{
 		d = { std::max(size.x, d.x), std::max(size.y, d.y) };

@@ -3,6 +3,31 @@
 
 namespace mofu::math {
 
+template<typename T>
+[[nodiscard]] constexpr T
+Clamp(T val, T min, T max)
+{
+	assert(min <= max);
+	return (val < min) ? min : (val > max) ? max : val;
+}
+
+[[nodiscard]] inline float
+Clamp(float val, float min, float max)
+{
+	__m128 v = _mm_set_ss(val);
+	__m128 minV = _mm_set_ss(min);
+	__m128 maxV = _mm_set_ss(max);
+	v = _mm_max_ss(minV, v);
+	v = _mm_min_ss(maxV, v);
+	return _mm_cvtss_f32(v);
+}
+
+[[nodiscard]] inline float
+Saturate(float val)
+{
+	return Clamp(val, 0.0f, 1.0f);
+}
+
 template<u64 alignment>
 [[nodiscard]] constexpr u64
 AlignUp(u64 size)

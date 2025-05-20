@@ -147,7 +147,7 @@ IsWindowFullscreen(window_id id)
     return GetFromID(id).isFullscreen;
 }
 
-math::u32v4
+u32v4
 GetWindowSize(window_id id)
 {
     WindowInfo& info{ GetFromID(id) };
