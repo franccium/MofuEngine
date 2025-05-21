@@ -114,7 +114,7 @@ FillTestData()
 
 			u32 idx{ i + j * TEST_ENTITY_COUNT };
 			entityData[idx].block = &blocks[j];
-			entityData[idx].id = newEntity.id;
+			entityData[idx].id = newEntity.ID;
 		}
 	}
 }

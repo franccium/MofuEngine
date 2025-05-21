@@ -1,17 +1,39 @@
 #include "ResourceCreation.h"
 #include <array>
+#include "Graphics/Renderer.h"
 
 namespace mofu::content {
 namespace {
+util::FreeList<u8*> geometryHierarchies{};
+std::mutex geometryMutex{};
+// indicates than an element in geometryHierarchies is a single mesh (a gpuID, not a ptr)
+constexpr u8 SINGLE_MESH_MARKER{ (uintptr_t)0x1 };
 
 id_t
-CreateMeshResource(const void* const blob)
+CreateSingleMesh(const void* const blob)
 {
-	return id::INVALID_ID;
+	util::BlobStreamReader reader{ (const u8*)blob };
+	// skip LODCount, LODThreshold, SubmeshCount and SizeOfSubmeshes
+	reader.Skip(sizeof(u32) + sizeof(u32) + sizeof(u32) + sizeof(u32));
+	const u8* submeshData{ reader.Position() };
+	const id_t gpuID{ graphics::AddSubmesh(submeshData) };
+
+	// create a fake pointer with 16-byte alignment and mark it as a single mesh gpuID
+	constexpr u8 bitShift{ (sizeof(uintptr_t) - sizeof(id_t)) << 3 };
+	u8* const singleGpuID{ (u8* const)((((uintptr_t)gpuID) << bitShift) | SINGLE_MESH_MARKER) };
+
+	std::lock_guard lock{ geometryMutex };
+	return geometryHierarchies.add(singleGpuID);
+}
+
+id_t
+CreateGeometryResource(const void* const blob)
+{
+	return CreateSingleMesh(blob);
 }
 
 void
-DestroyMeshResource(id_t id)
+DestroyGeometryResource(id_t id)
 {
 
 }
@@ -99,7 +121,7 @@ DestroySkeletonResource([[maybe_unused]] id_t id)
 using ResourceCreator = id_t(*)(const void* const blob);
 constexpr std::array<ResourceCreator, AssetType::Count> resourceCreators{
 	CreateUnknown,
-	CreateMeshResource,
+	CreateGeometryResource,
 	CreateTextureResource,
 	CreateAnimationResource,
 	CreateAudioResource,
@@ -110,7 +132,7 @@ static_assert(resourceCreators.size() == AssetType::Count, "Resource creator arr
 using ResourceDestructor = void(*)(id_t id);
 constexpr std::array<ResourceDestructor, AssetType::Count> resourceDestructors{
 	DestroyUnknown,
-	DestroyMeshResource,
+	DestroyGeometryResource,
 	DestroyTextureResource,
 	DestroyAnimationResource,
 	DestroyAudioResource,
@@ -122,7 +144,7 @@ static_assert(resourceDestructors.size() == AssetType::Count, "Resource destruct
 } // anonymous namespace
 
 id_t
-CreateResourceFromBlob(const char* const blob, AssetType::type resourceType)
+CreateResourceFromBlob(const void* const blob, AssetType::type resourceType)
 {
 	assert(blob);
 	return resourceCreators[resourceType](blob);

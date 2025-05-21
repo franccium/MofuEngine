@@ -1,6 +1,7 @@
 #pragma once
 #include "CommonHeaders.h"
 #include "Platform/Window.h"
+#include "EngineAPI/Camera.h"
 
 // A high level renderer with function pointers to the set platform's implementation
 namespace mofu::graphics {
@@ -32,6 +33,78 @@ struct RenderSurface
 {
     platform::Window window{};
     Surface surface;
+};
+
+struct CameraProperty
+{
+	enum Property : u32
+	{
+		UpVector,
+		FieldOfView,
+		AspectRatio,
+		ViewWidth,
+		ViewHeight,
+		NearZ,
+		FarZ,
+		View,
+		Projection,
+		InverseProjection,
+		ViewProjection,
+		InverseViewProjection,
+		ProjectionType,
+		EntityId,
+
+		Count
+	};
+};
+
+struct CameraInitInfo
+{
+	id_t EntityID{ id::INVALID_ID };
+	Camera::Type Type;
+	v3 Up;
+	union
+	{
+		f32 FieldOfView;
+		f32 ViewWidth;
+	};
+	union
+	{
+		f32 AspectRatio;
+		f32 ViewHeight;
+	};
+	f32 NearZ;
+	f32 FarZ;
+};
+
+struct PerspectiveCameraInitInfo : public CameraInitInfo
+{
+	explicit PerspectiveCameraInitInfo(id_t id)
+	{
+		assert(id::IsValid(id));
+		EntityID = id;
+		Type = Camera::Type::Perspective;
+		Up = v3{ 0.f, 1.f, 0.f };	
+		FieldOfView = 0.25f;	
+		AspectRatio = 16.f / 9.f;
+		NearZ = 0.1f;
+		FarZ = 100.f;
+	}
+};
+
+struct OrthographicCameraInitInfo : public CameraInitInfo
+{
+	explicit OrthographicCameraInitInfo(id_t id)
+	{
+		assert(id::IsValid(id));
+		EntityID = id;
+		Type = Camera::Type::Orthographic;
+		Up = v3{ 0.f, 1.f, 0.f };
+		ViewWidth = 1920;
+		ViewHeight = 1080;
+		NearZ = 0.1f;
+		FarZ = 100.f;
+	}
 };
 
 struct ShaderFlags
@@ -72,13 +145,70 @@ enum class GraphicsPlatform : u32
 	Direct3D12 = 0,
 };
 
+struct PrimitiveTopology
+{
+	enum type : u32
+	{
+		PointList = 0,
+		LineList,
+		LineStrip,
+		TriangleList,
+		TriangleStrip,
+
+		Count
+	};
+};
+
+struct MaterialType
+{
+	enum type : u32
+	{
+		Opaque,
+
+		Count
+	};
+};
+
+struct MaterialSurface
+{
+	v4 BaseColor{ v4one };
+	v3 Emissive{ v3zero };
+	f32 EmissiveIntensity{ 1.f };
+	f32 AmbientOcclusion{ 1.f };
+	f32 Metallic{ 0.f };
+	f32 Roughness{ 1.f };
+};
+
+struct MaterialInitInfo
+{
+	id_t* TextureIDs;
+	MaterialSurface Surface; // TODO: wastes a lot of bytes, even though most models would use textures anyways
+	MaterialType::type Type;
+	u32 TextureCount; // NOTE: textures are optional, texture_count may be 0, and texture_ids null
+	id_t ShaderIDs[ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
+};
+
 bool Initialize(GraphicsPlatform platform);
 void Shutdown();
 
 Surface CreateSurface(platform::Window window);
 void RemoveSurface(surface_id id);
 
+Camera CreateCamera(CameraInitInfo info);
+void RemoveCamera(camera_id id);
+
 const char* GetEngineShadersPath();
 const char* GetEngineShadersPath(GraphicsPlatform platform);
 
+id_t AddSubmesh(const u8*& data);
+void RemoveSubmesh(id_t id);
+
+id_t AddTexture(const u8* const data);
+void RemoveTexture(id_t id);
+
+id_t AddMaterial(MaterialInitInfo info);
+void RemoveMaterial(id_t id);
+
+id_t AddRenderItem(id_t entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
+void RemoveRenderItem(id_t id);
 }

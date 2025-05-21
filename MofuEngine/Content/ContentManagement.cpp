@@ -93,7 +93,6 @@ ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& s
 	dataOut = std::make_unique<u8[]>(sizeOut);
     file.read(reinterpret_cast<char*>(dataOut.get()), sizeOut);
 
-
 	file.close();
 }
 

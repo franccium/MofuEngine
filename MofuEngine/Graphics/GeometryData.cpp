@@ -3,6 +3,18 @@
 
 namespace mofu::content {
 namespace {
+void
+SplitMeshesByMaterial(MeshGroup& group)
+{
+
+}
+
+//TODO: calculate normals, process uvs and tangents, pack vertices
+void
+ProcessVertices(Mesh& m, const GeometryImportSettings& settings)
+{
+
+}
 
 } // anonymous namespace
 
@@ -61,7 +73,12 @@ GetMeshGroupSize(const MeshGroup& group)
 * [u8] vertex positions
 * [u8] vertex elements
 * [u8] indices
-*/
+*/// NOTE: expects data to contain:
+// u32 element_size, u32 vertex_count
+// u32 index_count, u32 elements_type, u32 primitive_topology
+// u8 positions[sizeof(v3) * vertex_count], // sizeof(positions) should be a multiple of 4 bytes
+// u8 elements[element_size * vertex_count], // sizeof(elements) should be a multiple of 4 bytes
+// u8 indices[index_size * index_count]
 void 
 PackMeshData(const Mesh& m, util::BlobStreamWriter& blob)
 {
@@ -96,6 +113,20 @@ PackMeshData(const Mesh& m, util::BlobStreamWriter& blob)
 		data = (const u8*)indices.data();
 	}
 	blob.WriteBytes(data, indexBufferSize);
+}
+
+void
+ProcessMeshGroupData(MeshGroup& group, const GeometryImportSettings& settings)
+{
+	SplitMeshesByMaterial(group);
+
+	for (auto& lod : group.LodGroups)
+	{
+		for (auto& m : lod.Meshes)
+		{
+			ProcessVertices(m, settings);
+		}
+	}
 }
 
 /*

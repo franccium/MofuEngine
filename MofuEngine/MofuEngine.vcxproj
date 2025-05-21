@@ -120,8 +120,13 @@
     <ClCompile Include="External\imgui\include\imgui_tables.cpp" />
     <ClCompile Include="External\imgui\include\imgui_widgets.cpp" />
     <ClCompile Include="External\ufbx\ufbx.c" />
+    <ClCompile Include="Graphics\D3D12\Content\D3D12Material.cpp" />
+    <ClCompile Include="Graphics\D3D12\Content\D3D12Texture.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Camera.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Content.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Core.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12DescriptorHeap.cpp" />
+    <ClCompile Include="Graphics\D3D12\Content\D3D12Geometry.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12GPass.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12GUI.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Helpers.cpp" />
@@ -172,6 +177,7 @@
     <ClInclude Include="ECS\Transform.h" />
     <ClInclude Include="Editor\AssetBrowser.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
+    <ClInclude Include="EngineAPI\Camera.h" />
     <ClInclude Include="External\imgui\include\imconfig.h" />
     <ClInclude Include="External\imgui\include\imgui.h" />
     <ClInclude Include="External\imgui\include\imgui_impl_dx12.h" />
@@ -181,9 +187,14 @@
     <ClInclude Include="External\imgui\include\imstb_textedit.h" />
     <ClInclude Include="External\imgui\include\imstb_truetype.h" />
     <ClInclude Include="External\ufbx\ufbx.h" />
+    <ClInclude Include="Graphics\D3D12\Content\D3D12Material.h" />
+    <ClInclude Include="Graphics\D3D12\Content\D3D12Texture.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Camera.h" />
     <ClInclude Include="Graphics\D3D12\D3D12CommonHeaders.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Content.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Core.h" />
     <ClInclude Include="Graphics\D3D12\D3D12DescriptorHeap.h" />
+    <ClInclude Include="Graphics\D3D12\Content\D3D12Geometry.h" />
     <ClInclude Include="Graphics\D3D12\D3D12GPass.h" />
     <ClInclude Include="Graphics\D3D12\D3D12GUI.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Helpers.h" />

@@ -30,7 +30,7 @@ constexpr const char* ANIMATION_SERIALIZED_ASSET_VERSION{ "1.0" };
 constexpr const char* AUDIO_SERIALIZED_ASSET_VERSION{ "1.0" };
 constexpr const char* MATERIAL_SERIALIZED_ASSET_VERSION{ "1.0" };
 constexpr const char* SKELETON_SERIALIZED_ASSET_VERSION{ "1.0" };
-constexpr u32 SERIALIZED_ASSET_VERSION_LENGTH = std::char_traits<char>::length(GEOMETRY_SERIALIZED_ASSET_VERSION);
+constexpr u32 SERIALIZED_ASSET_VERSION_LENGTH{ (u32)std::char_traits<char>::length(GEOMETRY_SERIALIZED_ASSET_VERSION) };
 
 constexpr const char* ASSET_SERIALIZED_FILE_VERSIONS[AssetType::Count]
 {

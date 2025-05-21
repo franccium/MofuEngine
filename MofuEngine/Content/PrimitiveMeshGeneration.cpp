@@ -123,6 +123,7 @@ GeneratePrimitiveMesh(PrimitiveMeshInfo info, MeshGroupData& outData)
 	MeshGroup meshGroup{};
 	meshCreators[info.type](&meshGroup, info);
 
+	ProcessMeshGroupData(meshGroup, outData.ImportSettings);
 	PackGeometryData(meshGroup, outData);
 }
 

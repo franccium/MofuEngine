@@ -7,12 +7,22 @@
 #include "External/imgui/include/imgui_impl_win32.h"
 #include "External/imgui/include/imgui_impl_dx12.h"
 #include "Core/EngineModules.h"
+#include "ECS/Entity.h"
+#include "Graphics/Renderer.h"
+#include "EngineAPI/Camera.h"
+#include "Content/ResourceCreation.h"
 
 constexpr u32 WINDOW_COUNT{ 1 };
 
 using namespace mofu;
 
-graphics::RenderSurface renderSurfaces[WINDOW_COUNT];
+struct CameraSurface
+{
+	graphics::RenderSurface surface{};
+	ecs::Entity entity{};
+	graphics::Camera camera{};
+};
+CameraSurface renderSurfaces[WINDOW_COUNT]{};
 
 bool isRunning{ true };
 bool isRestarting{ false };
@@ -20,6 +30,8 @@ bool isResized{ false };
 
 bool MofuInitialize();
 void MofuShutdown();
+void InitializeRenderingTest();
+void ShutdownRenderingTest();
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
@@ -37,7 +49,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		bool allWindowsClosed{ true };
 		for (u32 i = 0; i < WINDOW_COUNT; ++i)
 		{
-			graphics::RenderSurface& surface{ renderSurfaces[i] };
+			graphics::RenderSurface& surface{ renderSurfaces[i].surface };
 			if (!surface.window.IsValid()) continue;
 			if (surface.window.IsClosed())
 			{
@@ -85,7 +97,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		platform::Window win{ platform::window_id{ (id_t)GetWindowLongPtr(hwnd, GWLP_USERDATA)} };
 		for (u32 i{ 0 }; i < _countof(renderSurfaces); ++i)
 		{
-			if (win.GetID() == renderSurfaces[i].window.GetID())
+			if (win.GetID() == renderSurfaces[i].surface.window.GetID())
 			{
 				if (toggleFullscreen)
 				{
@@ -94,7 +106,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				}
 				else
 				{
-					renderSurfaces[i].surface.Resize(win.Width(), win.Height());
+					renderSurfaces[i].surface.surface.Resize(win.Width(), win.Height());
 					isResized = false;
 				}
 				break;
@@ -133,11 +145,17 @@ bool MofuInitialize()
 
 	for (u32 i = 0; i < WINDOW_COUNT; ++i)
 	{
-		renderSurfaces[i].window = platform::ConcoctWindow(&info[i]);
-		renderSurfaces[i].surface = graphics::CreateSurface(renderSurfaces[i].window);
+		CameraSurface& cSurf{ renderSurfaces[i] };
+		cSurf.surface.window = platform::ConcoctWindow(&info[i]);
+		cSurf.surface.surface = graphics::CreateSurface(cSurf.surface.window);
+		cSurf.entity = ecs::Entity{};
+		cSurf.camera = graphics::CreateCamera(graphics::PerspectiveCameraInitInfo{ cSurf.entity.ID });
+		cSurf.camera.AspectRatio((f32)cSurf.surface.window.Width() / cSurf.surface.window.Height());
 	}
 
-	ImGui_ImplWin32_Init(renderSurfaces[0].window.Handle());
+	ImGui_ImplWin32_Init(renderSurfaces[0].surface.window.Handle());
+
+	InitializeRenderingTest();
 
 	return true;
 }
@@ -155,9 +173,9 @@ void MofuUpdate()
 
 	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)
 	{
-		if (renderSurfaces[i].surface.IsValid())
+		if (renderSurfaces[i].surface.surface.IsValid())
 		{
-			renderSurfaces[i].surface.Render(frameInfo);
+			renderSurfaces[i].surface.surface.Render(frameInfo);
 		}
 	}
 }
@@ -170,11 +188,14 @@ void MofuShutdown()
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
+	ShutdownRenderingTest();
+
 	for (u32 i = 0; i < WINDOW_COUNT; ++i)
 	{
-		graphics::RenderSurface& surface{ renderSurfaces[i] };
-		if (surface.surface.IsValid()) graphics::RemoveSurface(surface.surface.GetID());
-		if (surface.window.IsValid()) platform::RemoveWindow(surface.window.GetID());
+		CameraSurface& cSurf{ renderSurfaces[i] };
+		if (cSurf.surface.surface.IsValid()) graphics::RemoveSurface(cSurf.surface.surface.GetID());
+		if (cSurf.surface.window.IsValid()) platform::RemoveWindow(cSurf.surface.window.GetID());
+		if (cSurf.camera.IsValid()) graphics::RemoveCamera(cSurf.camera.GetID());
 	}
 	graphics::Shutdown();
 	isRunning = false;

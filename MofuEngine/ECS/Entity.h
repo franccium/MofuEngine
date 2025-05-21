@@ -10,6 +10,6 @@ namespace mofu::ecs
 DEFINE_TYPED_ID(entity_id)
 struct Entity
 {
-	entity_id id;
+	entity_id ID;
 };
 }
