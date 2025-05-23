@@ -1,13 +1,17 @@
 #include "D3D12Core.h"
+#include "Graphics/GraphicsTypes.h"
 #include "D3D12Surface.h"
 #include "D3D12DescriptorHeap.h"
 #include "D3D12Shaders.h"
 #include "D3D12GPass.h"
 #include "D3D12PostProcess.h"
 #include "D3D12GUI.h"
+#include "D3D12Upload.h"
+#include "D3D12Camera.h"
 
 #define ENABLE_GPU_BASED_VALIDATION 0
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
+#define RENDER_2D_TEST 0
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
@@ -184,7 +188,7 @@ d3dx::D3D12ResourceBarrierList resourceBarriers{};
 bool 
 InitializeModules()
 {
-    return shaders::Initialize() && gpass::Initialize() && fx::Initialize();
+    return upload::Initialize() && shaders::Initialize() && gpass::Initialize() && fx::Initialize();
 }
 
 bool 
@@ -252,6 +256,43 @@ ProcessDeferredReleases(u32 frameId)
         }
         resourcesToFree.clear();
     }
+}
+
+D3D12FrameInfo  
+GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Surface& surface, u32 frameIndex, f32 deltaTime)
+{
+    camera::D3D12Camera& camera{ camera::GetCamera(info.CameraID) };
+    camera.Update();
+    
+    // fill out the global shader data
+    using namespace DirectX;
+    hlsl::GlobalShaderData data{};
+    XMStoreFloat4x4A(&data.View, camera.View());
+	XMStoreFloat4x4A(&data.Projection, camera.Projection());
+	XMStoreFloat4x4A(&data.InvProjection, camera.InverseProjection());
+	XMStoreFloat4x4A(&data.ViewProjection, camera.ViewProjection());    
+	XMStoreFloat4x4A(&data.InvViewProjection, camera.InverseViewProjection());    
+    XMStoreFloat3(&data.CameraPosition, camera.Position());
+	XMStoreFloat3(&data.CameraDirection, camera.Direction());
+    data.ViewWidth = surface.Viewport()->Width;
+    data.ViewHeight = surface.Viewport()->Height;
+    data.DeltaTime = deltaTime;
+    
+    hlsl::GlobalShaderData* const shaderData{ cbuffer.AllocateSpace<hlsl::GlobalShaderData>() };
+    memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
+
+    D3D12FrameInfo frameInfo
+    {
+        &info,
+        &camera,
+        cbuffer.GpuAddress(shaderData),
+        surface.Width(),
+        surface.Height(),
+        frameIndex,
+        deltaTime
+    };
+
+    return frameInfo;
 }
 
 } // anonymous namespace
@@ -417,7 +458,6 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 {
     gfxCommand.BeginFrame();
 
-
     DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList() };
 
     const u32 frameIndex{ CurrentFrameIndex() };
@@ -433,17 +473,10 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     const D3D12Surface& surface{ surfaces[id] };
     DXResource* const currentBackBuffer{ surface.BackBuffer() };
 
-    D3D12FrameInfo d3d12FrameInfo
-    {
-        &frameInfo,
-        0,
-        surface.Width(),
-        surface.Height(),
-        0,
-        16.7f
-    };
+    f32 deltaTime{ 16.7f };
+    const D3D12FrameInfo d3d12FrameInfo{ GetD3D12FrameInfo(frameInfo, cbuffer, surface, frameIndex, deltaTime) };
 
-    gpass::SetBufferSize({ d3d12FrameInfo.surfaceWidth, d3d12FrameInfo.surfaceHeight });
+    gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
     d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
 
     ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
@@ -475,79 +508,18 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
 
     gui::RenderGUI(cmdList);
+#if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
     //TODO: make it work with post processing
     gui::RenderTextureIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
 #else
+    // TODO:
+#endif // RENDER_SCENE_ONTO_GUI_IMAGE
+#else
+    // render 3d scene
+#endif // RENDER_2D_TEST
 
-#endif
     gui::EndGUIFrame(cmdList);
-
-    d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-
-    gfxCommand.EndFrame(surface);
-}
-
-void
-RenderSurfaceNoGUI(surface_id id, FrameInfo frameInfo)
-{
-    gfxCommand.BeginFrame();
-
-
-    DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList() };
-
-    const u32 frameIndex{ CurrentFrameIndex() };
-
-    ConstantBuffer& cbuffer{ constantBuffers[frameIndex] };
-    cbuffer.Clear();
-
-    if (deferredReleasesFlag[frameIndex])
-    {
-        ProcessDeferredReleases(frameIndex);
-    }
-
-    const D3D12Surface& surface{ surfaces[id] };
-    DXResource* const currentBackBuffer{ surface.BackBuffer() };
-
-    D3D12FrameInfo d3d12FrameInfo
-    {
-        &frameInfo,
-        0,
-        surface.Width(),
-        surface.Height(),
-        0,
-        16.7f
-    };
-
-    gpass::SetBufferSize({ d3d12FrameInfo.surfaceWidth, d3d12FrameInfo.surfaceHeight });
-    d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
-
-    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
-    cmdList->SetDescriptorHeaps(1, &heaps[0]);
-
-    cmdList->RSSetViewports(1, surface.Viewport());
-    cmdList->RSSetScissorRects(1, surface.ScissorRect());
-
-
-    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
-    // Depth Prepass
-    gpass::AddTransitionsForDepthPrepass(barriers);
-    barriers.ApplyBarriers(cmdList);
-    gpass::SetRenderTargetsForDepthPrepass(cmdList);
-    gpass::DoDepthPrepass(cmdList, d3d12FrameInfo);
-
-    // Main GPass
-    gpass::AddTransitionsForGPass(barriers);
-    barriers.ApplyBarriers(cmdList);
-    gpass::SetRenderTargetsForGPass(cmdList);
-    gpass::Render(cmdList, d3d12FrameInfo);
-
-    // Post Processing
-    gpass::AddTransitionsForPostProcess(barriers);
-    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
-    barriers.ApplyBarriers(cmdList);
-
-    fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
 
     d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 

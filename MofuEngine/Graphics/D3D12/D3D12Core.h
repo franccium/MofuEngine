@@ -7,12 +7,13 @@ class ConstantBuffer;
 
 struct D3D12FrameInfo
 {
-	const FrameInfo* info{ nullptr };
-	D3D12_GPU_VIRTUAL_ADDRESS globalShaderData{ 0 }; // a pointer to a constant buffer that contains the view and projection matrices, etc.
-	u32 surfaceWidth{ 0 };
-	u32 surfaceHeight{ 0 };
-	u32 frameIndex{ 0 };
-	f32 deltaTime{ 16.7f };
+	const FrameInfo* Info{ nullptr };
+	camera::D3D12Camera* Camera{ nullptr };
+	D3D12_GPU_VIRTUAL_ADDRESS GlobalShaderData{ 0 }; // a pointer to a constant buffer that contains the view and projection matrices, etc.
+	u32 SurfaceWidth{ 0 };
+	u32 SurfaceHeight{ 0 };
+	u32 FrameIndex{ 0 };
+	f32 DeltaTime{ 16.7f };
 };
 
 }

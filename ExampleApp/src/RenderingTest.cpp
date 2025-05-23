@@ -19,7 +19,8 @@ struct MeshTest
 id_t vsID{ id::INVALID_ID };
 id_t psID{ id::INVALID_ID };
 
-constexpr const char* TEST_MESH_PATH{ "Assets/Generated/plane.geom" };
+constexpr const char* TEST_MESH_ASSET_PATH{ "Assets/Generated/plane.geom" };
+constexpr const char* TEST_MESH_PATH{ "Assets/Generated/planeModel.model" };
 
 [[nodiscard]] id_t 
 LoadAsset(const char* path, content::AssetType::type type)
@@ -27,7 +28,7 @@ LoadAsset(const char* path, content::AssetType::type type)
 	std::unique_ptr<u8[]> buffer;
 	u64 size{ 0 };
 	assert(path && std::filesystem::exists(path));
-	content::ReadAssetFile(std::filesystem::path(path), buffer, size, type);	
+	content::ReadAssetFileNoVersion(std::filesystem::path(path), buffer, size, type);	
 	assert(buffer.get());
 
 	id_t assetID{ content::CreateResourceFromBlob(buffer.get(), type) };

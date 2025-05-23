@@ -85,6 +85,18 @@ public:
 		_position += offset;
 	}
 
+	constexpr void JumpTo(u8* position)
+	{
+		assert(position >= _buffer && position <= &_buffer[_bufferSize]);
+		_position = position;
+	}
+
+	constexpr void JumpTo(u32 offset)
+	{
+		assert(&_buffer[offset] <= &_buffer[_bufferSize]);
+		_position = (u8*)_buffer[offset];
+	}
+
 	[[nodiscard]] constexpr const u8* const BufferStart() const { return _buffer; }
 	[[nodiscard]] constexpr const u8* const BufferEnd() const { return &_buffer[_bufferSize]; }
 	[[nodiscard]] constexpr const u8* const Position() const { return _position; }

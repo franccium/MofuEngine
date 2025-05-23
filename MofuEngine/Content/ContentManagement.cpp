@@ -96,4 +96,32 @@ ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& s
 	file.close();
 }
 
+void
+ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type)
+{
+    //TODO: can assert extension here 
+    //assert(std::filesystem::path::has_extension());
+
+    if (!std::filesystem::exists(path))
+    {
+        log::Error("File does not exist: %s", path.string().c_str());
+        return;
+    }
+
+    std::ifstream file{ path, std::ios::in | std::ios::binary };
+    if (!file)
+    {
+        log::Error("Failed to open file for reading: %s", path.string().c_str());
+        return;
+    }
+
+    sizeOut = std::filesystem::file_size(path);
+    assert(sizeOut != 0);
+
+    dataOut = std::make_unique<u8[]>(sizeOut);
+    file.read(reinterpret_cast<char*>(dataOut.get()), sizeOut);
+
+    file.close();
+}
+
 }

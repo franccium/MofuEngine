@@ -62,6 +62,7 @@ private:
 bool LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size);
 
 void ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type);
+void ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type);
 
 void GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info);
 void SaveGeometry(const MeshGroupData& data, std::filesystem::path path);

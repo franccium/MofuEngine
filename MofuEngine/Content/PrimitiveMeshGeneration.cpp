@@ -30,9 +30,9 @@ GeneratePlaneMesh(PrimitiveMeshInfo info, v3 offset = { -0.5f, 0.f, -0.5f }, boo
 	u64 positionsCount{ ((u64)horizontalSegments + 1) * ((u64)verticalSegments + 1) };
 	m.Positions.resize(positionsCount);
 	Vec<v2> uvs{ positionsCount };
-	for (u32 y{ 0 }; y < verticalSegments; ++y)
+	for (u32 y{ 0 }; y <= verticalSegments; ++y)
 	{
-		for (u32 x{ 0 }; x < horizontalSegments; ++x)
+		for (u32 x{ 0 }; x <= horizontalSegments; ++x)
 		{
 			v3 position{ offset };
 			position.x += x * horizontalStep;
@@ -124,7 +124,8 @@ GeneratePrimitiveMesh(PrimitiveMeshInfo info, MeshGroupData& outData)
 	meshCreators[info.type](&meshGroup, info);
 
 	ProcessMeshGroupData(meshGroup, outData.ImportSettings);
-	PackGeometryData(meshGroup, outData);
+	//PackGeometryData(meshGroup, outData);
+	PackGeometryForEngine(meshGroup);
 }
 
 }

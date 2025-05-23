@@ -132,6 +132,12 @@
     <ClCompile Include="Graphics\D3D12\Content\D3D12Material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="External\MikkTSpace\mikktspace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -316,6 +322,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\D3D12\Content\D3D12Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="External\MikkTSpace\mikktspace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12Upload.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

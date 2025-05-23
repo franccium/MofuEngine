@@ -7,8 +7,12 @@
 namespace mofu::graphics {
 struct FrameInfo
 {
-    f32 lastFrameTime{ 16.7f };
-    f32 averageFrameTime{ 0.f };
+    f32 LastFrameTime{ 16.7f };
+    f32 AverageFrameTime{ 0.f };
+	u32 RenderItemCount{ 0 };
+	camera_id CameraID{ id::INVALID_ID };
+	f32* Thresholds{ nullptr };
+	id_t* RenderItemIDs{ nullptr };	
 };
 
 DEFINE_TYPED_ID(surface_id)

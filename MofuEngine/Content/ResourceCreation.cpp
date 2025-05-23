@@ -9,12 +9,26 @@ std::mutex geometryMutex{};
 // indicates than an element in geometryHierarchies is a single mesh (a gpuID, not a ptr)
 constexpr u8 SINGLE_MESH_MARKER{ (uintptr_t)0x1 };
 
+bool
+ReadIsSingleMesh(const void* const blob)
+{
+	util::BlobStreamReader reader{ (const u8*)blob };
+	const u32 LodCount{ reader.Read<u32>() };
+	assert(LodCount);
+	if (LodCount > 1) return false;
+
+	reader.Skip(sizeof(f32));
+	const u32 submeshCount{ reader.Read<u32>() };
+	assert(submeshCount);
+	return submeshCount == 1;
+}
+
 id_t
 CreateSingleMesh(const void* const blob)
 {
 	util::BlobStreamReader reader{ (const u8*)blob };
 	// skip LODCount, LODThreshold, SubmeshCount and SizeOfSubmeshes
-	reader.Skip(sizeof(u32) + sizeof(u32) + sizeof(u32) + sizeof(u32));
+	reader.Skip(sizeof(u32) + sizeof(f32) + sizeof(u32) + sizeof(u32));
 	const u8* submeshData{ reader.Position() };
 	const id_t gpuID{ graphics::AddSubmesh(submeshData) };
 
@@ -26,6 +40,38 @@ CreateSingleMesh(const void* const blob)
 	return geometryHierarchies.add(singleGpuID);
 }
 
+/* expects data to contain :
+* struct {
+*  u32 LODCount,
+*  struct {
+*      f32 LODThreshold
+*      u32 submesh_count
+*      u32 size_of_submeshes
+*      struct {
+*              u32 elementSize, u32 vertexCount
+*              u32 indexCount, u32 elementType, u32 primitiveTopology
+*              u8 positions[sizeof(v3) * vertexCount], sizeof(positions) should be a multiple of 4 bytes
+*              u8 elements[elementSize * vertexCount], sizeof(elements) should be a multiple of 4 bytes
+*              u8 indices[index_size * indexCount]
+*          } submeshes[submesh_count]
+*      } meshLODs[LODCount]
+*  } geometry
+* 
+* Output format:
+* for a geometry hierarchy:
+* struct {
+*      u32 LODCount,
+*      f32 thresholds[LODCount]
+*      struct {
+*          u16 offset,
+*          u16 count
+*      } LODOffsets[LODCount]
+*      id_t gpu_ids[totalSubmeshCount]
+* } geometry_hierarchy
+*
+* for single LOD and submesh geometry:
+* (gpu_id << 32) | 0x01 
+*/
 id_t
 CreateGeometryResource(const void* const blob)
 {

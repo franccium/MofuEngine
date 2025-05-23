@@ -445,11 +445,11 @@ InitializeAssetBrowserGUI()
 		log::Info("found asset: %s", name.c_str());
     }
 
-	content::GeneratePrimitiveMeshAsset(content::PrimitiveMeshInfo{ content::PrimitiveMeshType::Plane });
-	std::unique_ptr<u8[]> data;
-	u64 size;
-	content::ReadAssetFile(assetBaseDirectory / "Generated" / "plane.geom", data, size, content::AssetType::Mesh);
-	log::Info("Loaded asset size: %u", size);
+ //   content::GeneratePrimitiveMeshAsset(content::PrimitiveMeshInfo{ content::PrimitiveMeshType::Plane });
+	//std::unique_ptr<u8[]> data;
+	//u64 size;
+	//content::ReadAssetFile(assetBaseDirectory / "Generated" / "plane.geom", data, size, content::AssetType::Mesh);
+	//log::Info("Loaded asset size: %u", size);
 
     return true;
 }

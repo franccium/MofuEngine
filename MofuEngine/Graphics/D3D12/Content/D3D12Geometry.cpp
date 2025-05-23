@@ -55,6 +55,7 @@ GetViews(const id_t* const gpuIds, u32 idCount, const SubmeshViewsCache& cache)
 	}
 }
 
+// Creates and aligned buffer from the submesh data and uploads it via an upload queue
 // NOTE: expects data to contain:
 // u32 element_size, u32 vertex_count
 // u32 index_count, u32 elements_type, u32 primitive_topology

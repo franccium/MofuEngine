@@ -188,4 +188,6 @@ struct MeshGroupData
 
 void PackGeometryData(const MeshGroup& meshGroup, MeshGroupData& data);
 void ProcessMeshGroupData(MeshGroup& group, const GeometryImportSettings& settings);
+
+void PackGeometryForEngine(const MeshGroup& group);
 }

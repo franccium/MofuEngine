@@ -1,5 +1,6 @@
 #include "D3D12Helpers.h"
 #include "D3D12Core.h"
+#include "D3d12Upload.h"
 
 using namespace Microsoft::WRL;
 
@@ -55,7 +56,10 @@ CreateResourceBuffer(const void* data, u32 bufferSize, bool isCpuAccessible /* f
 		else
 		{
 			// we need an upload context that creates an upload resource and copies it to the GPU-only resource
-			// TODO: create an upload context
+			upload::D3D12UploadContext context{ bufferSize };
+			memcpy(context.CpuAddress(), data, bufferSize);
+			context.CommandList()->CopyResource(resource, context.UploadBuffer());
+			context.EndUpload();
 		}
 	}
 

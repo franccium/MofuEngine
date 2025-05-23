@@ -164,8 +164,8 @@ void MofuUpdate()
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	graphics::FrameInfo frameInfo{};
-	frameInfo.lastFrameTime = 16.7f;
-	frameInfo.averageFrameTime = 16.7f;
+	frameInfo.LastFrameTime = 16.7f;
+	frameInfo.AverageFrameTime = 16.7f;
 
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();

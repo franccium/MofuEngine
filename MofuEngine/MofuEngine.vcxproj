@@ -68,6 +68,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/EHsc %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,6 +120,9 @@
     <ClCompile Include="External\imgui\include\imgui_impl_win32.cpp" />
     <ClCompile Include="External\imgui\include\imgui_tables.cpp" />
     <ClCompile Include="External\imgui\include\imgui_widgets.cpp" />
+    <ClCompile Include="External\MikkTSpace\mikktspace.c">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/wd4456 /wd4201 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="External\ufbx\ufbx.c" />
     <ClCompile Include="Graphics\D3D12\Content\D3D12Material.cpp" />
     <ClCompile Include="Graphics\D3D12\Content\D3D12Texture.cpp" />
@@ -135,6 +139,7 @@
     <ClCompile Include="Graphics\D3D12\D3D12Resources.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\GeometryData.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
     <ClCompile Include="Platform\Platform.cpp" />
@@ -186,6 +191,7 @@
     <ClInclude Include="External\imgui\include\imstb_rectpack.h" />
     <ClInclude Include="External\imgui\include\imstb_textedit.h" />
     <ClInclude Include="External\imgui\include\imstb_truetype.h" />
+    <ClInclude Include="External\MikkTSpace\mikktspace.h" />
     <ClInclude Include="External\ufbx\ufbx.h" />
     <ClInclude Include="Graphics\D3D12\Content\D3D12Material.h" />
     <ClInclude Include="Graphics\D3D12\Content\D3D12Texture.h" />
@@ -203,6 +209,7 @@
     <ClInclude Include="Graphics\D3D12\D3D12Resources.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
     <ClInclude Include="Graphics\GeometryData.h" />
     <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />

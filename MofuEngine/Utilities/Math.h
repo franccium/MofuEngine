@@ -70,4 +70,41 @@ AlignDown(u64 size, u64 alignment)
 	return (size & ~mask);
 }
 
+template<u32 bits>
+[[nodiscard]] constexpr u32
+PackUnitFloat(f32 val)
+{
+	static_assert(bits && bits <= sizeof(f32) * 8);
+	assert(val >= 0.f && val <= 1.f);
+	constexpr f32 intervals{ (f32)(1u << bits) - 1.f };
+	return (u32)(val * intervals + 0.5f);
+}
+
+template<u32 bits>
+[[nodiscard]] constexpr f32
+UnpackToUnitFloat(u32 i)
+{
+	static_assert(bits && bits <= sizeof(f32) * 8);
+	assert(i <= (1u << bits));
+	constexpr f32 intervals{ (f32)(1u << bits - 1) };
+	return (f32)i / intervals;
+}
+
+template<u32 bits>
+[[nodiscard]] constexpr f32
+UnpackToFloat(u32 i, f32 min, f32 max)
+{
+	assert(min <= max);
+	return UnpackToUnitFloat<bits>(i) * (max - min) + min;
+}
+
+template<u32 bits>
+[[nodiscard]] constexpr u32
+PackFloat(f32 val, f32 min, f32 max)
+{
+	assert(min <= max);
+	assert(val <= max && val >= min);
+	const f32 distance{ (val - min) / (max - min) };
+	return PackUnitFloat<bits>(distance);
+}
 }
