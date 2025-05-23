@@ -41,7 +41,7 @@ GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info)
 {
     MeshGroupData data{};
 	GeneratePrimitiveMesh(info, data);
-	SaveGeometry(data, std::filesystem::path{ ASSET_BASE_DIRECTORY_PATH } / "Generated" / "plane.geom");
+	SaveGeometry(data, std::filesystem::path{ ASSET_BASE_DIRECTORY_PATH } / "Generated" / "cube.geom");
 }
 
 void

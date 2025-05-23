@@ -1,8 +1,139 @@
 #include "D3D12GPass.h"
 #include "D3D12Shaders.h"
+#include "D3D12Camera.h"
+#include "Graphics/GraphicsTypes.h"
+#include "D3D12Content.h"
+#include "D3D12Content/D3D12Geometry.h"
+#include "D3D12Content/D3D12Material.h"
+#include "D3D12Content/D3D12Texture.h"
 
 namespace mofu::graphics::d3d12::gpass {
 namespace {
+struct GPassCache
+{
+	// NOTE: when adding new arrays, make sure to update Resize() and StructSize
+	Vec<id_t> D3D12RenderItemIDs{};
+	u32 DescriptorIndexCount{ 0 };
+
+	// Render Items Cache
+	id_t* EntityIDs{ nullptr };
+	id_t* SubmeshGpuIDs{ nullptr };
+	id_t* MaterialIDs{ nullptr };	
+	ID3D12PipelineState** GPassPipelineStates{ nullptr };
+	ID3D12PipelineState** DepthPipelineStates{ nullptr };
+
+	// Materials Cache	
+	ID3D12RootSignature** RootSignatures{ nullptr };
+	MaterialType::type* MaterialTypes{ nullptr };
+	u32** DescriptorIndices{ nullptr };
+	u32* TextureCounts{ nullptr };
+	MaterialSurface** MaterialSurfaces{ nullptr };
+
+	// Submesh Views Cache
+	D3D12_GPU_VIRTUAL_ADDRESS* PositionBuffers{ nullptr };
+	D3D12_GPU_VIRTUAL_ADDRESS* ElementBuffers{ nullptr };	
+	D3D12_INDEX_BUFFER_VIEW* IndexBufferViews{ nullptr };
+	D3D_PRIMITIVE_TOPOLOGY* PrimitiveTopologies{ nullptr };
+	u32* ElementTypes{ nullptr };
+
+	D3D12_GPU_VIRTUAL_ADDRESS* PerObjectData{ nullptr };
+	D3D12_GPU_VIRTUAL_ADDRESS* SrvIndices{ nullptr };
+
+	constexpr content::render_item::RenderItemsCache GetRenderItemsCache() const
+	{
+		return
+		{
+			EntityIDs,
+			SubmeshGpuIDs,
+			MaterialIDs,
+			GPassPipelineStates,
+			DepthPipelineStates,
+		};
+	}
+
+	constexpr content::geometry::SubmeshViewsCache GetSubmeshViewsCache() const
+	{
+		return
+		{
+			PositionBuffers,
+			ElementBuffers,
+			IndexBufferViews,
+			PrimitiveTopologies,
+			ElementTypes,
+		};
+	}
+
+	constexpr content::material::MaterialsCache	GetMaterialsCache() const
+	{
+		return
+		{
+			RootSignatures,
+			MaterialTypes,
+			DescriptorIndices,
+			TextureCounts,
+			MaterialSurfaces,
+		};
+	}
+
+	void Clear()
+	{
+		D3D12RenderItemIDs.clear();
+		DescriptorIndexCount = 0;
+	}
+
+	constexpr u32 Size() const { return (u32)D3D12RenderItemIDs.size(); }
+
+	constexpr void Resize()
+	{
+		const u64 RenderItemCount{ D3D12RenderItemIDs.size() };
+		const u64 OldBufferSize{ _buffer.size() };
+		const u64 NewBufferSize{ RenderItemCount * STRUCT_SIZE };
+
+		if (NewBufferSize != OldBufferSize)
+		{
+			if (NewBufferSize > OldBufferSize)
+			{
+				_buffer.resize(NewBufferSize);
+			}
+
+			EntityIDs = (id_t*)_buffer.data();
+			SubmeshGpuIDs = (id_t*)(&EntityIDs[RenderItemCount]);
+			MaterialIDs = (id_t*)(&SubmeshGpuIDs[RenderItemCount]);
+			GPassPipelineStates = (ID3D12PipelineState**)(&MaterialIDs[RenderItemCount]);
+			DepthPipelineStates = (ID3D12PipelineState**)(&GPassPipelineStates[RenderItemCount]);
+			RootSignatures = (ID3D12RootSignature**)(&DepthPipelineStates[RenderItemCount]);
+			MaterialTypes = (MaterialType::type*)(&RootSignatures[RenderItemCount]);
+			DescriptorIndices = (u32**)(&MaterialTypes[RenderItemCount]);
+			TextureCounts = (u32*)(&DescriptorIndices[RenderItemCount]);
+			MaterialSurfaces = (MaterialSurface**)(&TextureCounts[RenderItemCount]);
+			PositionBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)(&MaterialSurfaces[RenderItemCount]);
+			ElementBuffers = (D3D12_GPU_VIRTUAL_ADDRESS*)(&PositionBuffers[RenderItemCount]);
+			IndexBufferViews = (D3D12_INDEX_BUFFER_VIEW*)(&ElementBuffers[RenderItemCount]);
+			PrimitiveTopologies = (D3D_PRIMITIVE_TOPOLOGY*)(&IndexBufferViews[RenderItemCount]);
+			ElementTypes = (u32*)(&PrimitiveTopologies[RenderItemCount]);
+			PerObjectData = (D3D12_GPU_VIRTUAL_ADDRESS*)(&ElementTypes[RenderItemCount]);
+			SrvIndices = (D3D12_GPU_VIRTUAL_ADDRESS*)(&PerObjectData[RenderItemCount]);
+		}
+	}
+
+private:
+	constexpr static u32 STRUCT_SIZE
+	{
+		sizeof(id_t) + sizeof(id_t) + sizeof(id_t) +
+		sizeof(ID3D12PipelineState*) + sizeof(ID3D12PipelineState*) +
+		sizeof(ID3D12RootSignature*) +
+		sizeof(MaterialType::type) +
+		sizeof(u32*) +
+		sizeof(u32) +
+		sizeof(MaterialSurface*) +
+		sizeof(D3D12_GPU_VIRTUAL_ADDRESS) + sizeof(D3D12_GPU_VIRTUAL_ADDRESS) +
+		sizeof(D3D12_INDEX_BUFFER_VIEW) + sizeof(D3D_PRIMITIVE_TOPOLOGY) +
+		sizeof(u32) + sizeof(D3D12_GPU_VIRTUAL_ADDRESS) +
+		sizeof(D3D12_GPU_VIRTUAL_ADDRESS)
+	};
+
+	Vec<u8> _buffer;
+} frameCache;
 
 constexpr u32v2 INITIAL_DIMENSIONS{ 100, 100 };
 
@@ -10,47 +141,171 @@ D3D12RenderTexture gpassMainBuffer{};
 D3D12DepthBuffer gpassDepthBuffer{};
 u32v2 dimensions{};
 
-ID3D12RootSignature* gpassRootSig{ nullptr };
-ID3D12PipelineState* gpassPSO{ nullptr };
-
 #if _DEBUG
 constexpr f32 CLEAR_VALUE[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 #else
 constexpr f32 CLEAR_VALUE[4]{};
 #endif
 
-bool
-CreateGPassPSO()
+//bool
+//CreateGPassPSO()
+//{
+//	assert(!gpassRootSig && !gpassPSO);
+//
+//	d3dx::D3D12RootParameter parameters[1]{};
+//	parameters[OpaqueRootParameters::GlobalShaderData].AsConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+//	//gpassRootSig = d3dx::D3D12RootSignatureDesc{ &parameters[0], 1 }.Create();
+//	d3dx::D3D12RootSignatureDesc rootSigDesc{ &parameters[0], 1 };
+//	rootSigDesc.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+//	gpassRootSig = rootSigDesc.Create();
+//	NAME_D3D12_OBJECT(gpassRootSig, L"GPass Root Signature");
+//
+//	struct {
+//		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ gpassRootSig };
+//		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(shaders::EngineShader::FullscreenTriangleVS) };
+//		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(shaders::EngineShader::ColorFillPS) };
+//		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
+//		d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
+//		d3dx::D3D12PipelineStateSubobjectDepthStencilFormat depthStencilFormat{ DEPTH_BUFFER_FORMAT };
+//		d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };
+//		d3dx::D3D12PipelineStateSubobjectDepthStencil depthStencil{ d3dx::DepthState.DISABLED };
+//	} stream;
+//
+//	D3D12_RT_FORMAT_ARRAY rtfArray{};
+//	rtfArray.NumRenderTargets = 1;
+//	rtfArray.RTFormats[0] = MAIN_BUFFER_FORMAT;
+//	stream.renderTargetFormats = rtfArray;
+//	gpassPSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
+//	NAME_D3D12_OBJECT(gpassPSO, L"GPass PSO");
+//
+//	return gpassRootSig && gpassPSO;
+//}
+
+void
+FillPerObjectData(const D3D12FrameInfo& frameInfo, const content::material::MaterialsCache& materialsCache)
 {
-	assert(!gpassRootSig && !gpassPSO);
+	static u32 frame{ 0 };
+	static u32 frame2{ 0 };
 
-	d3dx::D3D12RootParameter parameters[1]{};
-	parameters[OpaqueRootParameters::GlobalShaderData].AsConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
-	//gpassRootSig = d3dx::D3D12RootSignatureDesc{ &parameters[0], 1 }.Create();
-	d3dx::D3D12RootSignatureDesc rootSigDesc{ &parameters[0], 1 };
-	rootSigDesc.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
-	gpassRootSig = rootSigDesc.Create();
-	NAME_D3D12_OBJECT(gpassRootSig, L"GPass Root Signature");
+	const GPassCache& cache{ frameCache };
+	const u32 renderItemCount{ (u32)cache.Size() };
+	id_t currentEntityID{ id::INVALID_ID };
+	hlsl::PerObjectData* currentDataPointer{ nullptr };
+	ConstantBuffer& cbuffer{ core::CBuffer() };
 
-	struct {
-		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ gpassRootSig };
-		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(shaders::EngineShader::FullscreenTriangleVS) };
-		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(shaders::EngineShader::ColorFillPS) };
-		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
-		d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
-		d3dx::D3D12PipelineStateSubobjectDepthStencilFormat depthStencilFormat{ DEPTH_BUFFER_FORMAT };
-		d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };
-		d3dx::D3D12PipelineStateSubobjectDepthStencil depthStencil{ d3dx::DepthState.DISABLED };
-	} stream;
+	//frame += 1;
+	//frame = (frame % 15);
+	
 
-	D3D12_RT_FORMAT_ARRAY rtfArray{};
-	rtfArray.NumRenderTargets = 1;
-	rtfArray.RTFormats[0] = MAIN_BUFFER_FORMAT;
-	stream.renderTargetFormats = rtfArray;
-	gpassPSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
-	NAME_D3D12_OBJECT(gpassPSO, L"GPass PSO");
+	using namespace DirectX;
+	for (u32 i{ 0 }; i < renderItemCount; ++i)
+	{
+		// we can use the same data for groups of render items from the same game entity to save space in the constant buffer
+		if (currentEntityID != cache.EntityIDs[i])
+		{
+			currentEntityID = cache.EntityIDs[i];
+			hlsl::PerObjectData data{};
 
-	return gpassRootSig && gpassPSO;
+			//TODO: fill with actual transform data
+			v3 pos{ -3.f, -10.f, 10.f };
+			v3 scale{ 1.f, 1.f, 1.f };
+			//f32 scaling{ (f32)frame };
+			//v3 scale{ scaling, scaling, scaling };
+			v4 rot{ 0.f, 0.f, 0.f, 0.f };
+			xmm t{ XMLoadFloat3(&pos) };
+			xmm r{ XMLoadFloat4(&rot) };
+			xmm s{ XMLoadFloat3(&scale) };
+			XMMATRIX transformWorld{ XMMatrixAffineTransformation(s, XMQuaternionIdentity(), r, t) };
+			XMStoreFloat4x4(&data.World, transformWorld);
+			transformWorld.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+			XMMATRIX inverseWorld{ XMMatrixInverse(nullptr, transformWorld) };
+			XMStoreFloat4x4(&data.InvWorld, inverseWorld);
+
+
+			XMMATRIX world{ XMLoadFloat4x4(&data.World) };
+			XMMATRIX wvp{ XMMatrixMultiply(world, frameInfo.Camera->ViewProjection()) };
+			XMStoreFloat4x4(&data.WorldViewProjection, wvp);
+
+			const MaterialSurface* const surface{ materialsCache.MaterialSurfaces[i] };
+			memcpy(&data.BaseColor, surface, sizeof(MaterialSurface));
+
+			currentDataPointer = cbuffer.AllocateSpace<hlsl::PerObjectData>();
+			memcpy(currentDataPointer, &data, sizeof(hlsl::PerObjectData));
+		}
+
+		assert(currentDataPointer);
+		cache.PerObjectData[i] = cbuffer.GpuAddress(currentDataPointer);
+	}
+}
+
+void
+PrepareRenderFrame(const D3D12FrameInfo& frameInfo)
+{
+	assert(frameInfo.Info && frameInfo.Camera);
+	assert(frameInfo.Info->RenderItemIDs && frameInfo.Info->RenderItemCount);
+
+	using namespace content;
+	GPassCache& cache{ frameCache };
+	render_item::GetRenderItemIds(*frameInfo.Info, cache.D3D12RenderItemIDs);
+	cache.Resize();
+	const u32 renderItemCount{ cache.Size() };
+
+	const render_item::RenderItemsCache renderItemCache{ cache.GetRenderItemsCache() };
+	render_item::GetRenderItems(cache.D3D12RenderItemIDs.data(), renderItemCount, renderItemCache);
+
+	const geometry::SubmeshViewsCache submeshViewCache{ cache.GetSubmeshViewsCache() };
+	geometry::GetSubmeshViews(cache.SubmeshGpuIDs, renderItemCount, submeshViewCache);
+
+	const material::MaterialsCache materialsCache{ cache.GetMaterialsCache() };
+	material::GetMaterials(cache.MaterialIDs, renderItemCount, materialsCache, cache.DescriptorIndexCount);
+
+	FillPerObjectData(frameInfo, materialsCache);
+
+	if (cache.DescriptorIndexCount != 0)
+	{
+		ConstantBuffer& cbuffer{ core::CBuffer() };
+		const u32 size{ cache.DescriptorIndexCount * sizeof(u32) };
+		u32* const srvIndices{ (u32* const)cbuffer.AllocateSpace(size) };
+		u32 srvIndexOffset{ 0 };
+
+		for (u32 i{ 0 }; i < renderItemCount; ++i)
+		{
+			const u32 textureCount{ cache.TextureCounts[i] };
+			cache.SrvIndices[i] = 0;
+
+			if (textureCount != 0)
+			{
+				const u32* const indices{ cache.DescriptorIndices[i] };
+				memcpy(&srvIndices[srvIndexOffset], indices, textureCount * sizeof(u32));
+				cache.SrvIndices[i] = cbuffer.GpuAddress(srvIndices + srvIndexOffset);
+
+				srvIndexOffset += textureCount;
+			}
+		}
+	}
+}
+
+void 
+SetRootParameters(DXGraphicsCommandList* cmdList, u32 cacheItemIndex)
+{
+	GPassCache& cache{ frameCache };
+
+	const MaterialType::type materialType{ cache.MaterialTypes[cacheItemIndex] };
+	switch (materialType)
+	{
+	case MaterialType::Opaque:
+	{
+		using params = OpaqueRootParameters;
+		cmdList->SetGraphicsRootShaderResourceView(params::PositionBuffer, cache.PositionBuffers[cacheItemIndex]);
+		cmdList->SetGraphicsRootShaderResourceView(params::ElementBuffer, cache.ElementBuffers[cacheItemIndex]);
+		cmdList->SetGraphicsRootConstantBufferView(params::PerObjectData, cache.PerObjectData[cacheItemIndex]);
+		if (cache.TextureCounts[cacheItemIndex] != 0)
+		{
+			cmdList->SetGraphicsRootShaderResourceView(params::SrvIndices, cache.SrvIndices[cacheItemIndex]);
+		}
+	}
+	break;
+	}
 }
 
 } // anonymous namespace
@@ -58,7 +313,7 @@ CreateGPassPSO()
 bool
 Initialize()
 {
-	return CreateGPassPSO() && CreateBuffers(INITIAL_DIMENSIONS);
+	return CreateBuffers(INITIAL_DIMENSIONS);
 }
 
 void 
@@ -132,14 +387,45 @@ SetBufferSize(u32v2 size)
 }
 
 void 
-DoDepthPrepass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info)
+DoDepthPrepass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 {
-	
+	PrepareRenderFrame(frameInfo);
+
+	const GPassCache& cache{ frameCache };
+	const u32 renderItemCount{ cache.Size() };
+
+	ID3D12RootSignature* currentRootSignature{ nullptr };
+	ID3D12PipelineState* currentPipelineState{ nullptr };
+
+	for (u32 i{ 0 }; i < renderItemCount; ++i)
+	{
+		if (currentRootSignature != cache.RootSignatures[i])
+		{
+			currentRootSignature = cache.RootSignatures[i];
+			cmdList->SetGraphicsRootSignature(currentRootSignature);
+			cmdList->SetGraphicsRootConstantBufferView(OpaqueRootParameters::GlobalShaderData, frameInfo.GlobalShaderData);
+		}
+
+		if (currentPipelineState != cache.DepthPipelineStates[i])
+		{
+			currentPipelineState = cache.DepthPipelineStates[i];
+			cmdList->SetPipelineState(currentPipelineState);
+		}
+
+		SetRootParameters(cmdList, i);
+
+		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
+		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+		cmdList->IASetIndexBuffer(&ibv);
+		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
+		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+	}
 }
 
 void 
-Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info)
+Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 {
+#if RENDER_2D_TEST
 	cmdList->SetGraphicsRootSignature(gpassRootSig);
 	cmdList->SetPipelineState(gpassPSO);
 
@@ -149,11 +435,43 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info)
 		f32 width;
 		f32 height;
 		u32 frame;
-	} constants{ (f32)info.surfaceWidth, (f32)info.surfaceHeight, ++frame };
+	} constants{ (f32)frameInfo.SurfaceWidth, (f32)frameInfo.SurfaceHeight, ++frame };
 
 	cmdList->SetGraphicsRoot32BitConstants(OpaqueRootParameters::GlobalShaderData, 3, &constants, 0);
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	cmdList->DrawInstanced(3, 1, 0, 0);
+#else
+	const GPassCache& cache{ frameCache };
+	const u32 renderItemCount{ cache.Size() };
+	
+	ID3D12RootSignature* currentRootSignature{ nullptr };
+	ID3D12PipelineState* currentPipelineState{ nullptr };
+
+	for (u32 i{ 0 }; i < renderItemCount; ++i)
+	{
+		if (currentRootSignature != cache.RootSignatures[i])
+		{
+			currentRootSignature = cache.RootSignatures[i];
+			cmdList->SetGraphicsRootSignature(currentRootSignature);
+			using idx = OpaqueRootParameters;
+			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+		}
+
+		if (currentPipelineState != cache.GPassPipelineStates[i])
+		{
+			currentPipelineState = cache.GPassPipelineStates[i];
+			cmdList->SetPipelineState(currentPipelineState);
+		}
+
+		SetRootParameters(cmdList, i);
+
+		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
+		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+		cmdList->IASetIndexBuffer(&ibv);
+		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
+		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+	}
+#endif
 }
 
 void 

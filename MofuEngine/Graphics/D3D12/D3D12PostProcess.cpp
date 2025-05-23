@@ -94,15 +94,14 @@ Shutdown()
 
 void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, D3D12_CPU_DESCRIPTOR_HANDLE targetRtv)
 {
-	const u32 frameIndex{ frameInfo.frameIndex };
-	
 	cmdList->SetGraphicsRootSignature(fxRootSig);
 	cmdList->SetPipelineState(fxPSO);
 
-	cmdList->SetGraphicsRootConstantBufferView(FXRootParameterIndices::GlobalShaderData, frameInfo.globalShaderData);
-	cmdList->SetGraphicsRoot32BitConstant(FXRootParameterIndices::RootConstants, gpass::MainBuffer().Srv().index, 0);
-	cmdList->SetGraphicsRoot32BitConstant(FXRootParameterIndices::RootConstants, gpass::DepthBuffer().Srv().index, 1);
-	//cmdList->SetGraphicsRootDescriptorTable(FXRootParameterIndices::DescriptorTable, core::SrvHeap().GpuStart());
+	using idx = FXRootParameterIndices;
+	cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().Srv().index, 0);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().Srv().index, 1);
+	//cmdList->SetGraphicsRootDescriptorTable(idx::DescriptorTable, core::SrvHeap().GpuStart());
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	cmdList->OMSetRenderTargets(1, &targetRtv, 1, nullptr);

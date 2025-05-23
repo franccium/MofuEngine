@@ -409,7 +409,7 @@ PackGeometryForEngine(const MeshGroup& group)
 			blob.Write(vertexCount);
 			blob.Write(indexCount);
 			blob.Write((u32)m.ElementType);	
-			blob.Write(0); //TODO: primitive topology?
+			blob.Write(3); //TODO: primitive topology
 
 			blob.WriteBytes(m.PositionBuffer.data(), m.PositionBuffer.size());		
 			blob.WriteBytes(m.ElementBuffer.data(), m.ElementBuffer.size());	

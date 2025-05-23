@@ -38,7 +38,7 @@ ConstantBuffer::AllocateSpace(u32 size)
 	if (_cpuOffset + alignedSize <= _buffer.Size())
 	{
 		u8* const address{ _cpuAddress + _cpuOffset };
-		_cpuOffset += size;
+		_cpuOffset += alignedSize;
 		return address;
 	}
 	return nullptr;

@@ -4,6 +4,7 @@
 namespace mofu::graphics::d3d12 {
 class DescriptorHeap;
 class ConstantBuffer;
+namespace camera { class D3D12Camera; }
 
 struct D3D12FrameInfo
 {

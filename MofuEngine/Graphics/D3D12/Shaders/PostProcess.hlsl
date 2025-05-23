@@ -16,5 +16,5 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 {
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     float4 color = float4(gpassMain[Position.xy].xyz, 1.f);
-    return color + 0.5f;
+    return color;
 }

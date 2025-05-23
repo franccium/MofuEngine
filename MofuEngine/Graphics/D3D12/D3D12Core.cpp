@@ -11,7 +11,6 @@
 
 #define ENABLE_GPU_BASED_VALIDATION 0
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
-#define RENDER_2D_TEST 0
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
@@ -393,6 +392,7 @@ Shutdown()
     gpass::Shutdown();
     fx::Shutdown();
     shaders::Shutdown();
+    upload::Shutdown();
 
     for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
         constantBuffers[i].Release();
@@ -507,7 +507,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
 
-    gui::RenderGUI(cmdList);
+    //gui::RenderGUI(cmdList);
 #if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
     //TODO: make it work with post processing

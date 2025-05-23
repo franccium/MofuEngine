@@ -107,4 +107,20 @@ PackFloat(f32 val, f32 min, f32 max)
 	const f32 distance{ (val - min) / (max - min) };
 	return PackUnitFloat<bits>(distance);
 }
+
+// NOTE: ignores any bytes that don't fit in an 8-byte alignment, the data should be aligned size-up and filled with zeros first
+[[nodiscard]] constexpr u64
+CRC32_u64(const u8* const data, u64 size)
+{
+	assert(data && size);
+	u64 crc{ 0 };
+	const u8* at{ data };
+	const u8* const end{ data + AlignDown<sizeof(u64)>(size) };
+	while (at < end)
+	{
+		crc = _mm_crc32_u64(crc, *(const u64*)at);
+		at += sizeof(u64);
+	}
+	return crc;
+}
 }

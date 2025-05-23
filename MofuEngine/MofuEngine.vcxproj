@@ -124,13 +124,13 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/wd4456 /wd4201 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="External\ufbx\ufbx.c" />
-    <ClCompile Include="Graphics\D3D12\Content\D3D12Material.cpp" />
-    <ClCompile Include="Graphics\D3D12\Content\D3D12Texture.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Content\D3D12Material.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Content\D3D12Texture.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Camera.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Content.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Core.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12DescriptorHeap.cpp" />
-    <ClCompile Include="Graphics\D3D12\Content\D3D12Geometry.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Content\D3D12Geometry.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12GPass.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12GUI.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Helpers.cpp" />
@@ -193,14 +193,15 @@
     <ClInclude Include="External\imgui\include\imstb_truetype.h" />
     <ClInclude Include="External\MikkTSpace\mikktspace.h" />
     <ClInclude Include="External\ufbx\ufbx.h" />
-    <ClInclude Include="Graphics\D3D12\Content\D3D12Material.h" />
-    <ClInclude Include="Graphics\D3D12\Content\D3D12Texture.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12ContentCommon.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12Material.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12Texture.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Camera.h" />
     <ClInclude Include="Graphics\D3D12\D3D12CommonHeaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Content.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Core.h" />
     <ClInclude Include="Graphics\D3D12\D3D12DescriptorHeap.h" />
-    <ClInclude Include="Graphics\D3D12\Content\D3D12Geometry.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12Geometry.h" />
     <ClInclude Include="Graphics\D3D12\D3D12GPass.h" />
     <ClInclude Include="Graphics\D3D12\D3D12GUI.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Helpers.h" />

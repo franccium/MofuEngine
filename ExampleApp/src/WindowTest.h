@@ -11,6 +11,7 @@
 #include "Graphics/Renderer.h"
 #include "EngineAPI/Camera.h"
 #include "Content/ResourceCreation.h"
+#include "Graphics/GeometryData.h"
 
 constexpr u32 WINDOW_COUNT{ 1 };
 
@@ -28,10 +29,16 @@ bool isRunning{ true };
 bool isRestarting{ false };
 bool isResized{ false };
 
+u32 renderItemCount{ 0 };
+Vec<id_t> renderItems{};
+Vec<id_t> renderItemIDsCache{};
+
 bool MofuInitialize();
 void MofuShutdown();
 void InitializeRenderingTest();
 void ShutdownRenderingTest();
+u32 CreateTestRenderItems();
+void GetRenderItemIDS(Vec<id_t>& outIds);
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
@@ -157,15 +164,20 @@ bool MofuInitialize()
 
 	InitializeRenderingTest();
 
+	renderItemCount = CreateTestRenderItems();
+	renderItems.resize(renderItemCount);
+	renderItemIDsCache.resize(renderItemCount);
+	//!!! content::GetRenderItemIDs(renderItemIDsCache.data(), renderItemCount);
+	GetRenderItemIDS(renderItemIDsCache);
+
 	return true;
 }
 
 void MofuUpdate()
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	graphics::FrameInfo frameInfo{};
-	frameInfo.LastFrameTime = 16.7f;
-	frameInfo.AverageFrameTime = 16.7f;
+
+	Vec<f32> thresholds{ renderItemCount };
 
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -175,6 +187,14 @@ void MofuUpdate()
 	{
 		if (renderSurfaces[i].surface.surface.IsValid())
 		{
+			graphics::FrameInfo frameInfo{};
+			frameInfo.LastFrameTime = 16.7f;
+			frameInfo.AverageFrameTime = 16.7f;
+			frameInfo.RenderItemCount = renderItemCount;
+			frameInfo.CameraID = renderSurfaces[i].camera.GetID();
+			frameInfo.Thresholds = thresholds.data();
+			frameInfo.RenderItemIDs = renderItemIDsCache.data();
+
 			renderSurfaces[i].surface.surface.Render(frameInfo);
 		}
 	}

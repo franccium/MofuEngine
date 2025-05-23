@@ -1,6 +1,7 @@
 #include "D3D12Shaders.h"
 #include "Content/ContentManagement.h"
 #include "Content/ShaderCompilation.h"
+#include "Content/ResourceCreation.h"
 
 namespace mofu::graphics::d3d12::shaders {
 namespace {

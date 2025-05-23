@@ -15,6 +15,7 @@ struct GlobalShaderData
     float ViewHeight;
     
     float DeltaTime;
+    
     uint3 _pad;
 };
 
@@ -25,6 +26,13 @@ struct PerObjectData
     float4x4 WorldViewProjection;
     
     float4 BaseColor;
+    float3 Emissive;
+    float EmissiveIntensity;
+    float AmbientOcclusion;
+    float Metallic;
+    float Roughness;
+    
+    uint _pad;
 };
 
 #ifdef __cplusplus

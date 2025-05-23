@@ -120,16 +120,16 @@
     <ClCompile Include="Graphics\D3D12\D3D12Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\D3D12\Content\D3D12Geometry.cpp">
+    <ClCompile Include="Graphics\D3D12\D3D12Content\D3D12Geometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\D3D12\D3D12Content.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\D3D12\Content\D3D12Texture.cpp">
+    <ClCompile Include="Graphics\D3D12\D3D12Content\D3D12Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\D3D12\Content\D3D12Material.cpp">
+    <ClCompile Include="Graphics\D3D12\D3D12Content\D3D12Material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="External\MikkTSpace\mikktspace.c">
@@ -315,19 +315,22 @@
     <ClInclude Include="Graphics\D3D12\D3D12Content.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\D3D12\Content\D3D12Geometry.h">
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12Geometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\D3D12\Content\D3D12Material.h">
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12Material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\D3D12\Content\D3D12Texture.h">
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="External\MikkTSpace\mikktspace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12ContentCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

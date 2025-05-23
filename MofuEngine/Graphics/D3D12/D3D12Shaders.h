@@ -7,7 +7,7 @@ struct EngineShader
 	enum id : u32
 	{
 		FullscreenTriangleVS = 0,
-		ColorFillPS,
+		//ColorFillPS,
 		PostProcessPS,
 		Count
 	};

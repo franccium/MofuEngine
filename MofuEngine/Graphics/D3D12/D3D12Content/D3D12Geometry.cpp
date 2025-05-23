@@ -1,6 +1,7 @@
 #include "D3D12Geometry.h"
 #include "Utilities/IOStream.h"
 #include "Graphics/Renderer.h"
+#include "D3D12ContentCommon.h"
 
 namespace  mofu::graphics::d3d12::content::geometry {
 namespace {
@@ -13,24 +14,6 @@ struct SubmeshView
 	u32 elementType{};
 };
 
-constexpr D3D12_PRIMITIVE_TOPOLOGY D3D12_PRIMITIVE_TOPOLOGIES[PrimitiveTopology::Count]
-{
-	D3D_PRIMITIVE_TOPOLOGY_POINTLIST,
-	D3D_PRIMITIVE_TOPOLOGY_LINELIST,
-	D3D_PRIMITIVE_TOPOLOGY_LINESTRIP,
-	D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-	D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
-};
-
-constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE D3D12_PRIMITIVE_TOPOLOGY_TYPES[PrimitiveTopology::Count]
-{
-	D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT,
-	D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
-	D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
-	D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-	D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-};
-
 util::FreeList<DXResource*> submeshBuffers{};
 util::FreeList<SubmeshView> submeshViews{};
 std::mutex submeshMutex{};
@@ -38,7 +21,7 @@ std::mutex submeshMutex{};
 } // anonymous namespace
 
 void
-GetViews(const id_t* const gpuIds, u32 idCount, const SubmeshViewsCache& cache)
+GetSubmeshViews(const id_t* const gpuIds, u32 idCount, const SubmeshViewsCache& cache)
 {
 	assert(gpuIds && idCount > 0);
 	assert(cache.PositionBuffers&& cache.ElementBuffers&& cache.IndexBufferViews);

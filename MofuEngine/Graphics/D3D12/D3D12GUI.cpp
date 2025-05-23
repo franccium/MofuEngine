@@ -105,7 +105,7 @@ RenderGUI(DXGraphicsCommandList* cmdList)
 void 
 RenderTextureIntoImage(DXGraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameInfo frameInfo)
 {
-    float aspectRatio = (float)frameInfo.surfaceWidth / frameInfo.surfaceHeight;
+    float aspectRatio = (float)frameInfo.SurfaceWidth / frameInfo.SurfaceHeight;
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), WindowConstrainAspectRatio, (void*)&aspectRatio);
 
     ImGui::Begin("Scene View", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);

@@ -4,10 +4,69 @@
 
 namespace mofu::content {
 namespace {
+
+class GeometryHierarchyStream
+{
+public:
+	DISABLE_COPY_AND_MOVE(GeometryHierarchyStream);
+	explicit GeometryHierarchyStream(u8* const buffer, u32 lods = U32_INVALID_ID) : _buffer{ buffer }
+	{
+		assert(buffer && lods != 0);
+		if (lods != U32_INVALID_ID)
+		{
+			*((u32*)buffer) = lods;
+		}
+		_lodCount = *((u32*)buffer);
+		_thresholds = (f32*)&buffer[sizeof(u32)];
+		_lodOffsets = (LodOffset*)&_thresholds[_lodCount];
+		_gpuIDs = (id_t*)&_lodOffsets[_lodCount];
+	}
+
+	constexpr void LODGpuIDs(u32 lod, id_t*& ids, u32& outIDCount)
+	{
+		assert(lod < _lodCount);
+		ids = &_gpuIDs[_lodOffsets[lod].Offset];
+		outIDCount = _lodOffsets[lod].Count;
+	}
+
+	[[nodiscard]] constexpr u32 LODFromThreshold(f32 threshold)
+	{
+		for (u32 i{ _lodCount - 1 }; i > 0; --i)
+		{
+			if (_thresholds[i] <= threshold) return i;
+		}
+		return 0;
+	}
+
+	[[nodiscard]] constexpr f32* Thresholds() const { return _thresholds; }
+	[[nodiscard]] constexpr LodOffset* LODOffsets() const { return _lodOffsets; }
+	[[nodiscard]] constexpr id_t* GpuIDs() const { return _gpuIDs; }
+	[[nodiscard]] constexpr u32 LodCount() const { return _lodCount; }
+
+private:
+	u8* const _buffer;
+	f32* _thresholds;
+	LodOffset* _lodOffsets;
+	id_t* _gpuIDs;
+	u32 _lodCount;
+};
+
 util::FreeList<u8*> geometryHierarchies{};
 std::mutex geometryMutex{};
 // indicates than an element in geometryHierarchies is a single mesh (a gpuID, not a ptr)
 constexpr u8 SINGLE_MESH_MARKER{ (uintptr_t)0x1 };
+
+util::FreeList<std::unordered_map<u32, std::unique_ptr<u8[]>>> shaderGroups{}; // a free list of key-shader maps
+std::mutex shaderMutex{};
+
+constexpr id_t
+GetGpuIDSingleMesh(u8* const meshPtr)
+{
+	assert((uintptr_t)meshPtr & SINGLE_MESH_MARKER);
+	static_assert(sizeof(uintptr_t) > sizeof(id_t));
+	constexpr u8 shiftBits{ (sizeof(uintptr_t) - sizeof(id_t)) << 3 };
+	return (((uintptr_t)meshPtr) >> shiftBits) & (uintptr_t)id::INVALID_ID;
+}
 
 bool
 ReadIsSingleMesh(const void* const blob)
@@ -75,13 +134,48 @@ CreateSingleMesh(const void* const blob)
 id_t
 CreateGeometryResource(const void* const blob)
 {
-	return CreateSingleMesh(blob);
+	return ReadIsSingleMesh(blob) ? CreateSingleMesh(blob) : id_t{};
 }
 
 void
 DestroyGeometryResource(id_t id)
 {
+	// free the allocated block of memory, unloading all submeshes with it
+	std::lock_guard lock{ geometryMutex };
+	u8* const hierarchyPtr{ geometryHierarchies[id] };
+	if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
+	{
+		// single mesh
+		graphics::RemoveSubmesh(GetGpuIDSingleMesh(hierarchyPtr));
+	}
+	else
+	{
+		GeometryHierarchyStream stream{ hierarchyPtr };
+		const u32 lodCount{ stream.LodCount() };
+		u32 id_index{ 0 };
+		for (u32 lod{ 0 }; lod < lodCount; ++lod)
+		{
+			for (u32 i{ 0 }; i < stream.LODOffsets()[lod].Count; ++i)
+			{
+				// unload all buffer resources under gpu_ids
+				graphics::RemoveSubmesh(stream.GpuIDs()[id_index++]);
+			}
+		}
+		free(hierarchyPtr);
+	}
+}
 
+id_t
+CreateMaterialResource(const void* const blob)
+{
+	assert(blob);
+	return graphics::AddMaterial(*(const graphics::MaterialInitInfo* const)blob);
+}
+
+void
+DestroyMaterialResource(id_t id)
+{
+	graphics::RemoveMaterial(id);
 }
 
 #pragma region not_implemented
@@ -114,13 +208,6 @@ CreateAudioResource([[maybe_unused]] const void* const blob)
 }
 
 id_t
-CreateMaterialResource([[maybe_unused]] const void* const blob)
-{
-	assert(false);
-	return id::INVALID_ID;
-}
-
-id_t
 CreateSkeletonResource([[maybe_unused]] const void* const blob)
 {
 	assert(false);
@@ -147,12 +234,6 @@ DestroyAnimationResource([[maybe_unused]] id_t id)
 
 void
 DestroyAudioResource([[maybe_unused]] id_t id)
-{
-	assert(false);
-}
-
-void
-DestroyMaterialResource([[maybe_unused]] id_t id)
 {
 	assert(false);
 }
@@ -202,4 +283,88 @@ DestroyResource(id_t resourceId, AssetType::type resourceType)
 	assert(id::IsValid(resourceId));
 	resourceDestructors[resourceType](resourceId);
 }
+
+void
+GetSubmeshGpuIDs(id_t geometryContentID, u32 idCount, id_t* const outGpuIDs)
+{
+	std::lock_guard lock{ geometryMutex };
+	u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
+	if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
+	{
+		assert(idCount == 1);
+		*outGpuIDs = GetGpuIDSingleMesh(hierarchyPtr);
+	}
+	else
+	{
+		GeometryHierarchyStream stream{ hierarchyPtr };
+		memcpy(outGpuIDs, stream.GpuIDs(), sizeof(id_t) * idCount);
+	}
+}
+
+void 
+GetLODOffsets(const id_t* const geometryIDs, const f32* const thresholds, u32 idCount, Vec<LodOffset>& offsets)
+{
+	assert(geometryIDs && thresholds && idCount);
+	assert(offsets.empty());
+
+	std::lock_guard lock{ geometryMutex };
+	for (u32 i{ 0 }; i < idCount; ++i)
+	{
+		u8* const hierarchyPtr{ geometryHierarchies[geometryIDs[i]] };
+		if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
+		{
+			offsets.emplace_back(LodOffset{ 0,1 });
+		}
+		else
+		{
+			GeometryHierarchyStream stream{ hierarchyPtr };
+			const u32 lod{ stream.LODFromThreshold(thresholds[i]) };
+			offsets.emplace_back(stream.LODOffsets()[lod]);
+		}
+	}
+}
+
+// NOTE: expects shaders to be an array of pointers to compiled shaders
+// NOTE: the editor is responsible for making sure there aren't any duplicate shaders
+id_t 
+AddShaderGroup(const u8* const* shaders, u32 shaderCount, const u32* const keys)
+{
+	assert(shaders && shaderCount && keys);
+	std::unordered_map<u32, std::unique_ptr<u8[]>> shaderGroup;
+	for (u32 i{ 0 }; i < shaderCount; ++i)
+	{
+		assert(shaders[i]);
+		const CompiledShaderPtr shaderPtr{ (const CompiledShaderPtr)shaders[i] };
+		const u64 size{ shaderPtr->GetBufferSize() };
+		std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
+		memcpy(shader.get(), shaderPtr, size);
+		shaderGroup[keys[i]] = std::move(shader);
+	}
+
+	std::lock_guard lock{ shaderMutex };
+	return shaderGroups.add(std::move(shaderGroup));
+}
+
+void
+RemoveShaderGroup(id_t groupID)
+{
+	assert(id::IsValid(groupID));
+	std::lock_guard lock{ shaderMutex };
+	shaderGroups.remove(groupID);
+}
+
+CompiledShaderPtr 
+GetShader(id_t groupID, u32 shaderKey)
+{
+	assert(id::IsValid(groupID));
+	std::lock_guard lock{ shaderMutex };
+	for (const auto& [key, value] : shaderGroups[groupID])
+	{
+		if (key == shaderKey) return (const CompiledShaderPtr)value.get();
+	}
+
+	assert(false);
+	return nullptr;
+}
+
 }

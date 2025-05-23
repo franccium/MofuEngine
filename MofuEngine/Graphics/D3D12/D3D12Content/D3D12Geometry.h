@@ -15,7 +15,7 @@ struct SubmeshViewsCache
 
 struct ElementViewsCache {};
 
-void GetViews(const id_t* const gpuIds, u32 idCount, const SubmeshViewsCache& cache);
+void GetSubmeshViews(const id_t* const gpuIds, u32 idCount, const SubmeshViewsCache& cache);
 id_t AddSubmesh(const u8*& blob);
 void RemoveSubmesh(id_t id);
 

@@ -6,6 +6,7 @@
 #include <fstream>
 #include "Graphics/Renderer.h"
 #include "ContentManagement.h"
+#include "Content/ResourceCreation.h"
 
 using namespace mofu;
 using namespace Microsoft::WRL;
@@ -46,7 +47,7 @@ struct EngineShader {
     enum id : u32
     {
         FullscreenTriangleVS = 0,
-        ColorFillPS,
+        //ColorFillPS,
         PostProcessPS,
 
         Count
@@ -62,7 +63,7 @@ struct EngineShaderInfo
 constexpr EngineShaderInfo ENGINE_SHADER_FILES[]
 {
     {EngineShader::FullscreenTriangleVS, {"FullscreenTriangle.hlsl", "FullscreenTriangleVS", graphics::ShaderType::Vertex}},
-    {EngineShader::ColorFillPS, {"ColorFill.hlsl", "ColorFillPS", graphics::ShaderType::Pixel}},
+    //{EngineShader::ColorFillPS, {"ColorFill.hlsl", "ColorFillPS", graphics::ShaderType::Pixel}},
     {EngineShader::PostProcessPS, {"PostProcess.hlsl", "PostProcessPS", graphics::ShaderType::Pixel}},
 };
 static_assert(_countof(ENGINE_SHADER_FILES) == EngineShader::Count);
@@ -331,7 +332,7 @@ CompileShader(ShaderFileInfo info, u8* code, u32 codeSize, Vec<std::wstring>& ex
 }
 
 std::unique_ptr<u8[]> 
-CompileShader(ShaderFileInfo info, const char* path, u32 codeSize, Vec<std::wstring>& extraArgs, bool includeErrorsAndDisassembly)
+CompileShader(ShaderFileInfo info, const char* path, Vec<std::wstring>& extraArgs, bool includeErrorsAndDisassembly)
 {
     assert(info.entryPoint && info.file);
 
@@ -339,7 +340,7 @@ CompileShader(ShaderFileInfo info, const char* path, u32 codeSize, Vec<std::wstr
 	fullPath += info.file;
 	if (!std::filesystem::exists(fullPath)) return {};
 
-    return PackShader(ShaderCompiler{}.Compile(info, path, extraArgs), includeErrorsAndDisassembly);
+    return PackShader(ShaderCompiler{}.Compile(info, fullPath, extraArgs), includeErrorsAndDisassembly);
 }
 
 bool 

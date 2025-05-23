@@ -69,3 +69,5 @@ constexpr u32 FRAME_BUFFER_COUNT{ 3 };
 
 #include "D3D12Resources.h"
 #include "D3D12Helpers.h"
+
+#define RENDER_2D_TEST 0
