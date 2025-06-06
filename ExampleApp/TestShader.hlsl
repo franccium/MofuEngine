@@ -126,7 +126,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     float3 specularColor = float3(0.9, 0.9, 0.9);
     float specularPower = 16.f;
 
-    float3 lightDirection = float3(0.7f, 0.7f, -0.7f);
+    float3 lightDirection = float3(0.7f, 0.7f, -0.2f);
     float NdotL = saturate(dot(normal, lightDirection));
     float3 lightColor = float3(0.6f, 0.33f, 0.9f);
     color += CalculateLighting(normal, lightDirection, viewDir, lightColor, diffuseColor, specularColor, specularPower);

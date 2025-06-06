@@ -17,8 +17,10 @@
 
 #ifdef _DEBUG
 #define DEBUG_OP(expr) expr
+#ifdef _WIN64 // temporary here
 #define DEBUG_LOG(expr) OutputDebugStringA("*** Debug Log: "); OutputDebugStringA(expr)
 #define DEBUG_LOGW(expr) OutputDebugStringW(L"*** Debug Log: "); OutputDebugStringW(expr)
+#endif
 #else
 #define DEBUG_OP(expr)
 #define DEBUG_LOGW(expr)

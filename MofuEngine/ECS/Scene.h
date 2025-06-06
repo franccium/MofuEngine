@@ -17,7 +17,7 @@ struct EntityBlock
 
 	Vec<Entity> entities;
 	Vec<id::generation_t> generations;
-	component::TransformBlock localTransforms;
+	component::TransformBlock LocalTransforms;
 	//TODO: memory pool for components up to 16 KiB
 };
 

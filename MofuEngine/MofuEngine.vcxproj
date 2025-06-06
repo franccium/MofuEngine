@@ -178,11 +178,12 @@
     <ClInclude Include="ECS\Entity.h" />
     <ClInclude Include="ECS\EntityManager.h" />
     <ClInclude Include="ECS\Scene.h" />
-    <ClInclude Include="ECS\System.h" />
+    <ClInclude Include="ECS\SystemRegistry.h" />
     <ClInclude Include="ECS\Transform.h" />
     <ClInclude Include="Editor\AssetBrowser.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
     <ClInclude Include="EngineAPI\Camera.h" />
+    <ClInclude Include="EngineAPI\ECS\System.h" />
     <ClInclude Include="External\imgui\include\imconfig.h" />
     <ClInclude Include="External\imgui\include\imgui.h" />
     <ClInclude Include="External\imgui\include\imgui_impl_dx12.h" />

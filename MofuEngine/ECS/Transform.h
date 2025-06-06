@@ -24,10 +24,10 @@ struct WorldTransform
 // exposed to various systems as read-only or read-write
 struct LocalTransform
 {
-	v3 position{ 0.0f, 0.0f, 0.0f };
-	v3 rotation{ 0.0f, 0.0f, 0.0f };
-	v3 scale{ 1.0f, 1.0f, 1.0f };
-	v3 forward{ 0.0f, 0.0f, 1.0f };
+	v3 Position{ 0.0f, 0.0f, 0.0f };
+	v3 Rotation{ 0.0f, 0.0f, 0.0f };
+	v3 Scale{ 1.0f, 1.0f, 1.0f };
+	v3 Forward{ 0.0f, 0.0f, 1.0f };
 };
 
 
@@ -35,7 +35,8 @@ struct LocalTransform
 struct TransformBlock
 {
 	//TODO: sotre in a way that lets only use dirty transforms or like optimize for unmoveable entities 
-	Vec<LocalTransform> localTransforms;
+	// or just versions instead?
+	Vec<LocalTransform> LocalTransforms;
 
 	void ReserveSpace(u32 entityCount)
 	{

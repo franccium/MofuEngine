@@ -107,6 +107,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\TestTimer.h" />
     <ClInclude Include="src\WindowTest.h" />
   </ItemGroup>
   <ItemGroup>

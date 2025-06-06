@@ -96,7 +96,7 @@ FillTestData()
 			block.signature = GenerateCetMask<component::LocalTransform>();
 		}
 
-		block.localTransforms.ReserveSpace(TEST_ENTITY_COUNT);
+		block.LocalTransforms.ReserveSpace(TEST_ENTITY_COUNT);
 
 		for (u32 i{ 0 }; i < TEST_ENTITY_COUNT; ++i)
 		{
@@ -189,7 +189,8 @@ InitializeECS()
 	TestQueries();
 }
 
-void ShutdownECS()
+void 
+ShutdownECS()
 {
 }
 

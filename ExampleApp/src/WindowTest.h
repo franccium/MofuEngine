@@ -12,6 +12,7 @@
 #include "EngineAPI/Camera.h"
 #include "Content/ResourceCreation.h"
 #include "Graphics/GeometryData.h"
+#include "TestTimer.h"
 
 constexpr u32 WINDOW_COUNT{ 1 };
 
@@ -32,6 +33,8 @@ bool isResized{ false };
 u32 renderItemCount{ 0 };
 Vec<id_t> renderItems{};
 Vec<id_t> renderItemIDsCache{};
+
+Timer timer{};
 
 bool MofuInitialize();
 void MofuShutdown();
@@ -175,6 +178,7 @@ bool MofuInitialize()
 
 void MofuUpdate()
 {
+	timer.Start();
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 	Vec<f32> thresholds{ renderItemCount };
@@ -198,6 +202,7 @@ void MofuUpdate()
 			renderSurfaces[i].surface.surface.Render(frameInfo);
 		}
 	}
+	timer.End();
 }
 
 void MofuShutdown()

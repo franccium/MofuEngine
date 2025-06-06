@@ -1,19 +1,15 @@
 #include "CommonHeaders.h"
 #include "ECS/ECSCommon.h"
 #include "Utilities/Logger.h"
+#include "EngineAPI/ECS/System.h"
 
 using namespace mofu;
 
-ADD_SYSTEM(TestSystem)
-struct TestSystem : public ecs::system::System
+struct TestSystem : ecs::system::System<TestSystem>
 {
-	void Begin()
-	{
-		log::Info("TestSystem::Begin");
-	}
-
-	void Update(f32 dt)
+	void Update(const ecs::system::SystemUpdateData data)
 	{
 		log::Info("TestSystem::Update");
 	}
 };
+REGISTER_SYSTEM(TestSystem, ecs::system::SystemGroup::Update, 0);

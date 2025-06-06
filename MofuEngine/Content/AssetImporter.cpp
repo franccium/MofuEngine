@@ -108,12 +108,12 @@ ImportMesh(std::filesystem::path path)
 }
 
 using AssetImporter = void(*)(std::filesystem::path path);
-constexpr std::array<AssetImporter, AssetType::Count> assetImporters{
+constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
 	ImportMesh,
 };
 
-const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtension{
+const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtension {
 	{ ".fbx", AssetType::Mesh },
 };
 

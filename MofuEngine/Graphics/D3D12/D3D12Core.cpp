@@ -508,6 +508,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
 
     //gui::RenderGUI(cmdList);
+    //gui::RenderTextureIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
 #if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
     //TODO: make it work with post processing
