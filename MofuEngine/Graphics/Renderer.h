@@ -2,6 +2,7 @@
 #include "CommonHeaders.h"
 #include "Platform/Window.h"
 #include "EngineAPI/Camera.h"
+#include "ECS/Entity.h"
 
 // A high level renderer with function pointers to the set platform's implementation
 namespace mofu::graphics {
@@ -213,6 +214,6 @@ void RemoveTexture(id_t id);
 id_t AddMaterial(MaterialInitInfo info);
 void RemoveMaterial(id_t id);
 
-id_t AddRenderItem(id_t entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
+id_t AddRenderItem(ecs::entity_id entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
 void RemoveRenderItem(id_t id);
 }

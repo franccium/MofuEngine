@@ -138,6 +138,12 @@
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ECS\ECSCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineAPI\ECS\SceneAPI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -333,7 +339,22 @@
     <ClInclude Include="ECS\SystemRegistry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EngineAPI\ECS\System.h">
+    <ClInclude Include="EngineAPI\ECS\SystemAPI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\ECSCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\QueryView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineAPI\ECS\SceneAPI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\Systems\TransformSystem.cpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\Systems\SubmitEntityRenderSystem.cpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

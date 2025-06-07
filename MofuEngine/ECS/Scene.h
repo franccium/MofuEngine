@@ -1,29 +1,47 @@
 #pragma once
 #include "ECSCommon.h"
 #include "Transform.h"
-#include <bitset>
-
+#include "ECSCore.h"
+#include "Component.h"
+#include "Utilities/Logger.h"
 /*
 * has an EntityManager
 */
 
-namespace mofu::ecs {
-constexpr u32 MAX_COMPONENT_TYPES{ 256 };
-using CetMask = std::bitset<MAX_COMPONENT_TYPES>;
+namespace mofu::ecs::scene {
 
-struct EntityBlock
+template<typename... Component>
+CetMask GetCetMask() 
 {
-	CetMask signature;
-
-	Vec<Entity> entities;
-	Vec<id::generation_t> generations;
-	component::TransformBlock LocalTransforms;
-	//TODO: memory pool for components up to 16 KiB
-};
+	static const CetMask mask = [] {
+		CetMask m;
+		(m.set(component::ComponentIDGenerator::GetID<Component>()), ...);
+		return m;
+		}();
+	return mask;
+}
 
 bool IsEntityAlive(entity_id id);
+EntityData GetEntityData(entity_id id);
 
-void InitializeECS();
-void ShutdownECS();
+std::vector<EntityBlock*> GetBlocksFromCet(const CetMask& querySignature);
+
+template<typename C>
+concept IsComponent = std::derived_from<C, component::Component>;
+
+template<IsComponent C>
+C&
+GetEntityComponent(entity_id id)
+{
+	//TODO: this is definitely wrong
+	assert(IsEntityAlive(id));
+	EntityData data{ GetEntityData(id) };
+	auto arr = data.block->GetComponentArray<C>();
+	return data.block->GetComponentArray<C>()[data.row];
+}
+
+
+void Initialize();
+void Shutdown();
 
 }

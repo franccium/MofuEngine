@@ -4,8 +4,10 @@
 #include "Transform.h"
 #include <bitset>
 #include "Utilities/Logger.h"
+#include "ECSCore.h"
+#include "QueryView.h"
 
-namespace mofu::ecs {
+namespace mofu::ecs::scene {
 
 namespace
 {
@@ -15,25 +17,14 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 	return (querySignature & blockSignature) == querySignature;
 }
 
-template <typename... Component>
-CetMask
-GenerateCetMask()
-{
-	CetMask mask;
-	(mask.set(component::ComponentIDGenerator::GetID<Component>()), ...);
-	return mask;
-}
-
 std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
 constexpr u32 TEST_ENTITY_COUNT{ 5 };
-constexpr u32 TEST_BLOCK_COUNT{ 4 };
+constexpr u32 TEST_BLOCK_COUNT{ 5 };
 Vec<EntityBlock> blocks(TEST_BLOCK_COUNT);
-struct EntityData
-{
-	EntityBlock* block{ nullptr };
-	entity_id id{ 0 };
-};
-Vec<EntityData> entityData{ TEST_ENTITY_COUNT * TEST_BLOCK_COUNT };
+
+// NOTE: entity IDs globally unique, in format generation | index, index goes into entityData, generation is compared
+Vec<EntityData> entityData{};
+std::deque<u32> _freeEntityIDs; // TODO: recycling
 
 void RegisterEntityBlock(const CetMask& signature, EntityBlock* block)
 {
@@ -46,6 +37,10 @@ void RegisterEntityBlock(const CetMask& signature, EntityBlock* block)
 	}
 	// store the Cet somewhere?
 }
+
+
+
+} // anonymous namespace
 
 std::vector<EntityBlock*>
 GetBlocksFromCet(const CetMask& querySignature)
@@ -67,6 +62,15 @@ GetBlocksFromCet(const CetMask& querySignature)
 	return queryToBlockMap[querySignature];
 }
 
+EntityData 
+GetEntityData(entity_id id)
+{
+	assert(IsEntityAlive(id));
+	u32 entityIdx{ id::Index(id) };
+	assert(entityIdx < entityData.size());
+	return entityData[entityIdx];
+}
+
 void
 FillTestData()
 {
@@ -75,9 +79,13 @@ FillTestData()
 	{
 		EntityBlock& block{ blocks[j] };
 
-		if (j == 1)
+		if (j == 0)
 		{
-			block.signature = GenerateCetMask<component::LocalTransform, component::TestComponent>();
+			block.signature = GetCetMask<component::LocalTransform, component::TestComponent, component::WorldTransform>();
+		}
+		else if (j == 1)
+		{
+			block.signature = GetCetMask<component::LocalTransform, component::TestComponent, component::WorldTransform, component::Renderable>();
 			//block.signature = GenerateCetMask<component::LocalTransform, component::TestComponent, 
 			//	component::WorldTransform>();
 			//block.signature = GenerateCetMask<component::LocalTransform, component::WorldTransform, 
@@ -85,26 +93,30 @@ FillTestData()
 		}
 		else if (j == 2)
 		{
-			block.signature = GenerateCetMask<component::LocalTransform, component::TestComponent2, component::TestComponent4>();
+			block.signature = GetCetMask<component::LocalTransform, component::TestComponent2, component::TestComponent4>();
 		}
 		else if (j == 3)
 		{
-			block.signature = GenerateCetMask<component::LocalTransform, component::TestComponent, component::TestComponent3, component::TestComponent2>();
+			block.signature = GetCetMask<component::LocalTransform, component::TestComponent, component::TestComponent3, component::TestComponent2>();
 		}
 		else
 		{
-			block.signature = GenerateCetMask<component::LocalTransform>();
+			block.signature = GetCetMask<component::LocalTransform>();
 		}
 
 		block.LocalTransforms.ReserveSpace(TEST_ENTITY_COUNT);
 
 		for (u32 i{ 0 }; i < TEST_ENTITY_COUNT; ++i)
 		{
-			entity_id newId{ (id_t)block.generations.size() };
+			entity_id newId{ (u32)entityData.size()};
 			Entity newEntity{ newId };
 			block.generations.emplace_back(0);
 
 			block.entities.emplace_back(newEntity);
+			block.EntityCount++;
+
+			//TODO: do sth with this
+			block.WorldTransforms.emplace_back(component::WorldTransform{});
 			if (j == 1)
 			{
 				// add TestComponent to the second EntityBlock
@@ -112,9 +124,9 @@ FillTestData()
 
 			// local transform can be left default
 
-			u32 idx{ i + j * TEST_ENTITY_COUNT };
-			entityData[idx].block = &blocks[j];
-			entityData[idx].id = newEntity.ID;
+			//u32 idx{ i + j * TEST_ENTITY_COUNT };
+			u32 idx{ id::Index(newEntity.ID)};
+			entityData.emplace_back(&block, i, newEntity.ID);
 		}
 	}
 }
@@ -123,7 +135,7 @@ void
 TestQueries()
 {
 	log::Info("Looking for LocalTransform:");
-	CetMask querySignature{ GenerateCetMask<component::LocalTransform>() };
+	CetMask querySignature{ GetCetMask<component::LocalTransform>() };
 	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
 	{
 		EntityBlock& block{ blocks[i] };
@@ -138,7 +150,7 @@ TestQueries()
 	}
 
 	log::Info("Looking for TestComponent3 and TestComponent:");
-	CetMask querySignature2{ GenerateCetMask<component::TestComponent3, component::TestComponent>() };
+	CetMask querySignature2{ GetCetMask<component::TestComponent3, component::TestComponent>() };
 	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
 	{
 		EntityBlock& block{ blocks[i] };
@@ -153,7 +165,7 @@ TestQueries()
 	}
 
 	log::Info("Looking for TestComponent4 and TestComponent2 and TestComponent");
-	CetMask querySignature3{ GenerateCetMask<component::TestComponent4, component::TestComponent, component::TestComponent2>() };
+	CetMask querySignature3{ GetCetMask<component::TestComponent4, component::TestComponent, component::TestComponent2>() };
 	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
 	{
 		EntityBlock& block{ blocks[i] };
@@ -168,9 +180,6 @@ TestQueries()
 	}
 }
 
-} // anonymous namespace
-
-
 bool
 IsEntityAlive(entity_id id)
 {
@@ -180,17 +189,17 @@ IsEntityAlive(entity_id id)
 }
 
 void
-InitializeECS()
+Initialize()
 {
 	//TODO: bake the EntityBlocks from scene data
 
 	FillTestData();
 
-	TestQueries();
+	//TestQueries();
 }
 
 void 
-ShutdownECS()
+Shutdown()
 {
 }
 

@@ -110,7 +110,7 @@ CreateTestRenderItems()
 {
 	u32 count{ 1 };
 	planeMeshTest.MeshID = LoadMesh(TEST_MESH_PATH);
-	planeMeshTest.EntityID = (ecs::entity_id)0;
+	planeMeshTest.EntityID = ecs::entity_id{ 0 };
 	CreateMaterial();
 	id_t materials[MAX_MATERIALS_PER_MODEL]{};
 	id_t* materialIDs;

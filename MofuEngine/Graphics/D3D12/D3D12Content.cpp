@@ -5,13 +5,14 @@
 #include "Content/ResourceCreation.h"
 #include "D3D12Content/D3D12ContentCommon.h"
 #include "D3D12GPass.h"
+#include "ECS/Entity.h"
 
 namespace mofu::graphics::d3d12::content {
 namespace {
 
 struct D3D12RenderItem
 {
-	id_t EntityID; // access the rendered object's transform
+	ecs::entity_id EntityID; // access the rendered object's transform
 	id_t SubmeshGpuID; // to get vertex and index buffers
 	id_t MaterialID;
 	id_t GPassPsoID;
@@ -297,7 +298,7 @@ namespace render_item {
 * buffer[2 .. n] = D3D12RenderItemIDs
 */
 id_t 
-AddRenderItem(id_t entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
+AddRenderItem(ecs::entity_id entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
 {
 	assert(id::IsValid(entityID) && id::IsValid(geometryContentID));
 	assert(materialCount && materialIDs);

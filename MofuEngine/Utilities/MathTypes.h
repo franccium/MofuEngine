@@ -38,6 +38,7 @@ using m4x4 = DirectX::XMFLOAT4X4;
 using m4x4a = DirectX::XMFLOAT4X4A;
 
 using xmm = DirectX::XMVECTOR;
+using xmmat = DirectX::XMMATRIX;
 #endif
 
 constexpr v2 v2zero{ 0.f, 0.f };

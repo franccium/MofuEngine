@@ -45,6 +45,11 @@ Initialize()
 }
 
 void
+Shutdown()
+{
+}
+
+void
 Clear()
 {
     LogBuffer.clear();

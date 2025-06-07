@@ -6,6 +6,8 @@
 #include "D3D12Content/D3D12Geometry.h"
 #include "D3D12Content/D3D12Material.h"
 #include "D3D12Content/D3D12Texture.h"
+#include "ECS/Transform.h"
+#include "EngineAPI/ECS/SceneAPI.h"
 
 namespace mofu::graphics::d3d12::gpass {
 namespace {
@@ -16,7 +18,7 @@ struct GPassCache
 	u32 DescriptorIndexCount{ 0 };
 
 	// Render Items Cache
-	id_t* EntityIDs{ nullptr };
+	ecs::entity_id* EntityIDs{ nullptr };
 	id_t* SubmeshGpuIDs{ nullptr };
 	id_t* MaterialIDs{ nullptr };	
 	ID3D12PipelineState** GPassPipelineStates{ nullptr };
@@ -96,7 +98,7 @@ struct GPassCache
 				_buffer.resize(NewBufferSize);
 			}
 
-			EntityIDs = (id_t*)_buffer.data();
+			EntityIDs = (ecs::entity_id*)_buffer.data();
 			SubmeshGpuIDs = (id_t*)(&EntityIDs[RenderItemCount]);
 			MaterialIDs = (id_t*)(&SubmeshGpuIDs[RenderItemCount]);
 			GPassPipelineStates = (ID3D12PipelineState**)(&MaterialIDs[RenderItemCount]);
@@ -181,6 +183,7 @@ constexpr f32 CLEAR_VALUE[4]{};
 //	return gpassRootSig && gpassPSO;
 //}
 
+
 void
 FillPerObjectData(const D3D12FrameInfo& frameInfo, const content::material::MaterialsCache& materialsCache)
 {
@@ -189,7 +192,7 @@ FillPerObjectData(const D3D12FrameInfo& frameInfo, const content::material::Mate
 
 	const GPassCache& cache{ frameCache };
 	const u32 renderItemCount{ (u32)cache.Size() };
-	id_t currentEntityID{ id::INVALID_ID };
+	ecs::entity_id currentEntityID{ id::INVALID_ID };
 	hlsl::PerObjectData* currentDataPointer{ nullptr };
 	ConstantBuffer& cbuffer{ core::CBuffer() };
 
@@ -206,24 +209,28 @@ FillPerObjectData(const D3D12FrameInfo& frameInfo, const content::material::Mate
 			currentEntityID = cache.EntityIDs[i];
 			hlsl::PerObjectData data{};
 
+			//TODO: do something that utilizes ecs better
+			ecs::component::WorldTransform& transform{ ecs::scene::GetComponent<ecs::component::WorldTransform>(currentEntityID) };
+			xmmat transformWorld{ XMLoadFloat4x4(&transform.TRS) };
+
 			//TODO: fill with actual transform data
-			v3 pos{ -3.f, -10.f, 10.f };
-			v3 scale{ 1.f, 1.f, 1.f };
-			//f32 scaling{ (f32)frame };
-			//v3 scale{ scaling, scaling, scaling };
-			v4 rot{ 0.f, 0.f, 0.f, 0.f };
-			xmm t{ XMLoadFloat3(&pos) };
-			xmm r{ XMLoadFloat4(&rot) };
-			xmm s{ XMLoadFloat3(&scale) };
-			XMMATRIX transformWorld{ XMMatrixAffineTransformation(s, XMQuaternionIdentity(), r, t) };
+			//v3 pos{ -3.f, -10.f, 10.f };
+			//v3 scale{ 1.f, 1.f, 1.f };
+			////f32 scaling{ (f32)frame };
+			////v3 scale{ scaling, scaling, scaling };
+			//v4 rot{ 0.f, 0.f, 0.f, 0.f };
+			//xmm t{ XMLoadFloat3(&pos) };
+			//xmm r{ XMLoadFloat4(&rot) };
+			//xmm s{ XMLoadFloat3(&scale) };
+			//XMMATRIX transformWorld{ XMMatrixAffineTransformation(s, XMQuaternionIdentity(), r, t) };
 			XMStoreFloat4x4(&data.World, transformWorld);
 			transformWorld.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
-			XMMATRIX inverseWorld{ XMMatrixInverse(nullptr, transformWorld) };
+			xmmat inverseWorld{ XMMatrixInverse(nullptr, transformWorld) };
 			XMStoreFloat4x4(&data.InvWorld, inverseWorld);
 
 
-			XMMATRIX world{ XMLoadFloat4x4(&data.World) };
-			XMMATRIX wvp{ XMMatrixMultiply(world, frameInfo.Camera->ViewProjection()) };
+			xmmat world{ XMLoadFloat4x4(&data.World) };
+			xmmat wvp{ XMMatrixMultiply(world, frameInfo.Camera->ViewProjection()) };
 			XMStoreFloat4x4(&data.WorldViewProjection, wvp);
 
 			const MaterialSurface* const surface{ materialsCache.MaterialSurfaces[i] };

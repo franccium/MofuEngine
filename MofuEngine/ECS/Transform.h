@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "Component.h"
 
 /*
 * Updates to transform will first change the values stored in TransformCache, and the changes will be applied 
@@ -16,13 +17,18 @@ struct InitInfo
 };
 
 // used for rendering
-struct WorldTransform
+struct WorldTransform : Component
 {
+	m4x4 TRS{};
+};
 
+struct Renderable : Component
+{
+	//TODO: mesh material sth
 };
 
 // exposed to various systems as read-only or read-write
-struct LocalTransform
+struct LocalTransform : Component
 {
 	v3 Position{ 0.0f, 0.0f, 0.0f };
 	v3 Rotation{ 0.0f, 0.0f, 0.0f };
@@ -30,8 +36,7 @@ struct LocalTransform
 	v3 Forward{ 0.0f, 0.0f, 1.0f };
 };
 
-
-
+static f32 count; // TODO: testing
 struct TransformBlock
 {
 	//TODO: sotre in a way that lets only use dirty transforms or like optimize for unmoveable entities 
@@ -40,6 +45,14 @@ struct TransformBlock
 
 	void ReserveSpace(u32 entityCount)
 	{
+		LocalTransforms.resize(entityCount);
+		for (auto& transform : LocalTransforms)
+		{
+			transform.Position = { -3.f, -10.f, 10.f };
+			//transform.Position.x = count;
+
+			count += 0.02f;
+		}
 	}
 };
 }

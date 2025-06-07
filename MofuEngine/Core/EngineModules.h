@@ -1,13 +1,19 @@
 #pragma once
 #include "CommonHeaders.h"
 #include "Utilities/Logger.h"
-#include "ECS/Scene.h"
+#include "ECS/ECSCore.h"
 
 namespace mofu {
 bool InitializeEngineModules()
 {
 	mofu::log::Initialize();
-	mofu::ecs::InitializeECS();
+	mofu::ecs::Initialize();
 	return true;
+}
+
+void ShutdownEngineModules()
+{
+	mofu::ecs::Shutdown();
+	mofu::log::Shutdown();
 }
 }

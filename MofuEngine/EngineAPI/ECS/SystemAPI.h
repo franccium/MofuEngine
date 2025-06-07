@@ -36,10 +36,12 @@ struct System
 	}
 };
 
+
+
 }
 #include "ECS/SystemRegistry.h"
 
 
 #define REGISTER_SYSTEM(Type, Group, Order)                                       \
-	static ::mofu::ecs::system::detail::AutoRegistrar<Type>                      \
+	static ::mofu::ecs::system::detail::RegisterScriptCall<Type>                      \
 		_reg_##Type##_##__LINE__ { (Group), (Order) }

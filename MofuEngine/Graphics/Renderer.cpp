@@ -291,7 +291,7 @@ RemoveMaterial(id_t id)
 }
 
 id_t 
-AddRenderItem(id_t entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
+AddRenderItem(ecs::entity_id entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
 {
 	return gfxInterface.resources.addRenderItem(entityID, geometryContentID, materialCount, materialIDs);
 }

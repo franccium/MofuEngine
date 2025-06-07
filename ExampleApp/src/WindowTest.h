@@ -13,6 +13,8 @@
 #include "Content/ResourceCreation.h"
 #include "Graphics/GeometryData.h"
 #include "TestTimer.h"
+#include "EngineAPI/ECS/SystemAPI.h"
+#include "EngineAPI/ECS/SceneAPI.h"
 
 constexpr u32 WINDOW_COUNT{ 1 };
 
@@ -180,6 +182,10 @@ void MofuUpdate()
 {
 	timer.Start();
 	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+	ecs::system::SystemUpdateData ecsUpdateData{};
+	ecsUpdateData.DeltaTime = 16.7f;
+	ecs::Update(ecsUpdateData);
 
 	Vec<f32> thresholds{ renderItemCount };
 

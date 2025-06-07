@@ -9,35 +9,36 @@ struct Component
 
 };
 
-struct TestComponent
+struct TestComponent : Component
 {
     v4 data{};
     u32 data2{};
 };
 
-struct TestComponent2
+struct TestComponent2 : Component
 {
     v4 data{};
     u32 data2{};
 };
 
-struct TestComponent3
+struct TestComponent3 : Component
 {
     v4 data{};
     u32 data2{};
 };
 
-struct TestComponent4
+struct TestComponent4 : Component
 {
     v4 data{};
     u32 data2{};
 };
 
-struct TestComponent5
+struct TestComponent5 : Component
 {
     v4 data{};
     u32 data2{};
 };
+
 
 //template<typename T>
 //struct ComponentTypeID
@@ -47,6 +48,7 @@ struct TestComponent5
 //	//consteval?
 //	static constexpr u32 value = typeid(T).hash_code();
 //};
+
 
 class ComponentIDGenerator {
 public:

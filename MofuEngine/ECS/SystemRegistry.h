@@ -1,6 +1,6 @@
 #pragma once
 #include "ECSCommon.h"
-#include "EngineAPI/ECS/System.h"
+#include "EngineAPI/ECS/SystemAPI.h"
 #include <array>
 #include <functional>
 
@@ -87,9 +87,9 @@ private:
 namespace mofu::ecs::system::detail
 {
 	template<IsSystem T>
-	struct AutoRegistrar
+	struct RegisterScriptCall
 	{
-		AutoRegistrar(SystemGroup::Group g, u32 o)
+		RegisterScriptCall(SystemGroup::Group g, u32 o)
 		{
 			SystemRegistry::Instance().RegisterSystem<T>(g, o);
 		}

@@ -12,6 +12,7 @@ enum LogSeverityLevel
 };
 
 void Initialize();
+void Shutdown();
 void Clear();
 void Info(const char* fmt, ...) IM_FMTARGS(2);
 void Warn(const char* fmt, ...) IM_FMTARGS(2);
