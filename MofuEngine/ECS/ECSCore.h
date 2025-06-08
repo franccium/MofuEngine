@@ -3,6 +3,7 @@
 #include <bitset>
 #include "Transform.h"
 #include "Component.h"
+#include "Graphics/D3D12/D3D12Core.h"
 
 namespace mofu::ecs {
 namespace system {
@@ -55,4 +56,6 @@ void Initialize();
 void Shutdown();
 
 void Update(system::SystemUpdateData data);
+//TODO: temporary solution
+void UpdateRenderSystems(system::SystemUpdateData data, const graphics::d3d12::D3D12FrameInfo& d3d12FrameInfo);
 }

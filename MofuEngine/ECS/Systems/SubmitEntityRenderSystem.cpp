@@ -14,12 +14,12 @@ namespace mofu::ecs::system {
 		{
 			//log::Info("SubmitEntityRenderSystem::Update");
 
-			for (auto [entity, wt, renderable] : ecs::scene::GetRW<ecs::component::WorldTransform, ecs::component::Renderable>())
-			{
-				
-			}
+			//for (auto [entity, wt, renderable] : ecs::scene::GetRW<ecs::component::WorldTransform, ecs::component::RenderMesh>())
+			//{
+			//	
+			//}
 		}
 	};
-	REGISTER_SYSTEM(SubmitEntityRenderSystem, ecs::system::SystemGroup::PostUpdate, 0);
+	REGISTER_SYSTEM(SubmitEntityRenderSystem, ecs::system::SystemGroup::PostUpdate, 2);
 
 }

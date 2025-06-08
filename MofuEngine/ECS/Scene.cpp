@@ -18,7 +18,7 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 }
 
 std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
-constexpr u32 TEST_ENTITY_COUNT{ 5 };
+constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
 constexpr u32 TEST_BLOCK_COUNT{ 5 };
 Vec<EntityBlock> blocks(TEST_BLOCK_COUNT);
 
@@ -85,7 +85,8 @@ FillTestData()
 		}
 		else if (j == 1)
 		{
-			block.signature = GetCetMask<component::LocalTransform, component::TestComponent, component::WorldTransform, component::Renderable>();
+			block.signature = GetCetMask<component::LocalTransform, component::TestComponent,
+				component::WorldTransform, component::RenderMesh, component::RenderMaterial>();
 			//block.signature = GenerateCetMask<component::LocalTransform, component::TestComponent, 
 			//	component::WorldTransform>();
 			//block.signature = GenerateCetMask<component::LocalTransform, component::WorldTransform, 

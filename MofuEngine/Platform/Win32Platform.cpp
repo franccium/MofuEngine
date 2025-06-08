@@ -182,7 +182,7 @@ ConcoctWindow(const WindowInitInfo* const initInfo)
     wc.hCursor = LoadCursor(NULL, IDI_APPLICATION);
     wc.hbrBackground = CreateSolidBrush(RGB(26, 48, 76));
     wc.lpszMenuName = NULL;
-    wc.lpszClassName = L"JinjaWindow";
+    wc.lpszClassName = L"MofuWindow";
     wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     RegisterClassEx(&wc);

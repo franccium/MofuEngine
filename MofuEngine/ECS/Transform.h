@@ -22,9 +22,14 @@ struct WorldTransform : Component
 	m4x4 TRS{};
 };
 
-struct Renderable : Component
+struct RenderMesh : Component
 {
-	//TODO: mesh material sth
+	m4x4 TRS{};
+};
+
+struct RenderMaterial : Component
+{
+	m4x4 TRS{};
 };
 
 // exposed to various systems as read-only or read-write

@@ -112,6 +112,8 @@
     <ClCompile Include="Core\Main.cpp" />
     <ClCompile Include="ECS\ECSCore.cpp" />
     <ClCompile Include="ECS\Scene.cpp" />
+    <ClCompile Include="ECS\Systems\PrepareFrameRenderSystem.cpp" />
+    <ClCompile Include="ECS\Systems\PreparePerObjectDataRenderSystem.cpp" />
     <ClCompile Include="Editor\AssetBrowser.cpp" />
     <ClCompile Include="Editor\EditorInterface.cpp" />
     <ClCompile Include="EngineAPI\ECS\SceneAPI.cpp" />
@@ -219,6 +221,7 @@
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
+    <ClInclude Include="Graphics\D3D12\GPassCache.h" />
     <ClInclude Include="Graphics\GeometryData.h" />
     <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />

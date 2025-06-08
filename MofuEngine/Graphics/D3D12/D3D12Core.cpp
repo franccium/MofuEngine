@@ -8,6 +8,8 @@
 #include "D3D12GUI.h"
 #include "D3D12Upload.h"
 #include "D3D12Camera.h"
+#include "ECS/ECSCore.h"
+#include "EngineAPI/ECS/SystemAPI.h"
 
 #define ENABLE_GPU_BASED_VALIDATION 0
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
@@ -476,6 +478,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     f32 deltaTime{ 16.7f };
     const D3D12FrameInfo d3d12FrameInfo{ GetD3D12FrameInfo(frameInfo, cbuffer, surface, frameIndex, deltaTime) };
 
+    gpass::StartNewFrame(d3d12FrameInfo);
+
     gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
     d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
 
@@ -492,6 +496,10 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     gpass::AddTransitionsForDepthPrepass(barriers);
     barriers.ApplyBarriers(cmdList);
     gpass::SetRenderTargetsForDepthPrepass(cmdList);
+
+    //TODO: for now just do that here, would need to rewrite everything
+    ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
+
     gpass::DoDepthPrepass(cmdList, d3d12FrameInfo);
 
     // Main GPass

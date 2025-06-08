@@ -1,11 +1,13 @@
 #pragma once
 #include "D3D12CommonHeaders.h"
 
-namespace jinja::graphics::d3d12 {
+namespace mofu::graphics::d3d12 {
 struct D3D12FrameInfo;
 }
 
 namespace mofu::graphics::d3d12::gpass {
+struct GPassCache;
+
 constexpr DXGI_FORMAT MAIN_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT };
 constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT{ DXGI_FORMAT_D32_FLOAT };
 
@@ -42,4 +44,9 @@ void AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers);
 
 void SetRenderTargetsForDepthPrepass(DXGraphicsCommandList* cmdList);
 void SetRenderTargetsForGPass(DXGraphicsCommandList* cmdList);
+
+D3D12FrameInfo& GetCurrentD3D12FrameInfo();
+void StartNewFrame(const D3D12FrameInfo& frameInfo);
+
+GPassCache& GetGPassFrameCache();
 }
