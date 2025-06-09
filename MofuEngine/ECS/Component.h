@@ -1,7 +1,18 @@
 #pragma once
+#include "ECSCommon.h"
+#include <bitset>
 
-template<typename T>
-struct ComponentID;
+#if EDITOR_BUILD
+#include "imgui.h"
+#endif
+
+namespace mofu::ecs {
+using ComponentID = u32;
+
+constexpr ComponentID MAX_COMPONENT_TYPES{ 256 };
+using CetMask = std::bitset<MAX_COMPONENT_TYPES>;
+
+}
 
 namespace mofu::ecs::component {
 struct Component
@@ -13,52 +24,65 @@ struct TestComponent : Component
 {
     v4 data{};
     u32 data2{};
+
+    static void RenderFields(TestComponent& c)
+    {
+		ImGui::InputFloat4("Data", &c.data.x);
+		ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.data2);
+    }
 };
 
 struct TestComponent2 : Component
 {
     v4 data{};
     u32 data2{};
+
+    static void RenderFields(TestComponent2& c)
+    {
+        ImGui::InputFloat4("Data", &c.data.x);
+        ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.data2);
+    }
 };
 
 struct TestComponent3 : Component
 {
     v4 data{};
     u32 data2{};
+
+    static void RenderFields(TestComponent3& c)
+    {
+        ImGui::InputFloat4("Data", &c.data.x);
+        ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.data2);
+    }
 };
 
 struct TestComponent4 : Component
 {
     v4 data{};
     u32 data2{};
+
+    static void RenderFields(TestComponent4& c)
+    {
+        ImGui::InputFloat4("Data", &c.data.x);
+        ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.data2);
+    }
 };
 
 struct TestComponent5 : Component
 {
     v4 data{};
     u32 data2{};
-};
 
-
-//template<typename T>
-//struct ComponentTypeID
-//{
-//	//constinit?
-//
-//	//consteval?
-//	static constexpr u32 value = typeid(T).hash_code();
-//};
-
-
-class ComponentIDGenerator {
-public:
-    template<typename T>
-    static u64 GetID() {
-        static const u64 id = counter++;
-        return id;
+    static void RenderFields(TestComponent5& c)
+    {
+        ImGui::InputFloat4("Data", &c.data.x);
+        ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.data2);
     }
-private:
-    static inline u64 counter = 0;
 };
- 
+
+template<typename T>
+void RenderComponentFields(T& component) {
+    T::RenderFields(component);
+}
+
 }

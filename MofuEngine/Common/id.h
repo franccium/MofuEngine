@@ -45,6 +45,12 @@ Generation(id_t forId)
 	return (forId >> detail::INDEX_BITS) & detail::GENERATION_MASK;
 }
 
+constexpr inline void
+AdvanceGeneration(id_t& forId)
+{
+	forId += (id_t{ 1 } << detail::INDEX_BITS);
+}
+
 #ifdef _DEBUG
 namespace detail {
 	struct IdBase

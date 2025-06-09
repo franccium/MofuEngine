@@ -161,7 +161,7 @@ bool MofuInitialize()
 		cSurf.surface.window = platform::ConcoctWindow(&info[i]);
 		cSurf.surface.surface = graphics::CreateSurface(cSurf.surface.window);
 		cSurf.entity = ecs::Entity{};
-		cSurf.camera = graphics::CreateCamera(graphics::PerspectiveCameraInitInfo{ cSurf.entity.ID });
+		cSurf.camera = graphics::CreateCamera(graphics::PerspectiveCameraInitInfo{ cSurf.entity });
 		cSurf.camera.AspectRatio((f32)cSurf.surface.window.Width() / cSurf.surface.window.Height());
 	}
 

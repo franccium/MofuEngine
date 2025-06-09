@@ -14,7 +14,7 @@ id_t content::CreateResourceFromBlob(const void* const blob, content::AssetType:
 struct MeshTest
 {
 	id_t MeshID{ id::INVALID_ID };
-	ecs::entity_id EntityID{ id::INVALID_ID };
+	ecs::Entity EntityID{ id::INVALID_ID };
 };
 MeshTest planeMeshTest{};
 
@@ -110,7 +110,7 @@ CreateTestRenderItems()
 {
 	u32 count{ 1 };
 	planeMeshTest.MeshID = LoadMesh(TEST_MESH_PATH);
-	planeMeshTest.EntityID = ecs::entity_id{ 0 };
+	planeMeshTest.EntityID = ecs::Entity{ 1 };
 	CreateMaterial();
 	id_t materials[MAX_MATERIALS_PER_MODEL]{};
 	id_t* materialIDs;

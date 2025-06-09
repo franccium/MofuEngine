@@ -4,44 +4,44 @@
 #include "Transform.h"
 #include "Component.h"
 #include "Graphics/D3D12/D3D12Core.h"
+#include "ComponentRegistry.h"
 
 namespace mofu::ecs {
 namespace system {
 struct SystemUpdateData;
 }
 
-constexpr u32 MAX_COMPONENT_TYPES{ 256 };
-using CetMask = std::bitset<MAX_COMPONENT_TYPES>;
+template<typename C>
+concept IsComponent = std::derived_from<C, component::Component>;
 
+constexpr u32 MAX_ENTITIES_PER_BLOCK{ 128 };
 
+struct CetLayout
+{
+	CetMask Signature;
+	u32 CetSize{ 0 };
+	u16 Capacity{ 0 };
+	u32 ComponentOffsets[MAX_COMPONENT_TYPES]{ sizeof(Entity) }; // there is always one entity, so the first offset is sizeof(Entity)
+};
 
 struct EntityBlock
 {
-	CetMask signature;
-	u32 EntityCount{ 0 };
-	void* ComponentBuffers[MAX_COMPONENT_TYPES]{ nullptr }; // TODO: is this too much
+	CetMask Signature;
+	u16 EntityCount{ 0 };
+	u16 Capacity{ 0 }; // up to 128, maybe less based on component size
+	u32 CetSize{ 0 };
+	Entity* Entities; // the first array in ComponentData
+	//id::generation_t* Generations;
+	u8* ComponentData{ nullptr };
+	u32 ComponentOffsets[MAX_COMPONENT_TYPES]{ sizeof(Entity) }; // there is always one entity, so the first offset is sizeof(Entity)
 
-	Vec<Entity> entities;
-	Vec<id::generation_t> generations;
-	component::TransformBlock LocalTransforms; // TODO: have this or not
-	std::vector<component::WorldTransform> WorldTransforms; // TODO: have this or not
-	//TODO: memory pool for components up to 16 KiB
-
-	template<typename T>
-	T* GetComponentArray()
+	template<IsComponent C>
+	C* GetComponentArray()
 	{
-		ComponentBuffers[component::ComponentIDGenerator::GetID<component::LocalTransform>()] = LocalTransforms.LocalTransforms.data(); // FIXME: testing
-		ComponentBuffers[component::ComponentIDGenerator::GetID<component::WorldTransform>()] = WorldTransforms.data(); // FIXME: testing
-		auto it = ComponentBuffers[component::ComponentIDGenerator::GetID<T>()];
-		return reinterpret_cast<T*>(it);
+		u32 offset = ComponentOffsets[component::ID<C>];
+		assert(offset);
+		return reinterpret_cast<C*>(ComponentData + offset);
 	}
-
-	//template<typename T>	
-	//const T* GetComponentArray()
-	//{
-	//	auto it = ComponentBuffers[component::ComponentIDGenerator::GetID<T>()];
-	//	return reinterpret_cast<const T*>(it);
-	//}
 };
 
 struct EntityData
@@ -49,7 +49,7 @@ struct EntityData
 	EntityBlock* block{ nullptr };
 	u32 row{ 0 }; // row in the block
 	u32 generation{ 0 };
-	entity_id id{ 0 };
+	Entity id{ 0 };
 };
 
 void Initialize();

@@ -7,9 +7,5 @@
 
 namespace mofu::ecs
 {
-DEFINE_TYPED_ID(entity_id)
-struct Entity
-{
-	entity_id ID;
-};
+DEFINE_TYPED_ID(Entity)
 }

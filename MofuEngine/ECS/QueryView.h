@@ -23,7 +23,7 @@ public:
 
 		//TODO: rethink my first idea 
 		Iterator(BlockPtr* blockOffset, BlockPtr* blockEnd)
-			: _blockOffset(blockOffset), _blockEnd(blockEnd)
+			: _currentBlock(blockOffset), _lastBlock(blockEnd)
 		{
 		}
 
@@ -31,15 +31,15 @@ public:
 
 		returned_type operator*() const
 		{
-			return { (*_blockOffset)->entities[_index], (*_blockOffset)->GetComponentArray<Component>()[_index]... };
+			return { (*_currentBlock)->Entities[_index], (*_currentBlock)->GetComponentArray<Component>()[_index]... };
 		}
 
 		Iterator& operator++()
 		{
 			++_index;
-			if (_blockOffset != _blockEnd && _index == (*_blockOffset)->EntityCount)
+			if (_currentBlock != _lastBlock && _index == (*_currentBlock)->EntityCount)
 			{
-				++_blockOffset;
+				++_currentBlock;
 				_index = 0;
 			}
 			return *this;
@@ -47,12 +47,12 @@ public:
 
 		bool operator==(const Iterator& o) const
 		{
-			return _blockOffset == o._blockOffset && (_blockEnd == o._blockEnd || _index == o._index);
+			return _currentBlock == o._currentBlock && (_lastBlock == o._lastBlock || _index == o._index);
 		}
 
 	private:
-		BlockPtr* _blockOffset{ nullptr };
-		BlockPtr* _blockEnd{ nullptr };
+		BlockPtr* _currentBlock{ nullptr };
+		BlockPtr* _lastBlock{ nullptr };
 		u32 _index{ 0 };
 	};
 

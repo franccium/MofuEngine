@@ -69,6 +69,8 @@ namespace mofu::graphics::d3d12 {
 				: ecs::scene::GetRW<ecs::component::WorldTransform, 
 					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
 			{
+				if (entity != ecs::Entity{ 3 }) continue; // TODO: temporary
+
 				// PER OBJECT DATA
 				hlsl::PerObjectData* data{ cbuffer.AllocateSpace<hlsl::PerObjectData>() };
 				//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);

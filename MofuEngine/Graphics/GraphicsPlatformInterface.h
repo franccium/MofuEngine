@@ -41,7 +41,7 @@ struct PlatformInterface
 		id_t(*addMaterial)(const MaterialInitInfo&);
 		void(*removeMaterial)(id_t);
 
-		id_t(*addRenderItem)(ecs::entity_id, id_t, u32, const id_t* const);
+		id_t(*addRenderItem)(ecs::Entity, id_t, u32, const id_t* const);
 		void(*removeRenderItem)(id_t);
 	} resources;
 

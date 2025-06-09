@@ -57,7 +57,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -67,13 +67,17 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/EHsc %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>yaml-cppd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -112,10 +116,13 @@
     <ClCompile Include="Core\Main.cpp" />
     <ClCompile Include="ECS\ECSCore.cpp" />
     <ClCompile Include="ECS\Scene.cpp" />
+    <ClCompile Include="ECS\SceneSerializer.cpp" />
     <ClCompile Include="ECS\Systems\PrepareFrameRenderSystem.cpp" />
     <ClCompile Include="ECS\Systems\PreparePerObjectDataRenderSystem.cpp" />
     <ClCompile Include="Editor\AssetBrowser.cpp" />
     <ClCompile Include="Editor\EditorInterface.cpp" />
+    <ClCompile Include="Editor\SceneEditorView.cpp" />
+    <ClCompile Include="Editor\ValueDisplay.cpp" />
     <ClCompile Include="EngineAPI\ECS\SceneAPI.cpp" />
     <ClCompile Include="External\imgui\include\imgui.cpp" />
     <ClCompile Include="External\imgui\include\imgui_demo.cpp" />
@@ -177,6 +184,7 @@
     <ClInclude Include="Content\ResourceCreation.h" />
     <ClInclude Include="Content\ShaderCompilation.h" />
     <ClInclude Include="Core\EngineModules.h" />
+    <ClInclude Include="ECS\ComponentRegistry.h" />
     <ClInclude Include="ECS\QueryView.h" />
     <ClInclude Include="ECS\Component.h" />
     <ClInclude Include="ECS\ECSCommon.h" />
@@ -184,12 +192,15 @@
     <ClInclude Include="ECS\Entity.h" />
     <ClInclude Include="ECS\EntityManager.h" />
     <ClInclude Include="ECS\Scene.h" />
+    <ClInclude Include="ECS\SceneSerializer.h" />
     <ClInclude Include="ECS\SystemRegistry.h" />
     <ClInclude Include="ECS\Systems\SubmitEntityRenderSystem.cpp" />
     <ClInclude Include="ECS\Systems\TransformSystem.cpp" />
     <ClInclude Include="ECS\Transform.h" />
     <ClInclude Include="Editor\AssetBrowser.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
+    <ClInclude Include="Editor\SceneEditorView.h" />
+    <ClInclude Include="Editor\ValueDisplay.h" />
     <ClInclude Include="EngineAPI\Camera.h" />
     <ClInclude Include="EngineAPI\ECS\SceneAPI.h" />
     <ClInclude Include="EngineAPI\ECS\SystemAPI.h" />
@@ -236,6 +247,8 @@
     <ClInclude Include="Utilities\Math.h" />
     <ClInclude Include="Utilities\MathTypes.h" />
     <ClInclude Include="Utilities\DataStructures\Vector.h" />
+    <ClInclude Include="Utilities\PoolAllocator.h" />
+    <ClInclude Include="Utilities\SlabAllocator.h" />
     <ClInclude Include="Utilities\TypeUtils.h" />
   </ItemGroup>
   <ItemGroup>

@@ -15,7 +15,7 @@ struct GPassCache
 	u32 DescriptorIndexCount{ 0 };
 
 	// Render Items Cache
-	ecs::entity_id* EntityIDs{ nullptr };
+	ecs::Entity* EntityIDs{ nullptr };
 	id_t* SubmeshGpuIDs{ nullptr };
 	id_t* MaterialIDs{ nullptr };
 	ID3D12PipelineState** GPassPipelineStates{ nullptr };
@@ -95,7 +95,7 @@ struct GPassCache
 				_buffer.resize(NewBufferSize);
 			}
 
-			EntityIDs = (ecs::entity_id*)_buffer.data();
+			EntityIDs = (ecs::Entity*)_buffer.data();
 			SubmeshGpuIDs = (id_t*)(&EntityIDs[RenderItemCount]);
 			MaterialIDs = (id_t*)(&SubmeshGpuIDs[RenderItemCount]);
 			GPassPipelineStates = (ID3D12PipelineState**)(&MaterialIDs[RenderItemCount]);

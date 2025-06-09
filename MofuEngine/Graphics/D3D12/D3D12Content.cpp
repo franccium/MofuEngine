@@ -12,7 +12,7 @@ namespace {
 
 struct D3D12RenderItem
 {
-	ecs::entity_id EntityID; // access the rendered object's transform
+	ecs::Entity EntityID; // access the rendered object's transform
 	id_t SubmeshGpuID; // to get vertex and index buffers
 	id_t MaterialID;
 	id_t GPassPsoID;
@@ -298,7 +298,7 @@ namespace render_item {
 * buffer[2 .. n] = D3D12RenderItemIDs
 */
 id_t 
-AddRenderItem(ecs::entity_id entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
+AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
 {
 	assert(id::IsValid(entityID) && id::IsValid(geometryContentID));
 	assert(materialCount && materialIDs);

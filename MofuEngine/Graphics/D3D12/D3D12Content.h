@@ -14,14 +14,14 @@ void RemoveMaterial(id_t id);
 namespace render_item {
 struct RenderItemsCache
 {
-	ecs::entity_id* const EntityIDs;
+	ecs::Entity* const EntityIDs;
 	id_t* const SubmeshGpuIDs;
 	id_t* const MaterialIDS;
 	ID3D12PipelineState** const GpassPso;
 	ID3D12PipelineState** const DepthPso;	
 };
 
-id_t AddRenderItem(ecs::entity_id entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
+id_t AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
 void RemoveRenderItem(id_t id);
 
 void GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds);

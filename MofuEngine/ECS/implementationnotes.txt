@@ -4,7 +4,7 @@ Scene:
 EntityManager:
 
 
-Entities - identifiers, entity_id
+Entities - identifiers, Entity
 created in pools, long with all components that will be needed (components can have enity_id in their init data)
 
 Components - data

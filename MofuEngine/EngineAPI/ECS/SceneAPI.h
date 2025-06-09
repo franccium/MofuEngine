@@ -19,7 +19,7 @@ QueryView<false, Component...> GetRO()
 }
 
 template<IsComponent C>
-C& GetComponent(entity_id id)
+C& GetComponent(Entity id)
 {
 	return GetEntityComponent<C>(id);
 }

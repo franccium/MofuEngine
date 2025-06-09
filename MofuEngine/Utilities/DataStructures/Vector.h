@@ -68,6 +68,13 @@ public:
 		emplace_back(std::move(value));
 	}
 
+	constexpr void pop_back()
+	{
+		assert(_data && _size > 0);
+		if constexpr (destructItems) _data[_size - 1].~T();
+		--_size;
+	}
+
 	template <typename... params>
 	constexpr decltype(auto) emplace_back(params&&... p)
 	{

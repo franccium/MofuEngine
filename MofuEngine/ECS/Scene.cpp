@@ -6,6 +6,10 @@
 #include "Utilities/Logger.h"
 #include "ECSCore.h"
 #include "QueryView.h"
+#include "SceneSerializer.h"
+#include "Utilities/PoolAllocator.h"
+#include "Utilities/SlabAllocator.h"
+#include "ComponentRegistry.h"
 
 namespace mofu::ecs::scene {
 
@@ -18,13 +22,18 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 }
 
 std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
-constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
+constexpr u32 TEST_ENTITY_COUNT{ 3 }; //TODO: temporarily cause only one entity with render mesh actually has data
 constexpr u32 TEST_BLOCK_COUNT{ 5 };
-Vec<EntityBlock> blocks(TEST_BLOCK_COUNT);
+Vec<EntityBlock*> blocks{};
 
 // NOTE: entity IDs globally unique, in format generation | index, index goes into entityData, generation is compared
 Vec<EntityData> entityData{};
 std::deque<u32> _freeEntityIDs; // TODO: recycling
+
+constexpr size_t ENTITY_BLOCK_SIZE{ 16 * 1024 }; // 16 KiB per block
+constexpr size_t ENTITY_BLOCK_ALIGNMENT{ 64 }; // 64 byte alignment
+memory::SlabAllocator<ENTITY_BLOCK_SIZE, ENTITY_BLOCK_ALIGNMENT> entityBlockAllocator;
+memory::PoolAllocator<EntityBlock> entityBlockHeaderPool;
 
 void RegisterEntityBlock(const CetMask& signature, EntityBlock* block)
 {
@@ -38,7 +47,90 @@ void RegisterEntityBlock(const CetMask& signature, EntityBlock* block)
 	// store the Cet somewhere?
 }
 
+CetLayout
+GenerateCetLayout(const CetMask cetMask)
+{
+	CetLayout layout{};
+	layout.Signature = cetMask;
+	layout.Capacity = MAX_ENTITIES_PER_BLOCK;
 
+	u32 currentOffset{ sizeof(Entity) }; // always one entity
+	for (ComponentID componentID = 0; componentID < MAX_COMPONENT_TYPES; ++componentID)
+	{
+		if (layout.Signature.test(componentID))
+		{
+			layout.ComponentOffsets[componentID] = currentOffset;
+			currentOffset += component::GetComponentSize(componentID) * MAX_ENTITIES_PER_BLOCK;
+		}
+	}
+	layout.CetSize = currentOffset / MAX_ENTITIES_PER_BLOCK;
+
+	return layout;
+}
+
+void
+CreateBlock(const CetLayout& layout)
+{
+	EntityBlock* block{ entityBlockHeaderPool.Allocate() };
+	assert(block);
+
+	memcpy(block->ComponentOffsets, layout.ComponentOffsets, sizeof(layout.ComponentOffsets));
+	block->Signature = layout.Signature;
+	block->Capacity = layout.Capacity;
+	block->CetSize = layout.CetSize;
+	block->EntityCount = 0;
+
+	block->ComponentData = (u8*)entityBlockAllocator.Allocate();
+	block->Entities = reinterpret_cast<Entity*>(block->ComponentData);
+
+	blocks.emplace_back(std::move(block));
+}
+
+//TODO: defer operations on EntityBlocks to the end of the frame
+void
+AddEntity(EntityBlock* b, Entity entity)
+{
+	// store in first free index of the arrays
+	EntityBlock* block{ b };
+	u16 row{ block->EntityCount };
+	if (row > block->Capacity)
+	{
+		log::Info("EntityBlock is full");
+		assert(false); //TODO: have to create a new block
+		// block = ...
+		return;
+	}
+
+	block->Entities[row] = entity;
+	block->EntityCount++;
+
+	u32 idx{ id::Index(entity) };
+	entityData.emplace_back(block, row, id::Generation(entity), entity); // TODO: what to do here
+
+	GetEntityComponent<component::LocalTransform>(entity) = component::LocalTransform{};
+	GetEntityComponent<component::LocalTransform>(entity).Position = { -3.0f, -10.f, 10.f}; //TODO: temporary initial transform
+	log::Info("Added entity %u to block", id::Index(entity));
+}
+
+void
+RemoveEntity(EntityBlock* block, Entity entity)
+{
+	// the last entity in block moved in to fill the gap
+	// if its the last entity remove the block
+
+	u16 lastRow{ --block->EntityCount };
+	EntityData& data{ GetEntityData(entity) };
+	if (data.row != lastRow)
+	{
+		block->Entities[data.row] = block->Entities[lastRow];
+
+		id::AdvanceGeneration((id_t&)block->Entities[data.row]);
+		//TODO: copy components over
+
+		Entity movedEntity{ block->Entities[data.row] };
+		entityData[id::Index(movedEntity)].row = data.row;
+	}
+}
 
 } // anonymous namespace
 
@@ -53,22 +145,94 @@ GetBlocksFromCet(const CetMask& querySignature)
 
 	// Build the list if not cached
 	std::vector<EntityBlock*> result;
-	for (auto& block : blocks) {
-		if ((block.signature & querySignature) == querySignature) {
-			result.push_back(&block);
+	for (auto block : blocks) {
+		if ((block->Signature & querySignature) == querySignature) {
+			result.push_back(block);
 		}
 	}
 	queryToBlockMap[querySignature] = result;
 	return queryToBlockMap[querySignature];
 }
 
-EntityData 
-GetEntityData(entity_id id)
+EntityData&
+GetEntityData(Entity id)
 {
 	assert(IsEntityAlive(id));
 	u32 entityIdx{ id::Index(id) };
 	assert(entityIdx < entityData.size());
 	return entityData[entityIdx];
+}
+const Vec<EntityData>& GetAllEntityData()
+{
+	return entityData;
+}
+
+template<IsComponent... C>
+void
+AddComponents(Entity entity)
+{
+	assert(IsEntityAlive(entity));
+	EntityData& data{ GetEntityData(entity) };
+	EntityBlock* oldBlock{ data.block };
+
+	CetMask newSignature{ PreviewCetMaskPlusComponents<C...>(oldBlock->Signature) };
+	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
+	{
+		EntityBlock& block{ blocks[i] };
+		if (newSignature == block.Signature) // match the whole signature not just a part of it
+		{
+			// move entity
+			//TODO: IMPLEMENT THIS
+			/*RemoveEntity(oldBlock, entity);
+			AddEntity(&block, entity);*/
+			return;
+		}
+	}
+
+	// if no matching block found, create a new one
+	blocks.emplace_back(std::move(*CreateBlock(GenerateCetLayout(newSignature))));
+	EntityBlock* newBlock{ &blocks.back() };
+	AddEntity(newBlock, entity);
+}
+
+template<IsComponent C>
+void
+AddComponent(Entity entity)
+{
+	//NOTE: get blocks from cet caches queries that match parts of the signature so can't use that here
+	//TODO: AddComponents and AddComponent merged or not 
+	
+	// if a matching Cet after adding the component doesn't exist, create it
+	// else move the entity to the corresponding EntityBlock
+	//assert(IsEntityAlive(entity));
+	//EntityData& data{ GetEntityData(entity) };
+	//EntityBlock* oldBlock{ data.block };
+
+	//CetMask newSignature{ PreviewCetMaskPlusComponent<C>(oldBlock->signature) };
+	//for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
+	//{
+	//	EntityBlock& block{ blocks[i] };
+	//	if (newSignature == block.signature) // match the whole signature not just a part of it
+	//	{
+	//		// move entity
+	//		block.entities.emplace_back(entity);
+	//		block.generations.emplace_back(id::Generation(entity));
+	//		block.EntityCount++;
+	//		block.LocalTransforms.LocalTransforms.emplace_back(GetEntityComponent<component::LocalTransform>(entity)); //TODO: what about transform
+	//		return;
+	//	}
+	//}
+
+	//// if no matching block found, create a new one
+	//blocks.emplace_back(EntityBlock{ newSignature });
+	//EntityBlock& newBlock{ blocks.back() };
+	//newBlock.LocalTransforms.LocalTransforms.emplace_back(GetEntityComponent<component::LocalTransform>(entity)); //TODO: what about transform
+	//newBlock.EntityCount = 1;
+	//newBlock.generations.emplace_back(id::Generation(entity));
+	//newBlock.entities.emplace_back(entity);
+	//data.block = &newBlock;
+	//data.generation = 0;
+	//data.row = 0;
 }
 
 void
@@ -77,59 +241,44 @@ FillTestData()
 	// create 5 entities with LocalTransforms
 	for (u32 j{ 0 }; j < TEST_BLOCK_COUNT; ++j)
 	{
-		EntityBlock& block{ blocks[j] };
-
+		CetLayout layout{};
+		layout.Capacity = MAX_ENTITIES_PER_BLOCK;
 		if (j == 0)
 		{
-			block.signature = GetCetMask<component::LocalTransform, component::TestComponent, component::WorldTransform>();
+			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform>());
 		}
 		else if (j == 1)
 		{
-			block.signature = GetCetMask<component::LocalTransform, component::TestComponent,
-				component::WorldTransform, component::RenderMesh, component::RenderMaterial>();
-			//block.signature = GenerateCetMask<component::LocalTransform, component::TestComponent, 
-			//	component::WorldTransform>();
-			//block.signature = GenerateCetMask<component::LocalTransform, component::WorldTransform, 
-			//	component::TestComponent>();
+			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform, component::RenderMesh, component::RenderMaterial>());
 		}
 		else if (j == 2)
 		{
-			block.signature = GetCetMask<component::LocalTransform, component::TestComponent2, component::TestComponent4>();
+			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::Parent>());
 		}
 		else if (j == 3)
 		{
-			block.signature = GetCetMask<component::LocalTransform, component::TestComponent, component::TestComponent3, component::TestComponent2>();
+			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::Parent, component::TestComponent4>());
 		}
 		else
 		{
-			block.signature = GetCetMask<component::LocalTransform>();
+			layout = GenerateCetLayout(GetCetMask<component::LocalTransform>());
 		}
 
-		block.LocalTransforms.ReserveSpace(TEST_ENTITY_COUNT);
-
+		CreateBlock(layout);
+		EntityBlock* block{ blocks.back() };
+		
 		for (u32 i{ 0 }; i < TEST_ENTITY_COUNT; ++i)
 		{
-			entity_id newId{ (u32)entityData.size()};
+			Entity newId{ (u32)entityData.size()};
 			Entity newEntity{ newId };
-			block.generations.emplace_back(0);
 
-			block.entities.emplace_back(newEntity);
-			block.EntityCount++;
-
-			//TODO: do sth with this
-			block.WorldTransforms.emplace_back(component::WorldTransform{});
-			if (j == 1)
-			{
-				// add TestComponent to the second EntityBlock
-			}
-
-			// local transform can be left default
-
-			//u32 idx{ i + j * TEST_ENTITY_COUNT };
-			u32 idx{ id::Index(newEntity.ID)};
-			entityData.emplace_back(&block, i, newEntity.ID);
+			AddEntity(block, newEntity);
 		}
 	}
+
+	Entity testEntity{ 0 };
+	//AddComponent<component::RenderMesh>(testEntity);
+	//AddComponents<component::WorldTransform, component::RenderMesh, component::RenderMaterial>(testEntity);
 }
 
 void
@@ -139,13 +288,13 @@ TestQueries()
 	CetMask querySignature{ GetCetMask<component::LocalTransform>() };
 	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
 	{
-		EntityBlock& block{ blocks[i] };
-		if (MatchCet(querySignature, block.signature))
+		EntityBlock* block{ blocks[i] };
+		if (MatchCet(querySignature, block->Signature))
 		{
 			std::vector<EntityBlock*> matchingBlocks{ GetBlocksFromCet(querySignature) };
-			for (auto& block : matchingBlocks)
+			for (auto block : matchingBlocks)
 			{
-				log::Info("Found matching block with signature: %s", block->signature.to_string().c_str());
+				log::Info("Found matching block with signature: %s", block->Signature.to_string().c_str());
 			}
 		}
 	}
@@ -154,13 +303,13 @@ TestQueries()
 	CetMask querySignature2{ GetCetMask<component::TestComponent3, component::TestComponent>() };
 	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
 	{
-		EntityBlock& block{ blocks[i] };
-		if (MatchCet(querySignature2, block.signature))
+		EntityBlock* block{ blocks[i] };
+		if (MatchCet(querySignature2, block->Signature))
 		{
 			std::vector<EntityBlock*> matchingBlocks{ GetBlocksFromCet(querySignature2) };
-			for (auto& block : matchingBlocks)
+			for (auto block : matchingBlocks)
 			{
-				log::Info("Found matching block with signature: %s", block->signature.to_string().c_str());
+				log::Info("Found matching block with signature: %s", block->Signature.to_string().c_str());
 			}
 		}
 	}
@@ -169,20 +318,26 @@ TestQueries()
 	CetMask querySignature3{ GetCetMask<component::TestComponent4, component::TestComponent, component::TestComponent2>() };
 	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
 	{
-		EntityBlock& block{ blocks[i] };
-		if (MatchCet(querySignature3, block.signature))
+		EntityBlock* block{ blocks[i] };
+		if (MatchCet(querySignature3, block->Signature))
 		{
 			std::vector<EntityBlock*> matchingBlocks{ GetBlocksFromCet(querySignature3) };
-			for (auto& block : matchingBlocks)
+			for (auto block : matchingBlocks)
 			{
-				log::Info("Found matching block with signature: %s", block->signature.to_string().c_str());
+				log::Info("Found matching block with signature: %s", block->Signature.to_string().c_str());
 			}
 		}
 	}
 }
 
+void 
+SerializeTest()
+{
+	
+}
+
 bool
-IsEntityAlive(entity_id id)
+IsEntityAlive(Entity id)
 {
 	assert(id::IsValid(id));
 	// if the generation doesn't match, the entity had to die/never exist
@@ -197,6 +352,8 @@ Initialize()
 	FillTestData();
 
 	//TestQueries();
+
+	SerializeTest();
 }
 
 void 

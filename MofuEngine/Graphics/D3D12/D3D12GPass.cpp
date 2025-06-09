@@ -73,7 +73,7 @@ FillPerObjectData(const D3D12FrameInfo& frameInfo, const content::material::Mate
 
 	const GPassCache& cache{ frameCache };
 	const u32 renderItemCount{ (u32)cache.Size() };
-	ecs::entity_id currentEntityID{ id::INVALID_ID };
+	ecs::Entity currentEntityID{ id::INVALID_ID };
 	hlsl::PerObjectData* currentDataPointer{ nullptr };
 	ConstantBuffer& cbuffer{ core::CBuffer() };
 
