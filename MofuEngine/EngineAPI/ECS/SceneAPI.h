@@ -24,4 +24,9 @@ C& GetComponent(Entity id)
 	return GetEntityComponent<C>(id);
 }
 
+template<IsComponent... C>
+void AddEntity(component::InitInfo* infos) // TODO: or whatever, maybe instead just a list of components but idk if that would work
+{
+}
+
 }

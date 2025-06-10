@@ -105,12 +105,16 @@ CreateMaterial()
 
 }
 
-u32
-CreateTestRenderItems()
+void
+AddRenderItem()
 {
-	u32 count{ 1 };
+	//TODO: entity creation
+	/*
+	* scene::AddEntity<... Components>(initInfo...);
+	*/
+
 	planeMeshTest.MeshID = LoadMesh(TEST_MESH_PATH);
-	planeMeshTest.EntityID = ecs::Entity{ 1 };
+	planeMeshTest.EntityID = ecs::Entity{ 0 };
 	CreateMaterial();
 	id_t materials[MAX_MATERIALS_PER_MODEL]{};
 	id_t* materialIDs;
@@ -121,12 +125,17 @@ CreateTestRenderItems()
 	}
 	materialIDs = materials;
 
-
 	graphics::AddRenderItem(planeMeshTest.EntityID, planeMeshTest.MeshID, 1, &planeMeshTest.MeshID);
-
 	++loadedModelsCount;
+}
 
-	return count;
+u32
+CreateTestRenderItems()
+{
+	AddRenderItem();
+	AddRenderItem();
+
+	return loadedModelsCount;
 }
 
 void 

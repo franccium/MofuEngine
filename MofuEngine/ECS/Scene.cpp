@@ -22,7 +22,7 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 }
 
 std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
-constexpr u32 TEST_ENTITY_COUNT{ 3 }; //TODO: temporarily cause only one entity with render mesh actually has data
+constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
 constexpr u32 TEST_BLOCK_COUNT{ 5 };
 Vec<EntityBlock*> blocks{};
 
@@ -109,6 +109,7 @@ AddEntity(EntityBlock* b, Entity entity)
 
 	GetEntityComponent<component::LocalTransform>(entity) = component::LocalTransform{};
 	GetEntityComponent<component::LocalTransform>(entity).Position = { -3.0f, -10.f, 10.f}; //TODO: temporary initial transform
+	if(idx == 1) GetEntityComponent<component::LocalTransform>(entity).Position = { 0.0f, -10.f, 10.f}; //TODO: temporary initial transform
 	log::Info("Added entity %u to block", id::Index(entity));
 }
 
@@ -245,7 +246,7 @@ FillTestData()
 		layout.Capacity = MAX_ENTITIES_PER_BLOCK;
 		if (j == 0)
 		{
-			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform>());
+			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform, component::RenderMesh, component::RenderMaterial>());
 		}
 		else if (j == 1)
 		{

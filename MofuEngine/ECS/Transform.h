@@ -78,14 +78,21 @@ struct LocalTransform : Component
 #if EDITOR_BUILD
 	static void RenderFields(LocalTransform& c)
 	{
+		constexpr f32 minPosVal{ -100.f };
+		constexpr f32 maxPosVal{ 100.f };
+		constexpr f32 minRotVal{ -360.f };
+		constexpr f32 maxRotVal{ 360.f };
+		constexpr f32 minScaleVal{ 0.01f };
+		constexpr f32 maxScaleVal{ 100.f };
+
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Local Transform");
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Position, "Position");
+		editor::DisplayEditableVector3(&c.Position, "Position", minPosVal, maxPosVal);
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Rotation, "Rotation");
+		editor::DisplayEditableVector3(&c.Rotation, "Rotation", minRotVal, maxRotVal);
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Scale, "Scale");
+		editor::DisplayEditableVector3(&c.Scale, "Scale", minScaleVal, maxScaleVal);
 	}
 #endif
 };

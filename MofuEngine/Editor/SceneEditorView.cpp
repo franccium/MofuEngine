@@ -13,7 +13,7 @@ struct EntityTreeNode
     ecs::Entity ID;
     EntityTreeNode* Parent = NULL;
     ImVector<EntityTreeNode*> Childs;
-    u16              IndexInParent = 0;
+    u16 IndexInParent = 0;
 };
 
 // TODO: can probably do it better
