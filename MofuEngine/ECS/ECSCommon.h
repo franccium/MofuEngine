@@ -1,4 +1,9 @@
 #pragma once
 #include "CommonHeaders.h"
-#include "Entity.h"
 #include "Component.h"
+#include "Entity.h"
+
+namespace mofu::ecs {
+
+
+}

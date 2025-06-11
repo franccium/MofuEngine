@@ -42,6 +42,8 @@ CetMask PreviewCetMaskPlusComponents(CetMask signature)
 	return signature;
 }
 
+CetLayout GenerateCetLayout(const CetMask cetMask);
+
 bool IsEntityAlive(Entity id);
 EntityData& GetEntityData(Entity id);
 const Vec<EntityData>& GetAllEntityData();
@@ -58,6 +60,37 @@ GetEntityComponent(Entity id)
 	return data.block->GetComponentArray<C>()[data.row];
 }
 
+void AddComponents(EntityData& data, const CetMask& newSignature);
+
+template<IsComponent... C>
+void
+AddComponents(Entity entity)
+{
+	assert(IsEntityAlive(entity));
+	EntityData& data{ GetEntityData(entity) };
+	EntityBlock* oldBlock{ data.block };
+	CetMask newSignature{ PreviewCetMaskPlusComponents<C...>(oldBlock->Signature) };
+	
+	AddComponents(data, newSignature);
+}
+
+template<IsComponent C>
+void
+AddEntityComponent(Entity e)
+{
+	assert(IsEntityAlive(e));
+	AddComponents<C>(e);
+}
+
+EntityData& CreateEntity(CetLayout& layout);
+
+template<IsComponent... C>
+EntityData& CreateEntity()
+{
+	const CetMask cetMask{ GetCetMask<C...>() };
+	CetLayout layout{ GenerateCetLayout(cetMask) };
+	return CreateEntity(layout);
+}
 
 void Initialize();
 void Shutdown();

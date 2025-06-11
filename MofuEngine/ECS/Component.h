@@ -6,7 +6,15 @@
 #include "imgui.h"
 #endif
 
+
+namespace mofu::ecs::component {
+struct Component {};
+}
+
 namespace mofu::ecs {
+template<typename C>
+concept IsComponent = std::derived_from<C, component::Component>;
+
 using ComponentID = u32;
 
 constexpr ComponentID MAX_COMPONENT_TYPES{ 256 };
@@ -15,10 +23,6 @@ using CetMask = std::bitset<MAX_COMPONENT_TYPES>;
 }
 
 namespace mofu::ecs::component {
-struct Component
-{
-
-};
 
 struct TestComponent : Component
 {

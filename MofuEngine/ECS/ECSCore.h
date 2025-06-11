@@ -11,9 +11,6 @@ namespace system {
 struct SystemUpdateData;
 }
 
-template<typename C>
-concept IsComponent = std::derived_from<C, component::Component>;
-
 constexpr u32 MAX_ENTITIES_PER_BLOCK{ 128 };
 
 struct CetLayout

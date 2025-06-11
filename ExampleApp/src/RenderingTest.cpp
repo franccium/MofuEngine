@@ -6,6 +6,8 @@
 #include "Content/ContentManagement.h"
 #include "Content/ResourceCreation.h"
 #include "Content/ShaderCompilation.h"
+#include "EngineAPI/ECS/SceneAPI.h"
+#include "ECS/ComponentRegistry.h"
 
 using namespace mofu;
 
@@ -112,20 +114,34 @@ AddRenderItem()
 	/*
 	* scene::AddEntity<... Components>(initInfo...);
 	*/
+	v3 pos{ -3.f, -10.f, 10.f };
+	if (loadedModelsCount == 1) pos = v3{ 0.f, -10.f, 10.f };
+	v3 rot{ 0.f, 0.f, 0.f };
+	v3 scale{ 1.f, 1.f, 1.f };
+	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
+	ecs::component::WorldTransform wt{};
+	ecs::component::RenderMesh mesh{};
+	ecs::component::RenderMaterial material{};
+
+	ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+		ecs::component::RenderMesh, ecs::component::RenderMaterial>(lt, wt, mesh, material) };
 
 	planeMeshTest.MeshID = LoadMesh(TEST_MESH_PATH);
-	planeMeshTest.EntityID = ecs::Entity{ 0 };
-	CreateMaterial();
+	//planeMeshTest.EntityID = ecs::Entity{ 0 };
+	//planeMeshTest.EntityID = ecs::Entity{ entityData.id };
+	planeMeshTest.EntityID = ecs::Entity{ entityData.id };
+	//if(loadedModelsCount == 0) planeMeshTest.EntityID = ecs::Entity{ entityData.id };
+	//else if (loadedModelsCount == 1) planeMeshTest.EntityID = ecs::Entity{ 1 };
+	//else if (loadedModelsCount == 2) planeMeshTest.EntityID = ecs::Entity{ 1 };
+	if(mtlID == id::INVALID_ID) CreateMaterial();
 	id_t materials[MAX_MATERIALS_PER_MODEL]{};
-	id_t* materialIDs;
 	u32 materialCount{ 1 };
 	for (u32 i{ 0 }; i < materialCount; ++i)
 	{
 		materials[i] = mtlID;
 	}
-	materialIDs = materials;
 
-	graphics::AddRenderItem(planeMeshTest.EntityID, planeMeshTest.MeshID, 1, &planeMeshTest.MeshID);
+	graphics::AddRenderItem(planeMeshTest.EntityID, planeMeshTest.MeshID, 1, materials);
 	++loadedModelsCount;
 }
 
@@ -134,6 +150,7 @@ CreateTestRenderItems()
 {
 	AddRenderItem();
 	AddRenderItem();
+	//AddRenderItem();
 
 	return loadedModelsCount;
 }
@@ -141,7 +158,10 @@ CreateTestRenderItems()
 void 
 GetRenderItemIDS(Vec<id_t>& outIds)
 {
-	outIds[0] = planeMeshTest.MeshID;
+	for (u32 i{ 0 }; i < loadedModelsCount; ++i)
+	{
+		outIds[i] = planeMeshTest.MeshID;
+	}
 }
 
 void

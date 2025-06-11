@@ -5,6 +5,11 @@
 #include <array>
 #include <tuple>
 
+namespace mofu::ecs::scene {
+    template<IsComponent C>
+    void AddComponent(Entity e);
+}
+
 namespace mofu::ecs::component {
 
 using ComponentTypes = std::tuple<
@@ -61,15 +66,45 @@ void RenderOneComponent(void* raw)
 }
 
 
-using RenderFn = void(*)(void*);
+using RenderFunc = void(*)(void*);
 
-template<std::size_t... Is>
+template<u32... Is>
 constexpr auto MakeRenderLUT(std::index_sequence<Is...>)
 {
-    return std::array<RenderFn, sizeof...(Is)>{ &RenderOneComponent<Is>... };
+    return std::array<RenderFunc, sizeof...(Is)>{ &RenderOneComponent<Is>... };
 }
 
-constexpr auto RenderLUT =
-MakeRenderLUT(std::make_index_sequence<ComponentTypeCount>{});
+constexpr auto RenderLUT{ MakeRenderLUT(std::make_index_sequence<ComponentTypeCount>{}) };
+
+constexpr std::array<const char*, ComponentTypeCount> ComponentNames{
+    "LocalTransform",
+	"WorldTransform",
+	"Parent",
+	"RenderMesh",
+	"RenderMaterial",
+	"TestComponent",
+	"TestComponent2",
+	"TestComponent3",
+	"TestComponent4",
+	"TestComponent5",
+};
+
+//TODO: passing component ids as arguments might be a better idea
+template<IsComponent C>
+void AddComponent(Entity e)
+{
+    // if (scene::HasComponent<C>(e)) return;
+    scene::AddComponent<C>(e);
+}
+
+using AddFunc = void(*)(Entity);
+
+template <std::size_t... Is>
+constexpr auto MakeAddLUT(std::index_sequence<Is...>)
+{
+    return std::array<AddFunc, sizeof...(Is)>{{ &AddComponent<ComponentTypeByID<Is>>... }};
+}
+
+inline constexpr auto AddLUT = MakeAddLUT(std::make_index_sequence<ComponentTypeCount>{});
 
 }

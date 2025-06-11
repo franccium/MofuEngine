@@ -2,6 +2,7 @@
 #include "ECS/Scene.h"
 #include "imgui.h"
 #include "ECS/Component.h"
+#include "EngineAPI/ECS/SceneAPI.h"
 
 namespace mofu::editor {
 namespace {
@@ -16,33 +17,57 @@ struct EntityTreeNode
     u16 IndexInParent = 0;
 };
 
-// TODO: can probably do it better
-static EntityTreeNode* CreateSceneHierarchyTree(const Vec<ecs::EntityData>& entityData)
+EntityTreeNode* rootNode{ nullptr };
+
+void
+CreateEntityTreeNode(const ecs::EntityData& e, EntityTreeNode* parentNode)
 {
-    EntityTreeNode* root = new EntityTreeNode{};
+    if (!parentNode) parentNode = rootNode;
+    EntityTreeNode* node = new EntityTreeNode{};
+    node->ID = e.id;
+    snprintf(node->Name, IM_ARRAYSIZE(node->Name), "E %u", (u32)e.id);
+    node->Parent = parentNode;
+    node->IndexInParent = (u16)parentNode->Childs.Size;
+    parentNode->Childs.push_back(node);
+}
+
+// TODO: can probably do it better
+static void CreateSceneHierarchyTree(const Vec<ecs::EntityData>& entityData)
+{
+    rootNode = new EntityTreeNode{};
 	char rootName[28]{ "Root" };
-    snprintf(root->Name, IM_ARRAYSIZE(root->Name), "%s", rootName);
-    root->ID = ecs::Entity{ (id_t) -1};
+    snprintf(rootNode->Name, IM_ARRAYSIZE(rootNode->Name), "%s", rootName);
+    rootNode->ID = ecs::Entity{ id::INVALID_ID };
 
-	for (const ecs::EntityData& e : entityData)
-	{
-		log::Info("found entity: %u, block: %p, row: %u", e.id, e.block, e.row);
-
-        EntityTreeNode* node = new EntityTreeNode{};
-		node->ID = e.id;
-        snprintf(node->Name, IM_ARRAYSIZE(node->Name), "E %u", (u32)e.id);
-		node->Parent = root;
-		node->IndexInParent = (u16)root->Childs.Size;
-		root->Childs.push_back(node);
+    for (const ecs::EntityData& e : entityData)
+    {
+        CreateEntityTreeNode(e, rootNode);
 	}
+}
 
-    return root;
+void CreateEntity(EntityTreeNode* node)
+{
+	ecs::Entity selected{ node ? node->ID : id::INVALID_ID };
+
+    ecs::component::LocalTransform lt{};
+    ecs::component::WorldTransform wt{};
+
+    //TODO: cleaner
+    ecs::EntityData entityData = id::IsValid(selected)
+        ? ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform, 
+            ecs::component::Parent>(lt, wt, ecs::component::Parent{ {}, selected })
+        : ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform>(lt, wt);
+
+	log::Info("Created entity %u", entityData.id);
+	if (id::IsValid(selected)) log::Info("Entity has parent: %u", selected);
+
+	CreateEntityTreeNode(entityData, node);
 }
 
 struct SceneHierarchy
 {
     ImGuiTextFilter Filter;
-    EntityTreeNode* VisibleNode = NULL;
+    EntityTreeNode* VisibleNode{ nullptr };
 
     void Draw(EntityTreeNode* root_node)
     {
@@ -63,6 +88,13 @@ struct SceneHierarchy
                     if (Filter.PassFilter(node->Name)) // Filter root node
                         DrawTreeNode(node);
                 ImGui::EndTable();
+            }
+
+            if (ImGui::BeginPopupContextWindow("SceneHierarchyContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+            {
+                if (ImGui::MenuItem("Create Entity"))
+                    CreateEntity(VisibleNode);
+                ImGui::EndPopup();
             }
         }
         ImGui::EndChild();
@@ -101,6 +133,26 @@ struct SceneHierarchy
                     currentOffset += component::GetComponentSize(cid) * MAX_ENTITIES_PER_BLOCK;
                 }
 
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if (ImGui::Button("+ Add Component"))
+                    ImGui::OpenPopup("AddComponentPopup");
+
+                if (ImGui::BeginPopup("AddComponentPopup"))
+                {
+                    for (ecs::ComponentID cid{ 0 }; cid < ecs::component::ComponentTypeCount; ++cid)
+                    {
+                        if (block->Signature.test(cid)) continue;
+
+                        if (ImGui::Selectable(ecs::component::ComponentNames[cid]))
+                        {
+                            ecs::component::AddLUT[cid](node->ID);
+                            block->Signature.set(cid);
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
+
                 ImGui::PopID();
                 ImGui::EndTable();
             }
@@ -122,7 +174,7 @@ struct SceneHierarchy
             tree_flags |= ImGuiTreeNodeFlags_Selected;
         if (node->Childs.Size == 0)
             tree_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
-        bool node_open = ImGui::TreeNodeEx("", tree_flags, "%s", node->Name);
+        bool node_open{ ImGui::TreeNodeEx("", tree_flags, "%s", node->Name) };
         if (ImGui::IsItemFocused())
             VisibleNode = node;
         if (node_open)
@@ -131,12 +183,18 @@ struct SceneHierarchy
                 DrawTreeNode(child);
             ImGui::TreePop();
         }
+        if (ImGui::BeginPopupContextItem("NodeContextMenu"))
+        {
+            if (ImGui::MenuItem("Create Child Entity"))
+                CreateEntity(node);
+            ImGui::EndPopup();
+        }
+        
         ImGui::PopID();
     }
 };
 
 SceneHierarchy sceneHierarchy;
-EntityTreeNode* sceneTree;
 
 }
 
@@ -144,14 +202,13 @@ EntityTreeNode* sceneTree;
 bool 
 InitializeSceneEditorView()
 {
-
     const Vec<ecs::EntityData>& entityData = ecs::scene::GetAllEntityData();
     for (const ecs::EntityData e : entityData)
     {
         log::Info("found entity: %u, block: %p, row: %u", e.id, e.block, e.row);
     }
 
-    sceneTree = CreateSceneHierarchyTree(entityData);
+    CreateSceneHierarchyTree(entityData);
 
     return true;
 }
@@ -160,7 +217,7 @@ void RenderSceneEditorView()
 {
     ImGui::Begin("Scene hierarchy");
 
-    sceneHierarchy.Draw(sceneTree);
+    sceneHierarchy.Draw(rootNode);
 
     ImGui::End();
 }

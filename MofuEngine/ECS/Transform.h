@@ -75,6 +75,7 @@ struct LocalTransform : Component
 	v3 Rotation{ 0.0f, 0.0f, 0.0f };
 	v3 Scale{ 1.0f, 1.0f, 1.0f };
 	v3 Forward{ 0.0f, 0.0f, 1.0f };
+
 #if EDITOR_BUILD
 	static void RenderFields(LocalTransform& c)
 	{
