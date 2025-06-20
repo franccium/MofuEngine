@@ -1,8 +1,13 @@
 #pragma once
 #include "ECS/QueryView.h"
 #include "ECS/Scene.h"
+#include "Graphics/Renderer.h"
+#include "Utilities/Logger.h"
 
 namespace mofu::ecs::scene {
+
+template<IsComponent C, IsComponent... Cs>
+constexpr bool contains_type{ (std::is_same_v<C, Cs> || ...) };
 
 template<typename... Component>
 QueryView<true, Component...> GetRW()
@@ -38,6 +43,17 @@ inline EntityData& SpawnEntity(const C... components)
 	EntityData& entityData{ scene::CreateEntity<C...>() }; // TODO: create an entity, find it a corresponding block and return the EntityData
 
 	((scene::GetEntityComponent<C>(entityData.id) = components), ...);
+
+	constexpr bool hasRenderMesh{ contains_type<component::RenderMesh, C...> };
+	constexpr bool hasRenderMaterial{ contains_type<component::RenderMaterial, C...> };
+	if constexpr (hasRenderMesh && hasRenderMaterial)
+	{
+		component::RenderMesh renderMesh{ scene::GetEntityComponent<component::RenderMesh>(entityData.id) };
+		component::RenderMaterial renderMaterial{ scene::GetEntityComponent<component::RenderMaterial>(entityData.id) };
+		graphics::AddRenderItem(entityData.id, renderMesh.MeshID, renderMaterial.MaterialCount, renderMaterial.MaterialIDs);
+		log::Info("Spawned an entity with Mesh %u and %u Materials", renderMesh.MeshID, renderMaterial.MaterialCount);
+	}
+
 	return entityData;
 }
 
@@ -47,5 +63,16 @@ inline void SpawnEntity()
 {
 
 }
+
+void DestroyEntity(Entity entity);
+
+void DestroyScene();
+
+struct PrefabEntity
+{
+	PrefabEntity* Parent{ nullptr };
+	PrefabEntity** Children{ nullptr };
+	// components
+};
 
 }

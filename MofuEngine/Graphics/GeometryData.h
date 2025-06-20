@@ -186,8 +186,10 @@ struct MeshGroupData
 	GeometryImportSettings ImportSettings;
 };
 
-void PackGeometryData(const MeshGroup& meshGroup, MeshGroupData& data);
+void PackGeometryDataForEditor(const MeshGroup& meshGroup, MeshGroupData& data);
 void ProcessMeshGroupData(MeshGroup& group, const GeometryImportSettings& settings);
 
 void PackGeometryForEngine(const MeshGroup& group);
+
+void CoalesceMeshes(const LodGroup& lod, Mesh& outCombinedMesh);
 }

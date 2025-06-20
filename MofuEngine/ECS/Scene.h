@@ -92,6 +92,9 @@ EntityData& CreateEntity()
 	return CreateEntity(layout);
 }
 
+void RemoveEntity(Entity entity);
+void UnloadScene();
+
 void Initialize();
 void Shutdown();
 

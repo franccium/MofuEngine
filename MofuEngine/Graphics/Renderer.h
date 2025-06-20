@@ -174,6 +174,14 @@ struct MaterialType
 	};
 };
 
+struct RenderItemInfo
+{
+	u32 AddedSubmeshCount{ 0 };
+	u32 AddedMaterialCount{ 0 };
+	id_t* AddedSubmeshIDs;
+	id_t* AddedMaterialIDs;
+};
+
 struct MaterialSurface
 {
 	v4 BaseColor{ v4one };
@@ -215,5 +223,6 @@ id_t AddMaterial(MaterialInitInfo info);
 void RemoveMaterial(id_t id);
 
 id_t AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
+RenderItemInfo AddRenderItemRecoverInfo(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
 void RemoveRenderItem(id_t id);
 }

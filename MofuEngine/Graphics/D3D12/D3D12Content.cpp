@@ -79,7 +79,7 @@ CreatePSOIfNeeded(const u8* const streamPtr, u64 alignedStreamSize, [[maybe_unus
 	}
 
 	d3dx::D3D12PipelineStateSubobjectStream* const stream{ (d3dx::D3D12PipelineStateSubobjectStream*)streamPtr };
-	ID3D12PipelineState* pso{ d3dx::CreatePipelineState(stream, alignedStreamSize) };
+	ID3D12PipelineState* pso{ d3dx::CreatePipelineState(stream, sizeof(d3dx::D3D12PipelineStateSubobjectStream)) };
 
 	{
 		std::lock_guard lock{ psoMutex };
@@ -300,13 +300,15 @@ namespace render_item {
 id_t 
 AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
 {
+	static u32 counter;
+
 	assert(id::IsValid(entityID) && id::IsValid(geometryContentID));
 	assert(materialCount && materialIDs);
 
 	// we need to create one render item for each of the submeshes of a geometry
 	// the number of material ids must be the same as the number of submesh gpu ids
 	id_t* const gpuIDs{ (id_t* const)alloca(materialCount * sizeof(id_t)) };
-	mofu::content::GetSubmeshGpuIDs(geometryContentID, materialCount, gpuIDs);
+	mofu::content::GetSubmeshGpuIDs(geometryContentID, materialCount, gpuIDs, counter);
 
 	geometry::SubmeshViewsCache submeshViewsCache
 	{
@@ -330,6 +332,7 @@ AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, c
 	{
 		D3D12RenderItem& item{ d3d12RenderItems[i] };
 		item.EntityID = entityID;
+		//TODO:
 		item.SubmeshGpuID = gpuIDs[i];
 		item.MaterialID = materialIDs[i];
 		
@@ -345,6 +348,8 @@ AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, c
 	{
 		rItemIDs[i] = renderItems.add(d3d12RenderItems[i]);
 	}
+
+	counter++;
 
 	return renderItemIDs.add(std::move(rItems));
 }

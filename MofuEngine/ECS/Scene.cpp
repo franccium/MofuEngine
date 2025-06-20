@@ -86,9 +86,9 @@ AddEntity(EntityBlock* b, Entity entity)
 	u32 idx{ id::Index(entity) };
 	entityData.emplace_back(block, row, id::Generation(entity), entity); // TODO: what to do here
 
-	GetEntityComponent<component::LocalTransform>(entity) = component::LocalTransform{};
+	//GetEntityComponent<component::LocalTransform>(entity) = component::LocalTransform{};
 	//GetEntityComponent<component::LocalTransform>(entity).Position = { -3.0f, -10.f, 10.f}; //TODO: temporary initial transform
-	if(idx == 1) GetEntityComponent<component::LocalTransform>(entity).Position = { 0.0f, -10.f, 10.f}; //TODO: temporary initial transform
+	//if(idx == 1) GetEntityComponent<component::LocalTransform>(entity).Position = { 0.0f, -10.f, 10.f}; //TODO: temporary initial transform
 	log::Info("Added entity %u to block", id::Index(entity));
 }
 
@@ -391,6 +391,20 @@ IsEntityAlive(Entity id)
 	assert(id::IsValid(id));
 	// if the generation doesn't match, the entity had to die/never exist
 	return id::Generation(entityData[id::Index(id)].id) == id::Generation(id);
+}
+
+void 
+RemoveEntity(Entity entity)
+{
+	assert(IsEntityAlive(entity));
+	u32 entityIdx{ id::Index(entity) };
+	
+}
+
+void 
+UnloadScene()
+{
+
 }
 
 void

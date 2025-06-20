@@ -8,38 +8,56 @@ HANDLE fenceEvent{};
 
 struct UploadFrame
 {
-ID3D12CommandAllocator* CmdAllocator{ nullptr };
-DXGraphicsCommandList* CmdList{ nullptr };
-DXResource* UploadBuffer{ nullptr };
-void* CpuAddress{ nullptr };
-u64 FenceValue{ 0 };
+	ID3D12CommandAllocator* CmdAllocator{ nullptr };
+	DXGraphicsCommandList* CmdList{ nullptr };
+	DXResource* UploadBuffer{ nullptr };
+	void* CpuAddress{ nullptr };
+	u64 FenceValue{ 0 };
 
-void WaitAndReset()
+	void WaitAndReset();
+
+	void Release()
+	{
+		WaitAndReset();
+		core::Release(CmdAllocator);
+		core::Release(CmdList);
+	}
+
+	constexpr bool IsReady() const { return UploadBuffer == nullptr; }
+};
+
+void
+UploadFrame::WaitAndReset()	
 {
 	assert(uploadFence && fenceEvent);
+	assert(UploadBuffer);
+	assert(CpuAddress);
+	assert(CmdList);
+	assert(CmdAllocator);
+
 	if (uploadFence->GetCompletedValue() < FenceValue)
 	{
+		HRESULT hr{ S_OK };
 		// the command list has not been executed yet
-		DXCall(uploadFence->SetEventOnCompletion(FenceValue, fenceEvent));
+		DXCall(hr = uploadFence->SetEventOnCompletion(FenceValue, fenceEvent));
+		assert(SUCCEEDED(hr));
 		WaitForSingleObject(fenceEvent, INFINITE);
 	}
 
+	assert(UploadBuffer);
+	assert(CpuAddress);
+	assert(CmdList);
+	assert(CmdAllocator);
+
 	// the command list has been executed, the frame is ready for upload
-	core::Release(UploadBuffer);
+	if (UploadBuffer)
+	{
+		core::Release(UploadBuffer);
+	}
 	CpuAddress = nullptr;
 }
 
-void Release()
-{
-	WaitAndReset();
-	core::Release(CmdAllocator);
-	core::Release(CmdList);
-}
-
-constexpr bool IsReady() const { return UploadBuffer == nullptr; }
-};
-
-constexpr u32 UPLOAD_FRAME_COUNT{ 4 };
+constexpr u32 UPLOAD_FRAME_COUNT{ 4 }; // FIXME: something is very wrong here
 UploadFrame uploadFrames[UPLOAD_FRAME_COUNT];
 ID3D12CommandQueue* uploadCmdQueue{ nullptr };
 std::mutex frameMutex{};
@@ -71,7 +89,7 @@ GetAvailableUploadFrame()
 			index = (index + 1) % UPLOAD_FRAME_COUNT;
 			std::this_thread::yield();
 		}
-	}	
+	}
 
 	// mark the frame as busy to prevent other threads from picking it
 	uploadFrames[index].UploadBuffer = (DXResource*)1;
@@ -112,14 +130,15 @@ D3D12UploadContext::D3D12UploadContext(u32 alignedSize)
 	_cpuAddress = frame.CpuAddress;
 	assert(_cmdList && _uploadBuffer && _cpuAddress);	
 	
-	DXCall(frame.CmdAllocator->Reset());	
-	DXCall(_cmdList->Reset(frame.CmdAllocator, nullptr));	
+	DXCall(frame.CmdAllocator->Reset());
+	DXCall(_cmdList->Reset(frame.CmdAllocator, nullptr));
 }
 
 void 
 D3D12UploadContext::EndUpload()
 {
 	assert(_frameIndex != U32_INVALID_ID);
+	assert(_cmdList);
 	UploadFrame& frame{ uploadFrames[_frameIndex] };
 	DXCall(_cmdList->Close());
 
@@ -127,14 +146,24 @@ D3D12UploadContext::EndUpload()
 	ID3D12CommandList* const cmdLists[]{ _cmdList };
 	ID3D12CommandQueue* const cmdQueue{ uploadCmdQueue };
 
+	assert(cmdQueue);
+	assert(cmdLists);
+
 	cmdQueue->ExecuteCommandLists(_countof(cmdLists), cmdLists);
 
 	++uploadFenceValue;
 	frame.FenceValue = uploadFenceValue;
 	DXCall(cmdQueue->Signal(uploadFence, frame.FenceValue));
 
+	assert(uploadFence);
+	assert(_cmdList);
+	assert(_frameIndex != U32_INVALID_ID);
+	assert(cmdQueue);
+	assert(cmdLists);
+
 	// wait for the copy queue to finish, then release the upload buffer
 	frame.WaitAndReset();
+
 	// mark the instance of this upload context as expired
 	DEBUG_OP(new (this) D3D12UploadContext{});
 }

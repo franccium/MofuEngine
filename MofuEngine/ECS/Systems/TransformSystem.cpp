@@ -7,15 +7,13 @@
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
 
-#define PRINT_DEBUG 0
+#define PRINT_DEBUG 1
 
 namespace mofu::ecs::system {
 struct TransformSystem : ecs::system::System<TransformSystem>
 {
 	void Update(const ecs::system::SystemUpdateData data)
 	{
-		log::Info("TransformSystem::Update");
-
 		for (auto [entity, lt, wt] : ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::WorldTransform>())
 		{
 #if PRINT_DEBUG

@@ -18,4 +18,6 @@ void DisplayEditableVector3(v3* v, const char* label, f32 minVal = MIN_EDITABLE_
 void DisplayEditableVector4(v4* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT);
 
 void DisplayMatrix4x4(m4x4* m, const char* label);
+void DisplayUint(u32 v, const char* label);
+void DisplayFloat(f32 v, const char* label);
 }

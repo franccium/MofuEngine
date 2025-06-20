@@ -36,23 +36,26 @@ struct WorldTransform : Component
 
 struct RenderMesh : Component
 {
-	m4x4 TRS{};
+	id_t MeshID{ id::INVALID_ID };
 
 #if EDITOR_BUILD
 	static void RenderFields(RenderMesh& c)
 	{
-		editor::DisplayMatrix4x4(&c.TRS, "Render Mesh");
+		editor::DisplayUint(c.MeshID, "Mesh ID");
 	}
 #endif
 };
 
 struct RenderMaterial : Component
 {
-	m4x4 TRS{};
+	u32 MaterialCount{ 0 };
+	id_t* MaterialIDs{ nullptr };
+
 #if EDITOR_BUILD
 	static void RenderFields(RenderMaterial& c)
 	{
-		editor::DisplayMatrix4x4(&c.TRS, "Render Material");
+		if (c.MaterialIDs == nullptr) return;
+		editor::DisplayUint(c.MaterialIDs[0], "Material ID");
 	}
 #endif
 };

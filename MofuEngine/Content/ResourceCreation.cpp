@@ -59,6 +59,9 @@ constexpr u8 SINGLE_MESH_MARKER{ (uintptr_t)0x1 };
 util::FreeList<std::unordered_map<u32, std::unique_ptr<u8[]>>> shaderGroups{}; // a free list of key-shader maps
 std::mutex shaderMutex{};
 
+//TODO: bad idea
+UploadedGeometryInfo lastUploadedGeometryInfo{ id::INVALID_ID, 0, {} };
+
 constexpr id_t
 GetGpuIDSingleMesh(u8* const meshPtr)
 {
@@ -82,6 +85,29 @@ ReadIsSingleMesh(const void* const blob)
 	return submeshCount == 1;
 }
 
+u32
+GetGeometryHierarchyBufferSize(const void* const blob)
+{
+	assert(blob);
+	util::BlobStreamReader reader{ (const u8*)blob };
+	const u32 lodCount{ reader.Read<u32>() };
+	assert(lodCount);
+	constexpr u32 su32{ sizeof(u32) };
+	// add size of lodCount, thresholds and lodOffsets to the size of the hierarchy
+	u32 totalSize{ su32 + (sizeof(f32) + sizeof(content::LodOffset)) * lodCount };
+
+	for (u32 lodIdx{ 0 }; lodIdx < lodCount; ++lodIdx)
+	{
+		// skip lod threshold
+		reader.Skip(sizeof(f32));
+		// add size of gpuIDs
+		totalSize += sizeof(id_t) * reader.Read<u32>();
+		// skip sumbesh data and go to the next LOD
+		reader.Skip(reader.Read<u32>());
+	}
+	return totalSize;
+}
+
 id_t
 CreateSingleMesh(const void* const blob)
 {
@@ -96,7 +122,63 @@ CreateSingleMesh(const void* const blob)
 	u8* const singleGpuID{ (u8* const)((((uintptr_t)gpuID) << bitShift) | SINGLE_MESH_MARKER) };
 
 	std::lock_guard lock{ geometryMutex };
-	return geometryHierarchies.add(singleGpuID);
+	id_t geometryID{ geometryHierarchies.add(singleGpuID) };
+	lastUploadedGeometryInfo.GeometryContentID = geometryID;
+	lastUploadedGeometryInfo.SubmeshCount = 1;
+	lastUploadedGeometryInfo.SubmeshGpuIDs.resize(1);
+	lastUploadedGeometryInfo.SubmeshGpuIDs[0] = gpuID;
+	return geometryID;
+}
+
+id_t
+CreateMeshHierarchy(const void* const blob)
+{
+	assert(blob);
+	const u32 hierarchySize{ GetGeometryHierarchyBufferSize(blob) };
+	u8* const hierarchyBuffer{ (u8* const)malloc(hierarchySize) };
+
+	util::BlobStreamReader reader{ (const u8*)blob };
+	const u32 lodCount{ reader.Read<u32>() };
+	assert(lodCount);
+
+	GeometryHierarchyStream stream{ hierarchyBuffer, lodCount };
+	u16 submeshIndex{ 0 };
+	id_t* const gpuIDs{ stream.GpuIDs() };
+
+	for (u32 lodIdx{ 0 }; lodIdx < lodCount; ++lodIdx)
+	{
+		stream.Thresholds()[lodIdx] = reader.Read<f32>();
+		const u32 idCount{ reader.Read<u32>() };
+		assert(idCount < (1 << 16));
+		stream.LODOffsets()[lodIdx] = { submeshIndex, (u16)idCount };
+		reader.Skip(sizeof(f32)); // skip size of submeshes
+
+		for (u32 idIdx{ 0 }; idIdx < idCount; ++idIdx)
+		{
+			const u8* at{ reader.Position() };
+			// upload the submesh to the GPU
+			gpuIDs[submeshIndex++] = graphics::AddSubmesh(at);
+			reader.Skip((u32)(at - reader.Position())); // go to the next submesh
+		}
+	}
+
+	assert([&]() {
+		f32 previousThreshold{ stream.Thresholds()[0] };
+		for (u32 i{ 1 }; i < lodCount; ++i)
+		{
+			if (stream.Thresholds()[i] < previousThreshold) return false;
+			previousThreshold = stream.Thresholds()[i];
+		}
+	}());
+
+	static_assert(alignof(void*) > 2, "The least significant bit in the pointer has to be zero for the single mesh marker implementation");
+	std::lock_guard lock{ geometryMutex };
+	id_t geometryID{ geometryHierarchies.add(hierarchyBuffer) };
+	lastUploadedGeometryInfo.GeometryContentID = geometryID;
+	lastUploadedGeometryInfo.SubmeshCount = submeshIndex;
+	lastUploadedGeometryInfo.SubmeshGpuIDs.resize(submeshIndex);
+	std::copy(gpuIDs, gpuIDs + submeshIndex, lastUploadedGeometryInfo.SubmeshGpuIDs.begin());
+	return geometryID;
 }
 
 /* expects data to contain :
@@ -134,7 +216,7 @@ CreateSingleMesh(const void* const blob)
 id_t
 CreateGeometryResource(const void* const blob)
 {
-	return ReadIsSingleMesh(blob) ? CreateSingleMesh(blob) : id_t{};
+	return ReadIsSingleMesh(blob) ? CreateSingleMesh(blob) : CreateMeshHierarchy(blob);
 }
 
 void
@@ -285,10 +367,11 @@ DestroyResource(id_t resourceId, AssetType::type resourceType)
 }
 
 void
-GetSubmeshGpuIDs(id_t geometryContentID, u32 idCount, id_t* const outGpuIDs)
+GetSubmeshGpuIDs(id_t geometryContentID, u32 idCount, id_t* const outGpuIDs, u32 counter)
 {
 	std::lock_guard lock{ geometryMutex };
-	u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
+	//u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
+	u8* const hierarchyPtr{ geometryHierarchies[0] };
 	if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
 	{
 		assert(idCount == 1);
@@ -297,7 +380,7 @@ GetSubmeshGpuIDs(id_t geometryContentID, u32 idCount, id_t* const outGpuIDs)
 	else
 	{
 		GeometryHierarchyStream stream{ hierarchyPtr };
-		memcpy(outGpuIDs, stream.GpuIDs(), sizeof(id_t) * idCount);
+		memcpy(outGpuIDs, &stream.GpuIDs()[counter], sizeof(id_t) * idCount); //TODO: testing with [counter]
 	}
 }
 
@@ -365,6 +448,13 @@ GetShader(id_t groupID, u32 shaderKey)
 
 	assert(false);
 	return nullptr;
+}
+
+//TODO: bad idea
+UploadedGeometryInfo 
+GetLastUploadedGeometryInfo()
+{
+	return lastUploadedGeometryInfo;
 }
 
 }

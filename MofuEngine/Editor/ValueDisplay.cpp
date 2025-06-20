@@ -69,4 +69,16 @@ void DisplayMatrix4x4(m4x4* m, const char* label)
 	ImGui::PopID();
 }
 
+void DisplayUint(u32 v, const char* label)
+{
+	DisplayLabel(label);
+	ImGui::Text("%u", v);
+}
+
+void DisplayFloat(f32 v, const char* label)
+{
+	DisplayLabel(label);
+	ImGui::Text("%.2f", v);
+}
+
 }

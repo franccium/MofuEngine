@@ -260,6 +260,7 @@ GetMeshSize(const Mesh& m)
 		su32 + // vertex element size (vertex size exluding the position element)
 		su32 + // element type enum
 		su32 + // number of vertices
+		su32 + // TODO: PRIMITIVE TOPOLOGY PLACEHOLDER
 		su32 + // index size (16b or 32b)
 		su32 + // number of indices
 		sizeof(f32) + // LOD threshold
@@ -274,10 +275,10 @@ GetMeshGroupSize(const MeshGroup& group)
 {
 	constexpr u64 su32{ sizeof(u32) };
 
-	u64 size{ su32 + group.Name.size() + su32 };
+	u64 size{ su32 + group.Name.size() + su32 }; // name and number of LODS
 	for (const auto& lod : group.LodGroups)
 	{
-		u64 lodSize{ su32 + lod.Name.size() + su32 };
+		u64 lodSize{ su32 + lod.Name.size() + su32 }; // name and number of meshes
 		for (const auto& mesh : lod.Meshes)
 		{
 			lodSize += GetMeshSize(mesh);
@@ -352,18 +353,92 @@ GetEnginePackedGeometrySize(const MeshGroup& group)
 			size += su32 + su32 + su32 + su32 + su32;
 			assert(m.PositionBuffer.size() % 4 == 0);
 
-			u64 sizes = math::AlignUp<4>(m.PositionBuffer	.size());
+			u64 sizes = math::AlignUp<4>(m.PositionBuffer.size());
 			u64 sizes2 = math::AlignUp<4>(m.ElementBuffer.size());
 			//size += m.PositionBuffer.size();	
 			assert(m.ElementBuffer.size() % 4 == 0);
 			//size += m.ElementBuffer.size();
 			size += sizes;
-			size += sizes2;	
+			size += sizes2;
 			const u32 indexSize{ (m.Vertices.size() < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
-			size += indexSize * m.Indices.size();	
+			size += indexSize * m.Indices.size();
 		}
 	}
 	return size;
+}
+
+void
+PackMeshDataForEditor(const Mesh& m, util::BlobStreamWriter& writer)
+{
+	writer.WriteStringWithLength(m.Name);
+	writer.Write(m.LodID);
+
+	const u32 vertexCount{ (u32)m.Vertices.size() };
+	const u32 indexCount{ (u32)m.Indices.size() };
+	const u32 indexSize{ (vertexCount < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
+	const u32 elementSize{ GetVertexElementSize(m.ElementType) };
+	writer.Write(elementSize);
+	writer.Write((u32)m.ElementType);
+
+	writer.Write(vertexCount);
+
+	writer.Write(indexSize);
+	writer.Write(indexCount);
+
+	writer.Write(0.f); //TODO: lod thresholds
+
+	writer.Write(3); //TODO: primitive topology
+
+	assert(m.PositionBuffer.size() == sizeof(v3) * vertexCount);
+	writer.WriteBytes(m.PositionBuffer.data(), m.PositionBuffer.size());
+	assert(m.ElementBuffer.size() == elementSize * vertexCount);
+	writer.WriteBytes(m.ElementBuffer.data(), m.ElementBuffer.size());
+
+	const u32 indexBufferSize{ indexSize * indexCount };
+	const u8* indexData{ (const u8*)m.Indices.data() };
+	Vec<u16> indices{ indexCount };
+	if (indexSize == sizeof(u16))
+	{
+		indices.resize(indexCount);
+		for (u32 i{ 0 }; i < indexCount; ++i)
+			indices[i] = (u16)m.Indices[i];
+		indexData = (const u8*)indices.data();
+	}
+	writer.WriteBytes(indexData, indexBufferSize);
+}
+
+void
+PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data)
+{
+	const u64 groupSize{ GetMeshGroupSize(group) };
+	u8* buffer{ new u8[groupSize] };
+	u32 bufferSize{ (u32)groupSize };
+
+	util::BlobStreamWriter blob{ buffer, groupSize };
+	blob.WriteStringWithLength(group.Name);
+
+	blob.Write((u32)group.LodGroups.size());
+
+	for (const auto& lod : group.LodGroups)
+	{
+		blob.WriteStringWithLength(lod.Name);
+
+		blob.Write((u32)lod.Meshes.size());
+
+		for (const auto& m : lod.Meshes)
+		{
+			PackMeshDataForEditor(m, blob);
+		}
+	}
+
+	assert(blob.Offset() == groupSize);
+	//TODO: refactor
+	std::filesystem::path modelPath{ "Assets/Generated/" + group.Name };
+	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
+	if (!file) return;
+
+	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
+	file.close();
 }
 
 /* the engine expects data to contain :
@@ -391,15 +466,17 @@ PackGeometryForEngine(const MeshGroup& group)
 	u32 bufferSize{ (u32)groupSize };
 
 	util::BlobStreamWriter blob{ buffer, groupSize };
+
 	blob.Write((u32)group.LodGroups.size());
+
 	for (const auto& lod : group.LodGroups)
 	{
 		blob.Write(0);	//TODO: lod thresholds
 		blob.Write((u32)lod.Meshes.size());
 
 		u8* sizeOfSubmeshesPos{ (u8*)blob.Position() };
-		u32 sizeOfSubmeshes{ 0 };
 		blob.Skip(sizeof(u32)); // reserve space for the size of submeshes
+		u8* submeshesStartPos{ (u8*)blob.Position() };
 		for (const auto& m : lod.Meshes)
 		{
 			const u32 vertexCount{ (u32)m.Vertices.size() };
@@ -408,11 +485,11 @@ PackGeometryForEngine(const MeshGroup& group)
 			blob.Write(GetVertexElementSize(m.ElementType));
 			blob.Write(vertexCount);
 			blob.Write(indexCount);
-			blob.Write((u32)m.ElementType);	
+			blob.Write((u32)m.ElementType);
 			blob.Write(3); //TODO: primitive topology
 
-			blob.WriteBytes(m.PositionBuffer.data(), m.PositionBuffer.size());		
-			blob.WriteBytes(m.ElementBuffer.data(), m.ElementBuffer.size());	
+			blob.WriteBytes(m.PositionBuffer.data(), m.PositionBuffer.size());
+			blob.WriteBytes(m.ElementBuffer.data(), m.ElementBuffer.size());
 
 			const u32 indexBufferSize{ indexSize * indexCount };
 			const u8* indexData{ (const u8*)m.Indices.data() };
@@ -426,7 +503,7 @@ PackGeometryForEngine(const MeshGroup& group)
 			}
 			blob.WriteBytes(indexData, indexBufferSize);
 		}
-		sizeOfSubmeshes += (u32)(blob.Position() - sizeOfSubmeshesPos);	
+		u32 sizeOfSubmeshes{ (u32)(blob.Position() - submeshesStartPos) };
 		u8* submeshesEndPos{ (u8*)blob.Position() };
 		blob.JumpTo(sizeOfSubmeshesPos);
 		blob.Write(sizeOfSubmeshes);
@@ -435,15 +512,17 @@ PackGeometryForEngine(const MeshGroup& group)
 
 	assert(blob.Offset() == groupSize);
 	//TODO: refactor
-	std::filesystem::path modelPath{ "Assets/Generated/planeModel.model" };
+	std::filesystem::path modelPath{ "Assets/Generated/" + group.Name };
 	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
-	if (!file)
-	{
-		return;
-	}
+	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
 	file.close();
+}
+
+void 
+CoalesceMeshes(const LodGroup& lod, Mesh& outCombinedMesh)
+{
 }
 
 void
@@ -470,30 +549,30 @@ ProcessMeshGroupData(MeshGroup& group, const GeometryImportSettings& settings)
 * [u32] number of meshes
 * [] mesh data
 */
-void 
-PackGeometryData(const MeshGroup& meshGroup, MeshGroupData& outData)
-{
-	const u64 groupSize{ GetMeshGroupSize(meshGroup) };
-	outData.Buffer = new u8[groupSize];
-	outData.BufferSize = groupSize;
-
-	util::BlobStreamWriter blob{ outData.Buffer, groupSize };
-	blob.WriteStringWithLength(meshGroup.Name);
-	// number of LODs
-	blob.Write((u32)meshGroup.LodGroups.size());
-
-	for (const auto& lod : meshGroup.LodGroups)
-	{
-		blob.WriteStringWithLength(lod.Name);
-		// number of meshes
-		blob.Write((u32)lod.Meshes.size());
-
-		for (const auto& m : lod.Meshes)
-		{
-			PackMeshData(m, blob);
-		}
-	}
-	assert(blob.Offset() == groupSize);
-}
+//void 
+//PackGeometryDataForEditor(const MeshGroup& meshGroup, MeshGroupData& outData)
+//{
+//	const u64 groupSize{ GetMeshGroupSize(meshGroup) };
+//	outData.Buffer = new u8[groupSize];
+//	outData.BufferSize = groupSize;
+//
+//	util::BlobStreamWriter blob{ outData.Buffer, groupSize };
+//	blob.WriteStringWithLength(meshGroup.Name);
+//	// number of LODs
+//	blob.Write((u32)meshGroup.LodGroups.size());
+//
+//	for (const auto& lod : meshGroup.LodGroups)
+//	{
+//		blob.WriteStringWithLength(lod.Name);
+//		// number of meshes
+//		blob.Write((u32)lod.Meshes.size());
+//
+//		for (const auto& m : lod.Meshes)
+//		{
+//			PackMeshData(m, blob);
+//		}
+//	}
+//	assert(blob.Offset() == groupSize);
+//}
 
 }

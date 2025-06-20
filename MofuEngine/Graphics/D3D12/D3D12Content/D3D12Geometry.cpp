@@ -74,28 +74,28 @@ AddSubmesh(const u8*& blob)
 	// advance the data pointer past the submesh data
 	blob = reader.Position();
 
-	SubmeshView view{};
-	view.positionBufferView.BufferLocation = resource->GetGPUVirtualAddress();
-	view.positionBufferView.SizeInBytes = positionBufferSize;
-	view.positionBufferView.StrideInBytes = sizeof(v3);
+	SubmeshView submeshView{};
+	submeshView.positionBufferView.BufferLocation = resource->GetGPUVirtualAddress();
+	submeshView.positionBufferView.SizeInBytes = positionBufferSize;
+	submeshView.positionBufferView.StrideInBytes = sizeof(v3);
 
 	if (elementSize != 0)
 	{
-		view.elementBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize;
-		view.elementBufferView.SizeInBytes = elementBufferSize;
-		view.elementBufferView.StrideInBytes = elementSize;
+		submeshView.elementBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize;
+		submeshView.elementBufferView.SizeInBytes = elementBufferSize;
+		submeshView.elementBufferView.StrideInBytes = elementSize;
 	}
 
-	view.indexBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize + alignedElementBufferSize;
-	view.indexBufferView.SizeInBytes = indexBufferSize;
-	view.indexBufferView.Format = (indexSize == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;	
+	submeshView.indexBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize + alignedElementBufferSize;
+	submeshView.indexBufferView.SizeInBytes = indexBufferSize;
+	submeshView.indexBufferView.Format = (indexSize == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 
-	view.elementType = elementType;
-	view.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGIES[primitiveTopology];
+	submeshView.elementType = elementType;
+	submeshView.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGIES[primitiveTopology];
 
 	std::lock_guard lock{ submeshMutex };
 	submeshBuffers.add(resource);
-	return submeshViews.add(view);
+	return submeshViews.add(submeshView);
 }
 
 void 

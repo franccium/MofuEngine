@@ -32,6 +32,7 @@ public:
 			_aligned_free(slab);
 		}
 	}
+
 private:
 	Vec<void*> _slabs;
 	Vec<void*> _freeSlabs;

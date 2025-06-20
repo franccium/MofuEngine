@@ -75,6 +75,89 @@ ImportUnknown([[maybe_unused]] std::filesystem::path path)
 //}
 
 void
+ImportUfbxMesh(ufbx_node* node, MeshGroup& meshGroup)
+{
+	// node - LodGroup
+
+	ufbx_mesh* m{ node->mesh };
+	ufbx_matrix toWorld{node->geometry_to_world};
+	const char* name{ node->name.data };
+
+	log::Info("Importing UFBX mesh: %s", name);
+
+	LodGroup lodGroup{};
+	lodGroup.Name = name;
+
+	Vec<u32> triangleIndices(m->max_face_triangles * 3);
+
+	// Iterate over each face using the specific material
+	for (const ufbx_mesh_part& part : m->material_parts)
+	{
+		// Mesh
+		Mesh mesh{};
+		mesh.Name = std::string(name) + "_part_" + std::to_string(part.index);
+		mesh.LodThreshold = 0.f;
+		mesh.ElementType = ElementType::StaticNormalTexture; // TODO: temporary
+		
+		Vec<Vertex>& vertices{ mesh.Vertices };
+		Vec<u32> partIndices{};
+
+		for (u32 faceIdx : part.face_indices)
+		{
+			ufbx_face face{ m->faces[faceIdx] };
+
+			// Triangulate the face
+			u32 triangleCount{ ufbx_triangulate_face(triangleIndices.data(), triangleIndices.size(), m, face) };
+
+			// Iterate over each triangle corner contiguously
+			for (u32 i{ 0 }; i < triangleCount * 3; ++i)
+			{
+				u32 index{ triangleIndices[i] };
+
+				Vertex v{};
+				ufbx_vec3 pos{ m->vertex_position[index] }; // ufbx_transform_position(&toWorld, pos);
+				ufbx_vec3 normal{ m->vertex_normal[index] };
+				ufbx_vec2 uv{ m->vertex_uv[index] };
+				v.Position = { (f32)pos.x, (f32)pos.y, (f32)pos.z };
+				v.Normal = { (f32)normal.x, (f32)normal.y, (f32)normal.z };
+				v.UV = { (f32)uv.x, (f32)uv.y };
+				vertices.emplace_back(v);
+			}
+		}
+
+		assert(vertices.size() == part.num_triangles * 3);
+
+		// Generate the index buffer
+		ufbx_vertex_stream streams[1] {
+			{ vertices.data(), vertices.size(), sizeof(Vertex) },
+		};
+
+		Vec<u32> indices(part.num_triangles * 3);
+
+		u32 uniqueVertexCount{ (u32)ufbx_generate_indices(streams, 1, indices.data(), indices.size(), nullptr, nullptr) };
+
+		log::Info("Mesh '%s' has %u unique vertices", name, uniqueVertexCount);
+
+		// Create vertex and index buffers
+		mesh.RawIndices = std::move(indices);
+		mesh.MaterialIndices.resize(mesh.Indices.size(), 0);
+		mesh.MaterialUsed.emplace_back(0);
+
+		for (const Vertex& v : mesh.Vertices)
+		{
+			mesh.Positions.emplace_back(v.Position);
+			mesh.Normals.emplace_back(v.Normal);
+			mesh.UvSets.resize(1);
+			mesh.UvSets[0].emplace_back(v.UV);
+		}
+
+		lodGroup.Meshes.emplace_back(mesh);
+	}
+
+	meshGroup.LodGroups.emplace_back(std::move(lodGroup));
+}
+
+void
 ImportMesh(std::filesystem::path path)
 {
 	log::Info("Importing mesh: %s", path.string().c_str());
@@ -84,17 +167,14 @@ ImportMesh(std::filesystem::path path)
 	opts.target_unit_meters = 1.0f;
 	ufbx_error error;
 	ufbx_scene* scene = ufbx_load_file(path.string().c_str(), &opts, &error);
-	if (!scene) {
+	if (!scene) 
+	{
 		log::Error("Failed to load: %s\n", error.description.data);
 		return;
 	}
-
-	// Use and inspect `scene`, it's just plain data!
-
-
-
-	// Let's just list all objects within the scene for example:
-	for (size_t i = 0; i < scene->nodes.count; i++) {
+	// list all nodes in the scene
+	for (u32 i{ 0 }; i < scene->nodes.count; i++) 
+	{
 		ufbx_node* node = scene->nodes.data[i];
 		if (node->is_root) continue;
 
@@ -104,7 +184,32 @@ ImportMesh(std::filesystem::path path)
 		}
 	}
 
+	MeshGroup meshGroup{};
+	meshGroup.Name = scene->metadata.filename.data;
+	meshGroup.Name = path.stem().string() + ".model";
+
+	for (ufbx_node* node : scene->nodes) 
+	{
+		if (!node->mesh || node->is_root) continue;
+
+		ImportUfbxMesh(node, meshGroup);
+	}
+
 	ufbx_free_scene(scene);
+
+	MeshGroupData data{};
+	data.ImportSettings.CalculateNormals = false;
+	data.ImportSettings.CalculateTangents = false;
+	data.ImportSettings.CoalesceMeshes = true;
+	data.ImportSettings.ImportAnimations = false;
+	data.ImportSettings.ImportEmbeddedTextures = false;
+	data.ImportSettings.ReverseHandedness = false;
+	data.ImportSettings.SmoothingAngle = 0.f;
+	ProcessMeshGroupData(meshGroup, data.ImportSettings);
+	//PackGeometryData(meshGroup, outData);
+	PackGeometryDataForEditor(meshGroup, data);
+	//SaveGeometry(data, path.replace_extension(".geom"));
+	PackGeometryForEngine(meshGroup);
 }
 
 using AssetImporter = void(*)(std::filesystem::path path);

@@ -112,13 +112,14 @@ PackFloat(f32 val, f32 min, f32 max)
 [[nodiscard]] constexpr u64
 CRC32_u64(const u8* const data, u64 size)
 {
+	assert(size >= sizeof(u64));
 	assert(data && size);
 	u64 crc{ 0 };
 	const u8* at{ data };
 	const u8* const end{ data + AlignDown<sizeof(u64)>(size) };
 	while (at < end)
 	{
-		crc = _mm_crc32_u64(crc, *(const u64*)at);
+		crc = _mm_crc32_u64(crc, *((const u64*)at));
 		at += sizeof(u64);
 	}
 	return crc;
