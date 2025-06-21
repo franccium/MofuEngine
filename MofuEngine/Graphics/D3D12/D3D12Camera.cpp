@@ -1,4 +1,7 @@
 #include "D3D12Camera.h"
+#include "EngineAPI/ECS/SceneAPI.h"
+#include "ECS/ECSCommon.h"
+#include "ECS/Transform.h"
 
 namespace mofu::graphics::d3d12::camera {
 namespace {
@@ -197,7 +200,11 @@ void
 D3D12Camera::Update()
 {
 	using namespace DirectX;
-    
+    //TODO: take this out of there
+    ecs::component::LocalTransform& lt = ecs::scene::GetComponent<ecs::component::LocalTransform>(ecs::Entity{ _entityID });
+    _position = XMLoadFloat3(&lt.Position);
+    _direction = XMLoadFloat3(&lt.Forward);
+
 	_view = XMMatrixLookToRH(_position, _direction, _up);
     if (_isDirty)
     {

@@ -62,17 +62,21 @@ namespace mofu::graphics::d3d12 {
 			material::GetMaterials(frameCache.MaterialIDs, renderItemCount, materialsCache, frameCache.DescriptorIndexCount);
 
 			u32 renderItemIndex{ 0 };
+			hlsl::PerObjectData* currentDataPtr{ nullptr };
 
 			for (auto [entity, transform, mesh, material] 
 				: ecs::scene::GetRW<ecs::component::WorldTransform, 
 					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
 			{
-				// PER OBJECT DATA
-				hlsl::PerObjectData* data{ cbuffer.AllocateSpace<hlsl::PerObjectData>() };
-				//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);
-				FillPerObjectData(data, transform, materialsCache.MaterialSurfaces[renderItemIndex], frameInfo.Camera->ViewProjection());
-				assert(data);
-				frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(data);
+				//if (entity != frameCache.EntityIDs[renderItemIndex])
+				//{
+					// PER OBJECT DATA
+					currentDataPtr = cbuffer.AllocateSpace<hlsl::PerObjectData>();
+					//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);
+					FillPerObjectData(currentDataPtr, transform, materialsCache.MaterialSurfaces[renderItemIndex], frameInfo.Camera->ViewProjection());
+				//}
+				assert(currentDataPtr);
+				frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);
 
 				renderItemIndex++;
 			}

@@ -115,7 +115,7 @@ CreateMaterial()
 void
 AddRenderItem()
 {
-	v3 pos{ -3.f, -10.f, 50.f };
+	v3 pos{ -3.f, -10.f, 90.f };
 	if (loadedModelsCount == 1) pos = v3{ 0.f, -10.f, 10.f };
 	v3 rot{ -90.f, 0.f, 0.f };
 	v3 scale{ 1.f, 1.f, 1.f };
@@ -143,8 +143,8 @@ AddRenderItem()
 		ecs::component::RenderMesh, ecs::component::RenderMaterial>(lt, wt, mesh, material) };
 	loadedEntities.emplace_back(entityData.id);
 
-	//u32 subEntities{ (u32)uploadedGeometryInfo.SubmeshGpuIDs.size() };
-	u32 subEntities{ 2 };
+	u32 subEntities{ (u32)uploadedGeometryInfo.SubmeshGpuIDs.size() };
+	//u32 subEntities{ 7 };
 	ecs::component::Parent parentEntity{ {}, entityData.id };
 	for (u32 i{ 1 }; i < subEntities - 1; ++i)
 	{

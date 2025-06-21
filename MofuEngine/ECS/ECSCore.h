@@ -3,8 +3,12 @@
 #include <bitset>
 #include "Transform.h"
 #include "Component.h"
-#include "Graphics/D3D12/D3D12Core.h"
+//#include "Graphics/D3D12/D3D12Core.h"
 #include "ComponentRegistry.h"
+
+namespace mofu::graphics::d3d12 {
+struct D3D12FrameInfo;
+}
 
 namespace mofu::ecs {
 namespace system {

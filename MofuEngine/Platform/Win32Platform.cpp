@@ -7,6 +7,8 @@
 #define WIN_PLATFORM_CODE_INCLUDED
 #include "Platform.h"
 
+#include "Input/Win32Input.h"
+
 namespace mofu::platform {
 namespace {
 struct WindowInfo
@@ -38,7 +40,7 @@ GetFromHandle(WindowHandle handle)
 }
 
 LRESULT CALLBACK
-InternalWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+InternalWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
@@ -55,11 +57,13 @@ InternalWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         GetFromHandle(hwnd).isClosed = true;
         break;
     case WM_SIZE:
-        wasResized = (wparam != SIZE_MINIMIZED);
+        wasResized = (wParam != SIZE_MINIMIZED);
         break;
     default:
         break;
     }
+
+    input::ProcessInputMessage(hwnd, msg, wParam, lParam);
 
     if (wasResized && GetKeyState(VK_LBUTTON) >= 0)
     {
@@ -68,14 +72,14 @@ InternalWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         wasResized = false;
     }
 
-    if (msg == WM_SYSCOMMAND && wparam == SC_KEYMENU)
+    if (msg == WM_SYSCOMMAND && wParam == SC_KEYMENU)
     {
         // blocks stuff like alt f10
         return 0;
     }
 
     LONG_PTR long_ptr{ GetWindowLongPtr(hwnd, 0) };
-    return long_ptr ? ((WindowEventHandler)long_ptr)(hwnd, msg, wparam, lparam) : DefWindowProc(hwnd, msg, wparam, lparam);
+    return long_ptr ? ((WindowEventHandler)long_ptr)(hwnd, msg, wParam, lParam) : DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 void ResizeWindow(const WindowInfo& info, RECT area)

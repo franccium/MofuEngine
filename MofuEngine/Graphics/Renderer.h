@@ -93,7 +93,7 @@ struct PerspectiveCameraInitInfo : public CameraInitInfo
 		FieldOfView = 0.25f;	
 		AspectRatio = 16.f / 9.f;
 		NearZ = 0.1f;
-		FarZ = 100.f;
+		FarZ = 1000.f;
 	}
 };
 

@@ -366,12 +366,27 @@ DestroyResource(id_t resourceId, AssetType::type resourceType)
 	resourceDestructors[resourceType](resourceId);
 }
 
+u32 GetSubmeshGpuIDCount(id_t geometryContentID)
+{
+	std::lock_guard{ geometryMutex };
+	u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
+	if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
+	{
+		return 1;
+	}
+	else
+	{
+		GeometryHierarchyStream stream{ hierarchyPtr };
+		return stream.LodCount();
+	}
+}
+
 void
 GetSubmeshGpuIDs(id_t geometryContentID, u32 idCount, id_t* const outGpuIDs, u32 counter)
 {
 	std::lock_guard lock{ geometryMutex };
-	//u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
-	u8* const hierarchyPtr{ geometryHierarchies[0] };
+	u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
+	//u8* const hierarchyPtr{ geometryHierarchies[0] };
 	if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
 	{
 		assert(idCount == 1);
@@ -380,7 +395,8 @@ GetSubmeshGpuIDs(id_t geometryContentID, u32 idCount, id_t* const outGpuIDs, u32
 	else
 	{
 		GeometryHierarchyStream stream{ hierarchyPtr };
-		memcpy(outGpuIDs, &stream.GpuIDs()[counter], sizeof(id_t) * idCount); //TODO: testing with [counter]
+		//memcpy(outGpuIDs, &stream.GpuIDs()[counter], sizeof(id_t) * idCount); //TODO: testing with [counter]
+		memcpy(outGpuIDs, stream.GpuIDs(), sizeof(id_t) * idCount);
 	}
 }
 

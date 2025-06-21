@@ -160,7 +160,15 @@ bool MofuInitialize()
 		CameraSurface& cSurf{ renderSurfaces[i] };
 		cSurf.surface.window = platform::ConcoctWindow(&info[i]);
 		cSurf.surface.surface = graphics::CreateSurface(cSurf.surface.window);
-		cSurf.entity = ecs::Entity{};
+
+		v3 pos{ 0.f, 0.f, 0.f };
+		v3 rot{ 0.f, 0.f, 0.f };
+		v3 scale{ 1.f, 1.f, 1.f };
+		ecs::component::LocalTransform lt{ {}, pos, rot, scale };
+		ecs::component::Camera cam{};
+		ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Camera>(lt, cam) };
+		cSurf.entity = entityData.id;
+
 		cSurf.camera = graphics::CreateCamera(graphics::PerspectiveCameraInitInfo{ cSurf.entity });
 		cSurf.camera.AspectRatio((f32)cSurf.surface.window.Width() / cSurf.surface.window.Height());
 	}

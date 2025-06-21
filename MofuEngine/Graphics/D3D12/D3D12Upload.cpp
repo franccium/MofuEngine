@@ -128,7 +128,7 @@ D3D12UploadContext::D3D12UploadContext(u32 alignedSize)
 	_cmdList = frame.CmdList;
 	_uploadBuffer = frame.UploadBuffer;
 	_cpuAddress = frame.CpuAddress;
-	assert(_cmdList && _uploadBuffer && _cpuAddress);	
+	assert(_cmdList && _uploadBuffer && _cpuAddress);
 	
 	DXCall(frame.CmdAllocator->Reset());
 	DXCall(_cmdList->Reset(frame.CmdAllocator, nullptr));

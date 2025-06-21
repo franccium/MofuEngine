@@ -101,4 +101,14 @@ struct LocalTransform : Component
 #endif
 };
 
+struct Camera : Component
+{
+#if EDITOR_BUILD
+	static void RenderFields(Camera& c)
+	{
+		
+	}
+#endif
+};
+
 }

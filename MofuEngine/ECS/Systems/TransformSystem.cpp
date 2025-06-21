@@ -27,11 +27,15 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 #endif
 
 			using namespace DirectX;
-			xmm scale = XMLoadFloat3(&lt.Scale);
-			xmm rot = XMQuaternionRotationRollPitchYaw(lt.Rotation.x, lt.Rotation.y, lt.Rotation.z);
-			xmm pos = XMLoadFloat3(&lt.Position);
-			XMMATRIX trs = DirectX::XMMatrixAffineTransformation(scale, g_XMZero, rot, pos);
+			xmm scale{ XMLoadFloat3(&lt.Scale) };
+			xmm rot{ XMQuaternionRotationRollPitchYaw(lt.Rotation.x, lt.Rotation.y, lt.Rotation.z) };
+			xmm pos{ XMLoadFloat3(&lt.Position) };
+			XMMATRIX trs{ DirectX::XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
 			XMStoreFloat4x4(&wt.TRS, trs);
+
+			xmm dir{ 0.f, 0.f, 1.f, 0.f };
+			XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
+
 #if PRINT_DEBUG
 			log::Info("Modified TRS: Entity ID: %u, TRS: T:(%f, %f, %f, ...)",
 				entity,

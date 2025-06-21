@@ -2,10 +2,18 @@
 #include "SystemRegistry.h"
 #include "Scene.h"
 
+namespace mofu::graphics::d3d12 {
+struct D3D12FrameInfo;
+}
+
 #include "Systems/TransformSystem.cpp"
 #include "Systems/SubmitEntityRenderSystem.cpp"
 #include "Systems/PrepareFrameRenderSystem.cpp"
 #include "Systems/PreparePerObjectDataRenderSystem.cpp"
+#include "Systems/InputTestSystem.cpp"
+#include "Systems/CameraFreeLookSystem.cpp"
+
+
 
 namespace mofu::ecs {
 namespace {
