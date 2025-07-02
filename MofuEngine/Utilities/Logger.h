@@ -11,6 +11,16 @@ enum LogSeverityLevel
 	Count
 };
 
+enum LogSource
+{
+	Other = 0,
+	Editor,
+	Renderer,
+	ECS,
+	Asset,
+	Platform
+};
+
 void Initialize();
 void Shutdown();
 void Clear();

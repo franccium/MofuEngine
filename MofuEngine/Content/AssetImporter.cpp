@@ -75,7 +75,7 @@ ImportUnknown([[maybe_unused]] std::filesystem::path path)
 //}
 
 void
-ImportUfbxMesh(ufbx_node* node, MeshGroup& meshGroup)
+ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 {
 	// node - LodGroup
 
@@ -84,9 +84,6 @@ ImportUfbxMesh(ufbx_node* node, MeshGroup& meshGroup)
 	const char* name{ node->name.data };
 
 	log::Info("Importing UFBX mesh: %s", name);
-
-	LodGroup lodGroup{};
-	lodGroup.Name = name;
 
 	Vec<u32> triangleIndices(m->max_face_triangles * 3);
 
@@ -153,8 +150,6 @@ ImportUfbxMesh(ufbx_node* node, MeshGroup& meshGroup)
 
 		lodGroup.Meshes.emplace_back(mesh);
 	}
-
-	meshGroup.LodGroups.emplace_back(std::move(lodGroup));
 }
 
 void
@@ -188,19 +183,45 @@ ImportMesh(std::filesystem::path path)
 	meshGroup.Name = scene->metadata.filename.data;
 	meshGroup.Name = path.stem().string() + ".model";
 
-	for (ufbx_node* node : scene->nodes) 
+	/*for (ufbx_node* node : scene->nodes) 
 	{
 		if (!node->mesh || node->is_root) continue;
 
 		ImportUfbxMesh(node, meshGroup);
+	}*/
+
+	LodGroup lodGroup{};
+	//lodGroup.Name = node->name.data;
+	lodGroup.Name = "testing lod group";
+
+	for (ufbx_node* node : scene->nodes)
+	{
+		if (node->is_root) continue;
+
+		if (node->element.type == UFBX_ELEMENT_LOD_GROUP)
+		{
+			// each child is an LOD level
+			for (u32 i = 0; i < node->children.count; ++i)
+			{
+				ufbx_node* child = node->children.data[i];
+				if (!child->mesh) continue;
+
+				ImportUfbxMesh(child, lodGroup);
+			}
+		}
+		else if (node->mesh)
+		{
+			ImportUfbxMesh(node, lodGroup);
+		}
 	}
+	meshGroup.LodGroups.emplace_back(lodGroup);
 
 	ufbx_free_scene(scene);
 
 	MeshGroupData data{};
 	data.ImportSettings.CalculateNormals = false;
 	data.ImportSettings.CalculateTangents = false;
-	data.ImportSettings.CoalesceMeshes = true;
+	data.ImportSettings.MergeMeshes = true;
 	data.ImportSettings.ImportAnimations = false;
 	data.ImportSettings.ImportEmbeddedTextures = false;
 	data.ImportSettings.ReverseHandedness = false;

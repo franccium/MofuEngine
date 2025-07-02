@@ -81,6 +81,12 @@ namespace mofu::graphics::d3d12 {
 				renderItemIndex++;
 			}
 
+			//FIXME: submeshes have no entities and i have to do this currently 
+			while (renderItemIndex < renderItemCount)
+			{
+				frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);
+				renderItemIndex++;
+			}
 
 			// TEXTURES
 			if (frameCache.DescriptorIndexCount != 0)

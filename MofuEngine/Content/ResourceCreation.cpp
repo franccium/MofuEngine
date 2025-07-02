@@ -377,7 +377,7 @@ u32 GetSubmeshGpuIDCount(id_t geometryContentID)
 	else
 	{
 		GeometryHierarchyStream stream{ hierarchyPtr };
-		return stream.LodCount();
+		return stream.LODOffsets()[0].Count;
 	}
 }
 

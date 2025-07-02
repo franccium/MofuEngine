@@ -33,7 +33,6 @@ bool isRestarting{ false };
 bool isResized{ false };
 
 u32 renderItemCount{ 0 };
-Vec<id_t> renderItems{};
 Vec<id_t> renderItemIDsCache{};
 
 Timer timer{};
@@ -178,7 +177,6 @@ bool MofuInitialize()
 	InitializeRenderingTest();
 
 	renderItemCount = CreateTestRenderItems();
-	renderItems.resize(renderItemCount);
 	renderItemIDsCache.resize(renderItemCount);
 	//!!! content::GetRenderItemIDs(renderItemIDsCache.data(), renderItemCount);
 	GetRenderItemIDS(renderItemIDsCache);

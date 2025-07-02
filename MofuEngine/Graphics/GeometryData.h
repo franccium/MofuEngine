@@ -176,7 +176,7 @@ struct GeometryImportSettings
 	bool ReverseHandedness;
 	bool ImportEmbeddedTextures;
 	bool ImportAnimations;
-	bool CoalesceMeshes;
+	bool MergeMeshes;
 };
 
 struct MeshGroupData
@@ -191,5 +191,5 @@ void ProcessMeshGroupData(MeshGroup& group, const GeometryImportSettings& settin
 
 void PackGeometryForEngine(const MeshGroup& group);
 
-void CoalesceMeshes(const LodGroup& lod, Mesh& outCombinedMesh);
+void MergeMeshes(const LodGroup& lod, Mesh& outCombinedMesh);
 }

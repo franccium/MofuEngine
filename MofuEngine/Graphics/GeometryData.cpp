@@ -521,7 +521,7 @@ PackGeometryForEngine(const MeshGroup& group)
 }
 
 void 
-CoalesceMeshes(const LodGroup& lod, Mesh& outCombinedMesh)
+MergeMeshes(const LodGroup& lod, Mesh& outCombinedMesh)
 {
 }
 
