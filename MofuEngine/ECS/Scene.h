@@ -60,6 +60,14 @@ GetEntityComponent(Entity id)
 	return data.block->GetComponentArray<C>()[data.row];
 }
 
+template<IsComponent C>
+bool
+EntityHasComponent(Entity e)
+{
+	EntityData data{ GetEntityData(e) };
+	return data.block->Signature.test(component::ID<C>);
+}
+
 void AddComponents(EntityData& data, const CetMask& newSignature);
 
 template<IsComponent... C>

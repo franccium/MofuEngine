@@ -22,8 +22,8 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 }
 
 std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
-constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
-constexpr u32 TEST_BLOCK_COUNT{ 5 };
+//constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
+//constexpr u32 TEST_BLOCK_COUNT{ 5 };
 Vec<EntityBlock*> blocks{};
 
 // NOTE: entity IDs globally unique, in format generation | index, index goes into entityData, generation is compared
@@ -117,11 +117,12 @@ RemoveEntity(EntityBlock* block, Entity entity)
 std::vector<EntityBlock*>
 GetBlocksFromCet(const CetMask& querySignature)
 {
-	auto it = queryToBlockMap.find(querySignature);
-	if (it != queryToBlockMap.end())
-	{
-		return it->second;
-	}
+	//TODO: caching has to be updated, also just better query mechanism overall is needed
+	//auto it = queryToBlockMap.find(querySignature);
+	//if (it != queryToBlockMap.end())
+	//{
+	//	return it->second;
+	//}
 
 	// Build the list if not cached
 	std::vector<EntityBlock*> result;
@@ -152,12 +153,11 @@ CreateEntity(CetLayout& layout)
 {
 	EntityBlock* matchingBlock{ nullptr };
 	CetMask& signature{ layout.Signature };
-	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
+	for (EntityBlock* b : blocks)
 	{
-		EntityBlock* block{ blocks[i] };
-		if (signature == block->Signature) // match the whole signature not just a part of it
+		if (signature == b->Signature) // match the whole signature not just a part of it
 		{
-			matchingBlock = block;
+			matchingBlock = b;
 			break;
 		}
 	}
@@ -224,10 +224,9 @@ GenerateCetLayout(const CetMask cetMask)
 void
 AddComponents(EntityData& data, const CetMask& newSignature)
 {
-	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
+	for (EntityBlock* b : blocks)
 	{
-		EntityBlock* block{ blocks[i] };
-		if (newSignature == block->Signature) // match the whole signature not just a part of it
+		if (newSignature == b->Signature) // match the whole signature not just a part of it
 		{
 			// move entity
 			//TODO: IMPLEMENT THIS
@@ -287,6 +286,7 @@ void
 FillTestData()
 {
 	// create 5 entities with LocalTransforms
+	constexpr u32 TEST_BLOCK_COUNT{ 5 };
 	for (u32 j{ 0 }; j < TEST_BLOCK_COUNT; ++j)
 	{
 		CetLayout layout{};
@@ -316,7 +316,7 @@ FillTestData()
 		CreateBlock(layout);
 		EntityBlock* block{ blocks.back() };
 		
-		for (u32 i{ 0 }; i < TEST_ENTITY_COUNT; ++i)
+		for (u32 i{ 0 }; i < 1; ++i)
 		{
 			Entity newId{ (u32)entityData.size()};
 			Entity newEntity{ newId };
@@ -328,55 +328,6 @@ FillTestData()
 	Entity testEntity{ 0 };
 	//AddComponent<component::RenderMesh>(testEntity);
 	//AddComponents<component::WorldTransform, component::RenderMesh, component::RenderMaterial>(testEntity);
-}
-
-void
-TestQueries()
-{
-	log::Info("Looking for LocalTransform:");
-	CetMask querySignature{ GetCetMask<component::LocalTransform>() };
-	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
-	{
-		EntityBlock* block{ blocks[i] };
-		if (MatchCet(querySignature, block->Signature))
-		{
-			std::vector<EntityBlock*> matchingBlocks{ GetBlocksFromCet(querySignature) };
-			for (auto block : matchingBlocks)
-			{
-				log::Info("Found matching block with signature: %s", block->Signature.to_string().c_str());
-			}
-		}
-	}
-
-	log::Info("Looking for TestComponent3 and TestComponent:");
-	CetMask querySignature2{ GetCetMask<component::TestComponent3, component::TestComponent>() };
-	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
-	{
-		EntityBlock* block{ blocks[i] };
-		if (MatchCet(querySignature2, block->Signature))
-		{
-			std::vector<EntityBlock*> matchingBlocks{ GetBlocksFromCet(querySignature2) };
-			for (auto block : matchingBlocks)
-			{
-				log::Info("Found matching block with signature: %s", block->Signature.to_string().c_str());
-			}
-		}
-	}
-
-	log::Info("Looking for TestComponent4 and TestComponent2 and TestComponent");
-	CetMask querySignature3{ GetCetMask<component::TestComponent4, component::TestComponent, component::TestComponent2>() };
-	for (u32 i{ 0 }; i < TEST_BLOCK_COUNT; ++i)
-	{
-		EntityBlock* block{ blocks[i] };
-		if (MatchCet(querySignature3, block->Signature))
-		{
-			std::vector<EntityBlock*> matchingBlocks{ GetBlocksFromCet(querySignature3) };
-			for (auto block : matchingBlocks)
-			{
-				log::Info("Found matching block with signature: %s", block->Signature.to_string().c_str());
-			}
-		}
-	}
 }
 
 void 
@@ -412,11 +363,11 @@ Initialize()
 {
 	//TODO: bake the EntityBlocks from scene data
 
-	FillTestData();
+	//FillTestData();
 
 	//TestQueries();
 
-	SerializeTest();
+	//SerializeTest();
 }
 
 void 

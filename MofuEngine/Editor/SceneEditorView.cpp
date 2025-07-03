@@ -18,17 +18,29 @@ struct EntityTreeNode
 };
 
 EntityTreeNode* rootNode{ nullptr };
+Vec<std::pair<ecs::Entity, EntityTreeNode*>> entityToPair{};
+
+constexpr EntityTreeNode*
+FindParentAsNode(ecs::Entity parentEntity)
+{
+    for (auto [e, n] : entityToPair)
+    {
+        if (e == parentEntity) return n;
+    }
+   //TODO: return std::find;
+}
 
 void
-CreateEntityTreeNode(const ecs::EntityData& e, EntityTreeNode* parentNode)
+CreateEntityTreeNode(ecs::Entity entity, EntityTreeNode* parentNode)
 {
     if (!parentNode) parentNode = rootNode;
     EntityTreeNode* node = new EntityTreeNode{};
-    node->ID = e.id;
-    snprintf(node->Name, IM_ARRAYSIZE(node->Name), "E %u", (u32)e.id);
+    node->ID = entity;
+    snprintf(node->Name, IM_ARRAYSIZE(node->Name), "E %u", (u32)entity);
     node->Parent = parentNode;
     node->IndexInParent = (u16)parentNode->Childs.Size;
     parentNode->Childs.push_back(node);
+    entityToPair.emplace_back(entity, node);
 }
 
 // TODO: can probably do it better
@@ -41,7 +53,7 @@ static void CreateSceneHierarchyTree(const Vec<ecs::EntityData>& entityData)
 
     for (const ecs::EntityData& e : entityData)
     {
-        CreateEntityTreeNode(e, rootNode);
+        CreateEntityTreeNode(e.id, rootNode);
 	}
 }
 
@@ -61,7 +73,7 @@ void CreateEntity(EntityTreeNode* node)
 	log::Info("Created entity %u", entityData.id);
 	if (id::IsValid(selected)) log::Info("Entity has parent: %u", selected);
 
-	CreateEntityTreeNode(entityData, node);
+	CreateEntityTreeNode(entityData.id, node);
 }
 
 struct SceneHierarchy
@@ -198,6 +210,23 @@ SceneHierarchy sceneHierarchy;
 
 }
 
+
+//TODO: instead of adding 1 by 1 add a whole bunch from tables of to add and to remove or sth?
+void AddEntityToSceneView(ecs::Entity entity)
+{
+    assert(ecs::scene::IsEntityAlive(entity));
+
+    log::Info("Added entity %u to scene tree view", entity);
+
+    EntityTreeNode* parentNode{ rootNode };
+    if (ecs::scene::HasComponent<ecs::component::Parent>(entity))
+    {
+        ecs::component::Parent p{ ecs::scene::GetComponent<ecs::component::Parent>(entity) };
+        parentNode = FindParentAsNode(p.ParentEntity);
+    }
+
+    CreateEntityTreeNode(entity, parentNode);
+}
 
 bool 
 InitializeSceneEditorView()

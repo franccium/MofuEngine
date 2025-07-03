@@ -2,6 +2,11 @@
 #include "Graphics/Renderer.h"
 #include "Utilities/Logger.h"
 
+#include "Graphics/Renderer.h"
+#include "Content/ContentManagement.h"
+#include "Content/ResourceCreation.h"
+#include "Content/ShaderCompilation.h"
+
 // TODO: file system
 #include <fstream>
 #include <filesystem>
@@ -9,6 +14,61 @@
 
 namespace mofu::content {
 namespace {
+id_t defaultMaterialID{};
+id_t defaultVSID{};
+id_t defaultPSID{};
+
+void
+CreateDefaultShaders()
+{
+    ShaderFileInfo info{};
+    info.file = "TestShader.hlsl";
+    info.entryPoint = "TestShaderVS";
+    info.type = graphics::ShaderType::Vertex;
+    const char* shaderPath{ "..\\ExampleApp\\" };
+
+    std::wstring defines[]{ L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
+    Vec<u32> keys{};
+    keys.emplace_back((u32)content::ElementType::StaticNormal);
+    keys.emplace_back((u32)content::ElementType::StaticNormalTexture);
+
+    Vec<std::wstring> extraArgs{};
+    Vec<std::unique_ptr<u8[]>> vertexShaders{};
+    Vec<const u8*> vertexShaderPtrs{};
+    for (u32 i{ 0 }; i < _countof(defines); ++i)
+    {
+        extraArgs.clear();
+        extraArgs.emplace_back(L"-D");
+        extraArgs.emplace_back(defines[i]);
+        vertexShaders.emplace_back(std::move(CompileShader(info, shaderPath, extraArgs)));
+        assert(vertexShaders.back().get());
+        vertexShaderPtrs.emplace_back(vertexShaders.back().get());
+    }
+
+    info.entryPoint = "TestShaderPS";
+    info.type = graphics::ShaderType::Pixel;
+    Vec<std::unique_ptr<u8[]>> pixelShaders{};
+
+    extraArgs.clear();
+    pixelShaders.emplace_back(std::move((CompileShader(info, shaderPath, extraArgs))));
+    assert(pixelShaders.back().get());
+    const u8* pixelShaderPtrs[]{ pixelShaders[0].get() };
+
+    defaultVSID = content::AddShaderGroup(vertexShaderPtrs.data(), (u32)vertexShaderPtrs.size(), keys.data());
+    defaultPSID = content::AddShaderGroup(pixelShaderPtrs, 1, &U32_INVALID_ID);
+}
+
+void
+CreateDefaultMaterial()
+{
+    assert(id::IsValid(defaultVSID) && id::IsValid(defaultPSID));
+
+    graphics::MaterialInitInfo info{};
+    info.ShaderIDs[graphics::ShaderType::Vertex] = defaultVSID;
+    info.ShaderIDs[graphics::ShaderType::Pixel] = defaultPSID;
+    info.Type = graphics::MaterialType::Opaque;
+    defaultMaterialID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
+}
 
 bool
 ReadFile(std::filesystem::path path, std::unique_ptr<u8[]>& outData, u64& outFileSize)
@@ -30,10 +90,19 @@ ReadFile(std::filesystem::path path, std::unique_ptr<u8[]>& outData, u64& outFil
 
 } // anonymous namespace
 
+id_t 
+GetDefaultMaterial()
+{
+    return defaultMaterialID;
+}
+
 bool
 LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
 {
-    return ReadFile(std::filesystem::path{ graphics::GetEngineShadersPath() }, shaders, size);
+    bool readEngineShaders{ ReadFile(std::filesystem::path{ graphics::GetEngineShadersPath() }, shaders, size) };
+    CreateDefaultShaders();
+    CreateDefaultMaterial();
+    return readEngineShaders;
 }
 
 void 

@@ -10,6 +10,7 @@ constexpr const char* ENGINE_SHADERS_PATHS[]{
 };
 
 PlatformInterface gfxInterface;
+FrameInfo frameInfo{};
 
 bool SetupPlatformInterface(GraphicsPlatform platform)
 {
@@ -27,6 +28,16 @@ bool SetupPlatformInterface(GraphicsPlatform platform)
 }
 
 } // anonymous namespace
+
+void SetCurrentFrameInfo(FrameInfo info)
+{
+    frameInfo = info;
+}
+
+const FrameInfo& GetCurrentFrameInfo()
+{
+    return frameInfo;
+}
 
 bool
 Initialize(GraphicsPlatform platform)

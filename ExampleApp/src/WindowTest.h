@@ -199,19 +199,20 @@ void MofuUpdate()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
+	id_t t{ renderSurfaces[0].camera.GetID() };
+
 	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)
 	{
 		if (renderSurfaces[i].surface.surface.IsValid())
 		{
-			graphics::FrameInfo frameInfo{};
-			frameInfo.LastFrameTime = 16.7f;
-			frameInfo.AverageFrameTime = 16.7f;
-			frameInfo.RenderItemCount = renderItemCount;
-			frameInfo.CameraID = renderSurfaces[i].camera.GetID();
-			frameInfo.Thresholds = thresholds.data();
-			frameInfo.RenderItemIDs = renderItemIDsCache.data();
+			//frameInfo.LastFrameTime = 16.7f;
+			//frameInfo.AverageFrameTime = 16.7f;
+			//frameInfo.RenderItemCount = renderItemCount;
+			//frameInfo.CameraID = renderSurfaces[i].camera.GetID();
+			//frameInfo.Thresholds = thresholds.data();
+			//frameInfo.RenderItemIDs = renderItemIDsCache.data();
 
-			renderSurfaces[i].surface.surface.Render(frameInfo);
+			renderSurfaces[i].surface.surface.Render(graphics::GetCurrentFrameInfo());
 		}
 	}
 	timer.End();

@@ -201,6 +201,9 @@ struct MaterialInitInfo
 	id_t ShaderIDs[ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
 };
 
+void SetCurrentFrameInfo(FrameInfo info);
+const FrameInfo& GetCurrentFrameInfo();
+
 bool Initialize(GraphicsPlatform platform);
 void Shutdown();
 

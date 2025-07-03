@@ -4,6 +4,7 @@
 #include "Utilities/Logger.h"
 #include "Content/AssetImporter.h"
 #include "Content/PrimitiveMeshGeneration.h"
+#include "AssetInteraction.h"
 
 namespace mofu::editor {
 
@@ -252,6 +253,14 @@ ExampleAssetsBrowser::Draw(const char* title, bool* p_open)
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
 				content::ImportAsset(path);
+            }
+
+            if (path.extension() == ".model")
+            {
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                {
+                    editor::DropModelIntoScene(path);
+                }
             }
 
             ImGui::PopID();

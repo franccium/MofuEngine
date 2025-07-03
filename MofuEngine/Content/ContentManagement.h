@@ -43,6 +43,8 @@ constexpr const char* ASSET_SERIALIZED_FILE_VERSIONS[AssetType::Count]
 	SKELETON_SERIALIZED_ASSET_VERSION
 };
 
+id_t GetDefaultMaterial();
+
 bool LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size);
 
 void ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type);

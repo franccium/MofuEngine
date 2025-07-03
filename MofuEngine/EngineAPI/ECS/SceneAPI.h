@@ -30,6 +30,12 @@ C& GetComponent(Entity id)
 }
 
 template<IsComponent C>
+bool HasComponent(Entity id)
+{
+	return EntityHasComponent<C>(id);
+}
+
+template<IsComponent C>
 void AddComponent(Entity e)
 {
 	AddEntityComponent<C>(e);
@@ -67,6 +73,9 @@ inline void SpawnEntity()
 void DestroyEntity(Entity entity);
 
 void DestroyScene();
+
+u32 GetRenderItemCount();
+void GetRenderItemIDs(Vec<id_t>& outIDs);
 
 struct PrefabEntity
 {

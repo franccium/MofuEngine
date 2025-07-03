@@ -119,9 +119,11 @@
     <ClCompile Include="ECS\SceneSerializer.cpp" />
     <ClCompile Include="ECS\Systems\CameraFreeLookSystem.cpp" />
     <ClCompile Include="ECS\Systems\InputTestSystem.cpp" />
+    <ClCompile Include="ECS\Systems\PrepareEngineFrameInfo.cpp" />
     <ClCompile Include="ECS\Systems\PrepareFrameRenderSystem.cpp" />
     <ClCompile Include="ECS\Systems\PreparePerObjectDataRenderSystem.cpp" />
     <ClCompile Include="Editor\AssetBrowser.cpp" />
+    <ClCompile Include="Editor\AssetInteraction.cpp" />
     <ClCompile Include="Editor\EditorInterface.cpp" />
     <ClCompile Include="Editor\SceneEditorView.cpp" />
     <ClCompile Include="Editor\ValueDisplay.cpp" />
@@ -202,6 +204,7 @@
     <ClInclude Include="ECS\Systems\TransformSystem.cpp" />
     <ClInclude Include="ECS\Transform.h" />
     <ClInclude Include="Editor\AssetBrowser.h" />
+    <ClInclude Include="Editor\AssetInteraction.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
     <ClInclude Include="Editor\SceneEditorView.h" />
     <ClInclude Include="Editor\ValueDisplay.h" />
