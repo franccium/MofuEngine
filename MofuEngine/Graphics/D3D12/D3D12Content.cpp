@@ -28,7 +28,7 @@ struct
 } FrameCache;
 
 util::FreeList<D3D12RenderItem> renderItems{};
-util::FreeList<std::unique_ptr<id_t[]>> renderItemIDs{};
+util::FreeList<std::unique_ptr<id_t>> renderItemIDs{};
 std::mutex renderItemMutex{};
 
 Vec<ID3D12RootSignature*> rootSignatures{};
@@ -429,9 +429,8 @@ static u32 counter;
 
 	// we need to create one render item for each of the submeshes of a geometry
 	// the number of material ids must be the same as the number of submesh gpu ids
-	u32 renderItemCount{ mofu::content::GetSubmeshGpuIDCount(geometryContentID) };
-	id_t* const gpuIDs{ (id_t* const)alloca(renderItemCount * sizeof(id_t)) };
-	mofu::content::GetSubmeshGpuIDs(geometryContentID, renderItemCount, gpuIDs, counter);
+	//u32 renderItemCount{ mofu::content::GetSubmeshGpuIDCount(geometryContentID) };
+	u32 renderItemCount{ 1 };
 
 	geometry::SubmeshViewsCache submeshViewsCache
 	{
@@ -448,40 +447,27 @@ static u32 counter;
 		materialIDsTest[i] = materialIDs[0];
 	}
 
-	geometry::GetSubmeshViews(gpuIDs, renderItemCount, submeshViewsCache);
+	geometry::GetSubmeshViews(&geometryContentID, renderItemCount, submeshViewsCache);
 	// we need space for geometryContentID and renderItemCount
-	std::unique_ptr<id_t[]> rItems{ std::make_unique<id_t[]>(sizeof(id_t) * (2 + (u64)renderItemCount)) };
+	std::unique_ptr<id_t> rItem{ std::make_unique<id_t>(sizeof(id_t)) };
 
-	rItems[0] = geometryContentID;
-	rItems[1] = renderItemCount;
-	id_t* const rItemIDs{ &rItems[2] };
-	D3D12RenderItem* const d3d12RenderItems{ (D3D12RenderItem* const)alloca(renderItemCount * sizeof(D3D12RenderItem)) };
+	D3D12RenderItem d3d12RenderItem{};
 
-	for (u32 i{ 0 }; i < renderItemCount; ++i)
-	{
-		D3D12RenderItem& item{ d3d12RenderItems[i] };
-		item.EntityID = entityID;
-		//TODO:
-		item.SubmeshGpuID = gpuIDs[i];
-		//item.MaterialID = materialIDs[i];
-		item.MaterialID = materialIDsTest[i];
+	d3d12RenderItem.EntityID = entityID;
+	d3d12RenderItem.SubmeshGpuID = geometryContentID;
+	d3d12RenderItem.MaterialID = materialIDs[0];
+	PsoID idPair{ CreatePSO(d3d12RenderItem.MaterialID, submeshViewsCache.PrimitiveTopologies[0], submeshViewsCache.ElementTypes[0]) };
+	d3d12RenderItem.GPassPsoID = idPair.GPassPsoID;
+	d3d12RenderItem.DepthPsoID = idPair.DepthPsoID;
 
-		PsoID idPair{ CreatePSO(item.MaterialID, submeshViewsCache.PrimitiveTopologies[i], submeshViewsCache.ElementTypes[i]) };
-		item.GPassPsoID = idPair.GPassPsoID;
-		item.DepthPsoID = idPair.DepthPsoID;
-
-		assert(id::IsValid(item.SubmeshGpuID) && id::IsValid(item.MaterialID));
-	}
+	assert(id::IsValid(d3d12RenderItem.SubmeshGpuID) && id::IsValid(d3d12RenderItem.MaterialID));
 
 	std::lock_guard lock{ renderItemMutex };
-	for (u32 i{ 0 }; i < renderItemCount; ++i)
-	{
-		rItemIDs[i] = renderItems.add(d3d12RenderItems[i]);
-	}
+	*rItem = renderItems.add(d3d12RenderItem);
 
 	counter++;
 
-	return renderItemIDs.add(std::move(rItems));
+	return renderItemIDs.add(std::move(rItem));
 }
 
 void 
@@ -499,7 +485,7 @@ RemoveRenderItem(id_t id)
 }
 
 //NOTE: called at least once each frame
-void 
+void
 GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds)
 {
 	assert(frameInfo.RenderItemIDs && frameInfo.RenderItemCount && frameInfo.Thresholds);
@@ -516,40 +502,22 @@ GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds)
 	{
 		const id_t* const buffer{ renderItemIDs[frameInfo.RenderItemIDs[i]].get() };
 		FrameCache.GeometryIDs.emplace_back(buffer[0]);
-		FrameCache.LODThresholds.emplace_back(frameInfo.Thresholds[i]);
+		//FrameCache.LODThresholds.emplace_back(frameInfo.Thresholds[i]);
 	}
 
-	mofu::content::GetLODOffsets(FrameCache.GeometryIDs.data(), FrameCache.LODThresholds.data(), count, FrameCache.LODOffsets);
-	assert(FrameCache.LODOffsets.size() == count);
+	//mofu::content::GetLODOffsets(FrameCache.GeometryIDs.data(), FrameCache.LODThresholds.data(), count, FrameCache.LODOffsets);
+	//assert(FrameCache.LODOffsets.size() == count);
 
-	u32 renderItemCount{ 0 };
-	for (u32 i{ 0 }; i < count; ++i)
-	{
-		// number of submeshes in the LOD
-		renderItemCount += FrameCache.LODOffsets[i].Count;
-	}
-	assert(renderItemCount);
-	outIds.resize(renderItemCount);
+	outIds.resize(count);
 
 	// go through all render items for each geometry and only copy the render item IDs that belong to the selected LOD
-	u32 itemIndex{ 0 };
 	for (u32 i{ 0 }; i < count; ++i)
 	{
-		const id_t* const itemIDs{ &renderItemIDs[frameInfo.RenderItemIDs[i]][2] };
-		const mofu::content::LodOffset& lodOffset{ FrameCache.LODOffsets[i] };
-		memcpy(&outIds[itemIndex], &itemIDs[lodOffset.Offset], sizeof(id_t) * lodOffset.Count);
-		itemIndex += lodOffset.Count;
-		for (u32 j{ 0 }; j < lodOffset.Count; ++j)
-		{
-			u32 id{ outIds[j] };
-			printf("what %d", id);
-		}
-		assert(itemIndex <= renderItemCount);
+		outIds[i] = *renderItemIDs[i].get();
 	}
-	assert(itemIndex == renderItemCount);
 }
 
-void 
+void
 GetRenderItems(const id_t* const itemIDs, u32 idCount, const RenderItemsCache& cache)
 {
 	assert(itemIDs && idCount);
@@ -567,6 +535,76 @@ GetRenderItems(const id_t* const itemIDs, u32 idCount, const RenderItemsCache& c
 		cache.DepthPso[i] = pipelineStates[item.DepthPsoID];
 	}
 }
+
+////NOTE: called at least once each frame
+//void 
+//GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds)
+//{
+//	assert(frameInfo.RenderItemIDs && frameInfo.RenderItemCount && frameInfo.Thresholds);
+//	assert(!renderItemIDs.empty());
+//
+//	FrameCache.LODOffsets.clear();
+//	FrameCache.GeometryIDs.clear();
+//	FrameCache.LODThresholds.clear();
+//
+//	std::lock_guard lock{ renderItemMutex };
+//	const u32 count{ frameInfo.RenderItemCount };
+//
+//	for (u32 i{ 0 }; i < count; ++i)
+//	{
+//		const id_t* const buffer{ renderItemIDs[frameInfo.RenderItemIDs[i]].get() };
+//		FrameCache.GeometryIDs.emplace_back(buffer[0]);
+//		FrameCache.LODThresholds.emplace_back(frameInfo.Thresholds[i]);
+//	}
+//
+//	mofu::content::GetLODOffsets(FrameCache.GeometryIDs.data(), FrameCache.LODThresholds.data(), count, FrameCache.LODOffsets);
+//	assert(FrameCache.LODOffsets.size() == count);
+//
+//	u32 renderItemCount{ 0 };
+//	for (u32 i{ 0 }; i < count; ++i)
+//	{
+//		// number of submeshes in the LOD
+//		renderItemCount += FrameCache.LODOffsets[i].Count;
+//	}
+//	assert(renderItemCount);
+//	outIds.resize(renderItemCount);
+//
+//	// go through all render items for each geometry and only copy the render item IDs that belong to the selected LOD
+//	u32 itemIndex{ 0 };
+//	for (u32 i{ 0 }; i < count; ++i)
+//	{
+//		const id_t* const itemIDs{ &renderItemIDs[frameInfo.RenderItemIDs[i]][2] };
+//		const mofu::content::LodOffset& lodOffset{ FrameCache.LODOffsets[i] };
+//		memcpy(&outIds[itemIndex], &itemIDs[lodOffset.Offset], sizeof(id_t) * lodOffset.Count);
+//		itemIndex += lodOffset.Count;
+//		for (u32 j{ 0 }; j < lodOffset.Count; ++j)
+//		{
+//			u32 id{ outIds[j] };
+//			printf("what %d", id);
+//		}
+//		assert(itemIndex <= renderItemCount);
+//	}
+//	assert(itemIndex == renderItemCount);
+//}
+//
+//void 
+//GetRenderItems(const id_t* const itemIDs, u32 idCount, const RenderItemsCache& cache)
+//{
+//	assert(itemIDs && idCount);
+//	assert(cache.EntityIDs && cache.SubmeshGpuIDs && cache.GpassPso && cache.DepthPso);
+//
+//	std::lock_guard lock{ renderItemMutex };
+//	std::lock_guard psoLock{ psoMutex };
+//	for (u32 i{ 0 }; i < idCount; ++i) // TODO: replace with submesh count
+//	{
+//		const D3D12RenderItem& item{ renderItems[itemIDs[i]] };
+//		cache.EntityIDs[i] = item.EntityID;
+//		cache.SubmeshGpuIDs[i] = item.SubmeshGpuID;
+//		cache.MaterialIDS[i] = item.MaterialID;
+//		cache.GpassPso[i] = pipelineStates[item.GPassPsoID];
+//		cache.DepthPso[i] = pipelineStates[item.DepthPsoID];
+//	}
+//}
 } // namespace render_item
 
 }

@@ -60,6 +60,24 @@ struct RenderMaterial : Component
 #endif
 };
 
+struct StaticObject : Component // NOTE: for static mesh render optimisation, not yet sure how to handle
+{
+#if EDITOR_BUILD
+	static void RenderFields(StaticObject& c)
+	{
+	}
+#endif
+};
+
+struct PotentiallyVisible : Component // NOTE: for culling
+{
+#if EDITOR_BUILD
+	static void RenderFields(PotentiallyVisible& c)
+	{
+	}
+#endif
+};
+
 struct Parent : Component
 {
 	Entity ParentEntity{ id::INVALID_ID };

@@ -38,7 +38,7 @@ id_t CreateResourceFromBlob(const void* const blob, AssetType::type resourceType
 void DestroyResource(id_t resourceId, AssetType::type resourceType);
 
 u32 GetSubmeshGpuIDCount(id_t geometryContentID);
-void GetSubmeshGpuIDs(id_t geometryContentID, u32 idCount, id_t* const outGpuIDs, u32 counter);
+void GetSubmeshGpuIDs(id_t geometryContentID, u32 submeshIndex, u32 idCount, id_t* const outGpuIDs, u32 counter);
 void GetLODOffsets(const id_t* const geometryIDs, const f32* const thresholds, u32 idCount, Vec<LodOffset>& offsets);
 
 id_t AddShaderGroup(const u8* const* shaders, u32 shaderCount, const u32* const keys);

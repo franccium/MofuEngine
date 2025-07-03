@@ -28,6 +28,7 @@ id_t mtlID{ id::INVALID_ID };
 constexpr const char* TEST_MESH_ASSET_PATH{ "Assets/Generated/plane.geom" };
 constexpr const char* TEST_MESH_PATH{ "Assets/Generated/planeModel.model" };
 constexpr const char* TEST_IMPORTED_MESH_PATH{ "Assets/Generated/testmodel.model" };
+constexpr const char* TEST_BISTRO_MESH_PATH{ "Assets/Generated/BistroInterior.model" };
 
 constexpr u32 OBJECT_COUNT{ 1 };
 constexpr u32 MATERIAL_COUNT{ 1 }; //NOTE: ! equal to submesh idCount
@@ -129,22 +130,29 @@ AddRenderItem()
 
 	//const char* path{ TEST_MESH_PATH };
 	const char* path{ TEST_IMPORTED_MESH_PATH };
+	//const char* path{ TEST_BISTRO_MESH_PATH };
 	MeshTest planeMeshTest{};
-	planeMeshTest.MeshID = LoadMesh(path);
+	planeMeshTest.MeshID = LoadMesh(path); //FIXME: this assumes 1 LOD
 	content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
+	planeMeshTest.MeshID = uploadedGeometryInfo.GeometryContentID;
+
+	u32 submeshCount{ uploadedGeometryInfo.SubmeshCount };
+
+
 	if(mtlID == id::INVALID_ID) CreateMaterial();
-	id_t materials[MAX_MATERIALS_PER_MODEL]{};
 	//u32 materialCount{ 1 };
-	u32 materialCount{ LOADED_TEST_COUNT };
-	for (u32 i{ 0 }; i < materialCount; ++i)
+	u32* materials = new u32[submeshCount];
+	for (u32 i{ 0 }; i < submeshCount; ++i)
 	{
 		materials[i] = mtlID;
 	}
 	meshTests.emplace_back(planeMeshTest);
 
 	mesh.MeshID = planeMeshTest.MeshID;
-	material.MaterialCount = materialCount;
-	material.MaterialIDs = materials;
+	material.MaterialCount = 1;
+	material.MaterialIDs = &materials[0];
+
+	// create root entity
 	ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 		ecs::component::RenderMesh, ecs::component::RenderMaterial>(lt, wt, mesh, material) };
 	loadedEntities.emplace_back(entityData.id);
@@ -154,23 +162,25 @@ AddRenderItem()
 
 
 	u32 subEntities{ (u32)uploadedGeometryInfo.SubmeshGpuIDs.size() };
-	//u32 subEntities{ 7 };
-	//ecs::component::Parent parentEntity{ {}, entityData.id };
-	//for (u32 i{ 1 }; i < subEntities; ++i)
-	//{
-	//	pos.x -= 0.25f;
-	//	pos.y += 0.25f;
-	//	lt.Position = pos;
-	//	id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
-	//	//mesh.MeshID = planeMeshTest.MeshID; //TODO:
-	//	mesh.MeshID = meshId;
-	//	ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-	//		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity)};
-	//	loadedMeshesIDs.emplace_back(meshId);
-	//	loadedEntities.emplace_back(e.id);
-	//	++loadedModelsCount;
-	//	meshTests.emplace_back(MeshTest{ meshId, e.id });
-	//}
+	ecs::component::Parent parentEntity{ {}, entityData.id };
+	for (u32 i{ 1 }; i < subEntities; ++i)
+	{
+		pos.x -= 0.25f;
+		pos.y += 0.25f;
+		lt.Position = pos;
+		id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
+		//mesh.MeshID = planeMeshTest.MeshID; //TODO:
+		mesh.MeshID = meshId;
+		material.MaterialIDs = &materials[i];
+		material.MaterialCount = 1;
+
+		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity)};
+		loadedMeshesIDs.emplace_back(meshId);
+		loadedEntities.emplace_back(e.id);
+		++loadedModelsCount;
+		meshTests.emplace_back(MeshTest{ meshId, e.id });
+	}
 
 	//planeMeshTest.EntityID = ecs::Entity{ 0 };
 	//planeMeshTest.EntityID = ecs::Entity{ entityData.id };
@@ -180,10 +190,10 @@ AddRenderItem()
 	//else if (loadedModelsCount == 2) planeMeshTest.EntityID = ecs::Entity{ 1 };
 
 	//graphics::AddRenderItem(planeMeshTest.EntityID, planeMeshTest.MeshID, 1, materials);
-	++loadedModelsCount;
+	//++loadedModelsCount;
 	//loadedModelsCount = 3;
 
-	loadedModelsCount = LOADED_TEST_COUNT;
+	loadedModelsCount = submeshCount;
 }
 
 u32

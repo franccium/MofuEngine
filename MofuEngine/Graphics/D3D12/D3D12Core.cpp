@@ -11,7 +11,7 @@
 #include "ECS/ECSCore.h"
 #include "EngineAPI/ECS/SystemAPI.h"
 
-#define ENABLE_GPU_BASED_VALIDATION 1
+#define ENABLE_GPU_BASED_VALIDATION 0
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }
