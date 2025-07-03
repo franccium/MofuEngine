@@ -53,24 +53,25 @@ DropModelIntoScene(std::filesystem::path modelPath)
 	material.MaterialIDs = &materials[0];
 
 	// create root entity
+	ecs::component::Parent parentEntity{ {} };
 	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-		ecs::component::RenderMesh, ecs::component::RenderMaterial>(lt, wt, mesh, material) };
+		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity) };
 	editor::AddEntityToSceneView(rootEntityData.id);
-	
-	u32 subEntities{ (u32)uploadedGeometryInfo.SubmeshGpuIDs.size() };
-	ecs::component::Parent parentEntity{ {}, rootEntityData.id };
-	for (u32 i{ 1 }; i < subEntities; ++i)
+
+	ecs::component::Child child{ {}, rootEntityData.id };
+	pos = {};
+	rot = {};
+	lt.Position = pos;
+	lt.Rotation = rot;
+	for (u32 i{ 1 }; i < submeshCount; ++i)
 	{
-		pos.x -= 0.25f;
-		pos.y += 0.25f;
-		lt.Position = pos;
 		id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
 		mesh.MeshID = meshId;
 		material.MaterialIDs = &materials[i];
 		material.MaterialCount = 1;
 
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity) };
+			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child>(lt, wt, mesh, material, child) };
 		editor::AddEntityToSceneView(e.id);
 	}
 }

@@ -7,5 +7,5 @@
 
 namespace mofu::ecs
 {
-DEFINE_TYPED_ID(Entity)
+DEFINE_TYPED_ID(Entity);
 }

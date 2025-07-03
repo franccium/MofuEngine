@@ -80,9 +80,20 @@ struct PotentiallyVisible : Component // NOTE: for culling
 
 struct Parent : Component
 {
-	Entity ParentEntity{ id::INVALID_ID };
+	Entity ChildEntity{ id::INVALID_ID };
 #if EDITOR_BUILD
 	static void RenderFields(Parent& c)
+	{
+		ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.ChildEntity);
+	}
+#endif
+};
+
+struct Child : Component
+{
+	Entity ParentEntity{ id::INVALID_ID };
+#if EDITOR_BUILD
+	static void RenderFields(Child& c)
 	{
 		ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.ParentEntity);
 	}

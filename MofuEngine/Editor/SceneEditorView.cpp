@@ -27,6 +27,7 @@ FindParentAsNode(ecs::Entity parentEntity)
     {
         if (e == parentEntity) return n;
     }
+    assert(false);
    //TODO: return std::find;
 }
 
@@ -216,12 +217,10 @@ void AddEntityToSceneView(ecs::Entity entity)
 {
     assert(ecs::scene::IsEntityAlive(entity));
 
-    log::Info("Added entity %u to scene tree view", entity);
-
     EntityTreeNode* parentNode{ rootNode };
-    if (ecs::scene::HasComponent<ecs::component::Parent>(entity))
+    if (ecs::scene::HasComponent<ecs::component::Child>(entity))
     {
-        ecs::component::Parent p{ ecs::scene::GetComponent<ecs::component::Parent>(entity) };
+        ecs::component::Child p{ ecs::scene::GetComponent<ecs::component::Child>(entity) };
         parentNode = FindParentAsNode(p.ParentEntity);
     }
 

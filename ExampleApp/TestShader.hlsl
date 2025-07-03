@@ -122,13 +122,13 @@ PixelOut TestShaderPS(in VertexOut psIn)
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
     float3 color = 0;
             
-    float3 diffuseColor = float3(0.8, 0.5, 0.2);
+    float3 diffuseColor = float3(1.0, 0.8, 0.8);
     float3 specularColor = float3(0.9, 0.9, 0.9);
     float specularPower = 16.f;
 
     float3 lightDirection = float3(0.7f, 0.7f, -0.2f);
     float NdotL = saturate(dot(normal, lightDirection));
-    float3 lightColor = float3(0.6f, 0.33f, 0.9f);
+    float3 lightColor = float3(0.98f, 0.99f, 0.98f);
     color += CalculateLighting(normal, lightDirection, viewDir, lightColor, diffuseColor, specularColor, specularPower);
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);

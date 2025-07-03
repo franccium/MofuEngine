@@ -14,6 +14,8 @@
 namespace mofu::ecs::system {
 	struct CameraFreeLookSystem : ecs::system::System<CameraFreeLookSystem>
 	{
+		bool isInputEnabled{ true };
+
 		void Update(const ecs::system::SystemUpdateData data)
 		{
 			for (auto [entity, lt, cam] : ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::Camera>())
@@ -30,6 +32,10 @@ namespace mofu::ecs::system {
 
 				v2 camSpeed{ 0.2f, 0.2f };
 				f32 camRotSpeed{ 0.002f };
+				if (input::IsKeyDown(input::Keys::R))
+				{
+					isInputEnabled = !isInputEnabled;
+				}
 				if (input::IsKeyDown(input::Keys::W))
 				{
 					lt.Position.z += camSpeed.x * data.DeltaTime;
@@ -46,13 +52,16 @@ namespace mofu::ecs::system {
 				{
 					lt.Position.y -= camSpeed.y * data.DeltaTime;
 				}
-				v2 delta{ input::GetMouseDelta() };
-				lt.Rotation.x += delta.y;
+				if (isInputEnabled)
+				{
+					v2 delta{ input::GetMouseDelta() };
+					lt.Rotation.x += delta.y;
 
-				using namespace DirectX;
-				xmm rot{ XMQuaternionRotationRollPitchYaw(lt.Rotation.x, lt.Rotation.y, lt.Rotation.z) };
-				xmm dir{ 0.f, 0.f, 1.f, 0.f };
-				XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
+					using namespace DirectX;
+					xmm rot{ XMQuaternionRotationRollPitchYaw(lt.Rotation.x, lt.Rotation.y, lt.Rotation.z) };
+					xmm dir{ 0.f, 0.f, 1.f, 0.f };
+					XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
+				}
 			}
 		}
 	};

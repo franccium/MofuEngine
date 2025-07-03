@@ -50,7 +50,7 @@ struct EntityData
 	EntityBlock* block{ nullptr };
 	u32 row{ 0 }; // row in the block
 	u32 generation{ 0 };
-	Entity id{ 0 };
+	Entity id{ id::INVALID_ID };
 };
 
 void Initialize();

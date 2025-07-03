@@ -57,7 +57,6 @@ inline EntityData& SpawnEntity(const C... components)
 		component::RenderMesh renderMesh{ scene::GetEntityComponent<component::RenderMesh>(entityData.id) };
 		component::RenderMaterial renderMaterial{ scene::GetEntityComponent<component::RenderMaterial>(entityData.id) };
 		graphics::AddRenderItem(entityData.id, renderMesh.MeshID, renderMaterial.MaterialCount, renderMaterial.MaterialIDs);
-		log::Info("Spawned an entity with Mesh %u and %u Materials", renderMesh.MeshID, renderMaterial.MaterialCount);
 	}
 
 	return entityData;

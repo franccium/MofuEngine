@@ -441,12 +441,6 @@ static u32 counter;
 		(u32* const)alloca(renderItemCount * sizeof(u32)),
 	};
 
-	id_t* const materialIDsTest{ (id_t* const)alloca(renderItemCount * sizeof(id_t)) };
-	for (u32 i{ 0 }; i < renderItemCount; ++i)
-	{
-		materialIDsTest[i] = materialIDs[0];
-	}
-
 	geometry::GetSubmeshViews(&geometryContentID, renderItemCount, submeshViewsCache);
 	// we need space for geometryContentID and renderItemCount
 	std::unique_ptr<id_t> rItem{ std::make_unique<id_t>(sizeof(id_t)) };
