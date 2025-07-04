@@ -148,6 +148,20 @@ CreateGeometryResource(const void* const blob)
 	return 0;
 }
 
+id_t
+CreateTextureResource(const void* const blob)
+{
+	assert(blob);
+	return graphics::AddTexture((const u8* const)blob);
+}
+
+id_t
+CreateMaterialResource(const void* const blob)
+{
+	assert(blob);
+	return graphics::AddMaterial(*(const graphics::MaterialInitInfo* const)blob);
+}
+
 void
 DestroyGeometryResource(id_t id)
 {
@@ -166,29 +180,21 @@ DestroyGeometryResource(id_t id)
 	}
 }
 
-id_t
-CreateMaterialResource(const void* const blob)
-{
-	assert(blob);
-	return graphics::AddMaterial(*(const graphics::MaterialInitInfo* const)blob);
-}
-
 void
 DestroyMaterialResource(id_t id)
 {
 	graphics::RemoveMaterial(id);
 }
 
+void
+DestroyTextureResource([[maybe_unused]] id_t id)
+{
+	assert(false);
+}
+
 #pragma region not_implemented
 id_t
 CreateUnknown([[maybe_unused]] const void* const blob)
-{
-	assert(false);
-	return id::INVALID_ID;
-}
-
-id_t
-CreateTextureResource([[maybe_unused]] const void* const blob)
 {
 	assert(false);
 	return id::INVALID_ID;
@@ -217,12 +223,6 @@ CreateSkeletonResource([[maybe_unused]] const void* const blob)
 
 void
 DestroyUnknown([[maybe_unused]] id_t id)
-{
-	assert(false);
-}
-
-void
-DestroyTextureResource([[maybe_unused]] id_t id)
 {
 	assert(false);
 }

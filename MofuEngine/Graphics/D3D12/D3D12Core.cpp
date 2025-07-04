@@ -378,7 +378,7 @@ Initialize()
     }
 #endif
 
-    if (!gui::Initialize(gfxCommand.CommandList(), gfxCommand.CommandQueue())) return InitializeFailed();
+    if (!ui::Initialize(gfxCommand.CommandList(), gfxCommand.CommandQueue())) return InitializeFailed();
 
     return true;
 }
@@ -489,7 +489,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     cmdList->RSSetViewports(1, surface.Viewport());
     cmdList->RSSetScissorRects(1, surface.ScissorRect());
 
-    gui::SetupGUIFrame();
+    ui::SetupGUIFrame();
 
     barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
     // Depth Prepass
@@ -515,12 +515,12 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
 
-    gui::RenderGUI(cmdList);
-    gui::RenderTextureIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+    ui::RenderGUI(cmdList);
+    ui::RenderSceneIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
 #if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
     //TODO: make it work with post processing
-    gui::RenderTextureIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+    ui::RenderSceneIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
 #else
     // TODO:
 #endif // RENDER_SCENE_ONTO_GUI_IMAGE
@@ -528,7 +528,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     // render 3d scene
 #endif // RENDER_2D_TEST
 
-    gui::EndGUIFrame(cmdList);
+    ui::EndGUIFrame(cmdList);
 
     d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 

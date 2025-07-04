@@ -100,11 +100,32 @@ struct Child : Component
 #endif
 };
 
+constexpr inline v3 ToRadians(const v3& degrees)
+{
+	using namespace DirectX;
+	return v3{
+		XMConvertToRadians(degrees.x),
+		XMConvertToRadians(degrees.y),
+		XMConvertToRadians(degrees.z)
+	};
+}
+
+constexpr inline v3 ToDegrees(const v3& radians)
+{
+	using namespace DirectX;
+	return v3{
+		XMConvertToDegrees(radians.x),
+		XMConvertToDegrees(radians.y),
+		XMConvertToDegrees(radians.z)
+	};
+}
+
+
 // exposed to various systems as read-only or read-write
 struct LocalTransform : Component
 {
 	v3 Position{ 0.0f, 0.0f, 0.0f };
-	v3 Rotation{ 0.0f, 0.0f, 0.0f };
+	quat Rotation{ 0.0f, 0.0f, 0.0f, 1.0f };
 	v3 Scale{ 1.0f, 1.0f, 1.0f };
 	v3 Forward{ 0.0f, 0.0f, 1.0f };
 
@@ -113,8 +134,8 @@ struct LocalTransform : Component
 	{
 		constexpr f32 minPosVal{ -100.f };
 		constexpr f32 maxPosVal{ 100.f };
-		constexpr f32 minRotVal{ -360.f };
-		constexpr f32 maxRotVal{ 360.f };
+		constexpr f32 minRotVal{ -1.f };
+		constexpr f32 maxRotVal{ 1.f };
 		constexpr f32 minScaleVal{ 0.01f };
 		constexpr f32 maxScaleVal{ 100.f };
 
@@ -123,7 +144,7 @@ struct LocalTransform : Component
 		ImGui::TableNextRow();
 		editor::DisplayEditableVector3(&c.Position, "Position", minPosVal, maxPosVal);
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Rotation, "Rotation", minRotVal, maxRotVal);
+		editor::DisplayEditableVector4(&c.Rotation, "Rotation", minRotVal, maxRotVal);
 		ImGui::TableNextRow();
 		editor::DisplayEditableVector3(&c.Scale, "Scale", minScaleVal, maxScaleVal);
 	}

@@ -122,7 +122,7 @@ AddRenderItem()
 {
 	v3 pos{ -3.f, -10.f, 90.f };
 	if (loadedModelsCount == 1) pos = v3{ 0.f, -10.f, 10.f };
-	v3 rot{ -90.f, 180.f, 0.f };
+	quat rot{ quatIndentity };
 	v3 scale{ 1.f, 1.f, 1.f };
 	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
 	ecs::component::WorldTransform wt{};

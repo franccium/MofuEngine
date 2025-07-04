@@ -5,6 +5,8 @@
 #include "Content/AssetImporter.h"
 #include "Content/PrimitiveMeshGeneration.h"
 #include "AssetInteraction.h"
+#include "Content/TextureImport.h"
+#include "TextureView.h"
 
 namespace mofu::editor {
 
@@ -260,6 +262,14 @@ ExampleAssetsBrowser::Draw(const char* title, bool* p_open)
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
                 {
                     editor::DropModelIntoScene(path);
+                }
+            }
+
+            if (path.extension() == ".tex")
+            {
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                {
+                    editor::OpenTextureView(path);
                 }
             }
 

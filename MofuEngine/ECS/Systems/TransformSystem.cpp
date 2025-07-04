@@ -7,13 +7,13 @@
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
 
-#define PRINT_DEBUG 1
+#define PRINT_DEBUG 0
 
 namespace mofu::ecs::system {
+std::unordered_map<id_t, xmmat> parentTransforms{};
+
 struct TransformSystem : ecs::system::System<TransformSystem>
 {
-	std::unordered_map<id_t, xmmat> parentTransforms{};
-
 	void Update(const ecs::system::SystemUpdateData data)
 	{
 		using namespace DirectX;
@@ -32,7 +32,8 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 #endif
 
 			xmm scale{ XMLoadFloat3(&lt.Scale) };
-			xmm rot{ XMQuaternionRotationRollPitchYaw(lt.Rotation.x, lt.Rotation.y, lt.Rotation.z) };
+			//TODO: quaternion in transform, somehow bind the imgui changes
+			xmm rot{ XMLoadFloat4(&lt.Rotation) };
 			xmm pos{ XMLoadFloat3(&lt.Position) };
 			xmmat trs{ DirectX::XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
 			XMStoreFloat4x4(&wt.TRS, trs);
@@ -72,7 +73,7 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 
 			using namespace DirectX;
 			xmm scale{ XMLoadFloat3(&lt.Scale) };
-			xmm rot{ XMQuaternionRotationRollPitchYaw(lt.Rotation.x, lt.Rotation.y, lt.Rotation.z) };
+			xmm rot{ XMLoadFloat4(&lt.Rotation) };
 			xmm pos{ XMLoadFloat3(&lt.Position) };
 			XMMATRIX trs{ DirectX::XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
 			trs = XMMatrixMultiply(trs, currentParentMatrix);

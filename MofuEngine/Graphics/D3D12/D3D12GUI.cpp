@@ -2,10 +2,12 @@
 #include "D3D12Core.h"
 #include "D3D12Surface.h"
 #include "imgui_impl_dx12.h"
+#include "imgui_impl_win32.h"
 #include "Utilities/Logger.h"
 #include "Editor/EditorInterface.h"
+#include "D3D12Content/D3D12Texture.h"
 
-namespace mofu::graphics::d3d12::gui {
+namespace mofu::graphics::d3d12::ui {
 namespace {
         
 static void 
@@ -87,6 +89,22 @@ Initialize(DXGraphicsCommandList* cmdList, ID3D12CommandQueue* queue)
     if (!editor::InitializeEditorGUI()) return false;
 }
 
+void
+Shutdown()
+{
+    ImGui_ImplDX12_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
+}
+
+void
+StartNewFrame()
+{
+    ImGui_ImplDX12_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+}
+
 void 
 SetupGUIFrame()
 {
@@ -101,9 +119,8 @@ RenderGUI(DXGraphicsCommandList* cmdList)
 	editor::RenderEditorGUI();
 }
 
-
-void 
-RenderTextureIntoImage(DXGraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameInfo frameInfo)
+void
+RenderSceneIntoImage(DXGraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameInfo frameInfo)
 {
     float aspectRatio = (float)frameInfo.SurfaceWidth / frameInfo.SurfaceHeight;
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), WindowConstrainAspectRatio, (void*)&aspectRatio);
@@ -112,6 +129,30 @@ RenderTextureIntoImage(DXGraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HAND
 
     ImGui::Image((ImTextureID)srvGpuHandle.ptr, ImGui::GetContentRegionAvail(), { 0, 0 }, { 1, 1 });
     ImGui::End();
+}
+
+void 
+ViewTextureAsImage(id_t textureID)
+{
+    const DescriptorHandle& handle{ content::texture::GetDescriptorHandle(textureID) };
+
+    ImGui::Begin("Texture View", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+    ImGui::Image((ImTextureID)handle.gpu.ptr, ImGui::GetContentRegionAvail(), { 0, 0 }, { 1, 1 });
+    ImGui::End();
+}
+
+u64
+GetImTextureID(id_t textureID)
+{
+    const DescriptorHandle& handle{ content::texture::GetDescriptorHandle(textureID) };
+    return (u64)handle.gpu.ptr;
+}
+
+void 
+DestroyViewTexture(id_t textureID)
+{
+    content::texture::RemoveTexture(textureID);
 }
 
 void 

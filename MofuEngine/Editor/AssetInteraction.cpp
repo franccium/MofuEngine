@@ -40,7 +40,7 @@ DropModelIntoScene(std::filesystem::path modelPath)
 	}
 
 	v3 pos{ -3.f, -10.f, 90.f };
-	v3 rot{ -90.f, 180.f, 0.f };
+	quat rot{ quatIndentity };
 	v3 scale{ 1.f, 1.f, 1.f };
 	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
 	ecs::component::WorldTransform wt{};
@@ -52,15 +52,23 @@ DropModelIntoScene(std::filesystem::path modelPath)
 	material.MaterialCount = 1;
 	material.MaterialIDs = &materials[0];
 
+	struct RenderableEntitySpawnContext
+	{
+		ecs::Entity	entity;
+		ecs::component::RenderMesh Mesh;
+		ecs::component::RenderMaterial Material;
+	};
+	Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
+
 	// create root entity
 	ecs::component::Parent parentEntity{ {} };
 	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity) };
-	editor::AddEntityToSceneView(rootEntityData.id);
+	spawnedEntities[0] = { rootEntityData.id, mesh, material };
 
 	ecs::component::Child child{ {}, rootEntityData.id };
 	pos = {};
-	rot = {};
+	rot = quatIndentity;
 	lt.Position = pos;
 	lt.Rotation = rot;
 	for (u32 i{ 1 }; i < submeshCount; ++i)
@@ -72,7 +80,13 @@ DropModelIntoScene(std::filesystem::path modelPath)
 
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child>(lt, wt, mesh, material, child) };
-		editor::AddEntityToSceneView(e.id);
+		spawnedEntities[i] = { e.id, mesh, material };
+	}
+
+	for (auto& c : spawnedEntities)
+	{
+		graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialIDs);
+		editor::AddEntityToSceneView(c.entity);
 	}
 }
 

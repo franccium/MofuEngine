@@ -24,6 +24,7 @@ using v3 = DirectX::XMFLOAT3;
 using v3a = DirectX::XMFLOAT3A;
 using v4 = DirectX::XMFLOAT4;
 using v4a = DirectX::XMFLOAT4A;
+using quat = v4;
 
 using u32v2 = DirectX::XMUINT2;
 using u32v3 = DirectX::XMUINT3;
@@ -47,4 +48,6 @@ constexpr v4 v4zero{ 0.f, 0.f, 0.f, 0.f };
 constexpr v2 v2one{ 1.f, 1.f };
 constexpr v3 v3one{ 1.f, 1.f, 1.f };
 constexpr v4 v4one{ 1.f, 1.f, 1.f, 1.f };
+
+constexpr quat quatIndentity{ 0.f, 0.f, 0.f, 1.f };
 }

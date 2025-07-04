@@ -1,8 +1,10 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "GraphicsPlatform.h"
 #include "Platform/Window.h"
 #include "EngineAPI/Camera.h"
 #include "ECS/Entity.h"
+#include "UIRenderer.h"
 
 // A high level renderer with function pointers to the set platform's implementation
 namespace mofu::graphics {
@@ -145,11 +147,6 @@ struct ShaderType
 	};
 };
 
-enum class GraphicsPlatform : u32
-{
-	Direct3D12 = 0,
-};
-
 struct PrimitiveTopology
 {
 	enum type : u32
@@ -199,6 +196,11 @@ struct MaterialInitInfo
 	MaterialType::type Type;
 	u32 TextureCount; // NOTE: textures are optional, texture_count may be 0, and texture_ids null
 	id_t ShaderIDs[ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
+};
+
+struct TextureHandle
+{
+
 };
 
 void SetCurrentFrameInfo(FrameInfo info);

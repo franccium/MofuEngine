@@ -9,13 +9,13 @@
 #include "EngineAPI/Camera.h"
 #include "Input/InputSystem.h"
 
-#define PRINT_DEBUG 1
+#define PRINT_DEBUG 0
 
 namespace mofu::ecs::system {
+	bool isInputEnabled{ true };
+	
 	struct CameraFreeLookSystem : ecs::system::System<CameraFreeLookSystem>
 	{
-		bool isInputEnabled{ true };
-
 		void Update(const ecs::system::SystemUpdateData data)
 		{
 			for (auto [entity, lt, cam] : ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::Camera>())
@@ -58,7 +58,7 @@ namespace mofu::ecs::system {
 					lt.Rotation.x += delta.y;
 
 					using namespace DirectX;
-					xmm rot{ XMQuaternionRotationRollPitchYaw(lt.Rotation.x, lt.Rotation.y, lt.Rotation.z) };
+					xmm rot{ XMLoadFloat4(&lt.Rotation) };
 					xmm dir{ 0.f, 0.f, 1.f, 0.f };
 					XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
 				}

@@ -124,4 +124,22 @@ CRC32_u64(const u8* const data, u64 size)
 	}
 	return crc;
 }
+
+[[nodiscard]] inline u8
+log2(u64 value)
+{
+	unsigned long mssb;
+	unsigned long lssb;
+
+	if (_BitScanReverse64(&mssb, value) > 0 && _BitScanForward64(&lssb, value) > 0)
+		return u8(mssb + (mssb == lssb ? 0 : 1));
+	else
+		return 0;
+}
+
+[[nodiscard]] inline bool
+IsEqual(f32 a, f32 b)
+{
+	return abs(a - b) < math::EPSILON;
+}
 }

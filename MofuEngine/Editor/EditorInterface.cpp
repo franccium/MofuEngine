@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "AssetBrowser.h"
 #include "SceneEditorView.h"
+#include "TextureView.h"
 
 namespace mofu::editor {
 namespace {
@@ -22,6 +23,7 @@ RenderEditorGUI()
 {
     RenderSceneEditorView();
 	RenderAssetBrowserGUI();
+    RenderTextureView();
 }
 
 }

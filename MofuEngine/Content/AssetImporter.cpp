@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include "Utilities/Logger.h"
 #include "External/ufbx/ufbx.h"
+#include "Content/TextureImport.h"
+#include "Editor/AssetPacking.h"
 
 namespace mofu::content {
 namespace {
@@ -233,14 +235,88 @@ ImportMesh(std::filesystem::path path)
 	PackGeometryForEngine(meshGroup);
 }
 
+//public bool SetData(SliceArray3D slices, Slice icon, Texture iblPair)
+//{
+//	if (slices != null && slices.Count != 0 && slices.First().Count != 0 && slices.First().First().Count != 0)
+//	{
+//		Slices = slices;
+//	}
+//	else
+//	{
+//		return false;
+//	}
+//
+//	var firstMip = Slices[0][0][0];
+//	if (!HasValidDimensions(firstMip.Width, firstMip.Height, ArraySize, IsVolumeMap, FullPath))
+//	{
+//		return false;
+//	}
+//
+//	if (icon == null)
+//	{
+//		Debug.Assert(!ImportSettings.Compress);
+//		icon = firstMip;
+//	}
+//
+//	Icon = BitmapHelper.CreateThumbnail(BitmapHelper.ImageFromSlice(icon, Format, IsNormalMap), ContentInfo.IconWidth, ContentInfo.IconWidth);
+//
+//	if (iblPair != null)
+//	{
+//		IsPrefilteredIBL = true;
+//		IBLPair = iblPair;
+//	}
+//
+//	return true;
+//}
+//
+//public void SetTextureInfoFromData(Texture texture)
+//{
+//	texture.Width = Info.Width;
+//	texture.Height = Info.Height;
+//	texture.ArraySize = Info.ArraySize;
+//	texture.MipLevels = Info.MipLevels;
+//	texture.Format = (DXGI_FORMAT)Info.Format;
+//	texture.Flags = (TextureFlags)Info.Flags;
+//}
+
+void
+ImportTexture(std::filesystem::path path)
+{
+	texture::TextureData data{};
+	data.ImportSettings.Files = path.string(); //TODO: char* 
+	data.ImportSettings.FileCount = 1;
+	data.ImportSettings.Compress = true;
+	texture::Import(&data);
+	if (data.Info.ImportError != texture::ImportError::Succeeded)
+	{
+		log::Error("Texture import error: ", data.Info.ImportError);
+	}
+
+	PackTextureForEngine(data);
+	PackTextureForEditor(data);
+	//textureData.SetTextureInfoFromData(texture);
+	//if (!texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap)) throw new InvalidDataException();
+}
+
 using AssetImporter = void(*)(std::filesystem::path path);
 constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
 	ImportMesh,
+	ImportTexture,
 };
 
 const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtension {
 	{ ".fbx", AssetType::Mesh },
+	{ ".png", AssetType::Texture },
+	{ ".tga", AssetType::Texture },
+	{ ".tiff", AssetType::Texture },
+	{ ".tif", AssetType::Texture },
+	{ ".dds", AssetType::Texture },
+	{ ".hdr", AssetType::Texture },
+	{ ".jpg", AssetType::Texture },
+	{ ".jpeg", AssetType::Texture },
+	{ ".bmp", AssetType::Texture },
+	{ ".wav", AssetType::Audio },
 };
 
 } // anonymous namespace
@@ -249,7 +325,7 @@ void
 ImportAsset(std::filesystem::path path)
 {
 	assert(std::filesystem::exists(path));
-	assert(path.has_extension());	
+	assert(path.has_extension());
 
 	std::string extension = path.extension().string();
 	auto it = assetTypeFromExtension.find(extension);

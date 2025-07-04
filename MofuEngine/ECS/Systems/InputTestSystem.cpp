@@ -9,7 +9,7 @@
 #include "Input/InputState.h"
 #include "Input/InputSystem.h"
 
-#define PRINT_DEBUG 1
+#define PRINT_DEBUG 0
 
 namespace mofu::ecs::system {
 	struct InputTestSystem : ecs::system::System<InputTestSystem>

@@ -53,4 +53,5 @@ void ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& d
 void GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info);
 void SaveGeometry(const MeshGroupData& data, std::filesystem::path path);
 
+[[nodiscard]] id_t CreateResourceFromAsset(std::filesystem::path path, AssetType::type assetType);
 }

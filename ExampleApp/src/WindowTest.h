@@ -9,6 +9,7 @@
 #include "Core/EngineModules.h"
 #include "ECS/Entity.h"
 #include "Graphics/Renderer.h"
+#include "Graphics/UIRenderer.h"
 #include "EngineAPI/Camera.h"
 #include "Content/ResourceCreation.h"
 #include "Graphics/GeometryData.h"
@@ -161,7 +162,7 @@ bool MofuInitialize()
 		cSurf.surface.surface = graphics::CreateSurface(cSurf.surface.window);
 
 		v3 pos{ 0.f, 0.f, 0.f };
-		v3 rot{ 0.f, 0.f, 0.f };
+		quat rot{ quatIndentity };
 		v3 scale{ 1.f, 1.f, 1.f };
 		ecs::component::LocalTransform lt{ {}, pos, rot, scale };
 		ecs::component::Camera cam{};
@@ -195,9 +196,7 @@ void MofuUpdate()
 
 	Vec<f32> thresholds{ renderItemCount };
 
-	ImGui_ImplDX12_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
+	graphics::ui::StartNewFrame();
 
 	id_t t{ renderSurfaces[0].camera.GetID() };
 
@@ -222,10 +221,7 @@ void MofuShutdown()
 {
 	if (!isRunning) return;
 
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
-
+	graphics::ui::Shutdown();
 	ShutdownRenderingTest();
 
 	for (u32 i = 0; i < WINDOW_COUNT; ++i)

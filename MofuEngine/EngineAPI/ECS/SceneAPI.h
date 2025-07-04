@@ -50,14 +50,14 @@ inline EntityData& SpawnEntity(const C... components)
 
 	((scene::GetEntityComponent<C>(entityData.id) = components), ...);
 
-	constexpr bool hasRenderMesh{ contains_type<component::RenderMesh, C...> };
-	constexpr bool hasRenderMaterial{ contains_type<component::RenderMaterial, C...> };
-	if constexpr (hasRenderMesh && hasRenderMaterial)
-	{
-		component::RenderMesh renderMesh{ scene::GetEntityComponent<component::RenderMesh>(entityData.id) };
-		component::RenderMaterial renderMaterial{ scene::GetEntityComponent<component::RenderMaterial>(entityData.id) };
-		graphics::AddRenderItem(entityData.id, renderMesh.MeshID, renderMaterial.MaterialCount, renderMaterial.MaterialIDs);
-	}
+	//constexpr bool hasRenderMesh{ contains_type<component::RenderMesh, C...> };
+	//constexpr bool hasRenderMaterial{ contains_type<component::RenderMaterial, C...> };
+	//if constexpr (hasRenderMesh && hasRenderMaterial)
+	//{
+	//	component::RenderMesh renderMesh{ scene::GetEntityComponent<component::RenderMesh>(entityData.id) };
+	//	component::RenderMaterial renderMaterial{ scene::GetEntityComponent<component::RenderMaterial>(entityData.id) };
+	//	graphics::AddRenderItem(entityData.id, renderMesh.MeshID, renderMaterial.MaterialCount, renderMaterial.MaterialIDs);
+	//}
 
 	return entityData;
 }

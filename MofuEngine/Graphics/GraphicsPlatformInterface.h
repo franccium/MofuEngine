@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "GraphicsPlatform.h"
 #include "Renderer.h"
 #include "Platform/Window.h"
 #include <functional>
@@ -44,6 +45,16 @@ struct PlatformInterface
 		id_t(*addRenderItem)(ecs::Entity, id_t, u32, const id_t* const);
 		void(*removeRenderItem)(id_t);
 	} resources;
+
+	struct
+	{
+		void(*initialize)();
+		void(*shutdown)();
+		void(*startNewFrame)();
+		void(*viewTexture)(id_t);
+		void(*destroyViewTexture)(id_t);
+		u64(*getImTextureID)(id_t);
+	} ui;
 
 	GraphicsPlatform platform = (GraphicsPlatform) - 1;
 };

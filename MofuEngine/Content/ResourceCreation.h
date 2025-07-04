@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "Content/ContentUtils.h"
 #include "ContentManagement.h"
 
 namespace mofu::content {
@@ -32,6 +33,20 @@ struct UploadedGeometryInfo
 	id_t GeometryContentID;
 	u32 SubmeshCount;
 	Vec<id_t> SubmeshGpuIDs;
+};
+
+struct TextureFlags
+{
+	enum Flags : u32
+	{
+		IsHdr = 0x01,
+		HasAlpha = 0x02,
+		IsPremultipliedAlpha = 0x04,
+		IsImportedAsNormalMap = 0x08,
+		IsCubeMap = 0x10,
+		IsVolumeMap = 0x20,
+		IsSrgb = 0x40,
+	};
 };
 
 id_t CreateResourceFromBlob(const void* const blob, AssetType::type resourceType);

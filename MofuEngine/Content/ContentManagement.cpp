@@ -129,6 +129,20 @@ SaveGeometry(const MeshGroupData& data, std::filesystem::path path)
     file.close();
 }
 
+id_t 
+CreateResourceFromAsset(std::filesystem::path path, AssetType::type assetType)
+{
+    std::unique_ptr<u8[]> buffer;
+    u64 size{ 0 };
+    assert(std::filesystem::exists(path));
+    content::ReadAssetFileNoVersion(path, buffer, size, assetType);
+    assert(buffer.get());
+
+    id_t assetID{ content::CreateResourceFromBlob(buffer.get(), assetType) };
+    assert(id::IsValid(assetID));
+    return assetID;
+}
+
 void
 ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type)
 {

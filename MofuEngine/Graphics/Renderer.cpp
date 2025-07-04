@@ -42,7 +42,7 @@ const FrameInfo& GetCurrentFrameInfo()
 bool
 Initialize(GraphicsPlatform platform)
 {
-    return SetupPlatformInterface(platform) && gfxInterface.initialize();
+    return SetupPlatformInterface(platform) && gfxInterface.initialize() && ui::Initialize(&gfxInterface);
 }
 
 void 

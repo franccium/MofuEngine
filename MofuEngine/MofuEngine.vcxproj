@@ -109,9 +109,11 @@
   <ItemGroup>
     <ClCompile Include="Content\AssetImporter.cpp" />
     <ClCompile Include="Content\ContentManagement.cpp" />
+    <ClCompile Include="Content\NormalMapProcessing.cpp" />
     <ClCompile Include="Content\PrimitiveMeshGeneration.cpp" />
     <ClCompile Include="Content\ResourceCreation.cpp" />
     <ClCompile Include="Content\ShaderCompilation.cpp" />
+    <ClCompile Include="Content\TextureImport.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\Main.cpp" />
     <ClCompile Include="ECS\ECSCore.cpp" />
@@ -124,8 +126,10 @@
     <ClCompile Include="ECS\Systems\PreparePerObjectDataRenderSystem.cpp" />
     <ClCompile Include="Editor\AssetBrowser.cpp" />
     <ClCompile Include="Editor\AssetInteraction.cpp" />
+    <ClCompile Include="Editor\AssetPacking.cpp" />
     <ClCompile Include="Editor\EditorInterface.cpp" />
     <ClCompile Include="Editor\SceneEditorView.cpp" />
+    <ClCompile Include="Editor\TextureView.cpp" />
     <ClCompile Include="Editor\ValueDisplay.cpp" />
     <ClCompile Include="EngineAPI\ECS\SceneAPI.cpp" />
     <ClCompile Include="External\imgui\include\imgui.cpp" />
@@ -157,6 +161,7 @@
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\GeometryData.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
+    <ClCompile Include="Graphics\UIRenderer.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Input\Win32Input.cpp" />
     <ClCompile Include="Platform\Platform.cpp" />
@@ -186,9 +191,11 @@
     <ClInclude Include="Common\StandardTypes.h" />
     <ClInclude Include="Content\AssetImporter.h" />
     <ClInclude Include="Content\ContentManagement.h" />
+    <ClInclude Include="Content\ContentUtils.h" />
     <ClInclude Include="Content\PrimitiveMeshGeneration.h" />
     <ClInclude Include="Content\ResourceCreation.h" />
     <ClInclude Include="Content\ShaderCompilation.h" />
+    <ClInclude Include="Content\TextureImport.h" />
     <ClInclude Include="Core\EngineModules.h" />
     <ClInclude Include="ECS\ComponentRegistry.h" />
     <ClInclude Include="ECS\QueryView.h" />
@@ -205,8 +212,10 @@
     <ClInclude Include="ECS\Transform.h" />
     <ClInclude Include="Editor\AssetBrowser.h" />
     <ClInclude Include="Editor\AssetInteraction.h" />
+    <ClInclude Include="Editor\AssetPacking.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
     <ClInclude Include="Editor\SceneEditorView.h" />
+    <ClInclude Include="Editor\TextureView.h" />
     <ClInclude Include="Editor\ValueDisplay.h" />
     <ClInclude Include="EngineAPI\Camera.h" />
     <ClInclude Include="EngineAPI\ECS\SceneAPI.h" />
@@ -241,9 +250,11 @@
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
     <ClInclude Include="Graphics\D3D12\GPassCache.h" />
     <ClInclude Include="Graphics\GeometryData.h" />
+    <ClInclude Include="Graphics\GraphicsPlatform.h" />
     <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
     <ClInclude Include="Graphics\Renderer.h" />
+    <ClInclude Include="Graphics\UIRenderer.h" />
     <ClInclude Include="Input\InputState.h" />
     <ClInclude Include="Input\InputSystem.h" />
     <ClInclude Include="Input\Win32Input.h" />
@@ -288,6 +299,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets')" />
     <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets')" />
+    <Import Project="..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets" Condition="Exists('..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -297,5 +309,6 @@
     <Error Condition="!Exists('..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets'))" />
+    <Error Condition="!Exists('..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets'))" />
   </Target>
 </Project>

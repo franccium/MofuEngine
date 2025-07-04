@@ -1,9 +1,10 @@
 #include "D3D12Interface.h"
 #include "CommonHeaders.h"
-#include "Graphics\GraphicsPlatformInterface.h"
+#include "Graphics/GraphicsPlatformInterface.h"
 #include "D3D12Core.h"
 #include "D3D12Camera.h"
 #include "D3D12Content.h"
+#include "D3D12GUI.h"
 
 namespace mofu::graphics::d3d12::content {
 namespace geometry {
@@ -53,6 +54,13 @@ SetupPlatformInterface(PlatformInterface& pi)
 
 	pi.resources.addRenderItem = content::render_item::AddRenderItem;	
 	pi.resources.removeRenderItem = content::render_item::RemoveRenderItem;
+
+	//TODO: pi.ui.initialize = ui::Initialize;
+	pi.ui.shutdown = ui::Shutdown;
+	pi.ui.startNewFrame = ui::StartNewFrame;
+	pi.ui.viewTexture = ui::ViewTextureAsImage;
+	pi.ui.getImTextureID = ui::GetImTextureID;
+	pi.ui.destroyViewTexture = ui::DestroyViewTexture;
 }
 
 }
