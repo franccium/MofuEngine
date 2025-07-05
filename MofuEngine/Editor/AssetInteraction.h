@@ -4,5 +4,5 @@
 
 namespace mofu::editor
 {
-void DropModelIntoScene(std::filesystem::path modelPath);
+void DropModelIntoScene(std::filesystem::path modelPath, u32* materials = nullptr);
 }

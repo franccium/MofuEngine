@@ -3,7 +3,7 @@
 
 #include <Windows.h>
 //NOTE: enable when tracking memory
-//#define _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 
 using namespace mofu;
@@ -18,7 +18,7 @@ WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #if _DEBUG
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	//NOTE: enable when tracking memory
-	//_CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF);
+	_CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF);
 	//_CrtSetBreakAlloc(658);
 #endif
 

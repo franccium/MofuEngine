@@ -308,7 +308,6 @@ Initialize()
     * Graphics Command Manager
     * D3D12 Modules
     */
-
     if (mainDevice) Shutdown();
 
     HRESULT hr{ S_OK };

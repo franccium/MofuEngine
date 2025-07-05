@@ -8,6 +8,28 @@
 #include "EngineAPI/ECS/SceneAPI.h"
 
 namespace mofu::graphics::d3d12::gpass {
+	
+inline void ValidateGpuAddress(D3D12_GPU_VIRTUAL_ADDRESS address)
+{
+	if (address == 0 || address == ~0ull)
+	{
+		__debugbreak();
+		throw std::runtime_error("Invalid GPU address");
+	}
+}
+
+inline void ValidatePipelineState(ID3D12PipelineState* pso)
+{
+	if (pso == nullptr)
+	{
+		__debugbreak();
+		throw std::runtime_error("Null PSO");
+	}
+
+	pso->AddRef();
+	pso->Release();
+}
+
 struct GPassCache
 {
 	// NOTE: when adding new arrays, make sure to update Resize() and StructSize
@@ -37,6 +59,65 @@ struct GPassCache
 
 	D3D12_GPU_VIRTUAL_ADDRESS* PerObjectData{ nullptr };
 	D3D12_GPU_VIRTUAL_ADDRESS* SrvIndices{ nullptr };
+
+	bool IsValid() const
+	{
+		const u32 count = D3D12RenderItemIDs.size();
+
+		for (u32 i{ 0 }; i < count; ++i)
+		{
+			ValidateGpuAddress(PerObjectData[i]);
+			if(TextureCounts[i] != 0)
+				ValidateGpuAddress(SrvIndices[i]);
+			ValidateGpuAddress(ElementBuffers[i]);
+			ValidateGpuAddress(PositionBuffers[i]);
+			ValidatePipelineState(GPassPipelineStates[i]);
+			ValidatePipelineState(DepthPipelineStates[i]);
+		}
+
+
+		// Check all arrays are either null or have the correct size
+#define CHECK_ARRAY(ptr) \
+            if (ptr != nullptr && count == 0) { \
+                /* Array is allocated but count is zero */ \
+                assert(false && #ptr " is allocated but count is zero"); \
+                return false; \
+            } \
+            if (ptr == nullptr && count > 0) { \
+                /* Array is null but count suggests it should be allocated */ \
+                assert(false && #ptr " is null but count suggests it should be allocated"); \
+                return false; \
+            }
+
+		// Render Items Cache
+		CHECK_ARRAY(EntityIDs);
+		CHECK_ARRAY(SubmeshGpuIDs);
+		CHECK_ARRAY(MaterialIDs);
+		CHECK_ARRAY(GPassPipelineStates);
+		CHECK_ARRAY(DepthPipelineStates);
+
+		// Materials Cache
+		CHECK_ARRAY(RootSignatures);
+		CHECK_ARRAY(MaterialTypes);
+		CHECK_ARRAY(DescriptorIndices);
+		CHECK_ARRAY(TextureCounts);
+		CHECK_ARRAY(MaterialSurfaces);
+
+		// Submesh Views Cache
+		CHECK_ARRAY(PositionBuffers);
+		CHECK_ARRAY(ElementBuffers);
+		CHECK_ARRAY(IndexBufferViews);
+		CHECK_ARRAY(PrimitiveTopologies);
+		CHECK_ARRAY(ElementTypes);
+
+		// Per-object data
+		CHECK_ARRAY(PerObjectData);
+		CHECK_ARRAY(SrvIndices);
+
+#undef CHECK_ARRAY
+
+		return true;
+	}
 
 	constexpr content::render_item::RenderItemsCache GetRenderItemsCache() const
 	{

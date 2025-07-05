@@ -12,6 +12,8 @@ id_t textureID{ id::INVALID_ID };
 bool isOpen{ false };
 ViewableTexture texture{};
 ImTextureID imTextureID{};
+u32 selectedSlice = 0;
+u32 selectedMip = 0;
 
 void
 FillOutTextureViewData(std::filesystem::path textureAssetPath)
@@ -85,6 +87,60 @@ FillOutTextureViewData(std::filesystem::path textureAssetPath)
 
 }
 
+void 
+RenderTextureWithConfig()
+{
+	ImGui::Begin("Texture View", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+	u32 maxSlice = texture.ArraySize;
+	u32 maxMip = texture.MipLevels;
+
+	ImGui::Text("Slice:"); ImGui::SameLine();
+	ImGui::SliderInt("##Slice", (int*)&selectedSlice, 0, maxSlice - 1);
+
+	ImGui::Text("Mip:"); ImGui::SameLine();
+	ImGui::SliderInt("##Mip", (int*)&selectedMip, 0, maxMip - 1);
+
+	if (selectedSlice >= maxSlice || selectedMip >= maxMip || !texture.Slices) {
+		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Invalid slice or mip selection");
+		ImGui::End();
+		return;
+	}
+
+	bool changed = false;
+
+	ImGui::SeparatorText("Import Settings");
+	changed |= ImGui::Checkbox("Compress", (bool*)&texture.ImportSettings.Compress);
+	changed |= ImGui::Checkbox("Prefilter Cubemap", (bool*)&texture.ImportSettings.PrefilterCubemap);
+
+	if (changed) {
+		ImGui::TextColored(ImVec4(1, 1, 0, 1), "Settings updated");
+	}
+
+	if (ImGui::Button("Reimport")) {
+		// ReimportTexture(texture);
+	}
+
+	ImageSlice* slice = &texture.Slices[selectedSlice][selectedMip];
+	if (!slice || !slice->RawContent) {
+		ImGui::TextColored(ImVec4(1, 0, 0, 1), "No slice content.");
+		ImGui::End();
+		return;
+	}
+
+	ImGui::SeparatorText("Texture Info");
+	ImGui::Text("Dimensions: %ux%u", slice->Width, slice->Height);
+	ImGui::Text("Row Pitch: %u", slice->RowPitch);
+	ImGui::Text("Slice Pitch: %u", slice->SlicePitch);
+	ImGui::Text("Format: 0x%X", texture.Format);
+
+	ImGui::SeparatorText("Preview");
+	ImVec2 imageSize{ (f32)slice->Width, (f32)slice->Height };
+	ImGui::Image(imTextureID, ImGui::GetContentRegionAvail(), { 0, 0 }, { 1, 1 });
+
+	ImGui::End();
+}
+
 } // anonymous namespace
 
 void
@@ -107,10 +163,7 @@ RenderTextureView()
 	assert(id::IsValid(textureID) && imTextureID);
 	//graphics::ui::ViewTexture(textureID);
 
-	ImGui::Begin("Texture View", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-	ImGui::Image(imTextureID, ImGui::GetContentRegionAvail(), { 0, 0 }, { 1, 1 });
-	ImGui::End();
+	RenderTextureWithConfig();
 }
 
 }

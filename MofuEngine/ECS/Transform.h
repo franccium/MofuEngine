@@ -153,6 +153,8 @@ struct LocalTransform : Component
 
 struct Camera : Component
 {
+	v3 TargetPos{};
+	v3 TargetRot{};
 #if EDITOR_BUILD
 	static void RenderFields(Camera& c)
 	{

@@ -106,6 +106,8 @@ namespace mofu::graphics::d3d12 {
 			}
 
 			//TODO: issue commands
+
+			assert(frameCache.IsValid());
 		}
 	};
 	REGISTER_SYSTEM(PrepareFrameRenderSystem, ecs::system::SystemGroup::PostUpdate, 0);

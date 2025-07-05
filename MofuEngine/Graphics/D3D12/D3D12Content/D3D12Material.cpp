@@ -11,8 +11,4 @@ namespace {
 
 } // anonymous namespace
 
-
-
-
-
 }

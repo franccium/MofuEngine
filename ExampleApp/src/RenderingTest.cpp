@@ -14,28 +14,75 @@ using namespace mofu;
 
 id_t content::CreateResourceFromBlob(const void* const blob, content::AssetType::type resourceType);
 
-struct MeshTest
+struct TextureUsage
 {
-	id_t MeshID{ id::INVALID_ID };
-	ecs::Entity EntityID{ id::INVALID_ID };
+	enum Usage : u32
+	{
+		BaseColor = 0,
+		Normal,
+		MetallicRoughness,
+		Emissive,
+		AmbientOcclusion,
+
+		Count
+	};
 };
-//MeshTest planeMeshTest{};
-Vec<MeshTest> meshTests{};
+id_t textureIDs[TextureUsage::Count]{};
 
 id_t vsID{ id::INVALID_ID };
 id_t psID{ id::INVALID_ID };
 id_t mtlID{ id::INVALID_ID };
+
+id_t texturedPsID{ id::INVALID_ID };
+id_t texturedMaterialID{ id::INVALID_ID };
 
 constexpr const char* TEST_MESH_ASSET_PATH{ "Assets/Generated/plane.geom" };
 constexpr const char* TEST_MESH_PATH{ "Assets/Generated/planeModel.model" };
 constexpr const char* TEST_IMPORTED_MESH_PATH{ "Assets/Generated/testmodel.model" };
 constexpr const char* TEST_BISTRO_MESH_PATH{ "Assets/Generated/BistroInterior.model" };
 
+constexpr const char* TEST_TEXTURE_PATH{ "Assets/Generated/testTextureEnginePacked.tex" };
+
+struct ModelData
+{
+	const char* MeshFile{ TEST_MESH_PATH };
+	const char* BaseColor{};
+	const char* Normal{};
+	const char* MetallicRoughness{};
+	const char* AO{};
+	const char* Emissive{};
+	v3 Pos{ -3.f, -10.f, 90.f };
+	quat Rot{ quatIndentity };
+	v3 Scale{ 1.f, 1.f, 1.f };
+};
+
+constexpr ModelData CYBORG_MODEL{
+	TEST_IMPORTED_MESH_PATH,
+	TEST_TEXTURE_PATH,
+	TEST_TEXTURE_PATH,
+	TEST_TEXTURE_PATH,
+	TEST_TEXTURE_PATH,
+	TEST_TEXTURE_PATH, //TODO: placeholder textures
+};
+
+
+struct MeshTest
+{
+	id_t MeshID{ id::INVALID_ID };
+	ecs::Entity EntityID{ id::INVALID_ID };
+};
+Vec<MeshTest> meshTests{};
+
 constexpr u32 OBJECT_COUNT{ 1 };
 constexpr u32 MATERIAL_COUNT{ 1 }; //NOTE: ! equal to submesh idCount
 constexpr u32 MAX_MATERIALS_PER_MODEL{ 1024 };
 
+constexpr u32 pbrSpheresCount{ 18 };
+id_t sphereModelIDs[pbrSpheresCount];
+id_t pbrMaterialIDs[pbrSpheresCount];
+
 u32 loadedModelsCount{ 0 };
+u32 loadedTexturesCount{ 0 };
 
 Vec<id_t> loadedMeshesIDs{};
 Vec<ecs::Entity> loadedEntities{};
@@ -59,6 +106,14 @@ LoadAsset(const char* path, content::AssetType::type type)
 LoadMesh(const char* path)
 {
 	return LoadAsset(path, content::AssetType::Mesh);
+}
+
+[[nodiscard]] id_t
+LoadTexture(const char* path)
+{
+	if (!path) return { id::INVALID_ID };
+	++loadedTexturesCount;
+	return LoadAsset(path, content::AssetType::Texture);
 }
 
 void
@@ -97,14 +152,24 @@ LoadShaders()
 	assert(pixelShaders.back().get());
 	const u8* pixelShaderPtrs[]{ pixelShaders[0].get() };
 
+	extraArgs.clear();
+	defines[0] = L"TEXTURED_MTL=1";
+	extraArgs.emplace_back(L"-D");
+	extraArgs.emplace_back(defines[0]);
+	pixelShaders.emplace_back(std::move(CompileShader(info, shaderPath, extraArgs)));
+	assert(pixelShaders.back().get());
+
 	vsID = content::AddShaderGroup(vertexShaderPtrs.data(), (u32)vertexShaderPtrs.size(), keys.data());
 	psID = content::AddShaderGroup(pixelShaderPtrs, 1, &U32_INVALID_ID);
+
+	pixelShaderPtrs[0] = pixelShaders[1].get();
+	texturedPsID = content::AddShaderGroup(pixelShaderPtrs, 1, &U32_INVALID_ID);
 }
 
 void
-CreateMaterial()
+CreateMaterials()
 {
-	assert(id::IsValid(vsID) && id::IsValid(psID));
+	assert(id::IsValid(vsID) && id::IsValid(psID) && id::IsValid(texturedPsID));
 
 	graphics::MaterialInitInfo info{};
 	info.ShaderIDs[graphics::ShaderType::Vertex] = vsID;
@@ -113,6 +178,29 @@ CreateMaterial()
 	mtlID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
 
 	loadedMaterialIDs.emplace_back(mtlID);
+
+	//memset(pbrMaterialIDs, 0xDD, sizeof(pbrMaterialIDs));
+	//v2 metallicRoughness[_countof(pbrMaterialIDs)]{
+	//	{0.f, 0.0f}, {0.f, 0.2f}, {0.f, 0.4f}, {0.f, 0.6f}, {0.f, 0.8f}, {0.f, 1.0f},
+	//	{0.f, 0.f}, {0.2f, 0.f}, {0.4f, 0.f}, {0.6f, 0.f}, {0.8f, 0.f}, {1.0f, 0.f},
+	//	{0.f, 0.f}, {0.2f, 0.2f}, {0.4f, 0.4f}, {0.6f, 0.6f}, {0.8f, 0.8f}, {1.0f, 1.0f}
+	//};
+	//graphics::MaterialSurface& surface{ info.Surface };
+	//surface.BaseColor = { 0.5f, 0.5f, 0.5f, 1.f };
+	//for (u32 i{ 0 }; i < _countof(pbrMaterialIDs); ++i)
+	//{
+	//	surface.Metallic = metallicRoughness[i].x;
+	//	surface.Roughness = metallicRoughness[i].y;
+	//	pbrMaterialIDs[i] = content::CreateResourceFromBlob(&info, content::AssetType::Material);
+	//}
+
+	info.ShaderIDs[graphics::ShaderType::Pixel] = texturedPsID;
+	if (loadedTexturesCount != 0)
+	{
+		info.TextureCount = loadedTexturesCount;
+		info.TextureIDs = &textureIDs[0];
+		texturedMaterialID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
+	}
 }
 
 #define LOADED_TEST_COUNT 1
@@ -130,11 +218,47 @@ AddRenderItem()
 	ecs::component::RenderMesh mesh{};
 
 	//const char* path{ TEST_MESH_PATH };
-	const char* path{ TEST_IMPORTED_MESH_PATH };
+	//const char* path{ TEST_IMPORTED_MESH_PATH };
 	//const char* path{ TEST_BISTRO_MESH_PATH };
-	std::filesystem::path modelPath{ path };
+	//std::filesystem::path modelPath{ path };
 
-	editor::DropModelIntoScene(modelPath);
+	ModelData modelData{ CYBORG_MODEL };
+
+	memset(&textureIDs[0], 0xEE, _countof(textureIDs) * sizeof(id_t));
+	//std::thread threads[]{
+	//	std::thread{[modelData] {textureIDs[TextureUsage::BaseColor] = LoadTexture(modelData.BaseColor); }},
+	//	std::thread{[modelData] {textureIDs[TextureUsage::Normal] = LoadTexture(modelData.Normal); }},
+	//	std::thread{[modelData] {textureIDs[TextureUsage::Emissive] = LoadTexture(modelData.Emissive); }},
+	//	std::thread{[modelData] {textureIDs[TextureUsage::MetallicRoughness] = LoadTexture(modelData.MetallicRoughness); }},
+	//	std::thread{[modelData] {textureIDs[TextureUsage::AmbientOcclusion] = LoadTexture(modelData.AO); }},
+	//};
+	textureIDs[TextureUsage::BaseColor] = LoadTexture(modelData.BaseColor);
+	textureIDs[TextureUsage::Normal] = LoadTexture(modelData.Normal);
+	textureIDs[TextureUsage::Emissive] = LoadTexture(modelData.Emissive);
+	textureIDs[TextureUsage::MetallicRoughness] = LoadTexture(modelData.MetallicRoughness);
+	textureIDs[TextureUsage::AmbientOcclusion] = LoadTexture(modelData.AO);
+
+	//for (auto& t : threads)
+	//{
+	//	t.join();
+	//}
+
+	LoadShaders();
+
+	CreateMaterials();
+
+	u32* materials = new u32[128];
+	for (u32 i{ 0 }; i < 128; ++i)
+	{
+		materials[i] = mtlID;
+	}
+	u32* texturedMaterials = new u32[128];
+	for (u32 i{ 0 }; i < 128; ++i)
+	{
+		texturedMaterials[i] = texturedMaterialID;
+	}
+
+	editor::DropModelIntoScene(modelData.MeshFile, texturedMaterials);
 
 	//MeshTest planeMeshTest{};
 	//planeMeshTest.MeshID = LoadMesh(path); //FIXME: this assumes 1 LOD

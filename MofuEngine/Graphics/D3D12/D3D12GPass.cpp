@@ -337,6 +337,8 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 	ID3D12RootSignature* currentRootSignature{ nullptr };
 	ID3D12PipelineState* currentPipelineState{ nullptr };
 
+	assert(cache.IsValid());
+
 	for (u32 i{ 0 }; i < renderItemCount; ++i)
 	{
 		if (currentRootSignature != cache.RootSignatures[i])

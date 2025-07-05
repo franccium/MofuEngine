@@ -141,6 +141,7 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 				assert(shader);
 				shaders[i].pShaderBytecode = shader->Bytecode();
 				shaders[i].BytecodeLength = shader->BytecodeSize();
+				assert(shaders[i].pShaderBytecode && shaders[i].BytecodeLength > 0);
 				++shaderIndex;
 			}
 		}
@@ -258,6 +259,7 @@ GetMaterials(const id_t* const materialIds, u32 materialCount, const MaterialsCa
     for (u32 i{ 0 }; i < materialCount; ++i)
     {
         const D3D12MaterialStream stream{ materials[materialIds[i]].get() };
+		//assert(id::IsValid(stream.RootSignatureID()) && stream.DescriptorIndices() && stream.TextureCount() && stream.Surface());
 		cache.RootSignatures[i] = rootSignatures[stream.RootSignatureID()];
         cache.MaterialTypes[i] = stream.MaterialType();
         cache.DescriptorIndices[i] = stream.DescriptorIndices();
@@ -522,11 +524,14 @@ GetRenderItems(const id_t* const itemIDs, u32 idCount, const RenderItemsCache& c
 	for (u32 i{ 0 }; i < idCount; ++i) // TODO: replace with submesh count
 	{
 		const D3D12RenderItem& item{ renderItems[itemIDs[i]] };
+		assert(id::IsValid(item.EntityID) && id::IsValid(item.SubmeshGpuID)
+			&& id::IsValid(item.MaterialID) && id::IsValid(item.GPassPsoID) && id::IsValid(item.DepthPsoID));
 		cache.EntityIDs[i] = item.EntityID;
 		cache.SubmeshGpuIDs[i] = item.SubmeshGpuID;
 		cache.MaterialIDS[i] = item.MaterialID;
 		cache.GpassPso[i] = pipelineStates[item.GPassPsoID];
 		cache.DepthPso[i] = pipelineStates[item.DepthPsoID];
+		assert(cache.GpassPso[i] && cache.DepthPso[i]);
 	}
 }
 

@@ -25,18 +25,21 @@ LoadAsset(std::filesystem::path path, content::AssetType::type type)
 }
 
 void
-DropModelIntoScene(std::filesystem::path modelPath)
+DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr */)
 {
 	id_t assetId{ LoadAsset(modelPath, content::AssetType::Mesh) }; //FIXME: this assumes 1 LOD
 	content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
 	u32 submeshCount{ uploadedGeometryInfo.SubmeshCount };
 
-	id_t mtlID{ content::GetDefaultMaterial() };
-	//u32 materialCount{ 1 };
-	u32* materials = new u32[submeshCount];
-	for (u32 i{ 0 }; i < submeshCount; ++i)
+	if (!materials)
 	{
-		materials[i] = mtlID;
+		id_t mtlID{ content::GetDefaultMaterial() };
+		//u32 materialCount{ 1 };
+		materials = new u32[submeshCount];
+		for (u32 i{ 0 }; i < submeshCount; ++i)
+		{
+			materials[i] = mtlID;
+		}
 	}
 
 	v3 pos{ -3.f, -10.f, 90.f };
