@@ -1,3 +1,6 @@
 [submodule "MofuEngine/External/yaml-cpp"]
 	path = MofuEngine/External/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "MofuEngine/External/imgui"]
+	path = MofuEngine/External/imgui
+	url = https://github.com/ocornut/imgui.git
