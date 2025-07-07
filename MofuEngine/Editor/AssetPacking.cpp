@@ -52,7 +52,7 @@ GetTextureEnginePackedSize(texture::TextureData& data)
 //		imagesData
 // } texture;
 void
-PackTextureForEditor(texture::TextureData& data)
+PackTextureForEditor(texture::TextureData& data, std::string_view filename)
 {
 	const u64 textureDataSize{ GetTextureEditorPackedSize(data) };
 	u8* buffer{ new u8[textureDataSize] };
@@ -104,7 +104,9 @@ PackTextureForEditor(texture::TextureData& data)
 	}
 
 	//TODO: refactor
-	std::filesystem::path modelPath{ "Assets/Generated/testTextureEditorPacked.tex" };
+	std::filesystem::path modelPath{ "Assets/Generated/"};
+	modelPath.append(filename.data());
+	modelPath.replace_extension(".etex");
 	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 
@@ -134,7 +136,7 @@ PackTextureForEditor(texture::TextureData& data)
 	}
 */
 void
-PackTextureForEngine(texture::TextureData& data)
+PackTextureForEngine(texture::TextureData& data, std::string_view filename)
 {
 	const u64 textureDataSize{ GetTextureEnginePackedSize(data) };
 	u8* buffer{ new u8[textureDataSize] };
@@ -170,7 +172,9 @@ PackTextureForEngine(texture::TextureData& data)
 
 	//TODO:assert(writer.Offset() == textureDataSize);
 	//TODO: refactor
-	std::filesystem::path modelPath{ "Assets/Generated/testTextureEnginePacked.tex"};
+	std::filesystem::path modelPath{ "Assets/Generated/"};
+	modelPath.append(filename.data());
+	modelPath.replace_extension(".tex");
 	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 

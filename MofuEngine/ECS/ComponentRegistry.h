@@ -42,7 +42,7 @@ inline constexpr ComponentID ID = [] { return ComponentIdx<C, ComponentTypes>::v
 template<ComponentID ID>
 using ComponentTypeByID = std::tuple_element_t<ID, ComponentTypes>;
 
-constexpr std::array<ComponentID, ComponentTypeCount> ComponentSizes {
+constexpr std::array<u32, ComponentTypeCount> ComponentSizes {
     sizeof(LocalTransform),
     sizeof(WorldTransform),
     sizeof(Parent),

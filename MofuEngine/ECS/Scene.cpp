@@ -30,7 +30,7 @@ Vec<EntityBlock*> blocks{};
 Vec<EntityData> entityData{};
 std::deque<u32> _freeEntityIDs; // TODO: recycling
 
-constexpr size_t ENTITY_BLOCK_SIZE{ 16 * 1024 }; // 16 KiB per block
+constexpr size_t ENTITY_BLOCK_SIZE{ 64 * 1024 }; // 64 KiB per block
 constexpr size_t ENTITY_BLOCK_ALIGNMENT{ 64 }; // 64 byte alignment
 memory::SlabAllocator<ENTITY_BLOCK_SIZE, ENTITY_BLOCK_ALIGNMENT> entityBlockAllocator;
 memory::PoolAllocator<EntityBlock> entityBlockHeaderPool;
@@ -47,7 +47,7 @@ void RegisterEntityBlock(const CetMask& signature, EntityBlock* block)
 	// store the Cet somewhere?
 }
 
-void
+EntityBlock*
 CreateBlock(const CetLayout& layout)
 {
 	EntityBlock* block{ entityBlockHeaderPool.Allocate() };
@@ -63,33 +63,43 @@ CreateBlock(const CetLayout& layout)
 	block->Entities = reinterpret_cast<Entity*>(block->ComponentData);
 
 	blocks.emplace_back(std::move(block));
+	return blocks.back();
 }
 
 //TODO: defer operations on EntityBlocks to the end of the frame
 void
-AddEntity(EntityBlock* b, Entity entity)
+AddEntity(Vec<EntityBlock*> matchingBlocks, Entity entity)
 {
 	// store in first free index of the arrays
-	EntityBlock* block{ b };
-	u16 row{ block->EntityCount };
-	if (row > block->Capacity)
+	EntityBlock* chosenBlock{ nullptr };
+	for (auto b : matchingBlocks)
 	{
-		log::Info("EntityBlock is full");
-		assert(false); //TODO: have to create a new block
-		// block = ...
-		return;
+		u16 row{ b->EntityCount };
+		if (row < b->Capacity)
+		{
+			chosenBlock = b;
+			break;
+		}
 	}
+	if(!chosenBlock)
+	{
+		assert(!matchingBlocks.empty());
+		log::Info("EntityBlock is full");
+		chosenBlock = CreateBlock(GenerateCetLayout(matchingBlocks[0]->Signature));
+	}
+	assert(chosenBlock);
 
-	block->Entities[row] = entity;
-	block->EntityCount++;
+	u16 row{ chosenBlock->EntityCount };
+	chosenBlock->Entities[row] = entity;
+	chosenBlock->EntityCount++;
 
 	u32 idx{ id::Index(entity) };
-	entityData.emplace_back(block, row, id::Generation(entity), entity); // TODO: what to do here
+	entityData.emplace_back(chosenBlock, row, id::Generation(entity), entity); // TODO: what to do here
 
 	//GetEntityComponent<component::LocalTransform>(entity) = component::LocalTransform{};
 	//GetEntityComponent<component::LocalTransform>(entity).Position = { -3.0f, -10.f, 10.f}; //TODO: temporary initial transform
 	//if(idx == 1) GetEntityComponent<component::LocalTransform>(entity).Position = { 0.0f, -10.f, 10.f}; //TODO: temporary initial transform
-	log::Info("Added entity %u to block", id::Index(entity));
+	//log::Info("Added entity %u to block", id::Index(entity));
 }
 
 void
@@ -151,24 +161,23 @@ const Vec<EntityData>& GetAllEntityData()
 EntityData& 
 CreateEntity(CetLayout& layout)
 {
-	EntityBlock* matchingBlock{ nullptr };
+	Vec<EntityBlock*> matchingBlocks{};
 	CetMask& signature{ layout.Signature };
 	for (EntityBlock* b : blocks)
 	{
 		if (signature == b->Signature) // match the whole signature not just a part of it
 		{
-			matchingBlock = b;
-			break;
+			matchingBlocks.emplace_back(b);
 		}
 	}
-	if (!matchingBlock)
+	if (matchingBlocks.empty())
 	{
 		// if no matching block found, create a new one
-		CreateBlock(layout);
-		matchingBlock = blocks.back();
+		EntityBlock* b{ CreateBlock(layout) };
+		matchingBlocks.emplace_back(b);
 	}
 
-	AddEntity(matchingBlock, Entity{ (u32)entityData.size() }); // create a new entity with the next ID
+	AddEntity(matchingBlocks, Entity{ (u32)entityData.size() }); // create a new entity with the next ID
 	return entityData.back();
 }
 
@@ -179,7 +188,7 @@ GenerateCetLayout(const CetMask cetMask)
 	layout.Signature = cetMask;
 	layout.Capacity = MAX_ENTITIES_PER_BLOCK;
 
-	u32 currentOffset{ sizeof(Entity) }; // always one entity
+	u32 currentOffset{ sizeof(Entity) * MAX_ENTITIES_PER_BLOCK }; // always one entity
 	for (ComponentID componentID = 0; componentID < MAX_COMPONENT_TYPES; ++componentID)
 	{
 		if (layout.Signature.test(componentID))
@@ -188,6 +197,7 @@ GenerateCetLayout(const CetMask cetMask)
 			currentOffset += component::GetComponentSize(componentID) * MAX_ENTITIES_PER_BLOCK;
 		}
 	}
+	assert(currentOffset < ENTITY_BLOCK_SIZE);
 	layout.CetSize = currentOffset / MAX_ENTITIES_PER_BLOCK;
 
 	return layout;
@@ -237,9 +247,10 @@ AddComponents(EntityData& data, const CetMask& newSignature)
 	}
 
 	// if no matching block found, create a new one
-	CreateBlock(GenerateCetLayout(newSignature));
-	EntityBlock* newBlock{ blocks.back() };
-	AddEntity(newBlock, data.id);
+	EntityBlock* newBlock{ CreateBlock(GenerateCetLayout(newSignature)) };
+	Vec<EntityBlock*> b{};
+	b.emplace_back(newBlock);
+	AddEntity(b, data.id);
 }
 
 //template<IsComponent C>
@@ -287,45 +298,44 @@ FillTestData()
 {
 	// create 5 entities with LocalTransforms
 	constexpr u32 TEST_BLOCK_COUNT{ 5 };
-	for (u32 j{ 0 }; j < TEST_BLOCK_COUNT; ++j)
-	{
-		CetLayout layout{};
-		layout.Capacity = MAX_ENTITIES_PER_BLOCK;
-		if (j == 0)
-		{
-			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform>());
-		}
-		else if (j == 1)
-		{
-			//layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform, component::RenderMesh, component::RenderMaterial>());
-			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform>());
-		}
-		else if (j == 2)
-		{
-			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::Parent>());
-		}
-		else if (j == 3)
-		{
-			layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::Parent, component::TestComponent4>());
-		}
-		else
-		{
-			layout = GenerateCetLayout(GetCetMask<component::LocalTransform>());
-		}
+	//for (u32 j{ 0 }; j < TEST_BLOCK_COUNT; ++j)
+	//{
+	//	CetLayout layout{};
+	//	layout.Capacity = MAX_ENTITIES_PER_BLOCK;
+	//	if (j == 0)
+	//	{
+	//		layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform>());
+	//	}
+	//	else if (j == 1)
+	//	{
+	//		//layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform, component::RenderMesh, component::RenderMaterial>());
+	//		layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::WorldTransform>());
+	//	}
+	//	else if (j == 2)
+	//	{
+	//		layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::Parent>());
+	//	}
+	//	else if (j == 3)
+	//	{
+	//		layout = GenerateCetLayout(GetCetMask<component::LocalTransform, component::Parent, component::TestComponent4>());
+	//	}
+	//	else
+	//	{
+	//		layout = GenerateCetLayout(GetCetMask<component::LocalTransform>());
+	//	}
 
-		CreateBlock(layout);
-		EntityBlock* block{ blocks.back() };
-		
-		for (u32 i{ 0 }; i < 1; ++i)
-		{
-			Entity newId{ (u32)entityData.size()};
-			Entity newEntity{ newId };
+	//	EntityBlock* block{ CreateBlock(layout) };
+	//	
+	//	for (u32 i{ 0 }; i < 1; ++i)
+	//	{
+	//		Entity newId{ (u32)entityData.size()};
+	//		Entity newEntity{ newId };
 
-			AddEntity(block, newEntity);
-		}
-	}
+	//		AddEntity(block, newEntity);
+	//	}
+	//}
 
-	Entity testEntity{ 0 };
+	//Entity testEntity{ 0 };
 	//AddComponent<component::RenderMesh>(testEntity);
 	//AddComponents<component::WorldTransform, component::RenderMesh, component::RenderMaterial>(testEntity);
 }

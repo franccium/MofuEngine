@@ -1,8 +1,8 @@
 #include "SceneEditorView.h"
-#include "ECS/Scene.h"
 #include "imgui.h"
 #include "ECS/Component.h"
 #include "EngineAPI/ECS/SceneAPI.h"
+#include "MaterialEditor.h"
 
 namespace mofu::editor {
 namespace {
@@ -68,7 +68,7 @@ void CreateEntity(EntityTreeNode* node)
     //TODO: cleaner
     ecs::EntityData entityData = id::IsValid(selected)
         ? ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform, 
-            ecs::component::Parent>(lt, wt, ecs::component::Parent{ {}, selected })
+            ecs::component::Parent>(lt, wt, ecs::component::Parent{ {} })
         : ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform>(lt, wt);
 
 	log::Info("Created entity %u", entityData.id);
@@ -133,9 +133,10 @@ struct SceneHierarchy
 
                 using namespace ecs;
 
+                //TODO: make an iterator or a view
                 EntityData& entityData{ ecs::scene::GetEntityData(node->ID) };
                 EntityBlock* block{ ecs::scene::GetEntityData(node->ID).block };
-                u32 currentOffset{ sizeof(Entity) };
+                u32 currentOffset{ sizeof(Entity) * MAX_ENTITIES_PER_BLOCK };
                 for (ComponentID cid{ 0 }; cid < component::ComponentTypeCount; ++cid)
                 {
                     if (!block->Signature.test(cid)) continue;
@@ -164,6 +165,22 @@ struct SceneHierarchy
                         }
                     }
                     ImGui::EndPopup();
+                }
+
+                if (ecs::scene::HasComponent<ecs::component::RenderMaterial>(entityData.id))
+                {
+                    if (ImGui::Button("Edit Material"))
+                    {
+                        ecs::component::RenderMaterial mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entityData.id) };
+                        material::OpenMaterialEditor(mat);
+                    }
+                }
+                else
+                {
+                    if (ImGui::Button("Add Material"))
+                    {
+                        material::OpenMaterialCreator(entityData.id);
+                    }
                 }
 
                 ImGui::PopID();

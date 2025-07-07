@@ -20,14 +20,6 @@ namespace mofu::ecs::system {
 		{
 			for (auto [entity, lt, cam] : ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::Camera>())
 			{
-#if PRINT_DEBUG
-				log::Info("Camera Position: (%f, %f, %f), Rotation: (%f, %f, %f) , Forward: %f %f %f",
-					lt.Position.x, lt.Position.y, lt.Position.z,
-					lt.Rotation.x, lt.Rotation.y, lt.Rotation.z,
-					lt.Forward.x, lt.Forward.y, lt.Forward.z);
-				//lt.Position.x += 0.002f * data.DeltaTime;
-				//lt.Rotation.x -= 0.002f * data.DeltaTime;
-#endif
 				//graphics::Camera& cam{}
 				using namespace DirectX;
 
@@ -91,10 +83,10 @@ namespace mofu::ecs::system {
 					v2 delta{ input::GetMouseDelta() };
 					if (!math::IsEqual(delta.x, 0.f) || !math::IsEqual(delta.y, 0.f))
 					{
-						f32 rotSpeed{ 1.f };
-						spherical.x += delta.x * rotSpeed;
-						spherical.y -= delta.y * rotSpeed;
-						spherical.y = math::Clamp(spherical.y, 0.0001f - math::HALF_PI, math::HALF_PI - 0.0001);
+						f32 rotSpeed{ 1.5f };
+						spherical.y -= delta.x * rotSpeed;
+						spherical.x += delta.y * rotSpeed;
+						spherical.x = math::Clamp(spherical.x, 0.0001f - math::HALF_PI, math::HALF_PI - 0.0001);
 
 						cam.TargetRot = spherical;
 					}
@@ -118,15 +110,17 @@ namespace mofu::ecs::system {
 				xmm dir{ 0.f, 0.f, 1.f, 0.f };
 				XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, newRot)));
 
+#if PRINT_DEBUG
 				log::Info("Camera forward: %f, %f, %f", lt.Forward.x, lt.Forward.y, lt.Forward.z);
 				log::Info("Camera rot: %f, %f, %f, %f", lt.Rotation.w, lt.Rotation.x, lt.Rotation.y, lt.Rotation.z);
 				log::Info("Camera targetRot: %f, %f, %f", cam.TargetRot.x, cam.TargetRot.y, cam.TargetRot.z);
+#endif
 
 				const f32 fpsScale{ data.DeltaTime / 0.016667f };
 				if (moveMagnitude > math::EPSILON)
 				{
 					v4 rot{ lt.Rotation };
-					f32 moveSpeed{ 0.006f };
+					f32 moveSpeed{ 0.002f };
 					xmm dir{ XMVector3Rotate(moveV * moveSpeed * fpsScale, XMLoadFloat4(&rot)) };
 					xmm target{ XMLoadFloat3(&cam.TargetPos) };
 					target += (dir * moveSpeed);

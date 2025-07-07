@@ -48,6 +48,7 @@ Generation(id_t forId)
 constexpr inline void
 AdvanceGeneration(id_t& forId)
 {
+	assert(false);
 	forId += (id_t{ 1 } << detail::INDEX_BITS);
 }
 

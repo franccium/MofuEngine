@@ -3,9 +3,9 @@
 #include "Graphics/Renderer.h"
 #include "Content/ShaderCompilation.h"
 #include <thread>
-#include "External/imgui/include/imgui.h"
-#include "External/imgui/include/imgui_impl_win32.h"
-#include "External/imgui/include/imgui_impl_dx12.h"
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
 #include "Core/EngineModules.h"
 #include "ECS/Entity.h"
 #include "Graphics/Renderer.h"

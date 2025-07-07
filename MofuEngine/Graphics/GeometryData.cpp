@@ -1,5 +1,6 @@
 #include "GeometryData.h"
 #include "Utilities/IOStream.h"
+#include "External/MikkTSpace/mikktspace.h"
 #include <filesystem>
 #include <fstream>
 
@@ -61,6 +62,8 @@ ProcessNormals(Mesh& m, f32 smoothingAngle)
 	assert(indexCount && vertexCount);
 	m.Indices.resize(indexCount);
 
+	m.Vertices.clear(); // TODO: ??
+
 	Vec<Vec<u32>> vertexToIndex(vertexCount);
 	for (u32 i{ 0 }; i < indexCount; ++i)
 		vertexToIndex[m.RawIndices[i]].emplace_back(i);
@@ -73,7 +76,7 @@ ProcessNormals(Mesh& m, f32 smoothingAngle)
 		for (u32 j{ 0 }; j < refsCount; ++j)
 		{
 			m.Indices[refs[j]] = (u32)m.Vertices.size();
-			Vertex& v{ *m.Vertices.emplace_back() };	
+			Vertex& v{ *m.Vertices.emplace_back() };
 			v.Position = m.Positions[m.RawIndices[refs[j]]];
 
 			xmm n1{ XMLoadFloat3(&m.Normals[refs[j]]) };
@@ -103,16 +106,200 @@ ProcessNormals(Mesh& m, f32 smoothingAngle)
 	}
 }
 
+
+s32
+MikkGetNumFaces(const SMikkTSpaceContext* context)
+{
+	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
+	return (s32)m.Indices.size() / 3; // we only use triangle meshes
+}
+
+s32
+MikkGetNumVerticesOfFace([[maybe_unused]] const SMikkTSpaceContext* context, [[maybe_unused]] s32 faceIdx)
+{
+	// we only use triangle meshes
+	return 3;
+}
+
+void
+MikkGetPosition(const SMikkTSpaceContext* context, f32 position[3], s32 faceIdx, s32 vertexIdx)
+{
+	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
+	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };
+	const v3& p{ m.Vertices[index].Position };
+	position[0] = p.x;
+	position[1] = p.y;
+	position[2] = p.z;
+}
+
+void
+MikkGetNormal(const SMikkTSpaceContext* context, f32 normal[3], s32 faceIdx, s32 vertexIdx)
+{
+	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
+	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };
+	const v3& n{ m.Vertices[index].Normal };
+	normal[0] = n.x;
+	normal[1] = n.y;
+	normal[2] = n.z;
+}
+
+void
+MikkGetTexCoord(const SMikkTSpaceContext* context, f32 tex_coords[2], s32 faceIdx, s32 vertexIdx)
+{
+	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
+	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };
+	const v2& uv{ m.Vertices[index].UV };
+	tex_coords[0] = uv.x;
+	tex_coords[1] = uv.y;
+}
+
+void
+MikkSetTSpaceBasic(const SMikkTSpaceContext* context, const f32 tangent[3], f32 sign, s32 faceIdx, s32 vertexIdx)
+{
+	Mesh& m{ *(Mesh*)(context->m_pUserData) };
+	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };
+	v4& t{ m.Vertices[index].Tangent };
+	t.x = tangent[0];
+	t.y = tangent[1];
+	t.z = tangent[2];
+	t.w = sign;
+}
+
 void
 CalculateMikkTSpace(Mesh& m)
 {
-	//TODO:
+	m.Tangents.clear();
+
+	SMikkTSpaceInterface mikkInterface{};
+	mikkInterface.m_getNumFaces = MikkGetNumFaces;
+	mikkInterface.m_getNumVerticesOfFace = MikkGetNumVerticesOfFace;
+	mikkInterface.m_getPosition = MikkGetPosition;
+	mikkInterface.m_getNormal = MikkGetNormal;
+	mikkInterface.m_getTexCoord = MikkGetTexCoord;
+	mikkInterface.m_setTSpaceBasic = MikkSetTSpaceBasic;
+	mikkInterface.m_setTSpace = nullptr;
+
+	SMikkTSpaceContext mikkContext{};
+	mikkContext.m_pInterface = &mikkInterface;
+	mikkContext.m_pUserData = (void*)&m;
+
+	genTangSpaceDefault(&mikkContext);
+}
+
+void
+CalculateTangents(Mesh& m)
+{
+	m.Tangents.clear();
+
+	const u32 numIndices{ (u32)m.RawIndices.size() };
+	Vec<xmm> tangents(numIndices, XMVectorZero());
+	Vec<xmm> bitangents(numIndices, XMVectorZero());
+	Vec<xmm> positions(numIndices);
+
+	for (u32 i{ 0 }; i < numIndices; ++i)
+	{
+		positions[i] = XMLoadFloat3(&m.Vertices[m.Indices[i]].Position);
+	}
+
+	for (u32 i{ 0 }; i < numIndices; i += 3)
+	{
+		const u32 i1{ i + 1 };
+		const u32 i2{ i + 2 };
+
+		const xmm p0{ positions[i] };
+		const xmm p1{ positions[i1] };
+		const xmm p2{ positions[i2] };
+
+		const v2& uv0{ m.Vertices[m.Indices[i]].UV };
+		const v2& uv1{ m.Vertices[m.Indices[i1]].UV };
+		const v2& uv2{ m.Vertices[m.Indices[i2]].UV };
+
+		const v2 duv1{ uv1.x - uv0.x, uv1.y - uv0.y };
+		const v2 duv2{ uv2.x - uv0.x, uv2.y - uv0.y };
+
+		const XMVECTOR dp1{ p1 - p0 };
+		const XMVECTOR dp2{ p2 - p0 };
+
+		f32 det{ duv1.x * duv2.y - duv1.y * duv2.x };
+		if (abs(det) < math::EPSILON) det = math::EPSILON;
+
+		const f32 invDet{ 1.f / det };
+		const XMVECTOR t{ (dp1 * duv2.y - dp2 * duv1.y) * invDet };
+		const XMVECTOR b{ (dp2 * duv1.x - dp1 * duv2.x) * invDet };
+
+		tangents[i] += t;
+		tangents[i1] += t;
+		tangents[i2] += t;
+		bitangents[i] += b;
+		bitangents[i1] += b;
+		bitangents[i2] += b;
+	}
+
+	// orthonoramlize and calculate handedness
+	for (u32 i{ 0 }; i < numIndices; i += 3)
+	{
+		const XMVECTOR& t{ tangents[i] };
+		const XMVECTOR& b{ bitangents[i] };
+
+		const XMVECTOR& n{ XMLoadFloat3(&m.Vertices[m.Indices[i]].Normal) };
+		v3 tangent;
+		XMStoreFloat3(&tangent, XMVector3Normalize(t - n * XMVectorDivide(n, t)));
+
+		f32 handedness;
+		XMStoreFloat(&handedness, XMVector3Dot(XMVector3Cross(t, b), n));
+		handedness = handedness > 0 ? 1.f : -1.f;
+
+		m.Vertices[m.Indices[i]].Tangent = { tangent.x, tangent.y, tangent.z, handedness };
+	}
 }
 
 void
 ProcessTangents(Mesh& m)
 {
-	//TODO:
+	if (m.Tangents.size() != m.RawIndices.size()) return;
+
+	Vec<Vertex> oldVertices(m.Vertices.size());
+	oldVertices.swap(m.Vertices);
+	Vec<u32> oldIndices(m.Indices.size());
+	oldIndices.swap(m.Indices);
+
+	const u32 numVertices{ (u32)oldVertices.size() };
+	const u32 numIndices{ (u32)oldIndices.size() };
+	assert(numIndices && numVertices);
+
+	Vec<Vec<u32>> vIdRef(numIndices);
+	for (u32 i{ 0 }; i < numIndices; ++i)
+		vIdRef[oldIndices[i]].emplace_back(i);
+
+	XMVECTOR xmEpsilon{ XMVectorReplicate(math::EPSILON) };
+
+	for (u32 i{ 0 }; i < numVertices; ++i)
+	{
+		Vec<u32>& refs{ vIdRef[i] };
+		u32 numRefs{ (u32)refs.size() };
+		for (u32 j{ 0 }; j < numRefs; ++j)
+		{
+			const v4& tj{ m.Tangents[refs[j]] };
+			Vertex& v{ oldVertices[oldIndices[refs[j]]] };
+			v.Tangent = tj;
+			m.Indices[refs[j]] = (u32)m.Vertices.size();
+			m.Vertices.emplace_back(v);
+
+			XMVECTOR xmTj{ XMLoadFloat4(&tj) };
+
+			for (u32 k{ j + 1 }; k < numRefs; ++k)
+			{
+				XMVECTOR xmTangent{ XMLoadFloat4(&m.Tangents[refs[k]]) };
+				if (XMVector4NearEqual(xmTj, xmTangent, xmEpsilon))
+				{
+					m.Indices[refs[k]] = m.Indices[refs[j]];
+					refs.erase(refs.begin() + k);
+					--numRefs;
+					--k;
+				}
+			}
+		}
+	}
 }
 
 [[nodiscard]] ElementType::type
@@ -202,7 +389,16 @@ PackVertexData(Mesh& m)
 		for (u32 i{ 0 }; i < vertexCount; ++i)
 		{
 			Vertex& v{ m.Vertices[i] };
-			elementBuffer[i] = { {v.Red, v.Green, v.Blue}, tnSigns[i], { normals[i].x, normals[i].y }, {tangents[i].x, tangents[i].y}, v.UV };
+			v.Red = 117;
+			v.Green = 80;
+			v.Blue = 198;
+			if (math::IsEqual(v.UV.x, 0.f))
+			{
+				v.UV.x = 0.1f;
+			}
+			//if (math::IsEqual(v.UV.y, 0.f)) v.UV.y = 0.2f;
+			elementBuffer[i] = { {v.Red, v.Green, v.Blue}, tnSigns[i], v.UV, { normals[i].x, normals[i].y }, {tangents[i].x, tangents[i].y} };
+			//memset(&elementBuffer[i], 0x10, sizeof(StaticNormalTexture));
 		}
 	}
 	break;
@@ -228,7 +424,9 @@ ProcessAndPackVertexData(Mesh& m, const GeometryImportSettings& settings)
 		CalculateNormals(m);
 	}
 
-	ProcessNormals(m, settings.SmoothingAngle);
+	//TODO: ??
+	//ProcessNormals(m, settings.SmoothingAngle);
+	m.Indices = m.RawIndices; //TODO: for now not processing any indices just keep them how ufbx imported them in
 
 	if (settings.CalculateTangents || (m.Tangents.empty() && !m.UvSets.empty()))
 	{
@@ -262,7 +460,7 @@ GetMeshSize(const Mesh& m)
 		su32 + // number of vertices
 		su32 + // TODO: PRIMITIVE TOPOLOGY PLACEHOLDER
 		su32 + // index size (16b or 32b)
-		su32 + // number of indices
+		su32 + // number of Indices
 		sizeof(f32) + // LOD threshold
 		m.PositionBuffer.size() + // room for vertex positions
 		m.ElementBuffer.size() + // room for vertices elements
@@ -362,6 +560,7 @@ GetEnginePackedGeometrySize(const MeshGroup& group)
 			size += sizes2;
 			const u32 indexSize{ (m.Vertices.size() < (1 << 16)) ? sizeof(u16) : sizeof(u32) };
 			size += indexSize * m.Indices.size();
+			//size += 4096;
 		}
 	}
 	return size;
@@ -488,8 +687,26 @@ PackGeometryForEngine(const MeshGroup& group)
 			blob.Write((u32)m.ElementType);
 			blob.Write(3); //TODO: primitive topology
 
-			blob.WriteBytes(m.PositionBuffer.data(), m.PositionBuffer.size());
-			blob.WriteBytes(m.ElementBuffer.data(), m.ElementBuffer.size());
+			//u8 fill[2048];
+			//memset(fill, 0xFF, 2048);
+			//blob.WriteBytes(fill, 2048);
+			u64 sizes = math::AlignUp<4>(m.PositionBuffer.size());
+			u64 sizes2 = math::AlignUp<4>(m.ElementBuffer.size());
+			assert(sizes == m.PositionBuffer.size());
+			assert(sizes2 == m.ElementBuffer.size());
+
+			blob.WriteBytes(m.PositionBuffer.data(), sizes);
+			//memset(fill, 0xEE, 2048);
+			//blob.WriteBytes(fill, 2048);
+
+			auto rawPtr = m.ElementBuffer.data();
+			const StaticNormalTexture* debugPtr = reinterpret_cast<const StaticNormalTexture*>(rawPtr);
+
+			mofu::content::StaticNormalTexture s0 = debugPtr[0];
+			mofu::content::StaticNormalTexture s1 = debugPtr[1];
+			mofu::content::StaticNormalTexture s2 = debugPtr[2];
+
+			blob.WriteBytes(m.ElementBuffer.data(), sizes2);
 
 			const u32 indexBufferSize{ indexSize * indexCount };
 			const u8* indexData{ (const u8*)m.Indices.data() };

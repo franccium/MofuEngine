@@ -30,8 +30,8 @@ struct LodOffset
 
 struct UploadedGeometryInfo
 {
-	id_t GeometryContentID;
-	u32 SubmeshCount;
+	id_t GeometryContentID{ id::INVALID_ID };
+	u32 SubmeshCount{ 0 };
 	Vec<id_t> SubmeshGpuIDs;
 };
 

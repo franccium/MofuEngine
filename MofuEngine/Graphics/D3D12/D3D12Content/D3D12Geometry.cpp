@@ -3,6 +3,8 @@
 #include "Graphics/Renderer.h"
 #include "D3D12ContentCommon.h"
 
+#include "Graphics/GeometryData.h"
+
 namespace  mofu::graphics::d3d12::content::geometry {
 namespace {
 struct SubmeshView
@@ -70,23 +72,34 @@ AddSubmesh(const u8*& blob)
 	const u32 totalBufferSize{ alignedPositionBufferSize + alignedElementBufferSize + indexBufferSize };
 
 	DXResource* resource{ d3dx::CreateResourceBuffer(reader.Position(), totalBufferSize) };
+
+	//auto rawPtr = reader.Position() + alignedPositionBufferSize;
+	//const mofu::content::StaticNormalTexture* debugPtr 
+	//	= reinterpret_cast<const mofu::content::StaticNormalTexture*>(rawPtr);
+
+	//mofu::content::StaticNormalTexture s0 = debugPtr[0];
+	//mofu::content::StaticNormalTexture s1 = debugPtr[1];
+	//mofu::content::StaticNormalTexture s2 = debugPtr[2];
+
 	reader.Skip(totalBufferSize);
 	// advance the data pointer past the submesh data
 	blob = reader.Position();
 
+	const D3D12_GPU_VIRTUAL_ADDRESS resourceAddress{ resource->GetGPUVirtualAddress() };
+
 	SubmeshView submeshView{};
-	submeshView.positionBufferView.BufferLocation = resource->GetGPUVirtualAddress();
+	submeshView.positionBufferView.BufferLocation = resourceAddress;
 	submeshView.positionBufferView.SizeInBytes = positionBufferSize;
 	submeshView.positionBufferView.StrideInBytes = sizeof(v3);
 
 	if (elementSize != 0)
 	{
-		submeshView.elementBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize;
+		submeshView.elementBufferView.BufferLocation = resourceAddress + alignedPositionBufferSize;
 		submeshView.elementBufferView.SizeInBytes = elementBufferSize;
 		submeshView.elementBufferView.StrideInBytes = elementSize;
 	}
 
-	submeshView.indexBufferView.BufferLocation = resource->GetGPUVirtualAddress() + alignedPositionBufferSize + alignedElementBufferSize;
+	submeshView.indexBufferView.BufferLocation = resourceAddress + alignedPositionBufferSize + alignedElementBufferSize;
 	submeshView.indexBufferView.SizeInBytes = indexBufferSize;
 	submeshView.indexBufferView.Format = (indexSize == sizeof(u16)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
 

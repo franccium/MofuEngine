@@ -22,7 +22,7 @@ struct CetLayout
 	CetMask Signature;
 	u32 CetSize{ 0 };
 	u16 Capacity{ 0 };
-	u32 ComponentOffsets[MAX_COMPONENT_TYPES]{ sizeof(Entity) }; // there is always one entity, so the first offset is sizeof(Entity)
+	u32 ComponentOffsets[MAX_COMPONENT_TYPES]{ sizeof(Entity) * MAX_ENTITIES_PER_BLOCK }; // there is always one entity, so the first offset is sizeof(Entity)
 };
 
 struct EntityBlock
@@ -34,7 +34,7 @@ struct EntityBlock
 	Entity* Entities; // the first array in ComponentData
 	//id::generation_t* Generations;
 	u8* ComponentData{ nullptr };
-	u32 ComponentOffsets[MAX_COMPONENT_TYPES]{ sizeof(Entity) }; // there is always one entity, so the first offset is sizeof(Entity)
+	u32 ComponentOffsets[MAX_COMPONENT_TYPES]{ sizeof(Entity) * MAX_ENTITIES_PER_BLOCK }; // there is always one entity, so the first offset is sizeof(Entity)
 
 	template<IsComponent C>
 	C* GetComponentArray()

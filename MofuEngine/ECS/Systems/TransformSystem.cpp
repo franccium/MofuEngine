@@ -8,6 +8,7 @@
 #include "Utilities/Logger.h"
 
 #define PRINT_DEBUG 0
+#define PRINT_DEBUG_PARENT 1
 
 namespace mofu::ecs::system {
 std::unordered_map<id_t, xmmat> parentTransforms{};
@@ -17,6 +18,7 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 	void Update(const ecs::system::SystemUpdateData data)
 	{
 		using namespace DirectX;
+		parentTransforms.clear();
 
 		for (auto [entity, lt, wt, parent] : ecs::scene::GetRW<
 			ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Parent>())
@@ -30,6 +32,19 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 			lt.Position.y += 0.0001f * data.DeltaTime;
 			lt.Position.x += 0.0001f * data.DeltaTime;
 #endif
+			Entity now{ entity };
+
+			if (entity == Entity{ 9 })
+			{
+				u32 a{ 5 };
+			}
+			if (entity != Entity{ 1 })
+			{
+				u32 a{ 5 };
+			}
+
+			lt.Position.y += 0.001f * data.DeltaTime;
+			lt.Position.x += 0.001f * data.DeltaTime;
 
 			xmm scale{ XMLoadFloat3(&lt.Scale) };
 			//TODO: quaternion in transform, somehow bind the imgui changes
@@ -41,7 +56,14 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 			xmm dir{ 0.f, 0.f, 1.f, 0.f };
 			XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
 
+			Entity then{ entity };
+			assert(now == then);
+
+			assert(entity != Entity{ 0 });
 			parentTransforms.insert({ entity, trs });
+#if PRINT_DEBUG_PARENT
+			log::Info("Processed parent id: %u ", entity);
+#endif
 
 #if PRINT_DEBUG
 			log::Info("Modified TRS: Entity ID: %u, TRS: T:(%f, %f, %f, ...)",

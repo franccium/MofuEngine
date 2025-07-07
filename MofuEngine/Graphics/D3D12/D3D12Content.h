@@ -9,6 +9,7 @@ namespace material {
 void GetMaterials(const id_t* const materialIds, u32 materialCount, const MaterialsCache& cache, u32& outDescriptorIndexCount);
 id_t AddMaterial(const MaterialInitInfo& info);
 void RemoveMaterial(id_t id);
+MaterialInitInfo GetMaetrialReflection(id_t id);
 }
 
 namespace render_item {

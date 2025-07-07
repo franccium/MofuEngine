@@ -5,7 +5,7 @@ struct VertexOut
     float4 HomogenousPositon : SV_POSITION;
     float3 WorldPosition : POSITION;
     float3 WorldNormal : NORMAL;
-    float4 WorldTangent : TANGENT; // r - handedness
+    float4 WorldTangent : TANGENT; // z - handedness
     float2 UV : TEXTURE;
 };
 
@@ -22,7 +22,7 @@ struct Surface
     float PerceptualRoughness;
     float3 EmissiveColor;
     float EmissiveIntensity;
-    float3 V;
+    float3 V; // view direction
     float AmbientOcclusion;
     float3 DiffuseColor;
     float a2; // Pow(PerceptualRoughness, 2)
@@ -44,13 +44,13 @@ struct Surface
 struct VertexElement
 {
 #if ELEMENTS_TYPE == ElementsTypeStaticNormal
-    uint ColorTSign;
+    uint ColorTSign; // rgb - color, z - tangent and normal signs
     uint16_t2 Normal;
 #elif ELEMENTS_TYPE == ElementsTypeStaticNormalTexture
-    uint ColorTSign;
+    uint ColorTSign; // rgb - color, z - tangent and normal signs
+    float2 UV;
     uint16_t2 Normal;
     uint16_t2 Tangent;
-    float2 UV;
 #elif ELEMENTS_TYPE == ElementsTypeStaticColor
     uint8_t3 Color;
     float pad;
@@ -97,12 +97,10 @@ float4 Sample(uint index, SamplerState s, float3 n, float mip)
 
 float3 PhongBRDF(float3 N, float3 L, float3 V, float3 diffuseColor, float3 specularColor, float shininess)
 {
-    float3 color = diffuseColor;
     const float3 R = reflect(-L, N);
     const float VoR = max(dot(V, R), 0.f);
-    color += pow(VoR, max(shininess, 1.f)) * specularColor;
     
-    return color;
+    return diffuseColor + pow(VoR, max(shininess, 1.f)) * specularColor;
 }
 
 //float3 CookTorranceBRDF(Surface S, float3 L)
@@ -168,11 +166,22 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     float3 tangent = float3(tXY, sqrt(saturate(1.f - dot(tXY, tXY))) * tSign);
     tangent = tangent - normal * dot(normal, tangent); // use Gram-Schmidt orthogonalization to restore orthogonality
     
+    //vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+    //vsOut.WorldPosition = worldPosition.xyz;
+    //vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
+    //vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), handSign);
+    
+     uint ColorTSign; // rgb - color, z - tangent and normal signs
+    float2 UV;
+    uint16_t2 Normal;
+    uint16_t2 Tangent;
+    
     vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
     vsOut.WorldPosition = worldPosition.xyz;
-    vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
-    vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), handSign);
+    vsOut.WorldNormal = float3(element.Normal.x, element.Normal.y, 0.f);
+    vsOut.WorldTangent = float4(element.Tangent.x, element.Tangent.y, 0.f, 0.f);
     vsOut.UV = element.UV;
+    //vsOut.UV = float2(VertexIdx / 1000.f, VertexIdx / 1000.f);
 #else
 #undef ELEMENTS_TYPE
     vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
@@ -218,31 +227,11 @@ Surface GetSurface(VertexOut psIn, float3 V)
     S.Normal = normalize(mul(n, TBN));
 #else
 #if TEXTURED_MTL
-    //float2 uv = psIn.UV;
-    //S.AmbientOcclusion = Sample(SrvIndices[4], LinearSampler, uv).r;
-    //S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb;
-    //S.EmissiveColor = Sample(SrvIndices[3], LinearSampler, uv).rgb;
-    //float2 metalRough = Sample(SrvIndices[2], LinearSampler, uv).rg;
-    //S.Metallic = metalRough.r;
-    //S.PerceptualRoughness = metalRough.g;
-    //S.EmissiveIntensity = 1.f;
-    
-    //float3 n = Sample(SrvIndices[1], LinearSampler, uv).rgb;
-    //n = n * 2.f - 1.f;
-    //n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
-    
-    //const float3 N = psIn.WorldNormal;
-    //const float3 T = psIn.WorldTangent.xyz;
-    //const float3 B = cross(N, T) * psIn.WorldTangent.w;
-    //const float3x3 TBN = float3x3(T, B, N);
-    //// transform from tangent-space to world-space
-    //S.Normal = normalize(mul(n, TBN));
-    
     float2 uv = psIn.UV;
-    S.AmbientOcclusion = 0.1f;
+    S.AmbientOcclusion = Sample(SrvIndices[4], LinearSampler, uv).r;
     S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb;
-    S.EmissiveColor = 0.3f;
-    float2 metalRough = float2(0.3f, 0.7f);
+    S.EmissiveColor = Sample(SrvIndices[3], LinearSampler, uv).rgb;
+    float2 metalRough = Sample(SrvIndices[2], LinearSampler, uv).rg;
     S.Metallic = metalRough.r;
     S.PerceptualRoughness = metalRough.g;
     S.EmissiveIntensity = 1.f;
@@ -257,6 +246,27 @@ Surface GetSurface(VertexOut psIn, float3 V)
     const float3x3 TBN = float3x3(T, B, N);
     // transform from tangent-space to world-space
     S.Normal = normalize(mul(n, TBN));
+    
+    //float2 uv = psIn.UV;
+    //S.AmbientOcclusion = 0.1f;
+    //S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb;
+    //S.EmissiveColor = 0.3f;
+    //float2 metalRough = float2(0.03f, 0.045f);
+    //S.Metallic = metalRough.r;
+    //S.PerceptualRoughness = metalRough.g;
+    //S.EmissiveIntensity = 1.f;
+    
+    ////float3 n = Sample(SrvIndices[1], LinearSampler, uv).rgb;
+    ////n = n * 2.f - 1.f;
+    ////n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
+    //float3 n = normalize(psIn.WorldNormal);
+    
+    //const float3 N = psIn.WorldNormal;
+    //const float3 T = psIn.WorldTangent.xyz;
+    //const float3 B = cross(N, T) * psIn.WorldTangent.w;
+    //const float3x3 TBN = float3x3(T, B, N);
+    //// transform from tangent-space to world-space
+    //S.Normal = normalize(mul(n, TBN));
     
 #else
 /*
@@ -284,7 +294,7 @@ Surface GetSurface(VertexOut psIn, float3 V)
     S.DiffuseColor = S.BaseColor * (1.f - S.Metallic);
     S.SpecularColor = lerp(0.04f, S.BaseColor, S.Metallic); // F0
     S.SpecularStrength = lerp(1 - min(S.PerceptualRoughness, 0.95f), 1.f, S.Metallic);
-
+    
     return S;
 }
 
@@ -293,7 +303,7 @@ float3 GetSpecularDominantDir(float3 N, float3 R, float roughness)
 {
     float smoothness = saturate(1.f - roughness);
     float t = smoothness * (sqrt(smoothness) + roughness);
-    // the result is not normalized as we feitch in a cubemap
+    // the result is not normalized as we fetch in a cubemap
     return lerp(N, R, t);
 }
 
@@ -301,7 +311,7 @@ float3 CalculateLighting(Surface S, float3 L, float3 lightColor)
 {
 #if 1 // PHONG
     const float NoL = saturate(dot(S.Normal, L));
-    float3 color = PhongBRDF(S.Normal, L, S.V, S.DiffuseColor, 1.f, (1 - S.PerceptualRoughness) * 100.f) * (NoL / PI) * lightColor;
+    float3 color = PhongBRDF(S.Normal, L, S.V, S.DiffuseColor, 1.f, (1.f - S.PerceptualRoughness) * 100.f) * (NoL / PI) * lightColor;
 #else // PBR
     float3 color = CookTorranceBRDF(S, L) * lightColor;
 #endif
@@ -326,15 +336,15 @@ PixelOut TestShaderPS(in VertexOut psIn)
 
     float3 lightDirection = float3(0.7f, 0.7f, -0.2f);
     float NdotL = saturate(dot(normal, lightDirection));
-    float3 lightColor = float3(0.98f, 0.99f, 0.98f);
+    float3 lightColor = float3(1.f, 1.f, 1.f);
     float lightIntensity = 1.f;
-    color += CalculateLighting(S, -lightDirection, lightColor * lightIntensity);
+    color += CalculateLighting(S, lightDirection, lightColor * lightIntensity);
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);
-    color += ambientColor;
+    //color += ambientColor;
     color = saturate(color);
     
-    #if TEXTURED_MTL
+#if TEXTURED_MTL
     float VoN = S.NoV * 1.3f;
     float VoN2 = VoN * VoN;
     float VoN4 = VoN2 * VoN2;
@@ -342,7 +352,6 @@ PixelOut TestShaderPS(in VertexOut psIn)
     S.EmissiveColor = max(VoN4 * VoN4, 0.1f) * e * e;
 #endif
     
-    //color.rgb = pow(color.rgb, 2.2f);
     psOut.Color = float4(color, 1.f);
     
     

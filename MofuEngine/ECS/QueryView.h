@@ -10,10 +10,10 @@ class QueryView
 	using BlockPtr = EntityBlock*;
 
 public:
-	explicit QueryView(std::vector<BlockPtr>&& blocks)
+	explicit QueryView(std::vector<BlockPtr>& blocks)
 		: _blocks(std::move(blocks))
 	{
-	}	
+	}
 
 	class Iterator
 	{
@@ -37,7 +37,7 @@ public:
 		Iterator& operator++()
 		{
 			++_index;
-			if (_currentBlock != _lastBlock && _index == (*_currentBlock)->EntityCount)
+			while (_currentBlock != _lastBlock && _index == (*_currentBlock)->EntityCount)
 			{
 				++_currentBlock;
 				_index = 0;

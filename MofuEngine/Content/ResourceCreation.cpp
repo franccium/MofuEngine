@@ -77,8 +77,11 @@ CreateGeometryItem(const void* const blob)
 		std::lock_guard lock{ geometryMutex };
 		for (u32 i{ 0 }; i < submeshCount; ++i)
 		{
+			assert(id::IsValid(submeshGpuIDs[i]));
 			geometryItemIDs.emplace_back(submeshGpuIDs[i]);
 		}
+		assert(id::IsValid(submeshGpuIDs[0]));
+		lastUploadedGeometryInfo = {};
 		lastUploadedGeometryInfo.GeometryContentID = submeshGpuIDs[0];
 		lastUploadedGeometryInfo.SubmeshCount = submeshCount;
 		lastUploadedGeometryInfo.SubmeshGpuIDs.resize(submeshCount);

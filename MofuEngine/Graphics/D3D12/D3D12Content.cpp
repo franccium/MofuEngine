@@ -248,6 +248,37 @@ CreateRootSignature(MaterialType::type materialType, ShaderFlags::flags shaderFl
 	return id;
 }
 
+// NOTE: used by the editor, might not want that here
+MaterialInitInfo 
+GetMaterialReflection(id_t materialID)
+{
+	assert(id::IsValid(materialID));
+	u8* const buffer{ materials[materialID].get() };
+	MaterialType::type materialType{ *(MaterialType::type*)buffer };
+	ShaderFlags::flags flags{ *(ShaderFlags::flags*)&buffer[D3D12MaterialStream::SHADER_FLAGS_INDEX] };
+	id_t rootSignatureID{ *(id_t*)&buffer[D3D12MaterialStream::ROOT_SIGNATURE_INDEX] };
+	u32 textureCount{ *(u32*)&buffer[D3D12MaterialStream::TEXTURE_COUNT_INDEX] };
+	MaterialSurface surface{ *(MaterialSurface*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX] };
+	id_t* shaderIDs{ (id_t*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX + sizeof(MaterialSurface)] };
+	id_t* textureIDs{ textureCount ? &shaderIDs[_mm_popcnt_u32(flags)] : nullptr };
+	u32* descriptorIndices{ textureCount ? (u32*)&textureIDs[textureCount] : nullptr };
+	
+	MaterialInitInfo info{};
+	info.Type = materialType;
+	info.TextureCount = textureCount;
+	info.Surface = surface;
+	//TODO: this doesnt reflect which shader types these are
+	memcpy(info.ShaderIDs, shaderIDs, _mm_popcnt_u32(flags) * sizeof(id_t));
+	if(textureCount)
+	{
+		info.TextureIDs = new id_t[textureCount];
+		memcpy(info.TextureIDs, textureIDs, textureCount * sizeof(id_t));
+		texture::GetDescriptorIndices(textureIDs, textureCount, descriptorIndices);
+	}
+
+	return info;
+}
+
 void 
 GetMaterials(const id_t* const materialIds, u32 materialCount, const MaterialsCache& cache, u32& outDescriptorIndexCount)
 {
@@ -289,6 +320,7 @@ RemoveMaterial(id_t id)
     std::lock_guard lock{ materialMutex };
     materials.remove(id);
 }
+
 }
 
 namespace render_item {

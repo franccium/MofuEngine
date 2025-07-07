@@ -60,6 +60,8 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		ecs::Entity	entity;
 		ecs::component::RenderMesh Mesh;
 		ecs::component::RenderMaterial Material;
+		bool isChild{ true };
+		ecs::component::Child child;
 	};
 	Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
 
@@ -67,7 +69,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	ecs::component::Parent parentEntity{ {} };
 	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity) };
-	spawnedEntities[0] = { rootEntityData.id, mesh, material };
+	spawnedEntities[0] = { rootEntityData.id, mesh, material, false };
 
 	ecs::component::Child child{ {}, rootEntityData.id };
 	pos = {};
@@ -83,11 +85,17 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child>(lt, wt, mesh, material, child) };
-		spawnedEntities[i] = { e.id, mesh, material };
+		assert(ecs::scene::GetComponent<ecs::component::Child>(e.id).ParentEntity == child.ParentEntity);
+		spawnedEntities[i] = { e.id, mesh, material, true, child };
 	}
 
 	for (auto& c : spawnedEntities)
 	{
+		if (c.isChild)
+		{
+			assert(c.child.ParentEntity == child.ParentEntity);
+			assert(ecs::scene::GetComponent<ecs::component::Child>(c.entity).ParentEntity == child.ParentEntity);
+		}
 		graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialIDs);
 		editor::AddEntityToSceneView(c.entity);
 	}

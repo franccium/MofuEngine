@@ -25,17 +25,19 @@ namespace mofu::graphics::d3d12 {
 			
 			u32 renderItemCount{ 0 };
 
+			frameInfo.LastFrameTime = 16.7f;
+			frameInfo.AverageFrameTime = 16.7f;
+			frameInfo.CameraID = camera_id{ 0 };
+
 			for (auto [entity, transform, mesh, material]
 				: ecs::scene::GetRW<ecs::component::WorldTransform,
 					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
 			{
-				frameInfo.LastFrameTime = 16.7f;
-				frameInfo.AverageFrameTime = 16.7f;
-				frameInfo.CameraID = camera_id{ 0 };
 				renderItemIDs.emplace_back(mesh.MeshID);
 				thresholds.emplace_back(0.f);
 				renderItemCount++;
 			}
+
 			frameInfo.RenderItemCount = renderItemCount;
 			frameInfo.RenderItemIDs = renderItemIDs.data();
 			frameInfo.Thresholds = thresholds.data();

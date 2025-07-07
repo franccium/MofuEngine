@@ -13,14 +13,14 @@ template<typename... Component>
 QueryView<true, Component...> GetRW()
 {
 	auto blocks = GetBlocksFromCet(GetCetMask<Component...>());
-	return QueryView<true, Component...>{ std::move(blocks) };
+	return QueryView<true, Component...>(blocks);
 }
 
 template<typename... Component>
 QueryView<false, Component...> GetRO()
 {
 	auto blocks = GetBlocksFromCet(GetCetMask<Component...>());
-	return QueryView<true, Component...>{ std::move(blocks) };
+	return QueryView<true, Component...>(blocks);
 }
 
 template<IsComponent C>

@@ -192,7 +192,7 @@ public:
 	{
 		if (this != std::addressof(o))
 		{
-			auto temp{ std::move(0) };
+			auto temp{ std::move(o) };
 			o.move(*this);
 			move(temp);
 		}

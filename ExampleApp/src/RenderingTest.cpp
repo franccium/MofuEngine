@@ -43,6 +43,11 @@ constexpr const char* TEST_BISTRO_MESH_PATH{ "Assets/Generated/BistroInterior.mo
 
 constexpr const char* TEST_TEXTURE_PATH{ "Assets/Generated/testTextureEnginePacked.tex" };
 
+constexpr const char* WHITE_TEXTURE{ "Assets/Generated/Textures/white_placeholder_texture.tex" };
+constexpr const char* GRAY_TEXTURE{ "Assets/Generated/Textures/gray_placeholder_texture.tex" };
+constexpr const char* BLACK_TEXTURE{ "Assets/Generated/Textures/black_placeholder_texture.tex" };
+constexpr const char* ERROR_TEXTURE{ "Assets/Generated/Textures/eror_texture.tex" };
+
 struct ModelData
 {
 	const char* MeshFile{ TEST_MESH_PATH };
@@ -51,18 +56,38 @@ struct ModelData
 	const char* MetallicRoughness{};
 	const char* AO{};
 	const char* Emissive{};
+	u32 somewhereAroundSubmeshCount{ 1 };
 	v3 Pos{ -3.f, -10.f, 90.f };
 	quat Rot{ quatIndentity };
 	v3 Scale{ 1.f, 1.f, 1.f };
 };
 
 constexpr ModelData CYBORG_MODEL{
-	TEST_IMPORTED_MESH_PATH,
-	TEST_TEXTURE_PATH,
-	TEST_TEXTURE_PATH,
-	TEST_TEXTURE_PATH,
-	TEST_TEXTURE_PATH,
-	TEST_TEXTURE_PATH, //TODO: placeholder textures
+	"Assets/Generated/cyborg.model",
+	//"Assets/Generated/testroomwithmonkeys.model",
+	//"Assets/Generated/campfire_scene_simplest.model",
+	//TEST_MESH_PATH,
+	"Assets/Generated/Body_B.tga.tex",
+	"Assets/Generated/Body_N.tga.tex",
+	"Assets/Generated/Body_Metal.tga.tex",
+	"Assets/Generated/Body_E.tga.tex",
+	"Assets/Generated/Body_AO.tga.tex",
+	//TEST_TEXTURE_PATH,
+	//TEST_TEXTURE_PATH,
+	//TEST_TEXTURE_PATH,
+	//TEST_TEXTURE_PATH,
+	//TEST_TEXTURE_PATH, //TODO: placeholder textures
+	10
+};
+
+constexpr ModelData BISTRO_INTERIOR_MODEL{
+	"Assets/Generated/BistroInterior.model",
+	"Assets/Generated/Body_B.tga.tex",
+	"Assets/Generated/Body_N.tga.tex",
+	"Assets/Generated/Body_Metal.tga.tex",
+	"Assets/Generated/Body_E.tga.tex",
+	"Assets/Generated/Body_AO.tga.tex",
+	3000
 };
 
 
@@ -197,7 +222,7 @@ CreateMaterials()
 	info.ShaderIDs[graphics::ShaderType::Pixel] = texturedPsID;
 	if (loadedTexturesCount != 0)
 	{
-		info.TextureCount = loadedTexturesCount;
+		info.TextureCount = TextureUsage::Count; // NOTE: assuming one of every texture usage exists
 		info.TextureIDs = &textureIDs[0];
 		texturedMaterialID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
 	}
@@ -222,7 +247,8 @@ AddRenderItem()
 	//const char* path{ TEST_BISTRO_MESH_PATH };
 	//std::filesystem::path modelPath{ path };
 
-	ModelData modelData{ CYBORG_MODEL };
+	//ModelData modelData{ CYBORG_MODEL };
+	ModelData modelData{ BISTRO_INTERIOR_MODEL };
 
 	memset(&textureIDs[0], 0xEE, _countof(textureIDs) * sizeof(id_t));
 	//std::thread threads[]{
@@ -247,13 +273,13 @@ AddRenderItem()
 
 	CreateMaterials();
 
-	u32* materials = new u32[128];
-	for (u32 i{ 0 }; i < 128; ++i)
+	u32* materials = new u32[modelData.somewhereAroundSubmeshCount];
+	for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
 	{
 		materials[i] = mtlID;
 	}
-	u32* texturedMaterials = new u32[128];
-	for (u32 i{ 0 }; i < 128; ++i)
+	u32* texturedMaterials = new u32[modelData.somewhereAroundSubmeshCount];
+	for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
 	{
 		texturedMaterials[i] = texturedMaterialID;
 	}

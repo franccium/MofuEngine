@@ -92,6 +92,11 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 	// Iterate over each face using the specific material
 	for (const ufbx_mesh_part& part : m->material_parts)
 	{
+		if (part.num_triangles == 0 || part.num_faces == 0)
+		{
+			log::Warn("Mesh part contains no triangles");
+			continue;
+		}
 		// Mesh
 		Mesh mesh{};
 		mesh.Name = std::string(name) + "_part_" + std::to_string(part.index);
@@ -222,7 +227,7 @@ ImportMesh(std::filesystem::path path)
 
 	MeshGroupData data{};
 	data.ImportSettings.CalculateNormals = false;
-	data.ImportSettings.CalculateTangents = false;
+	data.ImportSettings.CalculateTangents = true;
 	data.ImportSettings.MergeMeshes = true;
 	data.ImportSettings.ImportAnimations = false;
 	data.ImportSettings.ImportEmbeddedTextures = false;
@@ -230,7 +235,7 @@ ImportMesh(std::filesystem::path path)
 	data.ImportSettings.SmoothingAngle = 0.f;
 	ProcessMeshGroupData(meshGroup, data.ImportSettings);
 	//PackGeometryData(meshGroup, outData);
-	PackGeometryDataForEditor(meshGroup, data);
+	//PackGeometryDataForEditor(meshGroup, data);
 	//SaveGeometry(data, path.replace_extension(".geom"));
 	PackGeometryForEngine(meshGroup);
 }
@@ -292,8 +297,8 @@ ImportTexture(std::filesystem::path path)
 		log::Error("Texture import error: ", data.Info.ImportError);
 	}
 
-	PackTextureForEngine(data);
-	PackTextureForEditor(data);
+	PackTextureForEngine(data, path.filename().string());
+	PackTextureForEditor(data, path.filename().string());
 	//textureData.SetTextureInfoFromData(texture);
 	//if (!texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap)) throw new InvalidDataException();
 }

@@ -50,7 +50,8 @@ SetupPlatformInterface(PlatformInterface& pi)
 	pi.resources.removeTexture = content::texture::RemoveTexture;	
 
 	pi.resources.addMaterial = content::material::AddMaterial;	
-	pi.resources.removeMaterial = content::material::RemoveMaterial;	
+	pi.resources.removeMaterial = content::material::RemoveMaterial;
+	pi.resources.getMaterialReflection = content::material::GetMaterialReflection;
 
 	pi.resources.addRenderItem = content::render_item::AddRenderItem;	
 	pi.resources.removeRenderItem = content::render_item::RemoveRenderItem;

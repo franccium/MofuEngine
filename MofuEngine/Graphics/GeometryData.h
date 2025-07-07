@@ -38,9 +38,9 @@ struct StaticNormalTexture
 {
 	u8 Color[3];
 	u8 TNSign; // bit 0: tangent handedness, bit 1: tangent.z sign, bit 2: normal.z sign (0 for -1, 1 for +1)
+	v2 UV;
 	u16 Normal[2]; // normal packed as xy, reconstruct with normal.z sign
 	u16 tangent[2];
-	v2 UV;
 };
 
 struct Skeletal

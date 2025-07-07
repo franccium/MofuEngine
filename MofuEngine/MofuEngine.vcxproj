@@ -67,7 +67,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/EHsc %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -128,17 +128,19 @@
     <ClCompile Include="Editor\AssetInteraction.cpp" />
     <ClCompile Include="Editor\AssetPacking.cpp" />
     <ClCompile Include="Editor\EditorInterface.cpp" />
+    <ClCompile Include="Editor\MaterialEditor.cpp" />
     <ClCompile Include="Editor\SceneEditorView.cpp" />
     <ClCompile Include="Editor\TextureView.cpp" />
     <ClCompile Include="Editor\ValueDisplay.cpp" />
     <ClCompile Include="EngineAPI\ECS\SceneAPI.cpp" />
-    <ClCompile Include="External\imgui\include\imgui.cpp" />
-    <ClCompile Include="External\imgui\include\imgui_demo.cpp" />
-    <ClCompile Include="External\imgui\include\imgui_draw.cpp" />
-    <ClCompile Include="External\imgui\include\imgui_impl_dx12.cpp" />
-    <ClCompile Include="External\imgui\include\imgui_impl_win32.cpp" />
-    <ClCompile Include="External\imgui\include\imgui_tables.cpp" />
-    <ClCompile Include="External\imgui\include\imgui_widgets.cpp" />
+    <ClCompile Include="External\imgui\backends\imgui_impl_dx12.cpp" />
+    <ClCompile Include="External\imgui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="External\imgui\imgui.cpp" />
+    <ClCompile Include="External\imgui\imgui_demo.cpp" />
+    <ClCompile Include="External\imgui\imgui_draw.cpp" />
+    <ClCompile Include="External\imgui\imgui_tables.cpp" />
+    <ClCompile Include="External\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="External\imgui\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="External\MikkTSpace\mikktspace.c">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/wd4456 /wd4201 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -214,20 +216,22 @@
     <ClInclude Include="Editor\AssetInteraction.h" />
     <ClInclude Include="Editor\AssetPacking.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
+    <ClInclude Include="Editor\MaterialEditor.h" />
     <ClInclude Include="Editor\SceneEditorView.h" />
     <ClInclude Include="Editor\TextureView.h" />
     <ClInclude Include="Editor\ValueDisplay.h" />
     <ClInclude Include="EngineAPI\Camera.h" />
     <ClInclude Include="EngineAPI\ECS\SceneAPI.h" />
     <ClInclude Include="EngineAPI\ECS\SystemAPI.h" />
-    <ClInclude Include="External\imgui\include\imconfig.h" />
-    <ClInclude Include="External\imgui\include\imgui.h" />
-    <ClInclude Include="External\imgui\include\imgui_impl_dx12.h" />
-    <ClInclude Include="External\imgui\include\imgui_impl_win32.h" />
-    <ClInclude Include="External\imgui\include\imgui_internal.h" />
-    <ClInclude Include="External\imgui\include\imstb_rectpack.h" />
-    <ClInclude Include="External\imgui\include\imstb_textedit.h" />
-    <ClInclude Include="External\imgui\include\imstb_truetype.h" />
+    <ClInclude Include="External\imgui\backends\imgui_impl_dx12.h" />
+    <ClInclude Include="External\imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="External\imgui\imconfig.h" />
+    <ClInclude Include="External\imgui\imgui.h" />
+    <ClInclude Include="External\imgui\imgui_internal.h" />
+    <ClInclude Include="External\imgui\imstb_rectpack.h" />
+    <ClInclude Include="External\imgui\imstb_textedit.h" />
+    <ClInclude Include="External\imgui\imstb_truetype.h" />
+    <ClInclude Include="External\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="External\MikkTSpace\mikktspace.h" />
     <ClInclude Include="External\ufbx\ufbx.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12ContentCommon.h" />
@@ -288,9 +292,6 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Natvis Include="External\imgui\misc\imgui.natvis" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ECS\implementationnotes.txt" />

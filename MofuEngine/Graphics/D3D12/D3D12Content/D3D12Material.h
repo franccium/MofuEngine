@@ -88,6 +88,11 @@ public:
     [[nodiscard]] constexpr MaterialType::type MaterialType() const { return _materialType; }
     [[nodiscard]] constexpr ShaderFlags::flags ShaderFlags() const { return _shaderFlags; }
 
+    constexpr static u32 SHADER_FLAGS_INDEX{ sizeof(MaterialType::type) };
+    constexpr static u32 ROOT_SIGNATURE_INDEX{ SHADER_FLAGS_INDEX + sizeof(ShaderFlags::flags) };
+    constexpr static u32 TEXTURE_COUNT_INDEX{ ROOT_SIGNATURE_INDEX + sizeof(id_t) };
+    constexpr static u32 MATERIAL_SURFACE_INDEX{ TEXTURE_COUNT_INDEX + sizeof(u32) };
+
 private:
     void Initialize()
     {
@@ -105,11 +110,6 @@ private:
         _descriptorIndices = _textureCount ? (u32*)&_textureIDs[_textureCount] : nullptr;
     }
 
-    constexpr static u32 SHADER_FLAGS_INDEX{ sizeof(MaterialType::type) };
-    constexpr static u32 ROOT_SIGNATURE_INDEX{ SHADER_FLAGS_INDEX + sizeof(ShaderFlags::flags) };
-    constexpr static u32 TEXTURE_COUNT_INDEX{ ROOT_SIGNATURE_INDEX + sizeof(id_t) };
-    constexpr static u32 MATERIAL_SURFACE_INDEX{ TEXTURE_COUNT_INDEX + sizeof(u32) };
-
     u8* _buffer;
     MaterialType::type _materialType;
     ShaderFlags::flags _shaderFlags;
@@ -124,4 +124,6 @@ private:
 void GetMaterials(const id_t* const materialIds, u32 materialCount, const MaterialsCache& cache, u32& outDescriptorIndexCount);
 id_t AddMaterial(const MaterialInitInfo& info);
 void RemoveMaterial(id_t id);
+// NOTE: used by the editor, might not want that here
+MaterialInitInfo GetMaterialReflection(id_t materialID);
 }

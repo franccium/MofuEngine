@@ -185,9 +185,9 @@ SetRootParameters(DXGraphicsCommandList* cmdList, u32 cacheItemIndex)
 	case MaterialType::Opaque:
 	{
 		using params = OpaqueRootParameters;
+		cmdList->SetGraphicsRootConstantBufferView(params::PerObjectData, cache.PerObjectData[cacheItemIndex]);
 		cmdList->SetGraphicsRootShaderResourceView(params::PositionBuffer, cache.PositionBuffers[cacheItemIndex]);
 		cmdList->SetGraphicsRootShaderResourceView(params::ElementBuffer, cache.ElementBuffers[cacheItemIndex]);
-		cmdList->SetGraphicsRootConstantBufferView(params::PerObjectData, cache.PerObjectData[cacheItemIndex]);
 		if (cache.TextureCounts[cacheItemIndex] != 0)
 		{
 			cmdList->SetGraphicsRootShaderResourceView(params::SrvIndices, cache.SrvIndices[cacheItemIndex]);
@@ -362,6 +362,7 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 		cmdList->IASetIndexBuffer(&ibv);
 		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
 		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+		//log::Info("Draw: index count %u ", indexCount);
 	}
 #endif
 }

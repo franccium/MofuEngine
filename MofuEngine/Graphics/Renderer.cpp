@@ -301,6 +301,11 @@ RemoveMaterial(id_t id)
 	gfxInterface.resources.removeMaterial(id);
 }
 
+MaterialInitInfo GetMaterialReflection(id_t id)
+{
+    return gfxInterface.resources.getMaterialReflection(id);
+}
+
 id_t 
 AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
 {
