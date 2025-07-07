@@ -365,3 +365,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/ExampleApp/Assets/characters/cyborg_tex
+/ExampleApp/Assets/characters
+/ExampleApp/Assets/furtniture
+/ExampleApp/Assets/nature
+/ExampleApp/Assets/Sponza.fbx
