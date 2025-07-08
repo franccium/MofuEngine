@@ -11,6 +11,9 @@
 #include "ECS/ECSCore.h"
 #include "EngineAPI/ECS/SystemAPI.h"
 
+#include "tracy/TracyD3D12.hpp"
+#include "tracy/Tracy.hpp"
+
 #define ENABLE_GPU_BASED_VALIDATION 0
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
@@ -185,6 +188,8 @@ std::mutex deferredReleasesMutex{};
 Vec<IUnknown*> deferredReleases[FRAME_BUFFER_COUNT]{};
 
 d3dx::D3D12ResourceBarrierList resourceBarriers{};
+
+TracyD3D12Ctx tracyQueueContext{ nullptr };
 
 bool 
 InitializeModules()
@@ -377,6 +382,8 @@ Initialize()
     }
 #endif
 
+    tracyQueueContext = TracyD3D12Context(mainDevice, gfxCommand.CommandQueue());
+
     if (!ui::Initialize(gfxCommand.CommandList(), gfxCommand.CommandQueue())) return InitializeFailed();
 
     return true;
@@ -458,6 +465,7 @@ void
 RenderSurface(surface_id id, FrameInfo frameInfo)
 {
     gfxCommand.BeginFrame();
+    TracyD3D12NewFrame(tracyQueueContext);
 
     DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList() };
 
@@ -477,61 +485,79 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     f32 deltaTime{ 16.7f };
     const D3D12FrameInfo d3d12FrameInfo{ GetD3D12FrameInfo(frameInfo, cbuffer, surface, frameIndex, deltaTime) };
 
-    gpass::StartNewFrame(d3d12FrameInfo);
-
-    gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
     d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
 
-    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
-    cmdList->SetDescriptorHeaps(1, &heaps[0]);
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Render Surface Frame Start", tracy::Color::Violet);
+        gpass::StartNewFrame(d3d12FrameInfo);
 
-    cmdList->RSSetViewports(1, surface.Viewport());
-    cmdList->RSSetScissorRects(1, surface.ScissorRect());
+        gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
 
-    ui::SetupGUIFrame();
+        ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
+        cmdList->SetDescriptorHeaps(1, &heaps[0]);
 
-    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
-    // Depth Prepass
-    gpass::AddTransitionsForDepthPrepass(barriers);
-    barriers.ApplyBarriers(cmdList);
-    gpass::SetRenderTargetsForDepthPrepass(cmdList);
+        cmdList->RSSetViewports(1, surface.Viewport());
+        cmdList->RSSetScissorRects(1, surface.ScissorRect());
 
-    //TODO: for now just do that here, would need to rewrite everything
-    ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
+        ui::SetupGUIFrame();
 
-    gpass::DoDepthPrepass(cmdList, d3d12FrameInfo);
+        //TODO: for now just do that here, would need to rewrite everything
+        ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
+    }
+
+    {
+        // Depth Prepass
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Depth Prepass", tracy::Color::DarkSeaGreen3);
+        barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
+        gpass::AddTransitionsForDepthPrepass(barriers);
+        barriers.ApplyBarriers(cmdList);
+        gpass::SetRenderTargetsForDepthPrepass(cmdList);
+        gpass::DoDepthPrepass(cmdList, d3d12FrameInfo);
+    }
 
     // Main GPass
-    gpass::AddTransitionsForGPass(barriers);
-    barriers.ApplyBarriers(cmdList);
-    gpass::SetRenderTargetsForGPass(cmdList);
-    gpass::Render(cmdList, d3d12FrameInfo);
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Main GPass", tracy::Color::PaleVioletRed3);
+        gpass::AddTransitionsForGPass(barriers);
+        barriers.ApplyBarriers(cmdList);
+        gpass::SetRenderTargetsForGPass(cmdList);
+        gpass::Render(cmdList, d3d12FrameInfo);
+    }
 
     // Post Processing
-    gpass::AddTransitionsForPostProcess(barriers);
-    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
-    barriers.ApplyBarriers(cmdList);
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Post Processing", tracy::Color::Blue2);
+        gpass::AddTransitionsForPostProcess(barriers);
+        barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
+        barriers.ApplyBarriers(cmdList);
 
-    fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
+        fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.Rtv());
+    }
 
-    ui::RenderGUI(cmdList);
-    ui::RenderSceneIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+    // Editor UI
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Editor UI", tracy::Color::LightSkyBlue3);
+        ui::RenderGUI(cmdList);
+        ui::RenderSceneIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
 #if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
-    //TODO: make it work with post processing
-    ui::RenderSceneIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+        //TODO: make it work with post processing
+        ui::RenderSceneIntoImage(cmdList, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
 #else
-    // TODO:
+        // TODO:
 #endif // RENDER_SCENE_ONTO_GUI_IMAGE
 #else
-    // render 3d scene
+        // render 3d scene
 #endif // RENDER_2D_TEST
 
-    ui::EndGUIFrame(cmdList);
+        ui::EndGUIFrame(cmdList);
+    }
 
     d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
     gfxCommand.EndFrame(surface);
+
+    TracyD3D12Collect(tracyQueueContext);
 }
 
 Surface

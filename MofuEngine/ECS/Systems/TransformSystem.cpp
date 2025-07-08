@@ -7,8 +7,10 @@
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
 
+#include "tracy/Tracy.hpp"
+
 #define PRINT_DEBUG 0
-#define PRINT_DEBUG_PARENT 1
+#define PRINT_DEBUG_PARENT 0
 
 namespace mofu::ecs::system {
 std::unordered_map<id_t, xmmat> parentTransforms{};
@@ -17,6 +19,8 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 {
 	void Update(const ecs::system::SystemUpdateData data)
 	{
+		ZoneScopedN("TransformSystem");
+
 		using namespace DirectX;
 		parentTransforms.clear();
 
@@ -32,19 +36,6 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 			lt.Position.y += 0.0001f * data.DeltaTime;
 			lt.Position.x += 0.0001f * data.DeltaTime;
 #endif
-			Entity now{ entity };
-
-			if (entity == Entity{ 9 })
-			{
-				u32 a{ 5 };
-			}
-			if (entity != Entity{ 1 })
-			{
-				u32 a{ 5 };
-			}
-
-			lt.Position.y += 0.001f * data.DeltaTime;
-			lt.Position.x += 0.001f * data.DeltaTime;
 
 			xmm scale{ XMLoadFloat3(&lt.Scale) };
 			//TODO: quaternion in transform, somehow bind the imgui changes
@@ -56,10 +47,6 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 			xmm dir{ 0.f, 0.f, 1.f, 0.f };
 			XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
 
-			Entity then{ entity };
-			assert(now == then);
-
-			assert(entity != Entity{ 0 });
 			parentTransforms.insert({ entity, trs });
 #if PRINT_DEBUG_PARENT
 			log::Info("Processed parent id: %u ", entity);
@@ -72,43 +59,46 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 #endif
 		}
 
-		ecs::Entity currentParent{};
-		XMMATRIX currentParentMatrix{};
-		for (auto [entity, lt, wt, child] : ecs::scene::GetRW<
-			ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Child>())
 		{
-			if (child.ParentEntity != currentParent)
+			ZoneScopedN("TransformSystem Children");
+			ecs::Entity currentParent{};
+			XMMATRIX currentParentMatrix{};
+			for (auto [entity, lt, wt, child] : ecs::scene::GetRW<
+				ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Child>())
 			{
-				currentParent = child.ParentEntity;
-				currentParentMatrix = parentTransforms.at(child.ParentEntity);
+				if (child.ParentEntity != currentParent)
+				{
+					currentParent = child.ParentEntity;
+					currentParentMatrix = parentTransforms.at(child.ParentEntity);
+				}
+
+#if PRINT_DEBUG
+				log::Info("Found Child Entity: Entity ID: %u, Position: (%f, %f, %f), Rotation: (%f, %f, %f), Scale: (%f, %f, %f)",
+					entity,
+					lt.Position.x, lt.Position.y, lt.Position.z,
+					lt.Rotation.x, lt.Rotation.y, lt.Rotation.z,
+					lt.Scale.x, lt.Scale.y, lt.Scale.z);
+				lt.Position.y += 0.0001f * data.DeltaTime;
+				lt.Position.x += 0.0001f * data.DeltaTime;
+#endif
+
+				using namespace DirectX;
+				xmm scale{ XMLoadFloat3(&lt.Scale) };
+				xmm rot{ XMLoadFloat4(&lt.Rotation) };
+				xmm pos{ XMLoadFloat3(&lt.Position) };
+				XMMATRIX trs{ DirectX::XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
+				trs = XMMatrixMultiply(trs, currentParentMatrix);
+				XMStoreFloat4x4(&wt.TRS, trs);
+
+				xmm dir{ 0.f, 0.f, 1.f, 0.f };
+				XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
+
+#if PRINT_DEBUG
+				log::Info("Modified TRS: Entity ID: %u, TRS: T:(%f, %f, %f, ...)",
+					entity,
+					wt.TRS._41, wt.TRS._42, wt.TRS._43);
+#endif
 			}
-
-#if PRINT_DEBUG
-			log::Info("Found Child Entity: Entity ID: %u, Position: (%f, %f, %f), Rotation: (%f, %f, %f), Scale: (%f, %f, %f)",
-				entity,
-				lt.Position.x, lt.Position.y, lt.Position.z,
-				lt.Rotation.x, lt.Rotation.y, lt.Rotation.z,
-				lt.Scale.x, lt.Scale.y, lt.Scale.z);
-			lt.Position.y += 0.0001f * data.DeltaTime;
-			lt.Position.x += 0.0001f * data.DeltaTime;
-#endif
-
-			using namespace DirectX;
-			xmm scale{ XMLoadFloat3(&lt.Scale) };
-			xmm rot{ XMLoadFloat4(&lt.Rotation) };
-			xmm pos{ XMLoadFloat3(&lt.Position) };
-			XMMATRIX trs{ DirectX::XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
-			trs = XMMatrixMultiply(trs, currentParentMatrix);
-			XMStoreFloat4x4(&wt.TRS, trs);
-
-			xmm dir{ 0.f, 0.f, 1.f, 0.f };
-			XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
-
-#if PRINT_DEBUG
-			log::Info("Modified TRS: Entity ID: %u, TRS: T:(%f, %f, %f, ...)",
-				entity,
-				wt.TRS._41, wt.TRS._42, wt.TRS._43);
-#endif
 		}
 	}
 };

@@ -10,6 +10,8 @@
 #include "ECS/ComponentRegistry.h"
 #include "Editor/AssetInteraction.h"
 
+#include "../External/tracy/public/tracy/Tracy.hpp"
+
 using namespace mofu;
 
 id_t content::CreateResourceFromBlob(const void* const blob, content::AssetType::type resourceType);
@@ -273,18 +275,25 @@ AddRenderItem()
 
 	CreateMaterials();
 
-	u32* materials = new u32[modelData.somewhereAroundSubmeshCount];
-	for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
-	{
-		materials[i] = mtlID;
-	}
-	u32* texturedMaterials = new u32[modelData.somewhereAroundSubmeshCount];
-	for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
-	{
-		texturedMaterials[i] = texturedMaterialID;
-	}
+	constexpr bool USE_TEXTURES{ false };
 
-	editor::DropModelIntoScene(modelData.MeshFile, texturedMaterials);
+	if (USE_TEXTURES)
+	{
+		u32* texturedMaterials = new u32[modelData.somewhereAroundSubmeshCount];
+		for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
+		{
+			texturedMaterials[i] = texturedMaterialID;
+		}
+	}
+	else
+	{
+		u32* materials = new u32[modelData.somewhereAroundSubmeshCount];
+		for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
+		{
+			materials[i] = mtlID;
+		}
+		editor::DropModelIntoScene(modelData.MeshFile, materials);
+	}
 
 	//MeshTest planeMeshTest{};
 	//planeMeshTest.MeshID = LoadMesh(path); //FIXME: this assumes 1 LOD

@@ -18,6 +18,8 @@
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
 
+#include "tracy/Tracy.hpp"
+
 namespace mofu::graphics::d3d12 {
 	struct PrepareFrameRenderSystem : ecs::system::System<PrepareFrameRenderSystem>
 	{
@@ -43,6 +45,8 @@ namespace mofu::graphics::d3d12 {
 		//TODO: figure out caching stuff and not updating unchanged
 		void Update(const ecs::system::SystemUpdateData data)
 		{
+			ZoneScopedN("PrepareFrameRenderSystem");
+
 			ConstantBuffer& cbuffer{ core::CBuffer() };
 			gpass::GPassCache& frameCache{ gpass::GetGPassFrameCache() };
 			D3D12FrameInfo& frameInfo{ gpass::GetCurrentD3D12FrameInfo() };

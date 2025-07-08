@@ -30,7 +30,7 @@ Vec<EntityBlock*> blocks{};
 Vec<EntityData> entityData{};
 std::deque<u32> _freeEntityIDs; // TODO: recycling
 
-constexpr size_t ENTITY_BLOCK_SIZE{ 64 * 1024 }; // 64 KiB per block
+constexpr size_t ENTITY_BLOCK_SIZE{ 32 * 1024 }; // 64 KiB per block
 constexpr size_t ENTITY_BLOCK_ALIGNMENT{ 64 }; // 64 byte alignment
 memory::SlabAllocator<ENTITY_BLOCK_SIZE, ENTITY_BLOCK_ALIGNMENT> entityBlockAllocator;
 memory::PoolAllocator<EntityBlock> entityBlockHeaderPool;

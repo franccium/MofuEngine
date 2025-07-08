@@ -9,6 +9,8 @@
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
 
+#include "tracy/Tracy.hpp"
+
 namespace mofu::graphics::d3d12 {
 	Vec<f32> thresholds{};
 	Vec<id_t> renderItemIDs{};
@@ -18,10 +20,14 @@ namespace mofu::graphics::d3d12 {
 		//TODO: figure out caching stuff and not updating unchanged
 		void Update(const ecs::system::SystemUpdateData data)
 		{
+			ZoneScopedN("PrepareEngineFrameInfo");
 			graphics::FrameInfo frameInfo{};
 			
-			renderItemIDs.clear();
-			thresholds.clear();
+			if (renderItemIDs.empty())
+			{
+				renderItemIDs.clear();
+				thresholds.clear();
+			}
 			
 			u32 renderItemCount{ 0 };
 
@@ -29,14 +35,18 @@ namespace mofu::graphics::d3d12 {
 			frameInfo.AverageFrameTime = 16.7f;
 			frameInfo.CameraID = camera_id{ 0 };
 
-			for (auto [entity, transform, mesh, material]
-				: ecs::scene::GetRW<ecs::component::WorldTransform,
-					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
+			if (renderItemIDs.empty())
 			{
-				renderItemIDs.emplace_back(mesh.MeshID);
-				thresholds.emplace_back(0.f);
-				renderItemCount++;
+				for (auto [entity, transform, mesh, material]
+					: ecs::scene::GetRW<ecs::component::WorldTransform,
+						ecs::component::RenderMesh, ecs::component::RenderMaterial>())
+				{
+					renderItemIDs.emplace_back(mesh.MeshID);
+					thresholds.emplace_back(0.f);
+					renderItemCount++;
+				}
 			}
+			renderItemCount = renderItemIDs.size();
 
 			frameInfo.RenderItemCount = renderItemCount;
 			frameInfo.RenderItemIDs = renderItemIDs.data();

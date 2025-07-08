@@ -21,6 +21,12 @@
     <ClInclude Include="src\TestTimer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="External\tracy\public\tracy\TracyD3D12.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="External\tracy\public\tracy\Tracy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
@@ -30,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RenderingTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="External\tracy\public\TracyClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

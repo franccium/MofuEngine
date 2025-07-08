@@ -57,7 +57,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;TRACY_ENABLE;YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -67,7 +67,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\ExampleApp\External\tracy\public;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/EHsc %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>

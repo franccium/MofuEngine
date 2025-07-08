@@ -17,6 +17,8 @@
 #include "EngineAPI/ECS/SystemAPI.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 
+#include "tracy/Tracy.hpp"
+
 constexpr u32 WINDOW_COUNT{ 1 };
 
 using namespace mofu;
@@ -187,14 +189,16 @@ bool MofuInitialize()
 
 void MofuUpdate()
 {
+	ZoneScoped;
+
 	timer.Start();
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-	ecs::system::SystemUpdateData ecsUpdateData{};
-	ecsUpdateData.DeltaTime = 16.7f;
-	ecs::Update(ecsUpdateData);
-
-	Vec<f32> thresholds{ renderItemCount };
+	{
+		ZoneScopedN("ECS update");
+		ecs::system::SystemUpdateData ecsUpdateData{};
+		ecsUpdateData.DeltaTime = 16.7f;
+		ecs::Update(ecsUpdateData);
+	}
 
 	graphics::ui::StartNewFrame();
 
@@ -215,6 +219,8 @@ void MofuUpdate()
 		}
 	}
 	timer.End();
+
+	FrameMark;
 }
 
 void MofuShutdown()
