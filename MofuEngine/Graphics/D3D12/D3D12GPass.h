@@ -35,9 +35,11 @@ void Shutdown();
 bool CreateBuffers(u32v2 size);
 void SetBufferSize(u32v2 size);
 
-void DoDepthPrepass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info);
+void DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& info, u32 firstWorker);
 void Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info);
+void RenderMT(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& info);
 
+void ClearDepthStencilView(DXGraphicsCommandList* cmdList);
 void AddTransitionsForDepthPrepass(d3dx::D3D12ResourceBarrierList& barriers);
 void AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers);
 void AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers);

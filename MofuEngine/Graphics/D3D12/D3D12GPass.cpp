@@ -10,6 +10,8 @@
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "GPassCache.h"
 
+#include "tracy/Tracy.hpp"
+
 namespace mofu::graphics::d3d12::gpass {
 namespace {
 
@@ -275,13 +277,80 @@ SetBufferSize(u32v2 size)
 	}
 }
 
+void
+DepthPrepassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, u32 workStart, u32 workEnd)
+{
+	char name[25];
+	sprintf(name, "worker %u", workStart);
+	tracy::SetThreadName(name);
+	ZoneScopedNC("Depth Prepass Worker", tracy::Color::DarkOrange4);
+	const GPassCache& cache{ frameCache };
+	ID3D12RootSignature* currentRootSignature{ nullptr };
+	ID3D12PipelineState* currentPipelineState{ nullptr };
+
+	for (u32 i{ workStart }; i < workEnd; ++i)
+	{
+		if (currentRootSignature != cache.RootSignatures[i])
+		{
+			currentRootSignature = cache.RootSignatures[i];
+			cmdList->SetGraphicsRootSignature(currentRootSignature);
+			cmdList->SetGraphicsRootConstantBufferView(OpaqueRootParameters::GlobalShaderData, frameInfo.GlobalShaderData);
+		}
+
+		if (currentPipelineState != cache.DepthPipelineStates[i])
+		{
+			currentPipelineState = cache.DepthPipelineStates[i];
+			cmdList->SetPipelineState(currentPipelineState);
+		}
+
+		SetRootParameters(cmdList, i);
+
+		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
+		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+		cmdList->IASetIndexBuffer(&ibv);
+		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
+		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+	}
+}
+
 void 
-DoDepthPrepass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
+DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& frameInfo, u32 firstWorker)
 {
 	//TODO: testing removed, bring back when needed
 	//PrepareRenderFrame(frameInfo);
-
+	ZoneScopedNC("Depth Prepass Distribution", tracy::Color::DarkOrange1);
+	constexpr u32 WORKER_COUNT{ DEPTH_WORKERS };
 	const GPassCache& cache{ frameCache };
+	const u32 renderItemCount = cache.Size();
+	
+	const u32 itemsPerThread = (renderItemCount + WORKER_COUNT - 1) / WORKER_COUNT;
+	std::thread threads[WORKER_COUNT];
+
+	for (u32 i{ 0 }; i < WORKER_COUNT; ++i)
+	{
+		const u32 workStart = i * itemsPerThread;
+		const u32 workEnd = std::min(workStart + itemsPerThread, renderItemCount);
+
+		if (workStart < workEnd)
+		{
+			threads[i] = std::thread(DepthPrepassWorker, cmdLists[i], frameInfo, workStart, workEnd);
+		}
+		else
+		{
+			continue;
+		}
+	}
+
+	for (u32 i{ 0 }; i < WORKER_COUNT; ++i)
+	{
+		threads[i].join();
+	}
+	/*for (auto& t : threads)
+	{
+		t.join();
+	}*/
+
+	/*const GPassCache& cache{ frameCache };
 	const u32 renderItemCount{ cache.Size() };
 
 	ID3D12RootSignature* currentRootSignature{ nullptr };
@@ -309,7 +378,7 @@ DoDepthPrepass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 		cmdList->IASetIndexBuffer(&ibv);
 		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
 		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
-	}
+	}*/
 }
 
 void 
@@ -367,12 +436,92 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 #endif
 }
 
+void
+MainGPassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, u32 workStart, u32 workEnd)
+{
+	char name[25];
+	sprintf(name, "main gpass worker %u", workStart);
+	tracy::SetThreadName(name);
+	ZoneScopedNC("Main GPass Worker", tracy::Color::Green1);
+
+	const GPassCache& cache{ frameCache };
+	const u32 renderItemCount{ cache.Size() };
+
+	ID3D12RootSignature* currentRootSignature{ nullptr };
+	ID3D12PipelineState* currentPipelineState{ nullptr };
+
+	assert(cache.IsValid());
+
+	for (u32 i{ workStart }; i < workEnd; ++i)
+	{
+		if (currentRootSignature != cache.RootSignatures[i])
+		{
+			currentRootSignature = cache.RootSignatures[i];
+			cmdList->SetGraphicsRootSignature(currentRootSignature);
+			using idx = OpaqueRootParameters;
+			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+		}
+
+		if (currentPipelineState != cache.GPassPipelineStates[i])
+		{
+			currentPipelineState = cache.GPassPipelineStates[i];
+			cmdList->SetPipelineState(currentPipelineState);
+		}
+
+		SetRootParameters(cmdList, i);
+
+		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
+		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+		cmdList->IASetIndexBuffer(&ibv);
+		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
+		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+		//log::Info("Draw: index count %u ", indexCount);
+	}
+}
+
+void 
+RenderMT(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& info)
+{
+	ZoneScopedNC("Depth Prepass Distribution", tracy::Color::DarkOrange1);
+	constexpr u32 WORKER_COUNT{ GPASS_WORKERS };
+	const GPassCache& cache{ frameCache };
+	const u32 renderItemCount = cache.Size();
+
+	const u32 itemsPerThread = (renderItemCount + WORKER_COUNT - 1) / WORKER_COUNT;
+	std::thread threads[WORKER_COUNT];
+
+	for (u32 i{ 0 }; i < WORKER_COUNT; ++i)
+	{
+		const u32 workStart = i * itemsPerThread;
+		const u32 workEnd = std::min(workStart + itemsPerThread, renderItemCount);
+
+		if (workStart < workEnd)
+		{
+			threads[i] = std::thread(MainGPassWorker, cmdLists[i], info, workStart, workEnd);
+		}
+		else
+		{
+			continue;
+		}
+	}
+
+	for (u32 i{ 0 }; i < WORKER_COUNT; ++i)
+	{
+		threads[i].join();
+	}
+}
+
 void 
 AddTransitionsForDepthPrepass(d3dx::D3D12ResourceBarrierList& barriers)
 {
-	barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
+	/*barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
+
+	barriers.AddTransitionBarrier(gpassDepthBuffer.Resource(),
+		D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE);*/
+
 
 	barriers.AddTransitionBarrier(gpassDepthBuffer.Resource(),
 		D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
@@ -382,9 +531,16 @@ AddTransitionsForDepthPrepass(d3dx::D3D12ResourceBarrierList& barriers)
 void 
 AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers)
 {
+	//barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
+	//	D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+	//	D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
+
+	//barriers.AddTransitionBarrier(gpassDepthBuffer.Resource(),
+	//	D3D12_RESOURCE_STATE_DEPTH_WRITE,
+	//	D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
+		D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	barriers.AddTransitionBarrier(gpassDepthBuffer.Resource(),
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
@@ -399,11 +555,18 @@ AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
-void 
-SetRenderTargetsForDepthPrepass(DXGraphicsCommandList* cmdList)
+void
+ClearDepthStencilView(DXGraphicsCommandList* cmdList)
 {
 	const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gpassDepthBuffer.Dsv() };
 	cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 0.f, 0, 0, nullptr);
+}
+
+void
+SetRenderTargetsForDepthPrepass(DXGraphicsCommandList* cmdList)
+{
+	const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gpassDepthBuffer.Dsv() };
+	//cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 0.f, 0, 0, nullptr);
 	cmdList->OMSetRenderTargets(0, nullptr, 0, &dsv);
 }
 

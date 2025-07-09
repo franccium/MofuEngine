@@ -65,6 +65,25 @@ using DXGIFactory = IDXGIFactory7;
 
 namespace mofu::graphics::d3d12 {
 constexpr u32 FRAME_BUFFER_COUNT{ 3 };
+
+constexpr u32 COMMAND_LIST_WORKERS{ 9 };
+
+constexpr u32 DEPTH_WORKERS{ 3 };
+constexpr u32 DEPTH_SETUP_LIST{ 0 };
+constexpr u32 FIRST_DEPTH_WORKER{ 1 };
+static_assert(FIRST_DEPTH_WORKER == (COMMAND_LIST_WORKERS == 1) ? 0 : 1);
+static_assert(DEPTH_WORKERS <= COMMAND_LIST_WORKERS);
+
+constexpr u32 MAIN_SETUP_LIST{ DEPTH_WORKERS + FIRST_DEPTH_WORKER };
+constexpr u32 FIRST_MAIN_GPASS_WORKER{ MAIN_SETUP_LIST + 1 };
+constexpr u32 GPASS_WORKERS{ 3 };
+
+constexpr u32 CLOSING_LIST_INDEX{ FIRST_MAIN_GPASS_WORKER + GPASS_WORKERS };
+static_assert(CLOSING_LIST_INDEX == COMMAND_LIST_WORKERS - 1);
+
+constexpr u32 BUNDLE_COUNT{ 6 };
+
+constexpr u32 MAIN_BUNDLE_INDEX{ DEPTH_WORKERS };
 }
 
 #include "D3D12Resources.h"

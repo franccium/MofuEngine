@@ -11,7 +11,6 @@
 
 #define PRINT_DEBUG 0
 
-#if 0
 namespace mofu::ecs::system {
 	struct InputTestSystem : ecs::system::System<InputTestSystem>
 	{
@@ -32,4 +31,3 @@ namespace mofu::ecs::system {
 	};
 	REGISTER_SYSTEM(InputTestSystem, ecs::system::SystemGroup::PreUpdate, 0);
 }
-#endif
