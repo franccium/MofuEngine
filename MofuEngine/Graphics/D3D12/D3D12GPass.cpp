@@ -176,8 +176,28 @@ PrepareRenderFrame(const D3D12FrameInfo& frameInfo)
 	}
 }
 
+void
+SetRootParametersDepth(DXGraphicsCommandList* cmdList, u32 cacheItemIndex)
+{
+	GPassCache& cache{ frameCache };
+
+	const MaterialType::type materialType{ cache.MaterialTypes[cacheItemIndex] };
+	switch (materialType)
+	{
+	case MaterialType::Opaque:
+	{
+		using params = OpaqueRootParameters;
+		cmdList->SetGraphicsRootConstantBufferView(params::PerObjectData, cache.PerObjectData[cacheItemIndex]);
+		cmdList->SetGraphicsRootShaderResourceView(params::PositionBuffer, cache.PositionBuffers[cacheItemIndex]);
+		//TODO: might want to avoid using element buffer in the vertex shader
+		cmdList->SetGraphicsRootShaderResourceView(params::ElementBuffer, cache.ElementBuffers[cacheItemIndex]);
+	}
+	break;
+	}
+}
+
 void 
-SetRootParameters(DXGraphicsCommandList* cmdList, u32 cacheItemIndex)
+SetRootParametersMain(DXGraphicsCommandList* cmdList, u32 cacheItemIndex)
 {
 	GPassCache& cache{ frameCache };
 
@@ -303,7 +323,7 @@ DepthPrepassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameIn
 			cmdList->SetPipelineState(currentPipelineState);
 		}
 
-		SetRootParameters(cmdList, i);
+		SetRootParametersDepth(cmdList, i);
 
 		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
 		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
@@ -331,13 +351,9 @@ DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& fra
 		const u32 workStart = i * itemsPerThread;
 		const u32 workEnd = std::min(workStart + itemsPerThread, renderItemCount);
 
-		if (workStart < workEnd)
+		if (workStart <= workEnd)
 		{
 			threads[i] = std::thread(DepthPrepassWorker, cmdLists[i], frameInfo, workStart, workEnd);
-		}
-		else
-		{
-			continue;
 		}
 	}
 
@@ -424,7 +440,7 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 			cmdList->SetPipelineState(currentPipelineState);
 		}
 
-		SetRootParameters(cmdList, i);
+		SetRootParametersMain(cmdList, i);
 
 		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
 		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
@@ -468,7 +484,7 @@ MainGPassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo,
 			cmdList->SetPipelineState(currentPipelineState);
 		}
 
-		SetRootParameters(cmdList, i);
+		SetRootParametersMain(cmdList, i);
 
 		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
 		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
@@ -498,10 +514,6 @@ RenderMT(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& info)
 		if (workStart < workEnd)
 		{
 			threads[i] = std::thread(MainGPassWorker, cmdLists[i], info, workStart, workEnd);
-		}
-		else
-		{
-			continue;
 		}
 	}
 
@@ -570,12 +582,18 @@ SetRenderTargetsForDepthPrepass(DXGraphicsCommandList* cmdList)
 	cmdList->OMSetRenderTargets(0, nullptr, 0, &dsv);
 }
 
+void
+ClearMainBufferView(DXGraphicsCommandList* cmdList)
+{
+	const D3D12_CPU_DESCRIPTOR_HANDLE rtv{ gpassMainBuffer.Rtv(0) };
+	cmdList->ClearRenderTargetView(rtv, CLEAR_VALUE, 0, nullptr);
+}
+
 void 
 SetRenderTargetsForGPass(DXGraphicsCommandList* cmdList)
 {
 	const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gpassDepthBuffer.Dsv() };
 	const D3D12_CPU_DESCRIPTOR_HANDLE rtv{ gpassMainBuffer.Rtv(0) };
-	cmdList->ClearRenderTargetView(rtv, CLEAR_VALUE, 0, nullptr);
 	cmdList->OMSetRenderTargets(1, &rtv, 0, &dsv);
 }
 

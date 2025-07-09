@@ -39,11 +39,12 @@ void DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo
 void Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& info);
 void RenderMT(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& info);
 
-void ClearDepthStencilView(DXGraphicsCommandList* cmdList);
 void AddTransitionsForDepthPrepass(d3dx::D3D12ResourceBarrierList& barriers);
 void AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers);
 void AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers);
 
+void ClearDepthStencilView(DXGraphicsCommandList* cmdList);
+void ClearMainBufferView(DXGraphicsCommandList* cmdList);
 void SetRenderTargetsForDepthPrepass(DXGraphicsCommandList* cmdList);
 void SetRenderTargetsForGPass(DXGraphicsCommandList* cmdList);
 
