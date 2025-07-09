@@ -16,6 +16,29 @@ ImportUnknown([[maybe_unused]] std::filesystem::path path)
 	assert(false);
 }
 
+void
+ImportTexture(std::filesystem::path path)
+{
+	//assert(std::filesystem::exists(path));
+	texture::TextureData data{};
+	data.ImportSettings.Files = path.string(); //TODO: char* 
+	data.ImportSettings.FileCount = 1;
+	data.ImportSettings.Compress = true;
+	texture::Import(&data);
+	if (data.Info.ImportError != texture::ImportError::Succeeded)
+	{
+		log::Error("Texture import error: ", data.Info.ImportError);
+	}
+
+	PackTextureForEngine(data, path.filename().string());
+	PackTextureForEditor(data, path.filename().string());
+	//textureData.SetTextureInfoFromData(texture);
+	//if (!texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap)) throw new InvalidDataException();
+}
+
+
+
+
 //TODO: import fbx
 //// GPU vertex representation.
 //// In practice you would need to use more compact custom vector types as
@@ -102,7 +125,7 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 		mesh.Name = std::string(name) + "_part_" + std::to_string(part.index);
 		mesh.LodThreshold = 0.f;
 		mesh.ElementType = ElementType::StaticNormalTexture; // TODO: temporary
-		
+
 		Vec<Vertex>& vertices{ mesh.Vertices };
 		Vec<u32> partIndices{};
 
@@ -156,6 +179,14 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 		}
 
 		lodGroup.Meshes.emplace_back(mesh);
+	}
+
+	for (auto mat : node->materials)
+	{
+		if (mat->pbr.base_color.has_value && mat->pbr.base_color.texture_enabled)
+		{
+			std::string p{ mat->pbr.base_color.texture->absolute_filename.data };
+		}
 	}
 }
 
@@ -284,25 +315,6 @@ ImportMesh(std::filesystem::path path)
 //	texture.Flags = (TextureFlags)Info.Flags;
 //}
 
-void
-ImportTexture(std::filesystem::path path)
-{
-	texture::TextureData data{};
-	data.ImportSettings.Files = path.string(); //TODO: char* 
-	data.ImportSettings.FileCount = 1;
-	data.ImportSettings.Compress = true;
-	texture::Import(&data);
-	if (data.Info.ImportError != texture::ImportError::Succeeded)
-	{
-		log::Error("Texture import error: ", data.Info.ImportError);
-	}
-
-	PackTextureForEngine(data, path.filename().string());
-	PackTextureForEditor(data, path.filename().string());
-	//textureData.SetTextureInfoFromData(texture);
-	//if (!texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap)) throw new InvalidDataException();
-}
-
 using AssetImporter = void(*)(std::filesystem::path path);
 constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
@@ -344,5 +356,18 @@ ImportAsset(std::filesystem::path path)
 	log::Error("Unknown asset type for file: %s", path.string().c_str());
 }
 
+void
+ReimportTexture(texture::TextureData& data, std::filesystem::path originalPath)
+{
+	texture::Import(&data);
+	if (data.Info.ImportError != texture::ImportError::Succeeded)
+	{
+		log::Error("Texture import error: ", data.Info.ImportError);
+	}
+
+	//TODO: paths
+	PackTextureForEngine(data, originalPath.filename().string());
+	PackTextureForEditor(data, originalPath.filename().string());
+}
 
 }

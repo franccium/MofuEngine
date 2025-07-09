@@ -7,6 +7,6 @@ namespace mofu::editor::material {
 bool InitializeMaterialEditor();
 void RenderMaterialEditor();
 
-void OpenMaterialEditor(ecs::component::RenderMaterial mat);
+void OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat);
 void OpenMaterialCreator(ecs::Entity entityID);
 }

@@ -265,11 +265,11 @@ ExampleAssetsBrowser::Draw(const char* title, bool* p_open)
                 }
             }
 
-            if (path.extension() == ".tex")
+            if (path.extension() == ".etex")
             {
-                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {
-                    editor::OpenTextureView(path);
+                    editor::texture::OpenTextureView(path);
                 }
             }
 

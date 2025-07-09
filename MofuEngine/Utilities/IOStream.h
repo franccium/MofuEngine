@@ -25,6 +25,15 @@ public:
 		_position += length;
 	}
 
+	const char* ReadStringWithLength()
+	{
+		u32 length{ Read<u32>() };
+		char* buffer{ (char*)_alloca(length + 1) };
+		ReadBytes((u8*)buffer, length);
+		buffer[length] = '\0';
+		return buffer;
+	}
+
 	constexpr void Skip(u64 offset)
 	{
 		_position += offset;

@@ -62,6 +62,13 @@ namespace mofu::graphics::d3d12 {
 			const geometry::SubmeshViewsCache submeshViewCache{ frameCache.GetSubmeshViewsCache() };
 			geometry::GetSubmeshViews(frameCache.SubmeshGpuIDs, renderItemCount, submeshViewCache);
 
+			for (auto [entity, material]
+				: ecs::scene::GetRW<ecs::component::RenderMaterial>())
+			{
+				u32 renderItemIndex = id::Index(entity) - 1;
+				frameCache.MaterialIDs[renderItemIndex] = material.MaterialIDs[0];
+			}
+
 			const material::MaterialsCache materialsCache{ frameCache.GetMaterialsCache() };
 			material::GetMaterials(frameCache.MaterialIDs, renderItemCount, materialsCache, frameCache.DescriptorIndexCount);
 

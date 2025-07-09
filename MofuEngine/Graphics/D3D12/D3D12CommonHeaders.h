@@ -67,7 +67,7 @@ namespace mofu::graphics::d3d12 {
 
 constexpr u32 FRAME_BUFFER_COUNT{ 3 };
 
-#define MT 1
+#define MT 0
 
 #if MT
 

@@ -81,4 +81,9 @@ void DisplayFloat(f32 v, const char* label)
 	ImGui::Text("%.2f", v);
 }
 
+void DisplaySliderUint(const char* label, u32* v, u32 minVal, u32 maxVal)
+{
+	ImGui::SliderScalar(label, ImGuiDataType_U32, v, &minVal, &maxVal);
+}
+
 }

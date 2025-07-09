@@ -39,7 +39,9 @@ struct TextureDimension
 		Texture1D,
 		Texture2D,
 		Texture3D,
-		TextureCube
+		TextureCube,
+
+		Count
 	};
 };
 

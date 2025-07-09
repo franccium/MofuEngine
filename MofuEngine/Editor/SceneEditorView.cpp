@@ -172,7 +172,7 @@ struct SceneHierarchy
                     if (ImGui::Button("Edit Material"))
                     {
                         ecs::component::RenderMaterial mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entityData.id) };
-                        material::OpenMaterialEditor(mat);
+                        material::OpenMaterialEditor(entityData.id, mat);
                     }
                 }
                 else

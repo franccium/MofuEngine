@@ -120,10 +120,10 @@ struct ShaderFlags
 	{
 		None = 0x00,
 		Vertex = 0x01,
-		Hull = 0x02,
+		Pixel = 0x02,
 		Domain = 0x04,
-		Geometry = 0x08,
-		Pixel = 0x10,
+		Hull = 0x08,
+		Geometry = 0x10,
 		Compute = 0x20,
 		Amplification = 0x40,
 		Mesh = 0x80
@@ -135,10 +135,10 @@ struct ShaderType
 	enum type : u32
 	{
 		Vertex = 0,
-		Hull,
-		Domain,
-		Geometry,
 		Pixel,
+		Domain,
+		Hull,
+		Geometry,
 		Compute,
 		Amplification,
 		Mesh,

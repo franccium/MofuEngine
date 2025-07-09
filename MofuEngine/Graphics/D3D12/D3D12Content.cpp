@@ -507,12 +507,6 @@ RemoveRenderItem(id_t id)
 {
 	std::lock_guard lock{ renderItemMutex };
 	const id_t* const buffer{ renderItemIDs[id].get() };
-	const u32 renderItemCount{ buffer[1] };
-	const id_t* const itemIDs{ &buffer[2] };
-	for (u32 i{ 0 }; i < renderItemCount; ++i)
-	{
-		renderItems.remove(itemIDs[i]);
-	}
 	renderItemIDs.remove(id);
 }
 
@@ -557,7 +551,7 @@ GetRenderItems(const id_t* const itemIDs, u32 idCount, const RenderItemsCache& c
 
 	std::lock_guard lock{ renderItemMutex };
 	std::lock_guard psoLock{ psoMutex };
-	for (u32 i{ 0 }; i < idCount; ++i) // TODO: replace with submesh count
+	for (u32 i{ 0 }; i < idCount; ++i)
 	{
 		const D3D12RenderItem& item{ renderItems[itemIDs[i]] };
 		assert(id::IsValid(item.EntityID) && id::IsValid(item.SubmeshGpuID)

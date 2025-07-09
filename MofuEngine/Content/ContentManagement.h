@@ -3,6 +3,7 @@
 #include "Utilities/IOStream.h"
 #include <filesystem>
 #include "Graphics/GeometryData.h"
+#include "Graphics/Renderer.h"
 #include "PrimitiveMeshGeneration.h"
 
 namespace mofu::content {
@@ -54,4 +55,6 @@ void GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info);
 void SaveGeometry(const MeshGroupData& data, std::filesystem::path path);
 
 [[nodiscard]] id_t CreateResourceFromAsset(std::filesystem::path path, AssetType::type assetType);
+
+[[nodiscard]] id_t CreateMaterial(graphics::MaterialInitInfo initInfo);
 }

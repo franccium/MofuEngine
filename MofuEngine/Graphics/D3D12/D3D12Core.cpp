@@ -543,7 +543,7 @@ DeferredRelease(IUnknown* resource)
 } // namespace detail
 
 void
-RenderSurfaceMT(surface_id id, FrameInfo frameInfo)
+RenderSurface(surface_id id, FrameInfo frameInfo)
 {
     gfxCommand.BeginFrame();
     TracyD3D12NewFrame(tracyQueueContext);
@@ -603,6 +603,7 @@ RenderSurfaceMT(surface_id id, FrameInfo frameInfo)
         constexpr u32 LAST_DEPTH_WORKER{ DEPTH_WORKERS + FIRST_DEPTH_WORKER };
         {
             ZoneScopedNC("Depth Prepass Preparation", tracy::Color::DarkSeaGreen2);
+            // the first command list clears the depth buffer and prepares it to be written to
             gpass::AddTransitionsForDepthPrepass(barriers);
             barriers.ApplyBarriers(cmdListDepthSetup);
             gpass::ClearDepthStencilView(cmdListDepthSetup);
@@ -650,8 +651,9 @@ RenderSurfaceMT(surface_id id, FrameInfo frameInfo)
         {
             ZoneScopedNC("Main GPass Preparation", tracy::Color::PaleVioletRed2);
 
-            // the first command list has to setup the depth buffer to be read from, but can do it only after the others finished their work on depth  
-
+            // the first command list has to setup the depth buffer to be read from, but can do it only after the others finished their work on depth;
+            // transitions and clears the main buffer
+            
             gpass::AddTransitionsForGPass(barriers);
             barriers.ApplyBarriers(cmdListGPassSetup);
             gpass::ClearMainBufferView(cmdListGPassSetup);
@@ -769,195 +771,6 @@ u32
 SurfaceHeight(surface_id id)
 {
     return surfaces[id].Height();
-}
-
-void
-RenderSurface(surface_id id, FrameInfo frameInfo)
-{
-    RenderSurfaceMT(id, frameInfo);
-    return;
-
-    gfxCommand.BeginFrame();
-    TracyD3D12NewFrame(tracyQueueContext);
-
-    DXGraphicsCommandList* const cmdListSetup{ gfxCommand.CommandList(0) };
-    DXGraphicsCommandList* const cmdListSecond{ gfxCommand.CommandList(COMMAND_LIST_WORKERS - 1) };
-    DXGraphicsCommandList* const* cmdLists{ gfxCommand.CommandLists() };
-
-    const u32 frameIndex{ CurrentFrameIndex() };
-
-    ConstantBuffer& cbuffer{ constantBuffers[frameIndex] };
-    cbuffer.Clear();
-
-    if (deferredReleasesFlag[frameIndex])
-    {
-        ProcessDeferredReleases(frameIndex);
-    }
-
-    const D3D12Surface& surface{ surfaces[id] };
-    DXResource* const currentBackBuffer{ surface.BackBuffer() };
-
-    f32 deltaTime{ 16.7f };
-    const D3D12FrameInfo d3d12FrameInfo{ GetD3D12FrameInfo(frameInfo, cbuffer, surface, frameIndex, deltaTime) };
-
-    d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
-
-    gpass::StartNewFrame(d3d12FrameInfo);
-
-    gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
-
-    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
-
-    {
-        TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Render Surface Frame Start", tracy::Color::Violet);
-
-        for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
-        {
-            DXGraphicsCommandList* const cmdList{ cmdLists[i] };
-
-            cmdList->SetDescriptorHeaps(1, &heaps[0]);
-
-            cmdList->RSSetViewports(1, surface.Viewport());
-            cmdList->RSSetScissorRects(1, surface.ScissorRect());
-        }
-
-        ui::SetupGUIFrame();
-
-        //TODO: for now just do that here, would need to rewrite everything
-        ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
-    }
-
-    //{
-    //    // Depth Prepass
-    //    TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Depth Prepass", tracy::Color::DarkSeaGreen3);
-    //    barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY);
-    //    gpass::AddTransitionsForDepthPrepass(barriers);
-    //    barriers.ApplyBarriers(cmdListSetup);
-
-    //    for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
-    //    {
-    //        DXGraphicsCommandList* const cmdList{ cmdLists[i] };
-    //        gpass::SetRenderTargetsForDepthPrepass(cmdList);
-    //    }
-    //    gpass::DoDepthPrepass(cmdLists, d3d12FrameInfo);
-    //}
-    static bool depthRecorded{ false };
-    static bool mainRecorded{ false };
-    {
-        // Depth Prepass
-        TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Depth Prepass", tracy::Color::DarkSeaGreen3);
-
-        {
-            ZoneScopedNC("Depth Prepass Preparation", tracy::Color::DarkSeaGreen2);
-            gpass::AddTransitionsForDepthPrepass(barriers);
-            barriers.ApplyBarriers(cmdListSetup);
-            gpass::ClearDepthStencilView(cmdListSetup);
-            gpass::SetRenderTargetsForDepthPrepass(cmdListSetup);
-        }
-
-        DXGraphicsCommandList* const depthBundle{ gfxCommand.CommandListBundle(0) };
-
-        //for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
-        //{
-        //    DXGraphicsCommandList* const cmdList{ cmdLists[i] };
-        //    gpass::SetRenderTargetsForDepthPrepass(cmdList);
-        //}
-        //gpass::DoDepthPrepass(cmdLists, d3d12FrameInfo);
-
-        {
-            ZoneScopedNC("Depth Prepass Execution", tracy::Color::DarkSeaGreen1);
-            if (!depthRecorded)
-            {
-                depthBundle->SetDescriptorHeaps(1, &heaps[0]);
-                gpass::DoDepthPrepass(&depthBundle, d3d12FrameInfo, 0);
-                depthRecorded = true;
-                gfxCommand.CommandListBundle(0)->Close();
-            }
-            else
-            {
-                cmdListSetup->ExecuteBundle(depthBundle);
-            }
-        }
-    }
-
-    // Main GPass
-    {
-        //TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Main GPass", tracy::Color::PaleVioletRed3);
-        //gpass::AddTransitionsForGPass(barriers);
-
-        //barriers.ApplyBarriers(cmdListSetup);
-        //gpass::SetRenderTargetsForGPass(cmdListSecond);
-        //gpass::Render(cmdListSecond, d3d12FrameInfo);
-
-        TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Main GPass", tracy::Color::PaleVioletRed3);
-
-        {
-            ZoneScopedNC("Main GPass Preparation", tracy::Color::PaleVioletRed2);
-            gpass::AddTransitionsForGPass(barriers);
-
-            barriers.ApplyBarriers(cmdListSetup);
-            gpass::SetRenderTargetsForGPass(cmdListSetup);
-        }
-
-        DXGraphicsCommandList* const mainBundle{ gfxCommand.CommandListBundle(1) };
-
-        {
-            ZoneScopedNC("Main GPass Execution", tracy::Color::PaleVioletRed1);
-            if (!mainRecorded)
-            {
-                mainBundle->SetDescriptorHeaps(1, &heaps[0]);
-                gpass::Render(mainBundle, d3d12FrameInfo);
-                mainRecorded = true;
-                gfxCommand.CommandListBundle(1)->Close();
-            }
-            else
-            {
-                cmdListSetup->ExecuteBundle(mainBundle);
-            }
-        }
-    }
-
-    // Post Processing
-    {
-        TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Post Processing", tracy::Color::Blue2);
-        {
-            ZoneScopedNC("Post Processing CPU", tracy::Color::Blue1);
-            gpass::AddTransitionsForPostProcess(barriers);
-            barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-            barriers.ApplyBarriers(cmdListSetup);
-
-            fx::DoPostProcessing(cmdListSecond, d3d12FrameInfo, surface.Rtv());
-        }
-    }
-
-    // Editor UI
-    {
-        TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Editor UI", tracy::Color::LightSkyBlue3);
-
-        {
-            ZoneScopedNC("Editor UI CPU", tracy::Color::LightSkyBlue2);
-            ui::RenderGUI(cmdListSecond);
-            ui::RenderSceneIntoImage(cmdListSecond, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
-#if RENDER_2D_TEST
-#if RENDER_SCENE_ONTO_GUI_IMAGE
-            //TODO: make it work with post processing
-            ui::RenderSceneIntoImage(cmdListSetup, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
-#else
-            // TODO:
-#endif // RENDER_SCENE_ONTO_GUI_IMAGE
-#else
-            // render 3d scene
-#endif // RENDER_2D_TEST
-
-            ui::EndGUIFrame(cmdListSecond);
-        }
-    }
-
-    d3dx::TransitionResource(currentBackBuffer, cmdListSetup, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-
-    gfxCommand.EndFrame(surface);
-
-    TracyD3D12Collect(tracyQueueContext);
 }
 
 }

@@ -3,10 +3,12 @@
 #include "Content/ContentManagement.h"
 #include "Graphics/UIRenderer.h"
 #include "Content/TextureImport.h"
+#include "Content/AssetImporter.h"
+#include "ValueDisplay.h"
 
 #include "imgui.h"
 
-namespace mofu::editor {
+namespace mofu::editor::texture {
 namespace {
 id_t textureID{ id::INVALID_ID };
 bool isOpen{ false };
@@ -15,9 +17,20 @@ ImTextureID imTextureID{};
 u32 selectedSlice = 0;
 u32 selectedMip = 0;
 
+constexpr const char* DIMENSION_TO_STRING[content::texture::TextureDimension::Count]{
+	"Texture 1D",
+	"Texture 2D",
+	"Texture 3D",
+	"Cubemap",
+};
+constexpr const char* FORMAT_STRING{ "TODO" };
+
+std::filesystem::path textureAssetFilePath{};
+
 void
 FillOutTextureViewData(std::filesystem::path textureAssetPath)
 {
+	textureAssetFilePath = textureAssetPath;
 	std::unique_ptr<u8[]> buffer;
 	u64 size{ 0 };
 	content::ReadAssetFileNoVersion(textureAssetPath, buffer, size, content::AssetType::Texture);
@@ -25,9 +38,7 @@ FillOutTextureViewData(std::filesystem::path textureAssetPath)
 
 	util::BlobStreamReader reader{ buffer.get() };
 	content::texture::TextureImportSettings& importSettings{ texture.ImportSettings };
-	u32 filesLength{ reader.Read<u32>() };
-	char* filesBuffer{ (char*)_alloca(filesLength) };
-	reader.ReadBytes((u8*)filesBuffer, filesLength);
+	const char* filesBuffer{ reader.ReadStringWithLength() };
 	importSettings.Files = std::string{ filesBuffer };
 	importSettings.FileCount = reader.Read<u32>();
 	importSettings.Dimension = (content::texture::TextureDimension::Dimension)reader.Read<u32>();
@@ -87,6 +98,17 @@ FillOutTextureViewData(std::filesystem::path textureAssetPath)
 
 }
 
+void
+ReimportTexture()
+{
+	content::texture::TextureData data{};
+	data.ImportSettings = texture.ImportSettings;
+	
+	content::ReimportTexture(data, textureAssetFilePath);
+
+	OpenTextureView(textureAssetFilePath);
+}
+
 void 
 RenderTextureWithConfig()
 {
@@ -101,32 +123,45 @@ RenderTextureWithConfig()
 	ImGui::Text("Mip:"); ImGui::SameLine();
 	ImGui::SliderInt("##Mip", (int*)&selectedMip, 0, maxMip - 1);
 
-	if (selectedSlice >= maxSlice || selectedMip >= maxMip || !texture.Slices) {
-		ImGui::TextColored(ImVec4(1, 0, 0, 1), "Invalid slice or mip selection");
-		ImGui::End();
-		return;
-	}
-
-	bool changed = false;
-
+	content::texture::TextureImportSettings& settings{ texture.ImportSettings };
 	ImGui::SeparatorText("Import Settings");
-	changed |= ImGui::Checkbox("Compress", (bool*)&texture.ImportSettings.Compress);
-	changed |= ImGui::Checkbox("Prefilter Cubemap", (bool*)&texture.ImportSettings.PrefilterCubemap);
-
-	if (changed) {
-		ImGui::TextColored(ImVec4(1, 1, 0, 1), "Settings updated");
+	ImGui::TextUnformatted("Files:");
+	for (std::string_view s : content::SplitString(settings.Files, ';'))
+	{
+		ImGui::TextUnformatted(s.data());
+	}
+	if (ImGui::BeginCombo("Dimension", DIMENSION_TO_STRING[settings.Dimension]))
+	{
+		for (u32 i{ 0 }; i < content::texture::TextureDimension::Count; ++i)
+		{
+			const char* dimStr{ DIMENSION_TO_STRING[i] };
+			bool chosen{ i == settings.Dimension };
+			if (ImGui::Selectable(dimStr, chosen))
+				settings.Dimension = (content::texture::TextureDimension::Dimension)i;
+			if (chosen)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
 	}
 
-	if (ImGui::Button("Reimport")) {
-		// ReimportTexture(texture);
+	DisplaySliderUint("Mip Levels", &settings.MipLevels, 0, 14);
+	ImGui::SliderFloat("Alpha Threshold", &settings.AlphaThreshold, 0.f, 1.f);
+	ImGui::TextUnformatted("Format: "); ImGui::SameLine();
+	ImGui::TextUnformatted(FORMAT_STRING);
+	DisplaySliderUint("Cubemap Size", &settings.CubemapSize, 16, 4096);
+
+	ImGui::Checkbox("Prefer BC7", (bool*)&settings.PreferBC7);
+	ImGui::Checkbox("Compress", (bool*)&settings.Compress);
+	ImGui::Checkbox("Prefilter Cubemap", (bool*)&settings.PrefilterCubemap);
+	ImGui::Checkbox("Mirror Cubemap", (bool*)&settings.MirrorCubemap);
+
+	if (ImGui::Button("Reimport")) 
+	{
+		ReimportTexture();
 	}
 
 	ImageSlice* slice = &texture.Slices[selectedSlice][selectedMip];
-	if (!slice || !slice->RawContent) {
-		ImGui::TextColored(ImVec4(1, 0, 0, 1), "No slice content.");
-		ImGui::End();
-		return;
-	}
+	assert(slice && slice->RawContent);
 
 	ImGui::SeparatorText("Texture Info");
 	ImGui::Text("Dimensions: %ux%u", slice->Width, slice->Height);
@@ -134,6 +169,7 @@ RenderTextureWithConfig()
 	ImGui::Text("Slice Pitch: %u", slice->SlicePitch);
 	ImGui::Text("Format: 0x%X", texture.Format);
 
+	ImGui::NextColumn();
 	ImGui::SeparatorText("Preview");
 	ImVec2 imageSize{ (f32)slice->Width, (f32)slice->Height };
 	ImGui::Image(imTextureID, ImGui::GetContentRegionAvail(), { 0, 0 }, { 1, 1 });
@@ -146,10 +182,20 @@ RenderTextureWithConfig()
 void
 OpenTextureView(std::filesystem::path textureAssetPath)
 {
-	std::filesystem::path editorAsset{ "Assets/Generated/testTextureEditorPacked.tex" }; //TODO: placeholder
-	FillOutTextureViewData(editorAsset);
+	FillOutTextureViewData(textureAssetPath);
 
-	textureID = content::CreateResourceFromAsset(textureAssetPath, content::AssetType::Texture);
+	//TODO: placeholder solution
+	std::filesystem::path engineAssetPath{ textureAssetPath };
+	engineAssetPath.replace_extension(".tex");
+	textureID = content::CreateResourceFromAsset(engineAssetPath, content::AssetType::Texture);
+	imTextureID = (ImTextureID)graphics::ui::GetImTextureID(textureID);
+	assert(id::IsValid(textureID) && imTextureID);
+	isOpen = true;
+}
+
+void
+OpenTextureView(id_t textureID)
+{
 	imTextureID = (ImTextureID)graphics::ui::GetImTextureID(textureID);
 	assert(id::IsValid(textureID) && imTextureID);
 	isOpen = true;

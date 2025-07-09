@@ -235,7 +235,7 @@ private:
         return args;
     }
 
-	constexpr static const char* SHADER_PROFILES[]{ "vs_6_6", "hs_6_6", "ds_6_6", "gs_6_6", "ps_6_6", "cs_6_6", "as_6_6", "ms_6_6" };
+	constexpr static const char* SHADER_PROFILES[]{ "vs_6_6", "ps_6_6", "ds_6_6", "hs_6_6", "gs_6_6", "cs_6_6", "as_6_6", "ms_6_6" };
 	static_assert(_countof(SHADER_PROFILES) == graphics::ShaderType::Count);
 
 	ComPtr<IDxcCompiler3> _compiler{ nullptr };

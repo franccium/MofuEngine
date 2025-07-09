@@ -143,6 +143,12 @@ CreateResourceFromAsset(std::filesystem::path path, AssetType::type assetType)
     return assetID;
 }
 
+id_t 
+CreateMaterial(graphics::MaterialInitInfo initInfo)
+{
+    return content::CreateResourceFromBlob(&initInfo, content::AssetType::Material);
+}
+
 void
 ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type)
 {

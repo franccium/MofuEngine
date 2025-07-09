@@ -24,7 +24,7 @@ RenderEditorGUI()
 {
     RenderSceneEditorView();
 	RenderAssetBrowserGUI();
-    RenderTextureView();
+    texture::RenderTextureView();
     material::RenderMaterialEditor();
 }
 

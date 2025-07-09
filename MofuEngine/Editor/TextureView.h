@@ -4,7 +4,7 @@
 #include <array>
 #include "Content/TextureImport.h"
 
-namespace mofu::editor
+namespace mofu::editor::texture
 {
 struct ImageSlice
 {
@@ -29,5 +29,6 @@ struct ViewableTexture
 };
 
 void OpenTextureView(std::filesystem::path textureAssetPath);
+void OpenTextureView(id_t textureID);
 void RenderTextureView();
 }
