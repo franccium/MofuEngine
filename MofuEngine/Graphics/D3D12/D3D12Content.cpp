@@ -296,6 +296,7 @@ GetMaterials(const id_t* const materialIds, u32 materialCount, const MaterialsCa
         cache.DescriptorIndices[i] = stream.DescriptorIndices();
 		cache.TextureCounts[i] = stream.TextureCount();
 		cache.MaterialSurfaces[i] = stream.Surface();
+		assert(cache.MaterialSurfaces[i]);
 
         totalIndexCount += stream.TextureCount();
     }
@@ -495,7 +496,10 @@ static u32 counter;
 
 	counter++;
 
-	return renderItemIDs.add(std::move(rItem));
+	u32 renderItemID{ renderItemIDs.add(std::move(rItem)) };
+	core::RenderItemsUpdated();
+
+	return renderItemID;
 }
 
 void 

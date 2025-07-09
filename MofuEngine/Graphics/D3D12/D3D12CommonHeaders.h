@@ -100,9 +100,10 @@ constexpr u32 GPASS_WORKERS{ 1 };
 
 constexpr u32 CLOSING_LIST_INDEX{ 0 };
 
-constexpr u32 BUNDLE_COUNT{ 4 };
+// NOTE: make sure they are actually closed so it doesnt break the reset on renderItemsUpdated
+constexpr u32 BUNDLE_COUNT{ 2 };
 
-constexpr u32 MAIN_BUNDLE_INDEX{ 2 };
+constexpr u32 MAIN_BUNDLE_INDEX{ 1 };
 #endif
 
 }

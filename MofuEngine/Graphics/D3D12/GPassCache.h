@@ -75,16 +75,12 @@ struct GPassCache
 			ValidatePipelineState(DepthPipelineStates[i]);
 		}
 
-
-		// Check all arrays are either null or have the correct size
 #define CHECK_ARRAY(ptr) \
             if (ptr != nullptr && count == 0) { \
-                /* Array is allocated but count is zero */ \
                 assert(false && #ptr " is allocated but count is zero"); \
                 return false; \
             } \
             if (ptr == nullptr && count > 0) { \
-                /* Array is null but count suggests it should be allocated */ \
                 assert(false && #ptr " is null but count suggests it should be allocated"); \
                 return false; \
             }

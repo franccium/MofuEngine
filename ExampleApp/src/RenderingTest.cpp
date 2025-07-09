@@ -249,8 +249,8 @@ AddRenderItem()
 	//const char* path{ TEST_BISTRO_MESH_PATH };
 	//std::filesystem::path modelPath{ path };
 
-	//ModelData modelData{ CYBORG_MODEL };
-	ModelData modelData{ BISTRO_INTERIOR_MODEL };
+	ModelData modelData{ CYBORG_MODEL };
+	//ModelData modelData{ BISTRO_INTERIOR_MODEL };
 
 	memset(&textureIDs[0], 0xEE, _countof(textureIDs) * sizeof(id_t));
 	//std::thread threads[]{
@@ -275,7 +275,7 @@ AddRenderItem()
 
 	CreateMaterials();
 
-	constexpr bool USE_TEXTURES{ false };
+	constexpr bool USE_TEXTURES{ true };
 
 	if (USE_TEXTURES)
 	{
@@ -284,6 +284,7 @@ AddRenderItem()
 		{
 			texturedMaterials[i] = texturedMaterialID;
 		}
+		editor::DropModelIntoScene(modelData.MeshFile, texturedMaterials);
 	}
 	else
 	{

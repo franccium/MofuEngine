@@ -76,12 +76,19 @@ namespace mofu::graphics::d3d12 {
 				//{
 					// PER OBJECT DATA
 				renderItemIndex = id::Index(entity) - 1; //FIXME: make this make sense, placeholder solution now that assumes first entity is camera and the rest are all renderable render items; cant just renderItemIndex cause first block contains entities 1 and 9, so the parent entities lose their render items
+				if (renderItemIndex < renderItemCount)
+				{
 					currentDataPtr = cbuffer.AllocateSpace<hlsl::PerObjectData>();
 					//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);
 					FillPerObjectData(currentDataPtr, transform, materialsCache.MaterialSurfaces[renderItemIndex], frameInfo.Camera->ViewProjection());
-				//}
-				assert(currentDataPtr);
-				frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);
+					//}
+					assert(currentDataPtr);
+					frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);
+				}
+				else
+				{
+					log::Warn("renderItemIndex > renderItemCount");
+				}
 			}
 
 			// TEXTURES

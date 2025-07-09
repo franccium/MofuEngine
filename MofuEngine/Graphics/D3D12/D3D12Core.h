@@ -24,6 +24,8 @@ namespace mofu::graphics::d3d12::core {
 bool Initialize();
 void Shutdown();
 
+void RenderItemsUpdated();
+
 namespace detail {
 void DeferredRelease(IUnknown* resource);
 }

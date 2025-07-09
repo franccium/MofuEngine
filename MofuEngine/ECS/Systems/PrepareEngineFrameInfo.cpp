@@ -23,11 +23,8 @@ namespace mofu::graphics::d3d12 {
 			ZoneScopedN("PrepareEngineFrameInfo");
 			graphics::FrameInfo frameInfo{};
 			
-			if (renderItemIDs.empty())
-			{
-				renderItemIDs.clear();
-				thresholds.clear();
-			}
+			renderItemIDs.clear();
+			thresholds.clear();
 			
 			u32 renderItemCount{ 0 };
 
@@ -35,16 +32,13 @@ namespace mofu::graphics::d3d12 {
 			frameInfo.AverageFrameTime = 16.7f;
 			frameInfo.CameraID = camera_id{ 0 };
 
-			if (renderItemIDs.empty())
+			for (auto [entity, transform, mesh, material]
+				: ecs::scene::GetRW<ecs::component::WorldTransform,
+					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
 			{
-				for (auto [entity, transform, mesh, material]
-					: ecs::scene::GetRW<ecs::component::WorldTransform,
-						ecs::component::RenderMesh, ecs::component::RenderMaterial>())
-				{
-					renderItemIDs.emplace_back(mesh.MeshID);
-					thresholds.emplace_back(0.f);
-					renderItemCount++;
-				}
+				renderItemIDs.emplace_back(mesh.MeshID);
+				thresholds.emplace_back(0.f);
+				renderItemCount++;
 			}
 			renderItemCount = renderItemIDs.size();
 

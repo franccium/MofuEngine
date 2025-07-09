@@ -25,6 +25,9 @@ using namespace Microsoft::WRL;
 namespace mofu::graphics::d3d12::core {
 namespace {
 
+//TODO: a list of new items/sth
+bool renderItemsUpdated{ true };
+
 class D3D12Command
 {
 public:
@@ -75,6 +78,7 @@ public:
         {
             DXCall(hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, _cmdFrames[0].cmdAllocatorsBundle[i], nullptr, IID_PPV_ARGS(&_cmdListsBundle[i])));
             if (FAILED(hr)) goto _error;
+            DXCall(_cmdListsBundle[i]->Close());
             NAME_D3D12_OBJECT_INDEXED(_cmdListsBundle[i], i, L"Bundle Command List");
         }
 
@@ -107,6 +111,15 @@ public:
         {
             DXCall(frame.cmdAllocators[i]->Reset());
             DXCall(_cmdLists[i]->Reset(frame.cmdAllocators[i], nullptr));
+        }
+
+        if (renderItemsUpdated)
+        {
+            for (u32 i = 0; i < BUNDLE_COUNT; ++i)
+            {
+                DXCall(frame.cmdAllocatorsBundle[i]->Reset());
+                DXCall(_cmdListsBundle[i]->Reset(frame.cmdAllocatorsBundle[i], nullptr));
+            }
         }
     }
 
@@ -497,6 +510,12 @@ Shutdown()
     Release(mainDevice);
 }
 
+void 
+RenderItemsUpdated()
+{
+    renderItemsUpdated = true;
+}
+
 DXDevice* const Device() { return mainDevice; }
 
 DescriptorHeap& RtvHeap() { return rtvDescHeap; }
@@ -577,8 +596,6 @@ RenderSurfaceMT(surface_id id, FrameInfo frameInfo)
         ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
     }
 
-    static bool depthRecorded{ false };
-    static bool mainRecorded{ false };
     DXGraphicsCommandList* const* depthBundles{ gfxCommand.CommandListsBundle() };
     DXGraphicsCommandList* const* mainBundles{ &gfxCommand.CommandListsBundle()[MAIN_BUNDLE_INDEX] };
     {
@@ -601,14 +618,13 @@ RenderSurfaceMT(surface_id id, FrameInfo frameInfo)
 
         {
             ZoneScopedNC("Depth Prepass Execution", tracy::Color::DarkSeaGreen1);
-            if (!depthRecorded)
+            if (renderItemsUpdated)
             {
                 for (u32 i{ 0 }; i < DEPTH_WORKERS; ++i)
                 {
                     depthBundles[i]->SetDescriptorHeaps(1, &heaps[0]);
                 }
                 gpass::DoDepthPrepass(&depthBundles[0], d3d12FrameInfo, 0);
-                depthRecorded = true;
                 for (u32 i{ 0 }; i < DEPTH_WORKERS; ++i)
                 {
                     depthBundles[i]->Close();
@@ -650,14 +666,13 @@ RenderSurfaceMT(surface_id id, FrameInfo frameInfo)
 
         {
             ZoneScopedNC("Main GPass Execution", tracy::Color::PaleVioletRed1);
-            if (!mainRecorded)
+            if (renderItemsUpdated)
             {
                 for (u32 i{ 0 }; i < GPASS_WORKERS; ++i)
                 {
                     mainBundles[i]->SetDescriptorHeaps(1, &heaps[0]);
                 }
                 gpass::RenderMT(&mainBundles[0], d3d12FrameInfo);
-                mainRecorded = true;
 
                 for (u32 i{ 0 }; i < GPASS_WORKERS; ++i)
                 {
@@ -675,6 +690,7 @@ RenderSurfaceMT(surface_id id, FrameInfo frameInfo)
             }
         }
 
+        renderItemsUpdated = false;
     }
 
     // Post Processing
@@ -758,10 +774,8 @@ SurfaceHeight(surface_id id)
 void
 RenderSurface(surface_id id, FrameInfo frameInfo)
 {
-#if MT
     RenderSurfaceMT(id, frameInfo);
     return;
-#endif
 
     gfxCommand.BeginFrame();
     TracyD3D12NewFrame(tracyQueueContext);
