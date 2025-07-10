@@ -134,7 +134,7 @@ RenderSceneIntoImage(DXGraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE
 void 
 ViewTextureAsImage(id_t textureID)
 {
-    const DescriptorHandle& handle{ content::texture::GetDescriptorHandle(textureID) };
+    const DescriptorHandle& handle{ content::texture::GetDescriptorHandle(textureID, 0) };
 
     ImGui::Begin("Texture View", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
@@ -143,9 +143,9 @@ ViewTextureAsImage(id_t textureID)
 }
 
 u64
-GetImTextureID(id_t textureID)
+GetImTextureID(id_t textureID, u32 mipLevel, u32 format)
 {
-    const DescriptorHandle& handle{ content::texture::GetDescriptorHandle(textureID) };
+    const DescriptorHandle& handle{ content::texture::GetDescriptorHandle(textureID, mipLevel, (DXGI_FORMAT)format) };
     return (u64)handle.gpu.ptr;
 }
 

@@ -48,6 +48,10 @@ ecs::component::RenderMaterial material{};
 graphics::MaterialInitInfo materialInitInfo{};
 
 bool isOpen{ false };
+bool isBrowserOpen{ false };
+TextureUsage::Usage textureBeingChanged{};
+
+Vec<std::string> texFiles{};
 
 [[nodiscard]] id_t
 LoadTexture(const char* path)
@@ -63,16 +67,37 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 	ImGui::Text(label); ImGui::SameLine();
 	if (ImGui::ImageButton(id, graphics::ui::GetImTextureID(materialInitInfo.TextureIDs[texUse]), imageSize))
 	{
-		/*u32 val{ materialInitInfo.TextureIDs[texUse] };
-		DisplayEditableUint(&materialInitInfo.TextureIDs[texUse], "Texture ID");
-		if (materialInitInfo.TextureIDs[texUse] != val)
+		if (isBrowserOpen)
 		{
-		}*/
-		materialInitInfo.TextureIDs[texUse] = 1;
+			ImGui::CloseCurrentPopup();
+		}
+		texFiles.clear();
+		content::ListFilesByExtension(".tex", std::filesystem::path("Assets/Generated"), texFiles);
+		ImGui::OpenPopup("Select Texture");
+		isBrowserOpen = true;
+		textureBeingChanged = texUse;
 	}
-	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiButtonFlags_MouseButtonRight))
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 	{
 		texture::OpenTextureView(materialInitInfo.TextureIDs[texUse]);
+	}
+}
+
+void
+RenderTextureBrowser()
+{
+	if (ImGui::BeginPopup("Select Texture"))
+	{
+		for (std::string_view texPath : texFiles)
+		{
+			if (ImGui::Selectable(texPath.data()))
+			{
+				materialInitInfo.TextureIDs[textureBeingChanged] = content::CreateResourceFromAsset(texPath, content::AssetType::Texture);
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		ImGui::EndPopup();
 	}
 }
 
@@ -125,10 +150,6 @@ RenderMaterialEditor()
 
 	assert(id::IsValid(materialInitInfo.TextureIDs[TextureUsage::BaseColor]));
 
-	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
-	{
-		//
-	}
 	DisplayTexture(TextureUsage::BaseColor, "Base Color:", "##Base");
 	DisplayTexture(TextureUsage::Normal, "Normal:", "##Normal");
 	DisplayTexture(TextureUsage::MetallicRoughness, "MetallicRoughness:", "##MetRou");
@@ -149,6 +170,8 @@ RenderMaterialEditor()
 		graphics::RemoveRenderItem(id::Index(materialOwner) - 1);
 		graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
 	}
+
+	if (isBrowserOpen) RenderTextureBrowser();
 
 	ImGui::End();
 }

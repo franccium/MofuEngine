@@ -178,7 +178,7 @@ public:
 	// removes the item and copies the last item into that item's index
 	constexpr T* const erase_unordered(T* const item)
 	{
-		assert(_data && item >= begin() && item < end());
+		assert(_data && item >= begin() && item <= end());
 		if constexpr (destructItems) item->~T();
 		--_size;
 		if (item < end())

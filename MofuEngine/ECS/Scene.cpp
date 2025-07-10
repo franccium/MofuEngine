@@ -102,24 +102,73 @@ AddEntity(Vec<EntityBlock*> matchingBlocks, Entity entity)
 	//log::Info("Added entity %u to block", id::Index(entity));
 }
 
+
 void
 RemoveEntity(EntityBlock* block, Entity entity)
 {
 	// the last entity in block moved in to fill the gap
 	// if its the last entity remove the block
 
-	u16 lastRow{ --block->EntityCount };
+	u32 lastRow{ --block->EntityCount };
+	if (lastRow == 0)
+	{
+		// delete the block
+		//TODO: anything more?
+		blocks.erase_unordered(std::find(blocks.begin(), blocks.end(), block));
+		return;
+	}
+
 	EntityData& data{ GetEntityData(entity) };
 	if (data.row != lastRow)
 	{
-		block->Entities[data.row] = block->Entities[lastRow];
+		u32 newRow{ data.row };
+		block->Entities[newRow] = block->Entities[lastRow];
 
-		id::AdvanceGeneration((id_t&)block->Entities[data.row]);
-		//TODO: copy components over
+		//TODO: i dont yet validate generation
+		//id::AdvanceGeneration((id_t&)block->Entities[newRow]);
 
-		Entity movedEntity{ block->Entities[data.row] };
-		entityData[id::Index(movedEntity)].row = data.row;
+		// copy over component values
+		for (ComponentID componentID = 0; componentID < component::ComponentTypeCount; ++componentID)
+		{
+			if (block->Signature.test(componentID))
+			{
+				u32 componentSize{ component::GetComponentSize(componentID) };
+				u32 oldOffset{ block->ComponentOffsets[componentID] + componentSize * lastRow };
+				u32 newOffset{ block->ComponentOffsets[componentID] + componentSize * newRow };
+				memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, component::GetComponentSize(componentID));
+			}
+		}
+
+		Entity movedEntity{ block->Entities[newRow] };
+		entityData[id::Index(movedEntity)].row = newRow;
 	}
+}
+
+
+void
+MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlock)
+{
+	Entity entity{ entityData.id };
+	u32 oldRow{ entityData.row };
+	u32 newRow{ newBlock->EntityCount };
+
+	// copy over component values
+	for (ComponentID componentID = 0; componentID < component::ComponentTypeCount; ++componentID)
+	{
+		if (oldBlock->Signature.test(componentID) && newBlock->Signature.test(componentID))
+		{
+			u32 componentSize{ component::GetComponentSize(componentID) };
+			u32 oldOffset{ oldBlock->ComponentOffsets[componentID] + componentSize * oldRow };
+			u32 newOffset{ newBlock->ComponentOffsets[componentID] + componentSize * newRow };
+			memcpy(newBlock->ComponentData + newOffset, oldBlock->ComponentData + oldOffset, component::GetComponentSize(componentID));
+		}
+	}
+
+	RemoveEntity(oldBlock, entity);
+	entityData.block = newBlock;
+	entityData.row = newRow;
+	newBlock->Entities[newRow] = entity;
+	newBlock->EntityCount++;
 }
 
 } // anonymous namespace
@@ -136,8 +185,10 @@ GetBlocksFromCet(const CetMask& querySignature)
 
 	// Build the list if not cached
 	std::vector<EntityBlock*> result;
-	for (auto block : blocks) {
-		if ((block->Signature & querySignature) == querySignature) {
+	for (auto block : blocks)
+	{
+		if ((block->Signature & querySignature) == querySignature)
+		{
 			result.push_back(block);
 		}
 	}
@@ -158,7 +209,7 @@ const Vec<EntityData>& GetAllEntityData()
 	return entityData;
 }
 
-EntityData& 
+EntityData&
 CreateEntity(CetLayout& layout)
 {
 	Vec<EntityBlock*> matchingBlocks{};
@@ -189,7 +240,7 @@ GenerateCetLayout(const CetMask cetMask)
 	layout.Capacity = MAX_ENTITIES_PER_BLOCK;
 
 	u32 currentOffset{ sizeof(Entity) * MAX_ENTITIES_PER_BLOCK }; // always one entity
-	for (ComponentID componentID = 0; componentID < MAX_COMPONENT_TYPES; ++componentID)
+	for (ComponentID componentID = 0; componentID < component::ComponentTypeCount; ++componentID)
 	{
 		if (layout.Signature.test(componentID))
 		{
@@ -232,16 +283,15 @@ GenerateCetLayout(const CetMask cetMask)
 //}
 
 void
-AddComponents(EntityData& data, const CetMask& newSignature)
+AddComponents(EntityData& data, const CetMask& newSignature, EntityBlock* oldBlock)
 {
 	for (EntityBlock* b : blocks)
 	{
-		if (newSignature == b->Signature) // match the whole signature not just a part of it
+		if (newSignature == b->Signature && b->EntityCount < b->Capacity) // match the whole signature not just a part of it
 		{
 			// move entity
 			//TODO: IMPLEMENT THIS
-			/*RemoveEntity(oldBlock, entity);
-			AddEntity(&block, entity);*/
+			MigrateEntity(data, oldBlock, b);
 			return;
 		}
 	}
@@ -250,7 +300,7 @@ AddComponents(EntityData& data, const CetMask& newSignature)
 	EntityBlock* newBlock{ CreateBlock(GenerateCetLayout(newSignature)) };
 	Vec<EntityBlock*> b{};
 	b.emplace_back(newBlock);
-	AddEntity(b, data.id);
+	MigrateEntity(data, oldBlock, newBlock);
 }
 
 //template<IsComponent C>

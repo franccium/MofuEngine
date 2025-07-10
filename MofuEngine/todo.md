@@ -1,4 +1,6 @@
 
+not recreating resources, keeping an asset library
+
 import materials from fbx
 
 texture browser for material editor

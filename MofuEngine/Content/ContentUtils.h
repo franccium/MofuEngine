@@ -35,4 +35,17 @@ toWstring(const char* cstr)
 	return { s.begin(), s.end() };
 }
 
+inline void
+ListFilesByExtension(const char* extension, const std::filesystem::path fromFolder, Vec<std::string>& outFiles)
+{
+	outFiles.clear();
+	for (auto& entry : std::filesystem::directory_iterator(fromFolder))
+	{
+		if (entry.is_regular_file() && entry.path().extension() == extension)
+		{
+			outFiles.push_back(entry.path().string());
+		}
+	}
+}
+
 }

@@ -34,9 +34,9 @@ ViewTexture(id_t textureID)
 }
 
 u64
-GetImTextureID(id_t textureID)
+GetImTextureID(id_t textureID, u32 mipLevel, u32 format)
 {
-	return pi->ui.getImTextureID(textureID);
+	return pi->ui.getImTextureID(textureID, mipLevel, format);
 }
 
 void

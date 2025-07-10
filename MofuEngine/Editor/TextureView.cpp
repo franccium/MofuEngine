@@ -121,7 +121,13 @@ RenderTextureWithConfig()
 	ImGui::SliderInt("##Slice", (int*)&selectedSlice, 0, maxSlice - 1);
 
 	ImGui::Text("Mip:"); ImGui::SameLine();
+	u32 mipLevel{ selectedMip };
 	ImGui::SliderInt("##Mip", (int*)&selectedMip, 0, maxMip - 1);
+	if (mipLevel != selectedMip)
+	{
+		imTextureID = mipLevel > 0 ? (ImTextureID)graphics::ui::GetImTextureID(textureID, mipLevel, texture.Format) 
+			: (ImTextureID)graphics::ui::GetImTextureID(textureID);
+	}
 
 	content::texture::TextureImportSettings& settings{ texture.ImportSettings };
 	ImGui::SeparatorText("Import Settings");

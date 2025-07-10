@@ -121,6 +121,8 @@
     <ClCompile Include="ECS\SceneSerializer.cpp" />
     <ClCompile Include="ECS\Systems\CameraFreeLookSystem.cpp" />
     <ClCompile Include="ECS\Systems\InputTestSystem.cpp" />
+    <ClCompile Include="ECS\Systems\LightPostFrameSystem.cpp" />
+    <ClCompile Include="ECS\Systems\LightPrepareRenderSystem.cpp" />
     <ClCompile Include="ECS\Systems\PrepareEngineFrameInfo.cpp" />
     <ClCompile Include="ECS\Systems\PrepareFrameRenderSystem.cpp" />
     <ClCompile Include="ECS\Systems\PreparePerObjectDataRenderSystem.cpp" />
@@ -161,7 +163,10 @@
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
+    <ClCompile Include="Graphics\D3D12\Lights\D3D12Light.cpp" />
+    <ClCompile Include="Graphics\D3D12\Lights\D3D12LightCulling.cpp" />
     <ClCompile Include="Graphics\GeometryData.cpp" />
+    <ClCompile Include="Graphics\Lights\Light.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
     <ClCompile Include="Graphics\UIRenderer.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
@@ -253,10 +258,13 @@
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
     <ClInclude Include="Graphics\D3D12\GPassCache.h" />
+    <ClInclude Include="Graphics\D3D12\Lights\D3D12Light.h" />
+    <ClInclude Include="Graphics\D3D12\Lights\D3D12LightCulling.h" />
     <ClInclude Include="Graphics\GeometryData.h" />
     <ClInclude Include="Graphics\GraphicsPlatform.h" />
     <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
+    <ClInclude Include="Graphics\Lights\Light.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Graphics\UIRenderer.h" />
     <ClInclude Include="Input\InputState.h" />

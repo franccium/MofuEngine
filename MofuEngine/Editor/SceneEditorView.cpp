@@ -136,15 +136,11 @@ struct SceneHierarchy
                 //TODO: make an iterator or a view
                 EntityData& entityData{ ecs::scene::GetEntityData(node->ID) };
                 EntityBlock* block{ ecs::scene::GetEntityData(node->ID).block };
-                u32 currentOffset{ sizeof(Entity) * MAX_ENTITIES_PER_BLOCK };
-                for (ComponentID cid{ 0 }; cid < component::ComponentTypeCount; ++cid)
+                for (ComponentID componentID = 0; componentID < component::ComponentTypeCount; ++componentID)
                 {
-                    if (!block->Signature.test(cid)) continue;
-                    block->ComponentOffsets[cid] = currentOffset;
-                    void* componentArray{ block->ComponentData + currentOffset };
-                    component::RenderLUT[cid](static_cast<u8*>(componentArray) + entityData.row * component::GetComponentSize(cid));
-
-                    currentOffset += component::GetComponentSize(cid) * MAX_ENTITIES_PER_BLOCK;
+                    if (!block->Signature.test(componentID)) continue;
+                    u32 offset{ block->ComponentOffsets[componentID] + component::GetComponentSize(componentID) * entityData.row };
+                    component::RenderLUT[componentID](block->ComponentData + offset);
                 }
 
                 ImGui::TableNextRow();
@@ -161,7 +157,6 @@ struct SceneHierarchy
                         if (ImGui::Selectable(ecs::component::ComponentNames[cid]))
                         {
                             ecs::component::AddLUT[cid](node->ID);
-                            block->Signature.set(cid);
                         }
                     }
                     ImGui::EndPopup();

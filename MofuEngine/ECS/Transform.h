@@ -162,4 +162,97 @@ struct Camera : Component
 #endif
 };
 
+struct Light : Component
+{
+	f32 Intensity{ 1.f };
+	v3 Color{ 1.f, 1.f, 1.f };
+
+	//TODO: might want a table
+	bool Enabled{ true };
+
+#if EDITOR_BUILD
+	static void RenderFields(Light& c)
+	{
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Light");
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
+		ImGui::TableNextRow();
+		editor::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
+	}
+#endif
+};
+
+struct DirtyLight : Component
+{
+#if EDITOR_BUILD
+	static void RenderFields(DirtyLight& c)
+	{
+		
+	}
+#endif
+};
+
+struct CullableLight : Component
+{
+#if EDITOR_BUILD
+	static void RenderFields(CullableLight& c)
+	{
+
+	}
+#endif
+};
+
+struct DirectionalLight : Component
+{
+#if EDITOR_BUILD
+	static void RenderFields(DirectionalLight& c)
+	{
+
+	}
+#endif
+};
+
+struct PointLight : Component
+{
+	v3 Attenuation{ 1.f, 1.f, 1.f };
+	f32 Range{ 5.f };
+
+#if EDITOR_BUILD
+	static void RenderFields(PointLight& c)
+	{
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Point Light");
+		ImGui::TableNextRow();
+		editor::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f);
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
+	}
+#endif
+};
+
+struct SpotLight : Component
+{
+	v3 Attenuation{ 1.f, 1.f, 1.f };
+	f32 Range{ 5.f };
+	f32 Umbra{ 45.f };
+	f32 Penumbra{ 45.f };
+
+#if EDITOR_BUILD
+	static void RenderFields(SpotLight& c)
+	{
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Spot Light");
+		ImGui::TableNextRow();
+		editor::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f);
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.Umbra, "Umbra", 0.f, 45.f);
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.Penumbra, "Penumbra", 0.f, 45.f);
+	}
+#endif
+};
+
 }

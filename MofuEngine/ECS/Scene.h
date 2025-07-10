@@ -68,7 +68,7 @@ EntityHasComponent(Entity e)
 	return data.block->Signature.test(component::ID<C>);
 }
 
-void AddComponents(EntityData& data, const CetMask& newSignature);
+void AddComponents(EntityData& data, const CetMask& newSignature, EntityBlock* oldBlock);
 
 template<IsComponent... C>
 void
@@ -79,7 +79,7 @@ AddComponents(Entity entity)
 	EntityBlock* oldBlock{ data.block };
 	CetMask newSignature{ PreviewCetMaskPlusComponents<C...>(oldBlock->Signature) };
 	
-	AddComponents(data, newSignature);
+	AddComponents(data, newSignature, oldBlock);
 }
 
 template<IsComponent C>

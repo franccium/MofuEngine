@@ -130,30 +130,30 @@ CreateTextureFromResourceData(const u8* const blob)
     context.EndUpload();
 
     assert(resource);
-    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc{};
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
     D3D12TextureInitInfo info{};
     info.resource = resource;
 
     if (flags & mofu::content::TextureFlags::IsCubeMap)
     {
-        srv_desc.Format = format;
-        srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Format = format;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         if (arraySize > 6)
         {
-            srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
-            srv_desc.TextureCubeArray.MostDetailedMip = 0;
-            srv_desc.TextureCubeArray.MipLevels = mipLevels;
-            srv_desc.TextureCubeArray.NumCubes = arraySize / 6;
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+            srvDesc.TextureCubeArray.MostDetailedMip = 0;
+            srvDesc.TextureCubeArray.MipLevels = mipLevels;
+            srvDesc.TextureCubeArray.NumCubes = arraySize / 6;
         }
         else
         {
-            srv_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-            srv_desc.TextureCube.MostDetailedMip = 0;
-            srv_desc.TextureCube.MipLevels = mipLevels;
-            srv_desc.TextureCube.ResourceMinLODClamp = 0.0f;
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+            srvDesc.TextureCube.MostDetailedMip = 0;
+            srvDesc.TextureCube.MipLevels = mipLevels;
+            srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
         }
 
-        info.srvDesc = &srv_desc;
+        info.srvDesc = &srvDesc;
     }
 
     return D3D12Texture{ info };
@@ -200,12 +200,28 @@ GetDescriptorIndices(const id_t* const textureIDs, u32 idCount, u32* const outIn
     }
 }
 
+DescriptorHandle
+CreateSRVForMipLevel(DXResource* texture, u32 mipLevel, DXGI_FORMAT format)
+{
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = format;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = mipLevel;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+    DescriptorHandle srvHandle = core::SrvHeap().AllocateDescriptor();
+    core::Device()->CreateShaderResourceView(texture, &srvDesc, srvHandle.cpu);
+
+    return srvHandle;
+}
+
 const DescriptorHandle&
-GetDescriptorHandle(id_t textureID)
+GetDescriptorHandle(id_t textureID, u32 mipLevel, DXGI_FORMAT format)
 {
     assert(id::IsValid(textureID));
     std::lock_guard lock{ textureMutex };
-    return textures[textureID].Srv();
+    return mipLevel == 0 ? textures[textureID].Srv() : CreateSRVForMipLevel(textures[textureID].Resource(), mipLevel, format);
 }
 
 }
