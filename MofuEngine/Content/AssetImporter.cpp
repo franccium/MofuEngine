@@ -6,6 +6,9 @@
 #include "External/ufbx/ufbx.h"
 #include "Content/TextureImport.h"
 #include "Editor/AssetPacking.h"
+#include "Editor/TextureView.h"
+#include "Editor/ImporterView.h"
+#include "Editor/MaterialEditor.h"
 
 namespace mofu::content {
 namespace {
@@ -30,10 +33,242 @@ ImportTexture(std::filesystem::path path)
 		log::Error("Texture import error: ", data.Info.ImportError);
 	}
 
-	PackTextureForEngine(data, path.filename().string());
-	PackTextureForEditor(data, path.filename().string());
+	PackTextureForEngine(data, path);
+	PackTextureForEditor(data, path);
 	//textureData.SetTextureInfoFromData(texture);
 	//if (!texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap)) throw new InvalidDataException();
+}
+
+Color 
+ColorFromMaterial(const ufbx_material_map& matMap) {
+	if (matMap.value_components == 1) 
+	{
+		f32 r = (f32)matMap.value_real;
+		return { r, r, r };
+	}
+	else if (matMap.value_components == 3)
+	{
+		f32 r = (f32)matMap.value_vec3.x;
+		f32 g = (f32)matMap.value_vec3.y;
+		f32 b = (f32)matMap.value_vec3.z;
+		return { r, g, b };
+	}
+	f32 r = (f32)matMap.value_vec4.x;
+	f32 g = (f32)matMap.value_vec4.y;
+	f32 b = (f32)matMap.value_vec4.z;
+	f32 a = (f32)matMap.value_vec4.z;
+	return Color(r, g, b, a);
+}
+
+Color 
+ColorFromMaterial(const ufbx_material_map& matMap, const ufbx_material_map& factorMap) {
+	Color color = ColorFromMaterial(matMap);
+	if (factorMap.has_value)
+	{
+		f32 factor = f32(factorMap.value_real);
+		color.r *= factor;
+		color.g *= factor;
+		color.b *= factor;
+	}
+	return color;
+}
+
+const ufbx_texture* 
+GetFileTexture(const ufbx_texture* texPtr)
+{
+	if (!texPtr) return nullptr;
+	for (const ufbx_texture* tex : texPtr->file_textures)
+	{
+		if (tex->file_index != UFBX_NO_INDEX) return tex;
+	}
+	return nullptr;
+}
+
+
+void
+ImportImageFromBytes(const u8* const bytes, u64 size, const char* fileExtension, std::filesystem::path targetPath)
+{
+	texture::TextureData data{};
+	data.ImportSettings.IsByteArray = true;
+	data.ImportSettings.ImageBytesSize = size;
+	data.ImportSettings.ImageBytes = bytes;
+	data.ImportSettings.FileExtension = fileExtension;
+
+	data.ImportSettings.Compress = true;
+	texture::Import(&data);
+	if (data.Info.ImportError != texture::ImportError::Succeeded)
+	{
+		log::Error("Texture import error: ", data.Info.ImportError);
+	}
+
+	PackTextureForEngine(data, targetPath);
+	PackTextureForEditor(data, targetPath);
+}
+
+void
+ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImportState& state)
+{
+	state.Textures.resize(fbxScene->texture_files.count);
+	state.SourceImages.resize(fbxScene->texture_files.count);
+	state.ImageFiles.resize(fbxScene->texture_files.count);
+	for (u32 textureIdx{ 0 }; textureIdx < fbxScene->texture_files.count; ++textureIdx)
+	{
+		const ufbx_texture_file& fbxTexFile{ fbxScene->texture_files[textureIdx] };
+
+		std::filesystem::path texturePath{ fbxTexFile.filename.data };
+		if (texturePath.is_absolute()) 
+		{
+			texturePath = texturePath.filename();
+			texturePath = "Assets" / std::filesystem::path{ "ab" } / texturePath;
+		}
+		if (!basePath.empty())
+		{
+			texturePath = texturePath.concat(basePath);
+		}
+
+		assert(fbxTexFile.content.size < UINT_MAX);
+		u32 contentSize{ (u32)fbxTexFile.content.size };
+
+		// get image data as a byte array
+		std::unique_ptr<u8[]> data;
+		if (contentSize > 0)
+		{
+			data = std::make_unique<u8[]>(contentSize);
+			memcpy(data.get(), fbxTexFile.content.data, contentSize);
+		}
+		else
+		{
+			u64 outSize{ 0 };
+			if (!std::filesystem::exists(texturePath))
+			{
+				state.Errors |= FBXImportState::ErrorFlags::InvalidTexturePath;
+			}
+			content::ReadFileToByteBuffer(texturePath, data, outSize);
+			assert(outSize < UINT_MAX);
+			contentSize = outSize;
+			if (contentSize == 0)
+			{
+				log::Warn("FBX Import: Image at path [%s] had no data", texturePath);
+				state.Textures[textureIdx] = {};
+				state.SourceImages[textureIdx] = {};
+				state.ImageFiles[textureIdx] = {};
+			}
+		}
+
+		if (contentSize > 0)
+		{
+			std::filesystem::path targetPath{ texturePath.parent_path() / "imp" };
+			if (!std::filesystem::exists(targetPath)) 
+			{
+				std::filesystem::create_directory(targetPath);
+			}
+			char name[16];
+			sprintf_s(name, "%u%s\0", textureIdx, texturePath.extension().string().data());
+			targetPath.append(name);
+			ImportImageFromBytes(data.get(), contentSize, texturePath.extension().string().data(), targetPath);
+			state.Textures[textureIdx] = {};
+			state.SourceImages[textureIdx] = {};
+			state.ImageFiles[textureIdx] = targetPath.replace_extension(".tex").string();
+		}
+	}
+}
+
+void
+ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
+{
+	for (ufbx_material* mat : scene->materials)
+	{
+		editor::material::EditorMaterial material{};
+		graphics::MaterialSurface& surface{ material.Surface };
+		material.Name = mat->name.data;
+
+		material.Type = graphics::MaterialType::Opaque;
+
+		if (mat->pbr.base_color.has_value)
+		{
+			Color baseColor{ ColorFromMaterial(mat->pbr.base_color).LinearToSRGB() };
+			surface.BaseColor = { baseColor.r, baseColor.g,baseColor.b, baseColor.a };
+		}
+
+		const ufbx_texture* baseTexture{ GetFileTexture(mat->pbr.base_color.texture) };
+		if (baseTexture)
+		{
+			bool wrap = (baseTexture->wrap_u | baseTexture->wrap_v) == UFBX_WRAP_REPEAT;
+
+			// TODO: alpha
+			material.Flags |= editor::material::EditorMaterial::Flags::TextureRepeat;
+		}
+
+		//if (mat->features.pbr.enabled)
+		{
+			if (mat->pbr.metalness.has_value)
+			{
+				surface.Metallic = (f32)mat->pbr.metalness.value_real;
+			}
+
+			if (mat->pbr.roughness.has_value)
+			{
+				surface.Roughness = (f32)mat->pbr.roughness.value_real;
+			}
+
+			const ufbx_texture* metalnessTexture{ GetFileTexture(mat->pbr.metalness.texture) };
+			if (metalnessTexture)
+			{
+				auto p{ metalnessTexture->file_index };
+				auto s{ metalnessTexture->absolute_filename };
+				auto f{ metalnessTexture->filename };
+				auto r{ metalnessTexture->relative_filename };
+				if (!state.ImageFiles[mat->pbr.metalness.texture->file_index].empty())
+				{
+					log::Info("Found metallic texture: %s", state.ImageFiles[mat->pbr.metalness.texture->file_index]);
+				}
+				else state.Errors |= FBXImportState::ErrorFlags::MaterialTextureNotFound;
+			}
+
+			const ufbx_texture* roughnessTexture{ GetFileTexture(mat->pbr.roughness.texture) };
+			if (roughnessTexture)
+			{
+				if (!state.ImageFiles[mat->pbr.roughness.texture->file_index].empty())
+				{
+					log::Info("Found roughness texture: %s", state.ImageFiles[mat->pbr.roughness.texture->file_index]);
+				}
+			}
+		}
+
+		const ufbx_texture* normalTexture{ GetFileTexture(mat->pbr.normal_map.texture) };
+		if (normalTexture)
+		{
+			auto p{ normalTexture->file_index };
+			auto s{ normalTexture->absolute_filename };
+			auto f{ normalTexture->filename };
+			auto r{ normalTexture->relative_filename };
+			//assert(false);
+			if (!state.ImageFiles[mat->pbr.normal_map.texture->file_index].empty())
+			{
+				log::Info("Found normal map: %s", state.ImageFiles[mat->pbr.normal_map.texture->file_index]);
+			}
+		}
+
+		if (mat->pbr.emission_color.has_value)
+		{
+			Color emissionColor{ ColorFromMaterial(mat->pbr.emission_color).LinearToSRGB() };
+			surface.EmissiveIntensity = (f32)mat->pbr.emission_factor.value_real;
+		}
+
+		const ufbx_texture* emissionTexture{ GetFileTexture(mat->pbr.emission_color.texture) };
+		if (emissionTexture)
+		{
+
+		}
+
+		const ufbx_texture* aoTexture{ GetFileTexture(mat->pbr.ambient_occlusion.texture) };
+		if (aoTexture)
+		{
+
+		}
+
+		state.Materials.emplace_back(std::move(material));
+	}
 }
 
 void
@@ -104,7 +339,8 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 
 		// Create vertex and index buffers
 		mesh.RawIndices = std::move(indices);
-		mesh.MaterialIndices.resize(mesh.Indices.size(), 0);
+
+		mesh.MaterialIndices.resize(mesh.RawIndices.size(), 0);
 		mesh.MaterialUsed.emplace_back(0);
 
 		for (const Vertex& v : mesh.Vertices)
@@ -117,20 +353,14 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 
 		lodGroup.Meshes.emplace_back(mesh);
 	}
-
-	for (auto mat : node->materials)
-	{
-		if (mat->pbr.base_color.has_value && mat->pbr.base_color.texture_enabled)
-		{
-			std::string p{ mat->pbr.base_color.texture->absolute_filename.data };
-		}
-	}
 }
 
 void
 ImportMesh(std::filesystem::path path)
 {
 	log::Info("Importing mesh: %s", path.string().c_str());
+	FBXImportState state{};
+	state.FbxFile = path.filename().string();
 
 	ufbx_load_opts opts{};
 	opts.target_axes = ufbx_axes_right_handed_y_up;
@@ -153,6 +383,9 @@ ImportMesh(std::filesystem::path path)
 			log::Info("-> mesh with %zu faces\n", node->mesh->faces.count);
 		}
 	}
+
+	ImportImages(scene, "", state);
+	ImportFBXMaterials(scene, state);
 
 	MeshGroup meshGroup{};
 	meshGroup.Name = scene->metadata.filename.data;
@@ -205,7 +438,12 @@ ImportMesh(std::filesystem::path path)
 	//PackGeometryData(meshGroup, outData);
 	//PackGeometryDataForEditor(meshGroup, data);
 	//SaveGeometry(data, path.replace_extension(".geom"));
-	PackGeometryForEngine(meshGroup);
+	PackGeometryForEngine(meshGroup, path);
+	
+	state.OutModelFile = path.replace_extension(".model").string();
+	state.Errors |= FBXImportState::ErrorFlags::Test2;
+	state.Errors |= FBXImportState::ErrorFlags::Test3;
+	editor::ViewFBXImportSummary(state);
 }
 
 //public bool SetData(SliceArray3D slices, Slice icon, Texture iblPair)

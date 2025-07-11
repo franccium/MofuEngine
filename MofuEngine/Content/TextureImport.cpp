@@ -493,6 +493,66 @@ PrefilterIbl(TextureData* const data, IblFilter::Type filterType)
 }
 
 [[nodiscard]] ScratchImage
+LoadFromBytes(TextureData* data, const u8* const bytes, u32 size, const char* fileExtension)
+{
+	data->Info.ImportError = ImportError::Load;
+	WIC_FLAGS wicFlags{ WIC_FLAGS_NONE };
+	TGA_FLAGS tgaFlags{ TGA_FLAGS_NONE };
+
+	if (data->ImportSettings.OutputFormat == DXGI_FORMAT_BC4_UNORM
+		|| data->ImportSettings.OutputFormat == DXGI_FORMAT_BC5_SNORM)
+	{
+		wicFlags |= WIC_FLAGS_IGNORE_SRGB;
+		tgaFlags |= TGA_FLAGS_IGNORE_SRGB;
+	}
+
+	ScratchImage scratch;
+
+	// try one of WIC formats first (BPM, JPEG, PNG, etc.)
+	wicFlags |= WIC_FLAGS_FORCE_RGB;
+	HRESULT hr{ LoadFromWICMemory(bytes, size, wicFlags, nullptr, scratch) };
+
+	// if it wasn't a WIC format, try TGA
+	if (FAILED(hr))
+	{
+		hr = LoadFromTGAMemory(bytes, size, tgaFlags, nullptr, scratch);
+	}
+
+	// if not TGA try HDR format
+	if (FAILED(hr))
+	{
+		hr = LoadFromHDRMemory(bytes, size, nullptr, scratch);
+		if (SUCCEEDED(hr)) data->Info.Flags |= TextureFlags::IsHdr;
+	}
+
+	// if not HDR try DDS
+	if (FAILED(hr))
+	{
+		hr = LoadFromDDSMemory(bytes, size, DDS_FLAGS_FORCE_RGB, nullptr, scratch);
+		{
+			if (SUCCEEDED(hr))
+			{
+				data->Info.ImportError = ImportError::Decompress;
+				ScratchImage mipScratch;
+				hr = Decompress(scratch.GetImages(), scratch.GetImageCount(), scratch.GetMetadata(), DXGI_FORMAT_UNKNOWN, mipScratch);
+
+				if (SUCCEEDED(hr))
+				{
+					scratch = std::move(mipScratch);
+				}
+			}
+		}
+	}
+
+	if (SUCCEEDED(hr))
+	{
+		data->Info.ImportError = ImportError::Succeeded;
+	}
+
+	return scratch;
+}
+
+[[nodiscard]] ScratchImage
 LoadFromFile(TextureData* const data, const char* fileName)
 {
 	assert(std::filesystem::exists(fileName));
@@ -732,7 +792,9 @@ void
 Import(TextureData* const data)
 {
 	const TextureImportSettings& settings{ data->ImportSettings };
-	assert(!settings.Files.empty() && settings.FileCount);
+
+	assert(!(settings.IsByteArray && (!settings.ImageBytesSize || !settings.ImageBytes || !settings.FileExtension)));
+	assert(!(!settings.IsByteArray && settings.Files.empty() && settings.FileCount));
 
 	Vec<ScratchImage> scratchImages;
 	Vec<Image> images;
@@ -740,22 +802,35 @@ Import(TextureData* const data)
 	u32 width{ 0 };
 	u32 height{ 0 };
 	DXGI_FORMAT format{ DXGI_FORMAT_UNKNOWN };
-	Vec<std::string> files = SplitString(settings.Files, ';');
-	assert(files.size() == settings.FileCount);
 
-	for (u32 i{ 0 }; i < settings.FileCount; ++i)
+	if (!settings.IsByteArray)
 	{
-		scratchImages.emplace_back(LoadFromFile(data, files[i].c_str()));
-		if (data->Info.ImportError != ImportError::Succeeded) return;
+		Vec<std::string> files = SplitString(settings.Files, ';');
+		assert(files.size() == settings.FileCount);
 
-		const ScratchImage& scratch{ scratchImages.back() };
+		for (u32 i{ 0 }; i < settings.FileCount; ++i)
+		{
+			scratchImages.emplace_back(LoadFromFile(data, files[i].c_str()));
+		}
+	}
+	else
+	{
+		scratchImages.emplace_back(LoadFromBytes(data, data->ImportSettings.ImageBytes, 
+			data->ImportSettings.ImageBytesSize, data->ImportSettings.FileExtension));
+	}
+	if (data->Info.ImportError != ImportError::Succeeded) return;
+
+	bool isFirstScratch{ true };
+	for (const ScratchImage& scratch : scratchImages)
+	{
 		const TexMetadata& metadata{ scratch.GetMetadata() };
 
-		if (i == 0)
+		if (isFirstScratch)
 		{
 			width = (u32)metadata.width;
 			height = (u32)metadata.height;
 			format = metadata.format;
+			isFirstScratch = false;
 		}
 
 		// all image sources should have the same size

@@ -1,9 +1,9 @@
 #include "ContentManagement.h"
+#include "ContentUtils.h"
 #include "Graphics/Renderer.h"
 #include "Utilities/Logger.h"
 
 #include "Graphics/Renderer.h"
-#include "Content/ContentManagement.h"
 #include "Content/ResourceCreation.h"
 #include "Content/ShaderCompilation.h"
 
@@ -70,24 +70,6 @@ CreateDefaultMaterial()
     defaultMaterialID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
 }
 
-bool
-ReadFile(std::filesystem::path path, std::unique_ptr<u8[]>& outData, u64& outFileSize)
-{ 
-    if (!std::filesystem::exists(path)) return false;
-    outFileSize = std::filesystem::file_size(path);
-    assert(outFileSize != 0);
-
-    outData = std::make_unique<u8[]>(outFileSize);
-    std::ifstream file{ path, std::ios::in | std::ios::binary };
-    if (!file || !file.read((char*)outData.get(), outFileSize))
-    {
-        file.close();
-        return false;
-    }
-    file.close();
-    return true;
-}
-
 } // anonymous namespace
 
 id_t 
@@ -99,7 +81,7 @@ GetDefaultMaterial()
 bool
 LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
 {
-    bool readEngineShaders{ ReadFile(std::filesystem::path{ graphics::GetEngineShadersPath() }, shaders, size) };
+    bool readEngineShaders{ ReadFileToByteBuffer(std::filesystem::path{ graphics::GetEngineShadersPath() }, shaders, size) };
     CreateDefaultShaders();
     CreateDefaultMaterial();
     return readEngineShaders;

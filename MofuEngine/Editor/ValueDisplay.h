@@ -19,7 +19,11 @@ void DisplayEditableVector4(v4* v, const char* label, f32 minVal = MIN_EDITABLE_
 
 void DisplayMatrix4x4(m4x4* m, const char* label);
 void DisplayUint(u32 v, const char* label);
+void DisplayFloatT(f32 v, const char* label);
 void DisplayFloat(f32 v, const char* label);
+void DisplayVector2(v2 v, const char* label);
+void DisplayVector3(v3 v, const char* label);
+void DisplayVector4(v4 v, const char* label);
 
 void DisplaySliderUint(const char* label, u32* v, u32 minVal, u32 maxVal);
 }

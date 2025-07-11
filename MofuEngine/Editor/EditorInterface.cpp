@@ -4,6 +4,7 @@
 #include "SceneEditorView.h"
 #include "TextureView.h"
 #include "MaterialEditor.h"
+#include "ImporterView.h"
 
 namespace mofu::editor {
 namespace {
@@ -26,6 +27,7 @@ RenderEditorGUI()
 	RenderAssetBrowserGUI();
     texture::RenderTextureView();
     material::RenderMaterialEditor();
+    RenderImportSummary();
 }
 
 }

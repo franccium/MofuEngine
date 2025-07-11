@@ -1,6 +1,7 @@
 #pragma once
 #include "CommonHeaders.h"
 #include <filesystem>
+#include <fstream>
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -46,6 +47,24 @@ ListFilesByExtension(const char* extension, const std::filesystem::path fromFold
 			outFiles.push_back(entry.path().string());
 		}
 	}
+}
+
+inline bool
+ReadFileToByteBuffer(std::filesystem::path path, std::unique_ptr<u8[]>& outData, u64& outFileSize)
+{
+	if (!std::filesystem::exists(path)) return false;
+	outFileSize = std::filesystem::file_size(path);
+	assert(outFileSize != 0);
+
+	outData = std::make_unique<u8[]>(outFileSize);
+	std::ifstream file{ path, std::ios::in | std::ios::binary };
+	if (!file || !file.read((char*)outData.get(), outFileSize))
+	{
+		file.close();
+		return false;
+	}
+	file.close();
+	return true;
 }
 
 }

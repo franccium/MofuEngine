@@ -52,7 +52,7 @@ GetTextureEnginePackedSize(texture::TextureData& data)
 //		imagesData
 // } texture;
 void
-PackTextureForEditor(texture::TextureData& data, std::string_view filename)
+PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPath)
 {
 	const u64 textureDataSize{ GetTextureEditorPackedSize(data) };
 	u8* buffer{ new u8[textureDataSize] };
@@ -104,10 +104,10 @@ PackTextureForEditor(texture::TextureData& data, std::string_view filename)
 	}
 
 	//TODO: refactor
-	std::filesystem::path modelPath{ "Assets/Generated/"};
-	modelPath.append(filename.data());
-	modelPath.replace_extension(".etex");
-	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
+	//std::filesystem::path modelPath{ "Assets/Generated/"};
+	//modelPath.append(filename.data());
+	targetPath.replace_extension(".etex");
+	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
@@ -136,7 +136,7 @@ PackTextureForEditor(texture::TextureData& data, std::string_view filename)
 	}
 */
 void
-PackTextureForEngine(texture::TextureData& data, std::string_view filename)
+PackTextureForEngine(texture::TextureData& data, std::filesystem::path targetPath)
 {
 	const u64 textureDataSize{ GetTextureEnginePackedSize(data) };
 	u8* buffer{ new u8[textureDataSize] };
@@ -172,10 +172,10 @@ PackTextureForEngine(texture::TextureData& data, std::string_view filename)
 
 	//TODO:assert(writer.Offset() == textureDataSize);
 	//TODO: refactor
-	std::filesystem::path modelPath{ "Assets/Generated/"};
-	modelPath.append(filename.data());
-	modelPath.replace_extension(".tex");
-	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
+	//std::filesystem::path modelPath{ "Assets/Generated/"};
+	//modelPath.append(filename.data());
+	targetPath.replace_extension(".tex");
+	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);

@@ -130,6 +130,7 @@
     <ClCompile Include="Editor\AssetInteraction.cpp" />
     <ClCompile Include="Editor\AssetPacking.cpp" />
     <ClCompile Include="Editor\EditorInterface.cpp" />
+    <ClCompile Include="Editor\ImporterView.cpp" />
     <ClCompile Include="Editor\MaterialEditor.cpp" />
     <ClCompile Include="Editor\SceneEditorView.cpp" />
     <ClCompile Include="Editor\TextureView.cpp" />
@@ -221,6 +222,7 @@
     <ClInclude Include="Editor\AssetInteraction.h" />
     <ClInclude Include="Editor\AssetPacking.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
+    <ClInclude Include="Editor\ImporterView.h" />
     <ClInclude Include="Editor\MaterialEditor.h" />
     <ClInclude Include="Editor\SceneEditorView.h" />
     <ClInclude Include="Editor\TextureView.h" />

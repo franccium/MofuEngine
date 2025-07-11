@@ -58,6 +58,11 @@ struct TextureImportSettings
 	u8 Compress{ true }; // defines if we should use block compression
 	u8 PrefilterCubemap{ true };
 	u8 MirrorCubemap{ false };
+
+	bool IsByteArray{ false };
+	const char* FileExtension{};
+	u32 ImageBytesSize{ 0 };
+	const u8* ImageBytes{ nullptr };
 };
 
 struct TextureInfo

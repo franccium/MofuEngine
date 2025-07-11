@@ -24,10 +24,10 @@ struct TextureUsage
 		Count
 	};
 };
-constexpr const char* WHITE_TEXTURE{ "Assets/Generated/Textures/white_placeholder_texture.tex" };
-constexpr const char* GRAY_TEXTURE{ "Assets/Generated/Textures/gray_placeholder_texture.tex" };
-constexpr const char* BLACK_TEXTURE{ "Assets/Generated/Textures/black_placeholder_texture.tex" };
-constexpr const char* ERROR_TEXTURE{ "Assets/Generated/Textures/eror_texture.tex" };
+constexpr const char* WHITE_TEXTURE{ "Assets/EngineTextures/white_placeholder_texture.tex" };
+constexpr const char* GRAY_TEXTURE{ "Assets/EngineTextures/gray_placeholder_texture.tex" };
+constexpr const char* BLACK_TEXTURE{ "Assets/EngineTextures/black_placeholder_texture.tex" };
+constexpr const char* ERROR_TEXTURE{ "Assets/EngineTextures/error_texture.tex" };
 constexpr const char* DEFAULT_TEXTURES_PATHS[TextureUsage::Count]{
 	ERROR_TEXTURE,
 	GRAY_TEXTURE,
@@ -45,6 +45,7 @@ id_t usedTextures[TextureUsage::Count];
 
 ecs::Entity materialOwner{};
 ecs::component::RenderMaterial material{};
+EditorMaterial editorMaterial{};
 graphics::MaterialInitInfo materialInitInfo{};
 
 bool isOpen{ false };
@@ -108,11 +109,24 @@ InitializeMaterialEditor()
 {
 	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
 	{
-		//DEFAULT_TEXTURES[i] = LoadTexture(DEFAULT_TEXTURES_PATHS[i]);
-		//assert(id::IsValid(DEFAULT_TEXTURES[i]));
+		DEFAULT_TEXTURES[i] = LoadTexture(DEFAULT_TEXTURES_PATHS[i]);
+		assert(id::IsValid(DEFAULT_TEXTURES[i]));
 	}
 	return true;
 }
+
+void
+DisplayMaterialSurfaceProperties(const graphics::MaterialSurface& surface)
+{
+	ImGui::TextUnformatted("Surface:");
+	DisplayVector4(surface.BaseColor, "Base Color");
+	DisplayFloat(surface.Metallic, "Metallic");
+	DisplayFloat(surface.Roughness, "Roughness");
+	DisplayVector3(surface.Emissive, "Emission Color");
+	DisplayFloat(surface.EmissiveIntensity, "Emission Intensity");
+	DisplayFloat(surface.AmbientOcclusion, "Ambient Occlusion");
+}
+
 
 void
 OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
@@ -120,6 +134,24 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 	materialOwner = entityID;
 	material = mat;
 	materialInitInfo = graphics::GetMaterialReflection(mat.MaterialIDs[0]);
+	if (materialInitInfo.TextureCount < TextureUsage::Count)
+	{
+		//TODO: all sorts of wrong
+		id_t* textures{ materialInitInfo.TextureIDs };
+		materialInitInfo.TextureIDs = new id_t[TextureUsage::Count];
+		memcpy(materialInitInfo.TextureIDs, textures, sizeof(id_t) * materialInitInfo.TextureCount);
+		for (u32 i{ materialInitInfo.TextureCount }; i < TextureUsage::Count; ++i) materialInitInfo.TextureIDs[i] = id::INVALID_ID;
+		materialInitInfo.TextureCount = TextureUsage::Count;
+		delete[] textures;
+	}
+	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
+	{
+		if (!id::IsValid(materialInitInfo.TextureIDs[i]))
+		{
+			materialInitInfo.TextureIDs[i] = DEFAULT_TEXTURES[i];
+		}
+	}
+	editorMaterial.Surface = materialInitInfo.Surface;
 	isOpen = true;
 }
 
@@ -148,13 +180,13 @@ RenderMaterialEditor()
 
 	// imageButton for basecolor, normal, etc::
 
-	assert(id::IsValid(materialInitInfo.TextureIDs[TextureUsage::BaseColor]));
-
 	DisplayTexture(TextureUsage::BaseColor, "Base Color:", "##Base");
 	DisplayTexture(TextureUsage::Normal, "Normal:", "##Normal");
 	DisplayTexture(TextureUsage::MetallicRoughness, "MetallicRoughness:", "##MetRou");
 	DisplayTexture(TextureUsage::Emissive, "Emissive:", "##Emiss");
 	DisplayTexture(TextureUsage::AmbientOcclusion, "Ambient Occlusion:", "##AO");
+
+	DisplayMaterialSurfaceProperties(editorMaterial.Surface);
 
 	if (ImGui::Button("Save"))
 	{
@@ -175,5 +207,6 @@ RenderMaterialEditor()
 
 	ImGui::End();
 }
+
 
 }

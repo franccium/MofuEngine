@@ -216,7 +216,7 @@ GeneratePrimitiveMesh(PrimitiveMeshInfo info, MeshGroupData& outData)
 
 	ProcessMeshGroupData(meshGroup, outData.ImportSettings);
 	//PackGeometryData(meshGroup, outData);
-	PackGeometryForEngine(meshGroup);
+	PackGeometryForEngine(meshGroup, "Assets/Generated/");
 }
 
 }

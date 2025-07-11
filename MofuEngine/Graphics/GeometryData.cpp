@@ -607,7 +607,7 @@ PackMeshDataForEditor(const Mesh& m, util::BlobStreamWriter& writer)
 }
 
 void
-PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data)
+PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data, std::filesystem::path targetPath)
 {
 	const u64 groupSize{ GetMeshGroupSize(group) };
 	u8* buffer{ new u8[groupSize] };
@@ -632,7 +632,7 @@ PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data)
 
 	assert(blob.Offset() == groupSize);
 	//TODO: refactor
-	std::filesystem::path modelPath{ "Assets/Generated/" + group.Name };
+	std::filesystem::path modelPath{ targetPath.replace_extension(".emodel") };
 	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 
@@ -658,7 +658,7 @@ PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data)
 *  } geometry
 */
 void
-PackGeometryForEngine(const MeshGroup& group)
+PackGeometryForEngine(const MeshGroup& group, std::filesystem::path targetPath)
 {
 	const u64 groupSize{ GetEnginePackedGeometrySize(group) };	
 	u8* buffer{ new u8[groupSize] };
@@ -729,7 +729,7 @@ PackGeometryForEngine(const MeshGroup& group)
 
 	assert(blob.Offset() == groupSize);
 	//TODO: refactor
-	std::filesystem::path modelPath{ "Assets/Generated/" + group.Name };
+	std::filesystem::path modelPath{ targetPath.replace_extension(".model") };
 	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 

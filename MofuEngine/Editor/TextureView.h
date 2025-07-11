@@ -26,6 +26,8 @@ struct ViewableTexture
 	//TODO: IBLPairGUID
 	DXGI_FORMAT Format{};
 	ImageSlice** Slices{ nullptr };
+
+	bool IsValid{ false };
 };
 
 void OpenTextureView(std::filesystem::path textureAssetPath);

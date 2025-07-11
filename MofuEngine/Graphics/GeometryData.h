@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include <filesystem>
 
 namespace mofu::content {
 struct ElementType
@@ -186,10 +187,10 @@ struct MeshGroupData
 	GeometryImportSettings ImportSettings;
 };
 
-void PackGeometryDataForEditor(const MeshGroup& meshGroup, MeshGroupData& data);
+void PackGeometryDataForEditor(const MeshGroup& meshGroup, MeshGroupData& data, std::filesystem::path targetPath);
 void ProcessMeshGroupData(MeshGroup& group, const GeometryImportSettings& settings);
 
-void PackGeometryForEngine(const MeshGroup& group);
+void PackGeometryForEngine(const MeshGroup& group, std::filesystem::path targetPath);
 
 void MergeMeshes(const LodGroup& lod, Mesh& outCombinedMesh);
 }
