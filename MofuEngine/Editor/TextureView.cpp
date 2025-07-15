@@ -5,6 +5,7 @@
 #include "Content/TextureImport.h"
 #include "Content/AssetImporter.h"
 #include "ValueDisplay.h"
+#include "ImporterView.h"
 
 #include "imgui.h"
 
@@ -16,14 +17,6 @@ ViewableTexture texture{};
 ImTextureID imTextureID{};
 u32 selectedSlice = 0;
 u32 selectedMip = 0;
-
-constexpr const char* DIMENSION_TO_STRING[content::texture::TextureDimension::Count]{
-	"Texture 1D",
-	"Texture 2D",
-	"Texture 3D",
-	"Cubemap",
-};
-constexpr const char* FORMAT_STRING{ "TODO" };
 
 std::filesystem::path textureAssetFilePath{};
 
@@ -102,8 +95,9 @@ void
 ReimportTexture()
 {
 	content::texture::TextureData data{};
-	data.ImportSettings = texture.ImportSettings;
-	
+	//data.ImportSettings = texture.ImportSettings;
+	data.ImportSettings = assets::GetTextureImportSettings();
+
 	content::ReimportTexture(data, textureAssetFilePath);
 
 	OpenTextureView(textureAssetFilePath);
@@ -129,37 +123,38 @@ RenderTextureWithConfig()
 			: (ImTextureID)graphics::ui::GetImTextureID(textureID);
 	}
 
-	content::texture::TextureImportSettings& settings{ texture.ImportSettings };
-	ImGui::SeparatorText("Import Settings");
-	ImGui::TextUnformatted("Files:");
-	for (std::string_view s : content::SplitString(settings.Files, ';'))
-	{
-		ImGui::TextUnformatted(s.data());
-	}
-	if (ImGui::BeginCombo("Dimension", DIMENSION_TO_STRING[settings.Dimension]))
-	{
-		for (u32 i{ 0 }; i < content::texture::TextureDimension::Count; ++i)
-		{
-			const char* dimStr{ DIMENSION_TO_STRING[i] };
-			bool chosen{ i == settings.Dimension };
-			if (ImGui::Selectable(dimStr, chosen))
-				settings.Dimension = (content::texture::TextureDimension::Dimension)i;
-			if (chosen)
-				ImGui::SetItemDefaultFocus();
-		}
-		ImGui::EndCombo();
-	}
+	assets::RenderTextureImportSettings();
+	//content::texture::TextureImportSettings& settings{ texture.ImportSettings };
+	//ImGui::SeparatorText("Import Settings");
+	//ImGui::TextUnformatted("Files:");
+	//for (std::string_view s : content::SplitString(settings.Files, ';'))
+	//{
+	//	ImGui::TextUnformatted(s.data());
+	//}
+	//if (ImGui::BeginCombo("Dimension", DIMENSION_TO_STRING[settings.Dimension]))
+	//{
+	//	for (u32 i{ 0 }; i < content::texture::TextureDimension::Count; ++i)
+	//	{
+	//		const char* dimStr{ DIMENSION_TO_STRING[i] };
+	//		bool chosen{ i == settings.Dimension };
+	//		if (ImGui::Selectable(dimStr, chosen))
+	//			settings.Dimension = (content::texture::TextureDimension::Dimension)i;
+	//		if (chosen)
+	//			ImGui::SetItemDefaultFocus();
+	//	}
+	//	ImGui::EndCombo();
+	//}
 
-	DisplaySliderUint("Mip Levels", &settings.MipLevels, 0, 14);
-	ImGui::SliderFloat("Alpha Threshold", &settings.AlphaThreshold, 0.f, 1.f);
-	ImGui::TextUnformatted("Format: "); ImGui::SameLine();
-	ImGui::TextUnformatted(FORMAT_STRING);
-	DisplaySliderUint("Cubemap Size", &settings.CubemapSize, 16, 4096);
+	//DisplaySliderUint("Mip Levels", &settings.MipLevels, 0, 14);
+	//ImGui::SliderFloat("Alpha Threshold", &settings.AlphaThreshold, 0.f, 1.f);
+	//ImGui::TextUnformatted("Format: "); ImGui::SameLine();
+	//ImGui::TextUnformatted(FORMAT_STRING);
+	//DisplaySliderUint("Cubemap Size", &settings.CubemapSize, 16, 4096);
 
-	ImGui::Checkbox("Prefer BC7", (bool*)&settings.PreferBC7);
-	ImGui::Checkbox("Compress", (bool*)&settings.Compress);
-	ImGui::Checkbox("Prefilter Cubemap", (bool*)&settings.PrefilterCubemap);
-	ImGui::Checkbox("Mirror Cubemap", (bool*)&settings.MirrorCubemap);
+	//ImGui::Checkbox("Prefer BC7", (bool*)&settings.PreferBC7);
+	//ImGui::Checkbox("Compress", (bool*)&settings.Compress);
+	//ImGui::Checkbox("Prefilter Cubemap", (bool*)&settings.PrefilterCubemap);
+	//ImGui::Checkbox("Mirror Cubemap", (bool*)&settings.MirrorCubemap);
 
 	if (ImGui::Button("Reimport")) 
 	{
@@ -200,10 +195,11 @@ OpenTextureView(std::filesystem::path textureAssetPath)
 }
 
 void
-OpenTextureView(id_t textureID)
+OpenTextureView(id_t texID)
 {
-	imTextureID = (ImTextureID)graphics::ui::GetImTextureID(textureID);
-	assert(id::IsValid(textureID) && imTextureID);
+	textureID = texID;
+	imTextureID = (ImTextureID)graphics::ui::GetImTextureID(texID);
+	assert(id::IsValid(texID) && imTextureID);
 	isOpen = true;
 }
 

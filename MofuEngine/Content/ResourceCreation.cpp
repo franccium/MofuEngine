@@ -44,7 +44,6 @@ CreateGeometryItem(const void* const blob)
 
 	assert(blob);
 	const u32 hierarchySize{ GetGeometryHierarchyBufferSize(blob) };
-	u8* const hierarchyBuffer{ (u8* const)malloc(hierarchySize) };
 
 	util::BlobStreamReader reader{ (const u8*)blob };
 	const u32 lodCount{ reader.Read<u32>() };
@@ -146,9 +145,8 @@ CreateGeometryItem(const void* const blob)
 id_t
 CreateGeometryResource(const void* const blob)
 {
-	//return CreateGeometryItem(blob);
-	CreateGeometryItem(blob); // FIXME:
-	return 0;
+	CreateGeometryItem(blob);
+	return lastUploadedGeometryInfo.SubmeshGpuIDs[0];
 }
 
 id_t
@@ -170,17 +168,7 @@ DestroyGeometryResource(id_t id)
 {
 	// free the allocated block of memory, unloading all submeshes with it
 	std::lock_guard lock{ geometryMutex };
-
-	//FIXME:
-	u32 id_index{ 0 };
-	for (u32 lod{ 0 }; lod < 1; ++lod)
-	{
-		for (u32 i{ 0 }; i < 8; ++i)
-		{
-			// unload all buffer resources under gpu_ids
-			graphics::RemoveSubmesh(id_index++);
-		}
-	}
+	graphics::RemoveSubmesh(id);
 }
 
 void
@@ -286,44 +274,6 @@ DestroyResource(id_t resourceId, AssetType::type resourceType)
 {
 	assert(id::IsValid(resourceId));
 	resourceDestructors[resourceType](resourceId);
-}
-
-u32 GetSubmeshGpuIDCount(id_t geometryContentID)
-{
-	std::lock_guard{ geometryMutex };
-	//TODO:
-	//u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
-	//if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
-	//{
-	//	return 1;
-	//}
-	//else
-	//{
-	//	GeometryHierarchyStream stream{ hierarchyPtr };
-	//	return stream.LODOffsets()[0].Count;
-	//}
-	return 1;
-}
-
-void
-GetSubmeshGpuIDs(id_t geometryContentID, u32 submeshIndex, u32 idCount, id_t* const outGpuIDs, u32 counter)
-{
-	std::lock_guard lock{ geometryMutex };
-	outGpuIDs[0] = geometryContentID;
-	//TODO:
-	//u8* const hierarchyPtr{ geometryHierarchies[geometryContentID] };
-	////u8* const hierarchyPtr{ geometryHierarchies[0] };
-	//if ((uintptr_t)hierarchyPtr & SINGLE_MESH_MARKER)
-	//{
-	//	assert(idCount == 1);
-	//	*outGpuIDs = GetGpuIDSingleMesh(hierarchyPtr);
-	//}
-	//else
-	//{
-	//	GeometryHierarchyStream stream{ hierarchyPtr };
-	//	//memcpy(outGpuIDs, &stream.GpuIDs()[counter], sizeof(id_t) * idCount); //TODO: testing with [counter
-	//	memcpy(outGpuIDs, &stream.GpuIDs()[submeshIndex], sizeof(id_t) * idCount);
-	//}
 }
 
 void

@@ -11,7 +11,7 @@ using namespace mofu;
 
 struct TestSystem : ecs::system::System<TestSystem>
 {
-	void Update(const ecs::system::SystemUpdateData data)
+	void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 	{
 		//log::Info("TestSystem::Update");
 

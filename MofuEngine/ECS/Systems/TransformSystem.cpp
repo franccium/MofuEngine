@@ -17,7 +17,7 @@ std::unordered_map<id_t, xmmat> parentTransforms{};
 
 struct TransformSystem : ecs::system::System<TransformSystem>
 {
-	void Update(const ecs::system::SystemUpdateData data)
+	void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 	{
 		ZoneScopedN("TransformSystem");
 

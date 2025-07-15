@@ -29,6 +29,7 @@ FindParentAsNode(ecs::Entity parentEntity)
     }
     assert(false);
    //TODO: return std::find;
+    return nullptr;
 }
 
 void

@@ -44,7 +44,7 @@ Update(system::SystemUpdateData data)
 	//systemRegistry.UpdateSystems(system::SystemGroup::Final, data);
 }
 
-void UpdateRenderSystems(system::SystemUpdateData data, const graphics::d3d12::D3D12FrameInfo& d3d12FrameInfo)
+void UpdateRenderSystems(system::SystemUpdateData data, [[maybe_unused]] const graphics::d3d12::D3D12FrameInfo& d3d12FrameInfo)
 {
 	system::SystemRegistry& systemRegistry{ system::SystemRegistry::Instance() };
 	systemRegistry.UpdateSystems(system::SystemGroup::PostUpdate, data);

@@ -163,7 +163,7 @@ bool MofuInitialize()
 		cSurf.surface.window = platform::ConcoctWindow(&info[i]);
 		cSurf.surface.surface = graphics::CreateSurface(cSurf.surface.window);
 
-		v3 pos{ 0.f, 0.f, 0.f };
+		v3 pos{ 0.f, 0.f, 15.f };
 		quat rot{ quatIndentity };
 		v3 scale{ 1.f, 1.f, 1.f };
 		ecs::component::LocalTransform lt{ {}, pos, rot, scale };
@@ -201,8 +201,6 @@ void MofuUpdate()
 	}
 
 	graphics::ui::StartNewFrame();
-
-	id_t t{ renderSurfaces[0].camera.GetID() };
 
 	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)
 	{

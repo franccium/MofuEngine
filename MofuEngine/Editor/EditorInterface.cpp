@@ -27,7 +27,8 @@ RenderEditorGUI()
 	RenderAssetBrowserGUI();
     texture::RenderTextureView();
     material::RenderMaterialEditor();
-    RenderImportSummary();
+    assets::RenderImportSettings();
+    assets::RenderImportSummary();
 }
 
 }

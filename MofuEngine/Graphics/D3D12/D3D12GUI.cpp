@@ -59,7 +59,7 @@ RenderLoggerWindow()
 }
 
 bool 
-Initialize(DXGraphicsCommandList* cmdList, ID3D12CommandQueue* queue)
+Initialize(ID3D12CommandQueue* queue)
 {
     ImGui_ImplDX12_InitInfo initInfo = {};
     initInfo.Device = core::Device();
@@ -87,6 +87,7 @@ Initialize(DXGraphicsCommandList* cmdList, ID3D12CommandQueue* queue)
     if(!ImGui_ImplDX12_Init(&initInfo)) return false;
 
     if (!editor::InitializeEditorGUI()) return false;
+    return true;
 }
 
 void
@@ -112,7 +113,7 @@ SetupGUIFrame()
 }
 
 void 
-RenderGUI(DXGraphicsCommandList* cmdList)
+RenderGUI()
 {
     RenderConfigWindow();
     RenderLoggerWindow();
@@ -120,7 +121,7 @@ RenderGUI(DXGraphicsCommandList* cmdList)
 }
 
 void
-RenderSceneIntoImage(DXGraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameInfo frameInfo)
+RenderSceneIntoImage(D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameInfo frameInfo)
 {
     float aspectRatio = (float)frameInfo.SurfaceWidth / frameInfo.SurfaceHeight;
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), WindowConstrainAspectRatio, (void*)&aspectRatio);

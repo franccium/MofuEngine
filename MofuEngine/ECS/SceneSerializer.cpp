@@ -35,7 +35,7 @@ void SceneSerializer::SerializeForEditor(const char* filePath) const
 	outFile << out.c_str();
 }
 
-void SceneSerializer::DeserializeForEditor(const char* filePath) const
+void SceneSerializer::DeserializeForEditor([[maybe_unused]] const char* filePath) const
 {
 }
 

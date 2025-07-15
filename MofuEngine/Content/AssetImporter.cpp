@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "Utilities/Logger.h"
 #include "External/ufbx/ufbx.h"
+#include "ContentUtils.h"
 #include "Content/TextureImport.h"
 #include "Editor/AssetPacking.h"
 #include "Editor/TextureView.h"
@@ -24,14 +25,17 @@ ImportTexture(std::filesystem::path path)
 {
 	//assert(std::filesystem::exists(path));
 	texture::TextureData data{};
+	data.ImportSettings = editor::assets::GetTextureImportSettings();
+
 	data.ImportSettings.Files = path.string(); //TODO: char* 
 	data.ImportSettings.FileCount = 1;
-	data.ImportSettings.Compress = true;
+
 	texture::Import(&data);
 	if (data.Info.ImportError != texture::ImportError::Succeeded)
 	{
 		log::Error("Texture import error: ", data.Info.ImportError);
 	}
+
 
 	PackTextureForEngine(data, path);
 	PackTextureForEditor(data, path);
@@ -90,7 +94,7 @@ ImportImageFromBytes(const u8* const bytes, u64 size, const char* fileExtension,
 {
 	texture::TextureData data{};
 	data.ImportSettings.IsByteArray = true;
-	data.ImportSettings.ImageBytesSize = size;
+	data.ImportSettings.ImageBytesSize = (u32)size;
 	data.ImportSettings.ImageBytes = bytes;
 	data.ImportSettings.FileExtension = fileExtension;
 
@@ -147,11 +151,11 @@ ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImp
 			{
 				content::ReadFileToByteBuffer(texturePath, data, outSize);
 				assert(outSize < UINT_MAX);
-				contentSize = outSize;
+				contentSize = (u32)outSize;
 			}
 			if (contentSize == 0)
 			{
-				log::Warn("FBX Import: Image at path [%s] had no data", texturePath);
+				log::Warn("FBX Import: Image at path [%s] had no data", texturePath.string().data());
 				state.Textures[textureIdx] = {};
 				state.SourceImages[textureIdx] = {};
 				state.ImageFiles[textureIdx] = {};
@@ -218,7 +222,7 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 			bool wrap = (baseTexture->wrap_u | baseTexture->wrap_v) == UFBX_WRAP_REPEAT;
 
 			// TODO: alpha
-			material.Flags |= editor::material::EditorMaterial::Flags::TextureRepeat;
+			if(wrap) material.Flags |= editor::material::EditorMaterial::Flags::TextureRepeat;
 			GetTextureForMaterial(TexUse::BaseColor, material, mat->pbr.base_color.texture->file_index, state);
 		}
 
@@ -324,8 +328,33 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 				v.Position = { (f32)pos.x, (f32)pos.y, (f32)pos.z };
 				v.Normal = { (f32)normal.x, (f32)normal.y, (f32)normal.z };
 				v.UV = { (f32)uv.x, (f32)uv.y };
+				
 				vertices.emplace_back(v);
 			}
+		}
+
+		if (m->vertex_tangent.exists && !state.ImportSettings.CalculateTangents)
+		{
+
+			if (m->vertex_bitangent.exists) 
+			{
+
+			}
+		}
+
+		if (m->vertex_color.exists)
+		{
+			//Vec<v3>& colors{ mesh.Colors };
+
+			//for (u32 i{ 0 }; i < triangleCount * 3; ++i)
+			//{
+			//	ufbx_vec4 color{ m->vertex_color[index] };
+			//	v3 col{ (f32)color.x, (f32)color.y, (f32)color.z };
+			//	colors.emplace_back(col);
+			//	v.Red = static_cast<u8>(math::Clamp(col.x, 0.0f, 1.0f) * 255.0f);
+			//	v.Green = static_cast<u8>(math::Clamp(col.y, 0.0f, 1.0f) * 255.0f);
+			//	v.Blue = static_cast<u8>(math::Clamp(col.z, 0.0f, 1.0f) * 255.0f);
+			//}
 		}
 
 		assert(vertices.size() == part.num_triangles * 3);
@@ -378,15 +407,6 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 void
 ImportMeshes(ufbx_scene* scene, FBXImportState& state)
 {
-	MeshGroupData data{};
-	data.ImportSettings.CalculateNormals = false;
-	data.ImportSettings.CalculateTangents = true;
-	data.ImportSettings.MergeMeshes = true;
-	data.ImportSettings.ImportAnimations = false;
-	data.ImportSettings.ImportEmbeddedTextures = false;
-	data.ImportSettings.ReverseHandedness = false;
-	data.ImportSettings.SmoothingAngle = 0.f;
-
 	MeshGroup meshGroup{};
 	meshGroup.Name = scene->metadata.filename.data;
 	meshGroup.Name = "MeshGroup";
@@ -421,7 +441,7 @@ ImportMeshes(ufbx_scene* scene, FBXImportState& state)
 	ufbx_free_scene(scene);
 
 
-	ProcessMeshGroupData(meshGroup, data.ImportSettings);
+	ProcessMeshGroupData(meshGroup, state.ImportSettings);
 	//PackGeometryData(meshGroup, outData);
 	//PackGeometryDataForEditor(meshGroup, data);
 	//SaveGeometry(data, path.replace_extension(".geom"));
@@ -432,9 +452,11 @@ void
 ImportFBX(std::filesystem::path path)
 {
 	log::Info("Importing mesh: %s", path.string().c_str());
+
 	FBXImportState state{};
 	state.FbxFile = path.filename().string();
 	state.OutModelFile = std::filesystem::path{ path }.replace_extension(".model").string();
+	state.ImportSettings = editor::assets::GetGeometryImportSettings();
 
 	ufbx_load_opts opts{};
 	opts.target_axes = ufbx_axes_right_handed_y_up;
@@ -458,12 +480,15 @@ ImportFBX(std::filesystem::path path)
 		}
 	}
 
-	ImportImages(scene, "", state);
+	if (state.ImportSettings.ImportEmbeddedTextures)
+	{
+		ImportImages(scene, "", state);
+	}
 	ImportFBXMaterials(scene, state);
 	ImportMeshes(scene, state);
 	
 
-	editor::ViewFBXImportSummary(state);
+	editor::assets::ViewFBXImportSummary(state);
 }
 
 //public bool SetData(SliceArray3D slices, Slice icon, Texture iblPair)
@@ -531,6 +556,13 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtensi
 	{ ".wav", AssetType::Audio },
 };
 
+const std::unordered_map<std::string_view, AssetType::type> assetTypeFromEngineExtension{
+	{ ".model", AssetType::Mesh },
+	{ ".emodel", AssetType::Mesh },
+	{ ".tex", AssetType::Texture },
+	{ ".etex", AssetType::Texture },
+};
+
 } // anonymous namespace
 
 void 
@@ -563,6 +595,22 @@ ReimportTexture(texture::TextureData& data, std::filesystem::path originalPath)
 	//TODO: paths
 	PackTextureForEngine(data, originalPath.filename().string());
 	PackTextureForEditor(data, originalPath.filename().string());
+}
+
+AssetType::type
+GetAssetTypeFromExtension(const char* extension)
+{
+	if(!assetTypeFromExtension.count(extension)) 
+		return AssetType::Unknown;
+	return assetTypeFromExtension.at(extension);
+}
+
+AssetType::type
+GetAssetTypeFromEngineExtension(const char* extension)
+{
+	if (!assetTypeFromEngineExtension.count(extension))
+		return AssetType::Unknown;
+	return assetTypeFromEngineExtension.at(extension);
 }
 
 }

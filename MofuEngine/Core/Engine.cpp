@@ -9,6 +9,8 @@ WindowEventHandler(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	switch (msg)
 	{
+	default:
+		break;
 	}
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }

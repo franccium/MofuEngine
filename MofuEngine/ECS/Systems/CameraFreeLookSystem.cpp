@@ -26,10 +26,8 @@ namespace mofu::ecs::system {
 				v3 direction{ lt.Forward };
 				f32 theta{ XMScalarACos(direction.y) };
 				f32 phi{ std::atan2(-direction.z, direction.x) };
-				v3 rot{ theta - math::HALF_PI, phi + math::HALF_PI, 0.f };
-				v3 spherical;
+				v3 spherical{ theta - math::HALF_PI, phi + math::HALF_PI, 0.f };
 				v3 move{};
-				spherical = rot;
 				cam.TargetPos = lt.Position;
 				
 				if (input::IsKeyDown(input::Keys::R))
@@ -107,8 +105,8 @@ namespace mofu::ecs::system {
 				xmm newRot{ XMQuaternionSlerp(rotV, targetRotQ, slerpFactor) };
 				XMStoreFloat4(&lt.Rotation, newRot);
 
-				xmm dir{ 0.f, 0.f, 1.f, 0.f };
-				XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, newRot)));
+				xmm dirZ{ 0.f, 0.f, 1.f, 0.f };
+				XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dirZ, newRot)));
 
 #if PRINT_DEBUG
 				log::Info("Camera forward: %f, %f, %f", lt.Forward.x, lt.Forward.y, lt.Forward.z);
@@ -120,7 +118,7 @@ namespace mofu::ecs::system {
 				if (moveMagnitude > math::EPSILON)
 				{
 					v4 rot{ lt.Rotation };
-					f32 moveSpeed{ 0.002f };
+					f32 moveSpeed{ 0.0008f };
 					xmm dir{ XMVector3Rotate(moveV * moveSpeed * fpsScale, XMLoadFloat4(&rot)) };
 					xmm target{ XMLoadFloat3(&cam.TargetPos) };
 					target += (dir * moveSpeed);

@@ -10,7 +10,7 @@
 namespace mofu::ecs::system {
 	struct SubmitEntityRenderSystem : ecs::system::System<SubmitEntityRenderSystem>
 	{
-		void Update(const ecs::system::SystemUpdateData data)
+		void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 		{
 			//log::Info("SubmitEntityRenderSystem::Update");
 

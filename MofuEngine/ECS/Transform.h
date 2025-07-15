@@ -27,7 +27,7 @@ struct WorldTransform : Component
 	m4x4 TRS{};
 
 #if EDITOR_BUILD
-	static void RenderFields(WorldTransform& c)
+	static void RenderFields([[maybe_unused]] WorldTransform& c)
 	{
 		editor::DisplayMatrix4x4(&c.TRS, "TRS");
 	}
@@ -39,7 +39,7 @@ struct RenderMesh : Component
 	id_t MeshID{ id::INVALID_ID };
 
 #if EDITOR_BUILD
-	static void RenderFields(RenderMesh& c)
+	static void RenderFields([[maybe_unused]] RenderMesh& c)
 	{
 		editor::DisplayUint(c.MeshID, "Mesh ID");
 	}
@@ -52,7 +52,7 @@ struct RenderMaterial : Component
 	id_t* MaterialIDs{ nullptr };
 
 #if EDITOR_BUILD
-	static void RenderFields(RenderMaterial& c)
+	static void RenderFields([[maybe_unused]] RenderMaterial& c)
 	{
 		if (c.MaterialIDs == nullptr) return;
 		editor::DisplayUint(c.MaterialIDs[0], "Material ID");
@@ -63,7 +63,7 @@ struct RenderMaterial : Component
 struct StaticObject : Component // NOTE: for static mesh render optimisation, not yet sure how to handle
 {
 #if EDITOR_BUILD
-	static void RenderFields(StaticObject& c)
+	static void RenderFields([[maybe_unused]] StaticObject& c)
 	{
 	}
 #endif
@@ -72,7 +72,7 @@ struct StaticObject : Component // NOTE: for static mesh render optimisation, no
 struct PotentiallyVisible : Component // NOTE: for culling
 {
 #if EDITOR_BUILD
-	static void RenderFields(PotentiallyVisible& c)
+	static void RenderFields([[maybe_unused]] PotentiallyVisible& c)
 	{
 	}
 #endif
@@ -81,7 +81,7 @@ struct PotentiallyVisible : Component // NOTE: for culling
 struct Parent : Component
 {
 #if EDITOR_BUILD
-	static void RenderFields(Parent& c)
+	static void RenderFields([[maybe_unused]] Parent& c)
 	{
 		ImGui::Text("Parent");
 	}
@@ -92,7 +92,7 @@ struct Child : Component
 {
 	Entity ParentEntity{ id::INVALID_ID };
 #if EDITOR_BUILD
-	static void RenderFields(Child& c)
+	static void RenderFields([[maybe_unused]] Child& c)
 	{
 		ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.ParentEntity);
 	}
@@ -129,13 +129,13 @@ struct LocalTransform : Component
 	v3 Forward{ 0.0f, 0.0f, 1.0f };
 
 #if EDITOR_BUILD
-	static void RenderFields(LocalTransform& c)
+	static void RenderFields([[maybe_unused]] LocalTransform& c)
 	{
 		constexpr f32 minPosVal{ -100.f };
 		constexpr f32 maxPosVal{ 100.f };
 		constexpr f32 minRotVal{ -1.f };
 		constexpr f32 maxRotVal{ 1.f };
-		constexpr f32 minScaleVal{ 0.01f };
+		constexpr f32 minScaleVal{ -25.f };
 		constexpr f32 maxScaleVal{ 100.f };
 
 		ImGui::TableNextRow();
@@ -155,9 +155,9 @@ struct Camera : Component
 	v3 TargetPos{};
 	v3 TargetRot{};
 #if EDITOR_BUILD
-	static void RenderFields(Camera& c)
+	static void RenderFields([[maybe_unused]] Camera& c)
 	{
-		
+
 	}
 #endif
 };
@@ -171,7 +171,7 @@ struct Light : Component
 	bool Enabled{ true };
 
 #if EDITOR_BUILD
-	static void RenderFields(Light& c)
+	static void RenderFields([[maybe_unused]] Light& c)
 	{
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Light");
@@ -186,9 +186,9 @@ struct Light : Component
 struct DirtyLight : Component
 {
 #if EDITOR_BUILD
-	static void RenderFields(DirtyLight& c)
+	static void RenderFields([[maybe_unused]] DirtyLight& c)
 	{
-		
+
 	}
 #endif
 };
@@ -196,7 +196,7 @@ struct DirtyLight : Component
 struct CullableLight : Component
 {
 #if EDITOR_BUILD
-	static void RenderFields(CullableLight& c)
+	static void RenderFields([[maybe_unused]] CullableLight& c)
 	{
 
 	}
@@ -206,7 +206,7 @@ struct CullableLight : Component
 struct DirectionalLight : Component
 {
 #if EDITOR_BUILD
-	static void RenderFields(DirectionalLight& c)
+	static void RenderFields([[maybe_unused]] DirectionalLight& c)
 	{
 
 	}
@@ -219,7 +219,7 @@ struct PointLight : Component
 	f32 Range{ 5.f };
 
 #if EDITOR_BUILD
-	static void RenderFields(PointLight& c)
+	static void RenderFields([[maybe_unused]] PointLight& c)
 	{
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Point Light");
@@ -239,7 +239,7 @@ struct SpotLight : Component
 	f32 Penumbra{ 45.f };
 
 #if EDITOR_BUILD
-	static void RenderFields(SpotLight& c)
+	static void RenderFields([[maybe_unused]] SpotLight& c)
 	{
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Spot Light");

@@ -35,7 +35,7 @@ GetFromID(window_id id)
 WindowInfo&
 GetFromHandle(WindowHandle handle)
 {
-    const window_id id{ (window_id)GetWindowLongPtr(handle, GWLP_USERDATA) };
+    const window_id id{ static_cast<window_id>(GetWindowLongPtr(handle, GWLP_USERDATA)) };
     return GetFromID(id);
 }
 

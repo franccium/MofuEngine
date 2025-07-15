@@ -256,7 +256,7 @@ GetMaterialReflection(id_t materialID)
 	u8* const buffer{ materials[materialID].get() };
 	MaterialType::type materialType{ *(MaterialType::type*)buffer };
 	ShaderFlags::flags flags{ *(ShaderFlags::flags*)&buffer[D3D12MaterialStream::SHADER_FLAGS_INDEX] };
-	id_t rootSignatureID{ *(id_t*)&buffer[D3D12MaterialStream::ROOT_SIGNATURE_INDEX] };
+	[[maybe_unused]] id_t rootSignatureID{ *(id_t*)&buffer[D3D12MaterialStream::ROOT_SIGNATURE_INDEX] };
 	u32 textureCount{ *(u32*)&buffer[D3D12MaterialStream::TEXTURE_COUNT_INDEX] };
 	MaterialSurface surface{ *(MaterialSurface*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX] };
 	id_t* shaderIDs{ (id_t*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX + sizeof(MaterialSurface)] };
@@ -506,7 +506,6 @@ void
 RemoveRenderItem(id_t id)
 {
 	std::lock_guard lock{ renderItemMutex };
-	const id_t* const buffer{ renderItemIDs[id].get() };
 	renderItemIDs.remove(id);
 }
 

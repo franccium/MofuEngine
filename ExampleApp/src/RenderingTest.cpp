@@ -59,7 +59,7 @@ struct ModelData
 	const char* AO{};
 	const char* Emissive{};
 	u32 somewhereAroundSubmeshCount{ 1 };
-	v3 Pos{ -3.f, -10.f, 90.f };
+	v3 Pos{ 0.f, 0.f, 0.f };
 	quat Rot{ quatIndentity };
 	v3 Scale{ 1.f, 1.f, 1.f };
 };
@@ -235,10 +235,10 @@ CreateMaterials()
 void
 AddRenderItem()
 {
-	v3 pos{ -3.f, -10.f, 90.f };
-	if (loadedModelsCount == 1) pos = v3{ 0.f, -10.f, 10.f };
-	quat rot{ quatIndentity };
-	v3 scale{ 1.f, 1.f, 1.f };
+	ModelData modelData{ CYBORG_MODEL };
+	v3 pos{ modelData.Pos };
+	quat rot{ modelData.Rot };
+	v3 scale{ modelData.Scale };
 	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
 	ecs::component::WorldTransform wt{};
 	ecs::component::RenderMaterial material{};
@@ -249,7 +249,6 @@ AddRenderItem()
 	//const char* path{ TEST_BISTRO_MESH_PATH };
 	//std::filesystem::path modelPath{ path };
 
-	ModelData modelData{ CYBORG_MODEL };
 	//ModelData modelData{ BISTRO_INTERIOR_MODEL };
 
 	memset(&textureIDs[0], 0xEE, _countof(textureIDs) * sizeof(id_t));

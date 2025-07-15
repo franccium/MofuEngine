@@ -459,7 +459,7 @@ Initialize()
 
     tracyQueueContext = TracyD3D12Context(mainDevice, gfxCommand.CommandQueue());
 
-    if (!ui::Initialize(gfxCommand.CommandList(0), gfxCommand.CommandQueue())) return InitializeFailed();
+    if (!ui::Initialize(gfxCommand.CommandQueue())) return InitializeFailed();
 
     return true;
 }
@@ -714,8 +714,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
         {
             ZoneScopedNC("Editor UI CPU", tracy::Color::LightSkyBlue2);
-            ui::RenderGUI(cmdListFXSetup);
-            ui::RenderSceneIntoImage(cmdListFXSetup, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+            ui::RenderGUI();
+            ui::RenderSceneIntoImage(gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
 #if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
             //TODO: make it work with post processing

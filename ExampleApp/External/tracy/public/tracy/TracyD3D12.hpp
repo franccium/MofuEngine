@@ -104,7 +104,7 @@ namespace tracy
             }
         }
 
-        tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
+        tracy_force_inline void SubmitQueueItem([[maybe_unused]] tracy::QueueItem* item )
         {
 #ifdef TRACY_ON_DEMAND
             GetProfiler().DeferItem(*item);

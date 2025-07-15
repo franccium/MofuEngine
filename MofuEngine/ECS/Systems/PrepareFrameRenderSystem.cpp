@@ -43,7 +43,7 @@ namespace mofu::graphics::d3d12 {
 
 
 		//TODO: figure out caching stuff and not updating unchanged
-		void Update(const ecs::system::SystemUpdateData data)
+		void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 		{
 			ZoneScopedN("PrepareFrameRenderSystem");
 
@@ -101,7 +101,6 @@ namespace mofu::graphics::d3d12 {
 			// TEXTURES
 			if (frameCache.DescriptorIndexCount != 0)
 			{
-				ConstantBuffer& cbuffer{ core::CBuffer() };
 				const u32 size{ frameCache.DescriptorIndexCount * sizeof(u32) };
 				u32* const srvIndices{ (u32* const)cbuffer.AllocateSpace(size) };
 				u32 srvIndexOffset{ 0 };

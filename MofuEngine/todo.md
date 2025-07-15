@@ -11,6 +11,13 @@ culling
 
 lights
 
+normal map importing
+texture packing
+
+
+clean default material
+vertex color test shader
+resource reuse
 
 
 guizmos

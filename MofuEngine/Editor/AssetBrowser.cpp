@@ -7,6 +7,7 @@
 #include "AssetInteraction.h"
 #include "Content/TextureImport.h"
 #include "TextureView.h"
+#include "ImporterView.h"
 
 namespace mofu::editor {
 
@@ -252,9 +253,12 @@ ExampleAssetsBrowser::Draw(const char* title, bool* p_open)
             bool selected = Selection.Contains((ImGuiID)name);
             bool clicked = ImGui::Selectable(name, selected);
 
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            if (ImGui::IsItemHovered())
             {
-				content::ImportAsset(path);
+                if (clicked)
+                    assets::ViewImportSettings(content::GetAssetTypeFromExtension(path.extension().string().data()));
+                if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    content::ImportAsset(path);
             }
 
             if (path.extension() == ".model")
@@ -410,7 +414,7 @@ ExampleAssetsBrowser::Draw(const char* title, bool* p_open)
                         {
                             ImU32 label_col = ImGui::GetColorU32(item_is_selected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
                             char label[32];
-                            sprintf(label, "%d", item_data->ID);
+                            sprintf_s(label, "%d", item_data->ID);
                             draw_list->AddText(ImVec2(box_min.x, box_max.y - ImGui::GetFontSize()), label_col, label);
                         }
                     }

@@ -62,7 +62,7 @@ struct GPassCache
 
 	bool IsValid() const
 	{
-		const u32 count = D3D12RenderItemIDs.size();
+		const u32 count = (u32)D3D12RenderItemIDs.size();
 
 		for (u32 i{ 0 }; i < count; ++i)
 		{

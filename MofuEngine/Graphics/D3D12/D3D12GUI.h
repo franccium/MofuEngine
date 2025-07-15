@@ -6,14 +6,14 @@ class D3D12Surface;
 }
 
 namespace mofu::graphics::d3d12::ui {
-bool Initialize(DXGraphicsCommandList* cmdList, ID3D12CommandQueue* queue);
+bool Initialize(ID3D12CommandQueue* queue);
 void Shutdown();
 
 void StartNewFrame();
 
 void SetupGUIFrame();
-void RenderGUI(DXGraphicsCommandList* cmdList);
-void RenderSceneIntoImage(DXGraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameInfo frameInfo);
+void RenderGUI();
+void RenderSceneIntoImage(D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameInfo frameInfo);
 void EndGUIFrame(DXGraphicsCommandList* cmdList);
 
 void ViewTextureAsImage(id_t textureID);

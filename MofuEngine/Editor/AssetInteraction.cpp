@@ -42,7 +42,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		}
 	}
 
-	v3 pos{ -3.f, -10.f, 90.f };
+	v3 pos{ 0.f, 0.f, 0.f };
 	quat rot{ quatIndentity };
 	v3 scale{ 1.f, 1.f, 1.f };
 	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
@@ -110,7 +110,7 @@ AddFBXImportedModelToScene(const content::FBXImportState& state)
 }
 
 void 
-Prefab::Instantiate(const ecs::scene::Scene& scene)
+Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 {
 	assert(std::filesystem::exists(_geometryPath));
 	id_t geometryID{ LoadAsset(_geometryPath, content::AssetType::Mesh) };
@@ -123,7 +123,7 @@ Prefab::Instantiate(const ecs::scene::Scene& scene)
 		materialIDs[i] = content::CreateMaterial(_materialInfos[i]);
 	}
 
-	v3 pos{ -3.f, -10.f, 90.f };
+	v3 pos{ 0.f, 0.f, 0.f };
 	quat rot{ quatIndentity };
 	v3 scale{ 1.f, 1.f, 1.f };
 	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
@@ -188,8 +188,6 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state)
 	_geometryPath = state.OutModelFile;
 	_textureImageFiles = state.ImageFiles;
 
-	u32 textureFileCount{ (u32)state.ImageFiles.size() };
-	u32 materialCount{ (u32)state.Materials.size() };
 	u32 meshCount{ (u32)state.LodGroups[0].Meshes.size() };
 
 	std::filesystem::path texParentPath{ "Assets/ab/imp" };

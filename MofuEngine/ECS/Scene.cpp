@@ -30,7 +30,7 @@ std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
 Vec<EntityBlock*> blocks{};
 
 // NOTE: entity IDs globally unique, in format generation | index, index goes into entityData, generation is compared
-Vec<EntityData> entityData{};
+Vec<EntityData> entityDatas{};
 std::deque<u32> _freeEntityIDs; // TODO: recycling
 
 constexpr size_t ENTITY_BLOCK_SIZE{ 32 * 1024 }; // 64 KiB per block
@@ -97,7 +97,7 @@ AddEntity(Vec<EntityBlock*> matchingBlocks, Entity entity)
 	chosenBlock->EntityCount++;
 
 	u32 idx{ id::Index(entity) };
-	entityData.emplace_back(chosenBlock, row, id::Generation(entity), entity); // TODO: what to do here
+	entityDatas.emplace_back(chosenBlock, row, id::Generation(entity), entity); // TODO: what to do here
 
 	//GetEntityComponent<component::LocalTransform>(entity) = component::LocalTransform{};
 	//GetEntityComponent<component::LocalTransform>(entity).Position = { -3.0f, -10.f, 10.f}; //TODO: temporary initial transform
@@ -143,7 +143,7 @@ RemoveEntity(EntityBlock* block, Entity entity)
 		}
 
 		Entity movedEntity{ block->Entities[newRow] };
-		entityData[id::Index(movedEntity)].row = newRow;
+		entityDatas[id::Index(movedEntity)].row = newRow;
 	}
 }
 
@@ -204,12 +204,12 @@ GetEntityData(Entity id)
 {
 	assert(IsEntityAlive(id));
 	u32 entityIdx{ id::Index(id) };
-	assert(entityIdx < entityData.size());
-	return entityData[entityIdx];
+	assert(entityIdx < entityDatas.size());
+	return entityDatas[entityIdx];
 }
 const Vec<EntityData>& GetAllEntityData()
 {
-	return entityData;
+	return entityDatas;
 }
 
 EntityData&
@@ -231,8 +231,8 @@ CreateEntity(CetLayout& layout)
 		matchingBlocks.emplace_back(b);
 	}
 
-	AddEntity(matchingBlocks, Entity{ (u32)entityData.size() }); // create a new entity with the next ID
-	return entityData.back();
+	AddEntity(matchingBlocks, Entity{ (u32)entityDatas.size() }); // create a new entity with the next ID
+	return entityDatas.back();
 }
 
 const Scene& 
@@ -362,7 +362,7 @@ void
 FillTestData()
 {
 	// create 5 entities with LocalTransforms
-	constexpr u32 TEST_BLOCK_COUNT{ 5 };
+	//constexpr u32 TEST_BLOCK_COUNT{ 5 };
 	//for (u32 j{ 0 }; j < TEST_BLOCK_COUNT; ++j)
 	//{
 	//	CetLayout layout{};
@@ -416,7 +416,7 @@ IsEntityAlive(Entity id)
 {
 	assert(id::IsValid(id));
 	// if the generation doesn't match, the entity had to die/never exist
-	return id::Generation(entityData[id::Index(id)].id) == id::Generation(id);
+	return id::Generation(entityDatas[id::Index(id)].id) == id::Generation(id);
 }
 
 void 
@@ -424,7 +424,7 @@ RemoveEntity(Entity entity)
 {
 	assert(IsEntityAlive(entity));
 	u32 entityIdx{ id::Index(entity) };
-	
+	//TODO:
 }
 
 void 

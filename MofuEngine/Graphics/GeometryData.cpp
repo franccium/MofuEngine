@@ -25,13 +25,7 @@ CalculateNormals(Mesh& m)
 	{
 		const u32 idx0{ m.RawIndices[i] };
 		const u32 idx1{ m.RawIndices[(i + 1)] };
-		const u32 idx2{ m.RawIndices[(i + 2)] };	
-
-		for (u32 v{ 0 }; v < 4; ++v)
-		{
-			v3& v0{ m.Positions[v] };
-			u32 a{ 5 };
-		}
+		const u32 idx2{ m.RawIndices[(i + 2)] };
 
 		xmm v0{ XMLoadFloat3(&m.Positions[idx0]) };
 		xmm v1{ XMLoadFloat3(&m.Positions[idx1]) };
@@ -389,16 +383,7 @@ PackVertexData(Mesh& m)
 		for (u32 i{ 0 }; i < vertexCount; ++i)
 		{
 			Vertex& v{ m.Vertices[i] };
-			v.Red = 117;
-			v.Green = 80;
-			v.Blue = 198;
-			if (math::IsEqual(v.UV.x, 0.f))
-			{
-				v.UV.x = 0.1f;
-			}
-			//if (math::IsEqual(v.UV.y, 0.f)) v.UV.y = 0.2f;
 			elementBuffer[i] = { {v.Red, v.Green, v.Blue}, tnSigns[i], v.UV, { normals[i].x, normals[i].y }, {tangents[i].x, tangents[i].y} };
-			//memset(&elementBuffer[i], 0x10, sizeof(StaticNormalTexture));
 		}
 	}
 	break;
@@ -735,11 +720,6 @@ PackGeometryForEngine(const MeshGroup& group, std::filesystem::path targetPath)
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
 	file.close();
-}
-
-void 
-MergeMeshes(const LodGroup& lod, Mesh& outCombinedMesh)
-{
 }
 
 void

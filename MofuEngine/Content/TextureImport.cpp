@@ -2,15 +2,12 @@
 #include "Content/ResourceCreation.h"
 #include "Utilities/IOStream.h"
 #include <DirectXTex.h>
+#include "NormalMapProcessing.h"
 
 using namespace DirectX;
 using namespace Microsoft::WRL;
 
 namespace mofu::content::texture {
-bool IsNormalMap(const Image* const image) 
-{ 
-	return false; 
-}
 
 HRESULT EquirectangularToCubemap(const Image* envMaps, u32 envMapCount, u32 cubemapSize,
 	bool usePrefilterSize, bool mirrorCubemap, ScratchImage& cubeMaps) 
@@ -302,7 +299,7 @@ CreateDevice()
 	{
 		ID3D11Device** device{ &devices[i] };
 		D3D_FEATURE_LEVEL featureLevel;
-		[[maybeUnused]] HRESULT hr{ d3d11CreateDevice(adapters[i].Get(), adapters[i] ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
+		[[maybe_unused]] HRESULT hr{ d3d11CreateDevice(adapters[i].Get(), adapters[i] ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
 			nullptr, createDeviceFlags, featureLevels, _countof(featureLevels), D3D11_SDK_VERSION, device, &featureLevel, nullptr) };
 
 		assert(SUCCEEDED(hr));
@@ -493,7 +490,7 @@ PrefilterIbl(TextureData* const data, IblFilter::Type filterType)
 }
 
 [[nodiscard]] ScratchImage
-LoadFromBytes(TextureData* data, const u8* const bytes, u32 size, const char* fileExtension)
+LoadFromBytes(TextureData* data, const u8* const bytes, u32 size)
 {
 	data->Info.ImportError = ImportError::Load;
 	WIC_FLAGS wicFlags{ WIC_FLAGS_NONE };
@@ -815,8 +812,7 @@ Import(TextureData* const data)
 	}
 	else
 	{
-		scratchImages.emplace_back(LoadFromBytes(data, data->ImportSettings.ImageBytes, 
-			data->ImportSettings.ImageBytesSize, data->ImportSettings.FileExtension));
+		scratchImages.emplace_back(LoadFromBytes(data, data->ImportSettings.ImageBytes, data->ImportSettings.ImageBytesSize));
 	}
 	if (data->Info.ImportError != ImportError::Succeeded) return;
 

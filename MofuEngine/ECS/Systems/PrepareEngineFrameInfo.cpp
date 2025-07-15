@@ -18,7 +18,7 @@ namespace mofu::graphics::d3d12 {
 	struct PrepareEngineFrameInfo : ecs::system::System<PrepareEngineFrameInfo>
 	{
 		//TODO: figure out caching stuff and not updating unchanged
-		void Update(const ecs::system::SystemUpdateData data)
+		void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 		{
 			ZoneScopedN("PrepareEngineFrameInfo");
 			graphics::FrameInfo frameInfo{};
@@ -40,7 +40,7 @@ namespace mofu::graphics::d3d12 {
 				thresholds.emplace_back(0.f);
 				renderItemCount++;
 			}
-			renderItemCount = renderItemIDs.size();
+			renderItemCount = (u32)renderItemIDs.size();
 
 			frameInfo.RenderItemCount = renderItemCount;
 			frameInfo.RenderItemIDs = renderItemIDs.data();

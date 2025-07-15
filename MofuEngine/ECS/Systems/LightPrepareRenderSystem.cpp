@@ -12,7 +12,7 @@
 namespace mofu::graphics::d3d12 {
 	struct LightPrepareRenderSystem : ecs::system::System<LightPrepareRenderSystem>
 	{
-		void Update(const ecs::system::SystemUpdateData data)
+		void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 		{
 			ZoneScopedN("LightPrepareRenderSystem");
 

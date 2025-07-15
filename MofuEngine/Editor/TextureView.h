@@ -30,6 +30,14 @@ struct ViewableTexture
 	bool IsValid{ false };
 };
 
+constexpr const char* DIMENSION_TO_STRING[content::texture::TextureDimension::Count]{
+	"Texture 1D",
+	"Texture 2D",
+	"Texture 3D",
+	"Cubemap",
+};
+constexpr const char* FORMAT_STRING{ "TODO" };
+
 void OpenTextureView(std::filesystem::path textureAssetPath);
 void OpenTextureView(id_t textureID);
 void RenderTextureView();

@@ -200,6 +200,7 @@
     <ClInclude Include="Content\AssetImporter.h" />
     <ClInclude Include="Content\ContentManagement.h" />
     <ClInclude Include="Content\ContentUtils.h" />
+    <ClInclude Include="Content\NormalMapProcessing.h" />
     <ClInclude Include="Content\PrimitiveMeshGeneration.h" />
     <ClInclude Include="Content\ResourceCreation.h" />
     <ClInclude Include="Content\ShaderCompilation.h" />

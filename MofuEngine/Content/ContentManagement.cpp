@@ -6,6 +6,7 @@
 #include "Graphics/Renderer.h"
 #include "Content/ResourceCreation.h"
 #include "Content/ShaderCompilation.h"
+#include "AssetImporter.h"
 
 // TODO: file system
 #include <fstream>
@@ -153,8 +154,7 @@ CreateMaterial(graphics::MaterialInitInfo initInfo)
 void
 ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type)
 {
-    //TODO: can assert extension here 
-    //assert(std::filesystem::path::has_extension());
+    assert(type == GetAssetTypeFromEngineExtension(path.extension().string().data()));
 
     if (!std::filesystem::exists(path))
     {
@@ -187,10 +187,9 @@ ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& s
 }
 
 void
-ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type)
+ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, [[maybe_unused]] AssetType::type type)
 {
-    //TODO: can assert extension here 
-    //assert(std::filesystem::path::has_extension());
+    assert(type == GetAssetTypeFromEngineExtension(path.extension().string().data()));
 
     if (!std::filesystem::exists(path))
     {

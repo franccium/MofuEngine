@@ -19,11 +19,11 @@ namespace mofu::graphics::d3d12 {
 struct PreparePerObjectDataSystem : ecs::system::System<PreparePerObjectDataSystem>
 {
 	//TODO: figure out caching stuff and not updating unchanged
-	void Update(const ecs::system::SystemUpdateData data)
+	void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 	{
 		//log::Info("PreparePerObjectDataSystem::Update");
 
-		ConstantBuffer& cbuffer{ core::CBuffer() };
+		//ConstantBuffer& cbuffer{ core::CBuffer() };
 
 		//for (auto [entity, transform, renderable] : ecs::scene::GetRW<ecs::component::WorldTransform, ecs::component::Renderable>())
 		//{

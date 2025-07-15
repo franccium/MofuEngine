@@ -301,7 +301,7 @@ void
 DepthPrepassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, u32 workStart, u32 workEnd)
 {
 	char name[25];
-	sprintf(name, "worker %u", workStart);
+	sprintf_s(name, "worker %u", workStart);
 	tracy::SetThreadName(name);
 	ZoneScopedNC("Depth Prepass Worker", tracy::Color::DarkOrange4);
 	const GPassCache& cache{ frameCache };
@@ -334,7 +334,7 @@ DepthPrepassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameIn
 }
 
 void 
-DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& frameInfo, u32 firstWorker)
+DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& frameInfo, [[maybe_unused]] u32 firstWorker)
 {
 	//TODO: testing removed, bring back when needed
 	//PrepareRenderFrame(frameInfo);
@@ -451,17 +451,25 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 	}
 #endif
 }
+constexpr u32 GIZMOS_TEST_COUNT{ 10 };
+
+void
+RenderGizmos(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
+{
+	const GPassCache& cache{ frameCache };
+	const u32 renderItemCount{ GIZMOS_TEST_COUNT };
+
+}
 
 void
 MainGPassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, u32 workStart, u32 workEnd)
 {
 	char name[25];
-	sprintf(name, "main gpass worker %u", workStart);
+	sprintf_s(name, "main gpass worker %u", workStart);
 	tracy::SetThreadName(name);
 	ZoneScopedNC("Main GPass Worker", tracy::Color::Green1);
 
 	const GPassCache& cache{ frameCache };
-	const u32 renderItemCount{ cache.Size() };
 
 	ID3D12RootSignature* currentRootSignature{ nullptr };
 	ID3D12PipelineState* currentPipelineState{ nullptr };

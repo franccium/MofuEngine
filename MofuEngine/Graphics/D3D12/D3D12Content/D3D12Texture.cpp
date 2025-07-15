@@ -159,6 +159,22 @@ CreateTextureFromResourceData(const u8* const blob)
     return D3D12Texture{ info };
 }
 
+[[nodiscard]] DescriptorHandle
+CreateSRVForMipLevel(DXResource* texture, u32 mipLevel, DXGI_FORMAT format)
+{
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+    srvDesc.Format = format;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = mipLevel;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+    DescriptorHandle srvHandle = core::SrvHeap().AllocateDescriptor();
+    core::Device()->CreateShaderResourceView(texture, &srvDesc, srvHandle.cpu);
+
+    return srvHandle;
+}
+
 } // anonymous namespace
 
 // NOTE: expects data to contain:
@@ -198,22 +214,6 @@ GetDescriptorIndices(const id_t* const textureIDs, u32 idCount, u32* const outIn
         assert(id::IsValid(textureIDs[i]));
         outIndices[i] = descriptorIndices[textureIDs[i]];
     }
-}
-
-DescriptorHandle
-CreateSRVForMipLevel(DXResource* texture, u32 mipLevel, DXGI_FORMAT format)
-{
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format = format;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MostDetailedMip = mipLevel;
-    srvDesc.Texture2D.MipLevels = 1;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-    DescriptorHandle srvHandle = core::SrvHeap().AllocateDescriptor();
-    core::Device()->CreateShaderResourceView(texture, &srvDesc, srvHandle.cpu);
-
-    return srvHandle;
 }
 
 const DescriptorHandle&

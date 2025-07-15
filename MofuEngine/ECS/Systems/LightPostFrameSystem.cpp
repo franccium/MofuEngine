@@ -12,7 +12,7 @@
 namespace mofu::graphics::d3d12 {
 struct LightPostFrameSystem : ecs::system::System<LightPostFrameSystem>
 {
-	void Update(const ecs::system::SystemUpdateData data)
+	void Update([[maybe_unused]] const ecs::system::SystemUpdateData data)
 	{
 		ZoneScopedN("LightPostFrameSystem");
 
