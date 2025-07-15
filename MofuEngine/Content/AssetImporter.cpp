@@ -143,9 +143,12 @@ ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImp
 			{
 				state.Errors |= FBXImportState::ErrorFlags::InvalidTexturePath;
 			}
-			content::ReadFileToByteBuffer(texturePath, data, outSize);
-			assert(outSize < UINT_MAX);
-			contentSize = outSize;
+			else if (std::filesystem::file_size(texturePath) != 0)
+			{
+				content::ReadFileToByteBuffer(texturePath, data, outSize);
+				assert(outSize < UINT_MAX);
+				contentSize = outSize;
+			}
 			if (contentSize == 0)
 			{
 				log::Warn("FBX Import: Image at path [%s] had no data", texturePath);
@@ -162,14 +165,32 @@ ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImp
 			{
 				std::filesystem::create_directory(targetPath);
 			}
-			char name[16];
-			sprintf_s(name, "%u%s\0", textureIdx, texturePath.extension().string().data());
-			targetPath.append(name);
+			//char name[16];
+			//sprintf_s(name, "%u%s\0", textureIdx, texturePath.extension().string().data());
+			targetPath /= texturePath.filename();
 			ImportImageFromBytes(data.get(), contentSize, texturePath.extension().string().data(), targetPath);
 			state.Textures[textureIdx] = {};
 			state.SourceImages[textureIdx] = {};
 			state.ImageFiles[textureIdx] = targetPath.replace_extension(".tex").string();
 		}
+	}
+}
+
+void
+GetTextureForMaterial(editor::material::TextureUsage::Usage textureUsage, editor::material::EditorMaterial& material, u32 fileIndex, FBXImportState& state)
+{
+	//TODO: reuse already loaded
+
+	u32 sourceImageIndex{ state.SourceImages[fileIndex] };
+	if (!state.ImageFiles[sourceImageIndex].empty())
+	{
+		material.TextureIDs[textureUsage] = content::CreateResourceFromAsset(state.ImageFiles[sourceImageIndex], content::AssetType::Texture);
+	}
+	else
+	{
+		log::Warn("Couldn't find texture for %u, idx: %u %u", textureUsage, fileIndex, sourceImageIndex);
+		state.Errors |= FBXImportState::ErrorFlags::MaterialTextureNotFound;
+		material.TextureIDs[textureUsage] = id::INVALID_ID;
 	}
 }
 
@@ -181,6 +202,7 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 		editor::material::EditorMaterial material{};
 		graphics::MaterialSurface& surface{ material.Surface };
 		material.Name = mat->name.data;
+		using TexUse = editor::material::TextureUsage;
 
 		material.Type = graphics::MaterialType::Opaque;
 
@@ -197,6 +219,7 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 
 			// TODO: alpha
 			material.Flags |= editor::material::EditorMaterial::Flags::TextureRepeat;
+			GetTextureForMaterial(TexUse::BaseColor, material, mat->pbr.base_color.texture->file_index, state);
 		}
 
 		//if (mat->features.pbr.enabled)
@@ -214,39 +237,20 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 			const ufbx_texture* metalnessTexture{ GetFileTexture(mat->pbr.metalness.texture) };
 			if (metalnessTexture)
 			{
-				auto p{ metalnessTexture->file_index };
-				auto s{ metalnessTexture->absolute_filename };
-				auto f{ metalnessTexture->filename };
-				auto r{ metalnessTexture->relative_filename };
-				if (!state.ImageFiles[mat->pbr.metalness.texture->file_index].empty())
-				{
-					log::Info("Found metallic texture: %s", state.ImageFiles[mat->pbr.metalness.texture->file_index]);
-				}
-				else state.Errors |= FBXImportState::ErrorFlags::MaterialTextureNotFound;
+				GetTextureForMaterial(TexUse::MetallicRoughness, material, mat->pbr.metalness.texture->file_index, state);
 			}
 
 			const ufbx_texture* roughnessTexture{ GetFileTexture(mat->pbr.roughness.texture) };
 			if (roughnessTexture)
 			{
-				if (!state.ImageFiles[mat->pbr.roughness.texture->file_index].empty())
-				{
-					log::Info("Found roughness texture: %s", state.ImageFiles[mat->pbr.roughness.texture->file_index]);
-				}
+				GetTextureForMaterial(TexUse::MetallicRoughness, material, mat->pbr.roughness.texture->file_index, state);
 			}
 		}
 
 		const ufbx_texture* normalTexture{ GetFileTexture(mat->pbr.normal_map.texture) };
 		if (normalTexture)
 		{
-			auto p{ normalTexture->file_index };
-			auto s{ normalTexture->absolute_filename };
-			auto f{ normalTexture->filename };
-			auto r{ normalTexture->relative_filename };
-			//assert(false);
-			if (!state.ImageFiles[mat->pbr.normal_map.texture->file_index].empty())
-			{
-				log::Info("Found normal map: %s", state.ImageFiles[mat->pbr.normal_map.texture->file_index]);
-			}
+			GetTextureForMaterial(TexUse::Normal, material, mat->pbr.normal_map.texture->file_index, state);
 		}
 
 		if (mat->pbr.emission_color.has_value)
@@ -258,13 +262,13 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 		const ufbx_texture* emissionTexture{ GetFileTexture(mat->pbr.emission_color.texture) };
 		if (emissionTexture)
 		{
-
+			GetTextureForMaterial(TexUse::Emissive, material, mat->pbr.emission_color.texture->file_index, state);
 		}
 
 		const ufbx_texture* aoTexture{ GetFileTexture(mat->pbr.ambient_occlusion.texture) };
 		if (aoTexture)
 		{
-
+			GetTextureForMaterial(TexUse::AmbientOcclusion, material, mat->pbr.ambient_occlusion.texture->file_index, state);
 		}
 
 		state.Materials.emplace_back(std::move(material));
@@ -272,7 +276,7 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 }
 
 void
-ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
+ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 {
 	// node - LodGroup
 
@@ -340,8 +344,24 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 		// Create vertex and index buffers
 		mesh.RawIndices = std::move(indices);
 
-		mesh.MaterialIndices.resize(mesh.RawIndices.size(), 0);
-		mesh.MaterialUsed.emplace_back(0);
+
+		// materials
+		ufbx_material* fbxMat{ part.index < m->materials.count ? m->materials[part.index] : nullptr };
+		if (fbxMat)
+		{
+			const u32 materialIdx = (u32)fbxMat->typed_id;
+			assert(materialIdx < state.Materials.size());
+			editor::material::EditorMaterial mat{ state.Materials[materialIdx] };
+			mesh.MaterialIndices.emplace_back(materialIdx);
+		}
+		else
+		{
+			// default material
+			editor::material::EditorMaterial defaultMat{};
+			mesh.MaterialIndices.emplace_back(id::INVALID_ID);
+		}
+
+		mesh.MaterialUsed.emplace_back(1);
 
 		for (const Vertex& v : mesh.Vertices)
 		{
@@ -356,11 +376,65 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup)
 }
 
 void
-ImportMesh(std::filesystem::path path)
+ImportMeshes(ufbx_scene* scene, FBXImportState& state)
+{
+	MeshGroupData data{};
+	data.ImportSettings.CalculateNormals = false;
+	data.ImportSettings.CalculateTangents = true;
+	data.ImportSettings.MergeMeshes = true;
+	data.ImportSettings.ImportAnimations = false;
+	data.ImportSettings.ImportEmbeddedTextures = false;
+	data.ImportSettings.ReverseHandedness = false;
+	data.ImportSettings.SmoothingAngle = 0.f;
+
+	MeshGroup meshGroup{};
+	meshGroup.Name = scene->metadata.filename.data;
+	meshGroup.Name = "MeshGroup";
+
+	LodGroup lodGroup{};
+	//lodGroup.Name = node->name.data;
+	lodGroup.Name = "testing lod group";
+
+	for (ufbx_node* node : scene->nodes)
+	{
+		if (node->is_root) continue;
+
+		if (node->element.type == UFBX_ELEMENT_LOD_GROUP)
+		{
+			// each child is an LOD level
+			for (u32 i = 0; i < node->children.count; ++i)
+			{
+				ufbx_node* child = node->children.data[i];
+				if (!child->mesh) continue;
+
+				ImportUfbxMesh(child, lodGroup, state);
+			}
+		}
+		else if (node->mesh)
+		{
+			ImportUfbxMesh(node, lodGroup, state);
+		}
+	}
+	meshGroup.LodGroups.emplace_back(lodGroup);
+	state.LodGroups.emplace_back(lodGroup);
+
+	ufbx_free_scene(scene);
+
+
+	ProcessMeshGroupData(meshGroup, data.ImportSettings);
+	//PackGeometryData(meshGroup, outData);
+	//PackGeometryDataForEditor(meshGroup, data);
+	//SaveGeometry(data, path.replace_extension(".geom"));
+	PackGeometryForEngine(meshGroup, state.OutModelFile);
+}
+
+void
+ImportFBX(std::filesystem::path path)
 {
 	log::Info("Importing mesh: %s", path.string().c_str());
 	FBXImportState state{};
 	state.FbxFile = path.filename().string();
+	state.OutModelFile = std::filesystem::path{ path }.replace_extension(".model").string();
 
 	ufbx_load_opts opts{};
 	opts.target_axes = ufbx_axes_right_handed_y_up;
@@ -386,63 +460,9 @@ ImportMesh(std::filesystem::path path)
 
 	ImportImages(scene, "", state);
 	ImportFBXMaterials(scene, state);
-
-	MeshGroup meshGroup{};
-	meshGroup.Name = scene->metadata.filename.data;
-	meshGroup.Name = path.stem().string() + ".model";
-
-	/*for (ufbx_node* node : scene->nodes) 
-	{
-		if (!node->mesh || node->is_root) continue;
-
-		ImportUfbxMesh(node, meshGroup);
-	}*/
-
-	LodGroup lodGroup{};
-	//lodGroup.Name = node->name.data;
-	lodGroup.Name = "testing lod group";
-
-	for (ufbx_node* node : scene->nodes)
-	{
-		if (node->is_root) continue;
-
-		if (node->element.type == UFBX_ELEMENT_LOD_GROUP)
-		{
-			// each child is an LOD level
-			for (u32 i = 0; i < node->children.count; ++i)
-			{
-				ufbx_node* child = node->children.data[i];
-				if (!child->mesh) continue;
-
-				ImportUfbxMesh(child, lodGroup);
-			}
-		}
-		else if (node->mesh)
-		{
-			ImportUfbxMesh(node, lodGroup);
-		}
-	}
-	meshGroup.LodGroups.emplace_back(lodGroup);
-
-	ufbx_free_scene(scene);
-
-	MeshGroupData data{};
-	data.ImportSettings.CalculateNormals = false;
-	data.ImportSettings.CalculateTangents = true;
-	data.ImportSettings.MergeMeshes = true;
-	data.ImportSettings.ImportAnimations = false;
-	data.ImportSettings.ImportEmbeddedTextures = false;
-	data.ImportSettings.ReverseHandedness = false;
-	data.ImportSettings.SmoothingAngle = 0.f;
-	ProcessMeshGroupData(meshGroup, data.ImportSettings);
-	//PackGeometryData(meshGroup, outData);
-	//PackGeometryDataForEditor(meshGroup, data);
-	//SaveGeometry(data, path.replace_extension(".geom"));
-	PackGeometryForEngine(meshGroup, path);
+	ImportMeshes(scene, state);
 	
-	state.OutModelFile = path.replace_extension(".model").string();
-	state.Errors |= FBXImportState::ErrorFlags::Test2;
-	state.Errors |= FBXImportState::ErrorFlags::Test3;
+
 	editor::ViewFBXImportSummary(state);
 }
 
@@ -493,7 +513,7 @@ ImportMesh(std::filesystem::path path)
 using AssetImporter = void(*)(std::filesystem::path path);
 constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
-	ImportMesh,
+	ImportFBX,
 	ImportTexture,
 };
 

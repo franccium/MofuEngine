@@ -63,6 +63,8 @@ public:
         Initialize();
         if (info.TextureCount)
         {
+            for (u32 i{ 0 }; i < info.TextureCount; ++i) assert(id::IsValid(info.TextureIDs[i]));
+
             memcpy(_textureIDs, info.TextureIDs, info.TextureCount * sizeof(id_t));
             texture::GetDescriptorIndices(_textureIDs, info.TextureCount, _descriptorIndices);
         }

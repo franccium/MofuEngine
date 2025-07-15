@@ -11,19 +11,7 @@
 
 namespace mofu::editor::material {
 namespace {
-struct TextureUsage
-{
-	enum Usage : u32
-	{
-		BaseColor = 0,
-		Normal,
-		MetallicRoughness,
-		Emissive,
-		AmbientOcclusion,
 
-		Count
-	};
-};
 constexpr const char* WHITE_TEXTURE{ "Assets/EngineTextures/white_placeholder_texture.tex" };
 constexpr const char* GRAY_TEXTURE{ "Assets/EngineTextures/gray_placeholder_texture.tex" };
 constexpr const char* BLACK_TEXTURE{ "Assets/EngineTextures/black_placeholder_texture.tex" };
@@ -166,6 +154,48 @@ OpenMaterialCreator(ecs::Entity entityID)
 	materialInitInfo.TextureIDs = &DEFAULT_TEXTURES[0];
 	memcpy(materialInitInfo.ShaderIDs, DEFAULT_SHADERS, graphics::ShaderType::Count * sizeof(id_t));
 	isOpen = true;
+}
+
+id_t 
+GetDefaultTextureID(TextureUsage::Usage usage)
+{
+	return DEFAULT_TEXTURES[usage];
+}
+
+id_t
+GetDefaultShaderID(TextureUsage::Usage usage)
+{
+	return DEFAULT_TEXTURES[usage];
+}
+
+EditorMaterial
+GetDefaultEditorMaterial()
+{
+	EditorMaterial mat{};
+	mat.Type = graphics::MaterialType::Opaque;
+	mat.Surface = graphics::MaterialSurface{};
+	mat.Flags = 0;
+	mat.Name = "Default material";
+	auto psvs{ content::GetDefaultPsVsShaders(true) };
+	mat.ShaderIDs[0] = psvs.first;
+	mat.ShaderIDs[1] = psvs.second;
+	mat.TextureCount = TextureUsage::Count;
+	for (u32 i{ 0 }; i < TextureUsage::Count; ++i) mat.TextureIDs[i] = DEFAULT_TEXTURES[i];
+	return mat;
+}
+
+graphics::MaterialInitInfo
+GetDefaultMaterialInitInfo()
+{
+	graphics::MaterialInitInfo info{};
+	info.Type = graphics::MaterialType::Opaque;
+	info.Surface = graphics::MaterialSurface{};
+	info.TextureCount = TextureUsage::Count;
+	info.TextureIDs = &DEFAULT_TEXTURES[0];
+	auto psvs{ content::GetDefaultPsVsShaders(true) };
+	info.ShaderIDs[0] = psvs.first;
+	info.ShaderIDs[1] = psvs.second;
+	return info;
 }
 
 void

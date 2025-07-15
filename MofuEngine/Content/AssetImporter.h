@@ -3,6 +3,7 @@
 #include "ContentManagement.h"
 #include <filesystem>
 #include "TextureImport.h"
+#include "Graphics/GeometryData.h"
 #include "Editor/TextureView.h"
 #include "Editor/MaterialEditor.h"
 
@@ -36,6 +37,7 @@ struct FBXImportState
 {
 	std::string FbxFile;
 	std::string OutModelFile;
+	Vec<LodGroup> LodGroups;
 	Vec<editor::material::EditorMaterial> Materials;
 	Vec<editor::texture::ViewableTexture> Textures;
 	Vec<u32> SourceImages;

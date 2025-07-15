@@ -284,7 +284,7 @@ AddRenderItem()
 		{
 			texturedMaterials[i] = texturedMaterialID;
 		}
-		editor::DropModelIntoScene(modelData.MeshFile, texturedMaterials);
+		editor::assets::DropModelIntoScene(modelData.MeshFile, texturedMaterials);
 	}
 	else
 	{
@@ -293,7 +293,7 @@ AddRenderItem()
 		{
 			materials[i] = mtlID;
 		}
-		editor::DropModelIntoScene(modelData.MeshFile, materials);
+		editor::assets::DropModelIntoScene(modelData.MeshFile, materials);
 	}
 
 	//MeshTest planeMeshTest{};

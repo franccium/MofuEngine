@@ -36,12 +36,15 @@ RenderImportSummary()
 	ImGui::Begin("FBX Import Summary", nullptr);
 
 	ImGui::Text("File: %s", fbxState.FbxFile);
-	ImGui::TextColored({ 0.8f, 0.1f, 0.1f, 1.f }, "Errors:");
-	for (u32 i{ 1 }; i < 32; ++i)
+	if (fbxState.Errors)
 	{
-		if (fbxState.Errors & (1u << i))
+		ImGui::TextColored({ 0.8f, 0.1f, 0.1f, 1.f }, "Errors:");
+		for (u32 i{ 1 }; i < 32; ++i)
 		{
-			ImGui::TextColored({ 0.8f, 0.1f, 0.1f, 1.f }, ErrorString[i]);
+			if (fbxState.Errors & (1u << i))
+			{
+				ImGui::TextColored({ 0.8f, 0.1f, 0.1f, 1.f }, ErrorString[i]);
+			}
 		}
 	}
 	
@@ -62,7 +65,7 @@ RenderImportSummary()
 
 	if (ImGui::Button("Add To Scene"))
 	{
-		DropModelIntoScene(fbxState.OutModelFile);
+		assets::AddFBXImportedModelToScene(fbxState);
 	}
 
 	ImGui::End();

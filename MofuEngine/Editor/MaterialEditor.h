@@ -5,10 +5,24 @@
 #include "Graphics/Renderer.h"
 
 namespace mofu::editor::material {
+struct TextureUsage
+{
+	enum Usage : u32
+	{
+		BaseColor = 0,
+		Normal,
+		MetallicRoughness,
+		Emissive,
+		AmbientOcclusion,
+
+		Count
+	};
+};
+
 struct EditorMaterial
 {
 	std::string Name;
-	id_t* TextureIDs;
+	u32 TextureIDs[TextureUsage::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
 	graphics::MaterialSurface Surface;
 	graphics::MaterialType::type Type;
 	u32 TextureCount;
@@ -22,6 +36,12 @@ struct EditorMaterial
 	u32 Flags;
 };
 
+struct EditorMesh
+{
+	std::string Name;
+
+};
+
 void DisplayMaterialSurfaceProperties(const graphics::MaterialSurface& mat);
 
 bool InitializeMaterialEditor();
@@ -29,4 +49,8 @@ void RenderMaterialEditor();
 
 void OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat);
 void OpenMaterialCreator(ecs::Entity entityID);
+
+id_t GetDefaultTextureID(TextureUsage::Usage usage);
+graphics::MaterialInitInfo GetDefaultMaterialInitInfo();
+EditorMaterial GetDefaultEditorMaterial();
 }

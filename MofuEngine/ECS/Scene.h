@@ -12,8 +12,16 @@ namespace mofu::ecs::scene {
 
 class Scene
 {
+public:
+	constexpr explicit Scene(u32 id) : _id{ id } {}
 
+	constexpr u32 GetSceneID() const { return _id; }
+private:
+	u32 _id;
 };
+
+const Scene& GetCurrentScene();
+void CreateScene();
 
 template<typename... Component>
 CetMask GetCetMask() 

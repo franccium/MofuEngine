@@ -261,7 +261,7 @@ ExampleAssetsBrowser::Draw(const char* title, bool* p_open)
             {
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
                 {
-                    editor::DropModelIntoScene(path);
+                    editor::assets::DropModelIntoScene(path);
                 }
             }
 

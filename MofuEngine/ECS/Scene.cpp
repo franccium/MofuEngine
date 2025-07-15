@@ -21,6 +21,9 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 	return (querySignature & blockSignature) == querySignature;
 }
 
+Vec<Scene> scenes;
+u32 currentSceneIndex;
+
 std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
 //constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
 //constexpr u32 TEST_BLOCK_COUNT{ 5 };
@@ -232,6 +235,18 @@ CreateEntity(CetLayout& layout)
 	return entityData.back();
 }
 
+const Scene& 
+GetCurrentScene()
+{
+	return scenes[currentSceneIndex];
+}
+
+void 
+CreateScene()
+{
+	scenes.emplace_back(Scene{ (u32)scenes.size() });
+}
+
 CetLayout
 GenerateCetLayout(const CetMask cetMask)
 {
@@ -421,6 +436,8 @@ UnloadScene()
 void
 Initialize()
 {
+	CreateScene();
+
 	//TODO: bake the EntityBlocks from scene data
 
 	//FillTestData();

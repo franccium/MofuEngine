@@ -17,6 +17,7 @@ namespace {
 id_t defaultMaterialID{};
 id_t defaultVSID{};
 id_t defaultPSID{};
+id_t defaultTexturedPSID{};
 
 void
 CreateDefaultShaders()
@@ -54,8 +55,18 @@ CreateDefaultShaders()
     assert(pixelShaders.back().get());
     const u8* pixelShaderPtrs[]{ pixelShaders[0].get() };
 
+    extraArgs.clear();
+    defines[0] = L"TEXTURED_MTL=1";
+    extraArgs.emplace_back(L"-D");
+    extraArgs.emplace_back(defines[0]);
+    pixelShaders.emplace_back(std::move(CompileShader(info, shaderPath, extraArgs)));
+    assert(pixelShaders.back().get());
+
     defaultVSID = content::AddShaderGroup(vertexShaderPtrs.data(), (u32)vertexShaderPtrs.size(), keys.data());
     defaultPSID = content::AddShaderGroup(pixelShaderPtrs, 1, &U32_INVALID_ID);
+
+    pixelShaderPtrs[0] = pixelShaders[1].get();
+    defaultTexturedPSID = content::AddShaderGroup(pixelShaderPtrs, 1, &U32_INVALID_ID);
 }
 
 void
@@ -76,6 +87,14 @@ id_t
 GetDefaultMaterial()
 {
     return defaultMaterialID;
+}
+
+std::pair<id_t, id_t> 
+GetDefaultPsVsShaders(bool textured)
+{
+    return textured
+        ? std::pair<id_t, id_t>{ defaultVSID, defaultTexturedPSID }
+        : std::pair<id_t, id_t>{ defaultVSID , defaultPSID };
 }
 
 bool
