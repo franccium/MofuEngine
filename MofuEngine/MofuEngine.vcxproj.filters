@@ -78,7 +78,7 @@
     <ClCompile Include="ECS\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\AssetBrowser.cpp">
+    <ClCompile Include="Editor\ContentBrowser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Content\AssetImporter.cpp">
@@ -351,7 +351,7 @@
     <ClInclude Include="Editor\EditorInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\AssetBrowser.h">
+    <ClInclude Include="Editor\ContentBrowser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Content\AssetImporter.h">

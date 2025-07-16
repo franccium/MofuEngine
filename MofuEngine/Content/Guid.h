@@ -10,6 +10,7 @@ struct Guid
 	Guid(u64 id);
 	operator u64() const { return id; }
 };
+
 }
 
 namespace std {

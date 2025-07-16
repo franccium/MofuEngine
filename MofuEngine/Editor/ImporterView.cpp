@@ -4,6 +4,7 @@
 #include "AssetInteraction.h"
 #include "Content/TextureImport.h"
 #include "TextureView.h"
+#include "Content/EditorContentManager.h"
 
 namespace mofu::editor::assets {
 void RenderTextureImportSettings();
@@ -96,6 +97,13 @@ void
 ViewImportSettings(content::AssetType::type assetType)
 {
 	activeAssetImportType = assetType;
+}
+
+void
+ViewImportSettings(content::AssetHandle handle)
+{
+	content::AssetPtr asset{ content::assets::GetAsset(handle) };
+	activeAssetImportType = asset->Type;
 }
 
 constexpr const char* ErrorString[7]{

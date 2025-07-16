@@ -11,17 +11,27 @@
 #include "Editor/ImporterView.h"
 #include "Editor/MaterialEditor.h"
 #include "Editor/Project/Project.h"
+#include "EditorContentManager.h"
 
 namespace mofu::content {
 namespace {
 
-void
+std::filesystem::path 
+BuildResourcePath(std::string_view assetFileName, const char* extension)
+{
+	std::filesystem::path p{ editor::project::GetResourceDirectory() / assetFileName };
+	p.replace_extension(extension);
+	return p;
+}
+
+const std::filesystem::path
 ImportUnknown([[maybe_unused]] std::filesystem::path path)
 {
 	assert(false);
+	return {};
 }
 
-void
+const std::filesystem::path
 ImportTexture(std::filesystem::path path)
 {
 	//assert(std::filesystem::exists(path));
@@ -37,11 +47,11 @@ ImportTexture(std::filesystem::path path)
 		log::Error("Texture import error: ", data.Info.ImportError);
 	}
 
+	std::filesystem::path importedAssetPath{ BuildResourcePath(path.stem().string(), ".tex") };
+	PackTextureForEngine(data, importedAssetPath);
+	PackTextureForEditor(data, BuildResourcePath(path.stem().string(), ".etex"));
 
-	PackTextureForEngine(data, path);
-	PackTextureForEditor(data, path);
-	//textureData.SetTextureInfoFromData(texture);
-	//if (!texture.SetData(textureData.GetSlices(), textureData.GetIcon(), diffuseIBLCubemap)) throw new InvalidDataException();
+	return importedAssetPath;
 }
 
 Color 
@@ -124,7 +134,7 @@ ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImp
 		if (texturePath.is_absolute()) 
 		{
 			texturePath = texturePath.filename();
-			texturePath = editor::project::GetAssetPath() / std::filesystem::path{ "ab" } / texturePath;
+			texturePath = editor::project::GetAssetDirectory() / std::filesystem::path{ "ab" } / texturePath;
 		}
 		if (!basePath.empty())
 		{
@@ -186,6 +196,7 @@ GetTextureForMaterial(editor::material::TextureUsage::Usage textureUsage, editor
 {
 	//TODO: reuse already loaded
 
+	if (!state.ImportSettings.ImportEmbeddedTextures) return;
 	u32 sourceImageIndex{ state.SourceImages[fileIndex] };
 	if (!state.ImageFiles[sourceImageIndex].empty())
 	{
@@ -449,14 +460,17 @@ ImportMeshes(ufbx_scene* scene, FBXImportState& state)
 	PackGeometryForEngine(meshGroup, state.OutModelFile);
 }
 
-void
+const std::filesystem::path
 ImportFBX(std::filesystem::path path)
 {
 	log::Info("Importing mesh: %s", path.string().c_str());
 
 	FBXImportState state{};
 	state.FbxFile = path.filename().string();
-	state.OutModelFile = std::filesystem::path{ path }.replace_extension(".model").string();
+
+	std::filesystem::path importedAssetPath{ BuildResourcePath(path.stem().string(), ".mesh") };
+
+	state.OutModelFile = importedAssetPath.string();
 	state.ImportSettings = editor::assets::GetGeometryImportSettings();
 
 	ufbx_load_opts opts{};
@@ -467,7 +481,7 @@ ImportFBX(std::filesystem::path path)
 	if (!scene) 
 	{
 		log::Error("Failed to load: %s\n", error.description.data);
-		return;
+		return importedAssetPath;
 	}
 	// list all nodes in the scene
 	for (u32 i{ 0 }; i < scene->nodes.count; i++) 
@@ -488,84 +502,21 @@ ImportFBX(std::filesystem::path path)
 	ImportFBXMaterials(scene, state);
 	ImportMeshes(scene, state);
 	
-
 	editor::assets::ViewFBXImportSummary(state);
+
+	return importedAssetPath;
 }
 
-//public bool SetData(SliceArray3D slices, Slice icon, Texture iblPair)
-//{
-//	if (slices != null && slices.Count != 0 && slices.First().Count != 0 && slices.First().First().Count != 0)
-//	{
-//		Slices = slices;
-//	}
-//	else
-//	{
-//		return false;
-//	}
-//
-//	var firstMip = Slices[0][0][0];
-//	if (!HasValidDimensions(firstMip.Width, firstMip.Height, ArraySize, IsVolumeMap, FullPath))
-//	{
-//		return false;
-//	}
-//
-//	if (icon == null)
-//	{
-//		Debug.Assert(!ImportSettings.Compress);
-//		icon = firstMip;
-//	}
-//
-//	Icon = BitmapHelper.CreateThumbnail(BitmapHelper.ImageFromSlice(icon, Format, IsNormalMap), ContentInfo.IconWidth, ContentInfo.IconWidth);
-//
-//	if (iblPair != null)
-//	{
-//		IsPrefilteredIBL = true;
-//		IBLPair = iblPair;
-//	}
-//
-//	return true;
-//}
-//
-//public void SetTextureInfoFromData(Texture texture)
-//{
-//	texture.Width = Info.Width;
-//	texture.Height = Info.Height;
-//	texture.ArraySize = Info.ArraySize;
-//	texture.MipLevels = Info.MipLevels;
-//	texture.Format = (DXGI_FORMAT)Info.Format;
-//	texture.Flags = (TextureFlags)Info.Flags;
-//}
-
-using AssetImporter = void(*)(std::filesystem::path path);
+using AssetImporter = const std::filesystem::path(*)(std::filesystem::path path);
 constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
 	ImportFBX,
 	ImportTexture,
 };
 
-const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtension {
-	{ ".fbx", AssetType::Mesh },
-	{ ".png", AssetType::Texture },
-	{ ".tga", AssetType::Texture },
-	{ ".tiff", AssetType::Texture },
-	{ ".tif", AssetType::Texture },
-	{ ".dds", AssetType::Texture },
-	{ ".hdr", AssetType::Texture },
-	{ ".jpg", AssetType::Texture },
-	{ ".jpeg", AssetType::Texture },
-	{ ".bmp", AssetType::Texture },
-	{ ".wav", AssetType::Audio },
-};
-
-const std::unordered_map<std::string_view, AssetType::type> assetTypeFromEngineExtension{
-	{ ".model", AssetType::Mesh },
-	{ ".emodel", AssetType::Mesh },
-	{ ".tex", AssetType::Texture },
-	{ ".etex", AssetType::Texture },
-};
-
 } // anonymous namespace
 
+// Import an asset that doesn't have an entry in the asset registry yet (called when a new file gets added to the project)
 void 
 ImportAsset(std::filesystem::path path)
 {
@@ -577,11 +528,30 @@ ImportAsset(std::filesystem::path path)
 	if (it != assetTypeFromExtension.end())
 	{
 		AssetType::type assetType{ it->second };
-		assetImporters[assetType](path);
+		const std::filesystem::path importedPath{ assetImporters[assetType](path) };
+		Asset* asset = new Asset{ assetType, path, importedPath };
+		assets::RegisterAsset(asset);
 		return;
 	}
 
 	log::Error("Unknown asset type for file: %s", path.string().c_str());
+}
+
+void
+ImportAsset(AssetHandle handle)
+{
+	AssetPtr asset{ assets::GetAsset(handle) };
+	assert(asset);
+	if (!std::filesystem::exists(asset->ImportedFilePath))
+	{
+		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath);
+	}
+	else
+	{
+		//TODO: reimport, handle something?
+		log::Info("Reimporting asset %ul", handle.id);
+		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath);
+	}
 }
 
 void
@@ -596,22 +566,6 @@ ReimportTexture(texture::TextureData& data, std::filesystem::path originalPath)
 	//TODO: paths
 	PackTextureForEngine(data, originalPath.filename().string());
 	PackTextureForEditor(data, originalPath.filename().string());
-}
-
-AssetType::type
-GetAssetTypeFromExtension(const char* extension)
-{
-	if(!assetTypeFromExtension.count(extension)) 
-		return AssetType::Unknown;
-	return assetTypeFromExtension.at(extension);
-}
-
-AssetType::type
-GetAssetTypeFromEngineExtension(const char* extension)
-{
-	if (!assetTypeFromEngineExtension.count(extension))
-		return AssetType::Unknown;
-	return assetTypeFromEngineExtension.at(extension);
 }
 
 }

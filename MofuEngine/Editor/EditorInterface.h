@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "Content/Asset.h"
 
 namespace mofu::editor
 {
@@ -8,5 +9,7 @@ namespace mofu::editor
 bool InitializeSceneEditorView(); 
 bool InitializeEditorGUI();
 void RenderEditorGUI();
+
+void InspectAsset(content::AssetHandle handle);
 
 }

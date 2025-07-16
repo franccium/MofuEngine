@@ -231,7 +231,8 @@ void MofuShutdown()
 {
 	if (!isRunning) return;
 
-	graphics::ui::Shutdown();
+	editor::project::UnloadProject();
+	//graphics::ui::Shutdown();
 	ShutdownRenderingTest();
 
 	for (u32 i = 0; i < WINDOW_COUNT; ++i)
@@ -242,5 +243,6 @@ void MofuShutdown()
 		if (cSurf.camera.IsValid()) graphics::RemoveCamera(cSurf.camera.GetID());
 	}
 	graphics::Shutdown();
+
 	isRunning = false;
 }

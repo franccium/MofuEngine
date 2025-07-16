@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "Asset.h"
 #include "ContentManagement.h"
 #include <filesystem>
 #include "TextureImport.h"
@@ -36,9 +37,7 @@ struct FBXImportState
 };
 
 void ImportAsset(std::filesystem::path path);
+void ImportAsset(AssetHandle handle);
 void ReimportTexture(texture::TextureData& data, std::filesystem::path originalPath);
-
-[[nodiscard]] AssetType::type GetAssetTypeFromExtension(const char* extension);
-[[nodiscard]] AssetType::type GetAssetTypeFromEngineExtension(const char* extension);
 
 }

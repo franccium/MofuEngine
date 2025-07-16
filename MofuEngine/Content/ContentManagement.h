@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "Asset.h"
 #include "Utilities/IOStream.h"
 #include <filesystem>
 #include "Graphics/GeometryData.h"

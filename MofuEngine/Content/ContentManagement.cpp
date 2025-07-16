@@ -113,7 +113,7 @@ GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info)
 {
     MeshGroupData data{};
 	GeneratePrimitiveMesh(info, data);
-	SaveGeometry(data, editor::project::GetResourcePath() / "cube.geom");
+	SaveGeometry(data, editor::project::GetResourceDirectory() / "cube.geom");
 }
 
 void
@@ -155,7 +155,7 @@ CreateMaterial(graphics::MaterialInitInfo initInfo)
 void
 ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type)
 {
-    assert(type == GetAssetTypeFromEngineExtension(path.extension().string().data()));
+    //assert(type == GetAssetTypeFromExtension(path.extension().string()));
 
     if (!std::filesystem::exists(path))
     {
@@ -190,7 +190,7 @@ ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& s
 void
 ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, [[maybe_unused]] AssetType::type type)
 {
-    assert(type == GetAssetTypeFromEngineExtension(path.extension().string().data()));
+    //assert(type == GetAssetTypeFromExtension(path.extension().string()));
 
     if (!std::filesystem::exists(path))
     {

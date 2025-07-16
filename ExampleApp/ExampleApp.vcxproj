@@ -125,6 +125,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Projects\TestProject\AssetRegistry.ar" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\MofuEngine\External\imgui\misc\imgui.natvis" />

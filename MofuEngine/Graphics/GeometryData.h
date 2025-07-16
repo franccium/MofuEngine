@@ -171,13 +171,13 @@ struct MeshGroup
 
 struct GeometryImportSettings
 {
-	f32 SmoothingAngle;
-	bool CalculateNormals;
-	bool CalculateTangents;
-	bool ReverseHandedness;
-	bool ImportEmbeddedTextures;
-	bool ImportAnimations;
-	bool MergeMeshes;
+	f32 SmoothingAngle{ 0.f };
+	bool CalculateNormals{ false };
+	bool CalculateTangents{ true };
+	bool ReverseHandedness{ false };
+	bool ImportEmbeddedTextures{ false };
+	bool ImportAnimations{ false };
+	bool MergeMeshes{ false };
 };
 
 struct MeshGroupData

@@ -1,5 +1,6 @@
 #include "Project.h"
 #include <fstream>
+#include "Content/EditorContentManager.h"
 
 namespace mofu::editor::project {
 namespace {
@@ -55,12 +56,6 @@ DeserializeProject(const std::filesystem::path& projectPath)
 	return true;
 }
 
-void 
-UnloadProject()
-{
-
-}
-
 } // anonymous namespace
 
 void
@@ -73,16 +68,25 @@ CreateNewProject()
 	activeProject.ProjectFilePath = "Projects/TestProject/TestProject.mpj";
 }
 
+void
+UnloadProject()
+{
+	if (activeProject.ProjectFilePath == std::filesystem::path{}) return;
+	content::assets::ShutdownAssetRegistry();
+}
+
 void 
 LoadProject(std::filesystem::path projectPath)
 {
-	UnloadProject();
+	if (activeProject.ProjectFilePath != std::filesystem::path{}) UnloadProject();
 	activeProject = {};
 
 	if (DeserializeProject(projectPath))
 	{
 		activeProject.ProjectFilePath = projectPath;
 		activeProject.ProjectDirectory = projectPath.parent_path();
+
+		content::assets::InitializeAssetRegistry();
 	}
 
 }
@@ -106,14 +110,26 @@ GetActiveProject()
 	return activeProject;
 }
 
+const std::filesystem::path
+GetProjectDirectory()
+{
+	return activeProject.ProjectDirectory;
+}
+
 const std::filesystem::path 
-GetAssetPath()
+GetAssetRegistryPath()
+{
+	return activeProject.ProjectDirectory / activeProject.AssetRegistryFilePath;
+}
+
+const std::filesystem::path
+GetAssetDirectory()
 {
 	return activeProject.ProjectDirectory / activeProject.Properties.AssetDirectory;
 }
 
 const std::filesystem::path
-GetResourcePath()
+GetResourceDirectory()
 {
 	return activeProject.ProjectDirectory / activeProject.Properties.ResourceDirectory;
 }

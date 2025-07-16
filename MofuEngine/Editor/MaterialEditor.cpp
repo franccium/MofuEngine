@@ -62,7 +62,7 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 			ImGui::CloseCurrentPopup();
 		}
 		texFiles.clear();
-		content::ListFilesByExtension(".tex", project::GetResourcePath(), texFiles);
+		content::ListFilesByExtension(".tex", project::GetResourceDirectory(), texFiles);
 		ImGui::OpenPopup("Select Texture");
 		isBrowserOpen = true;
 		textureBeingChanged = texUse;

@@ -30,10 +30,6 @@ void
 UploadFrame::WaitAndReset()	
 {
 	assert(uploadFence && fenceEvent);
-	assert(UploadBuffer);
-	assert(CpuAddress);
-	assert(CmdList);
-	assert(CmdAllocator);
 
 	if (uploadFence->GetCompletedValue() < FenceValue)
 	{
@@ -44,11 +40,6 @@ UploadFrame::WaitAndReset()
 		WaitForSingleObject(fenceEvent, INFINITE);
 	}
 
-	assert(UploadBuffer);
-	assert(CpuAddress);
-	assert(CmdList);
-	assert(CmdAllocator);
-
 	// the command list has been executed, the frame is ready for upload
 	if (UploadBuffer)
 	{
@@ -57,7 +48,7 @@ UploadFrame::WaitAndReset()
 	CpuAddress = nullptr;
 }
 
-constexpr u32 UPLOAD_FRAME_COUNT{ 4 }; // FIXME: something is very wrong here
+constexpr u32 UPLOAD_FRAME_COUNT{ 4 };
 UploadFrame uploadFrames[UPLOAD_FRAME_COUNT];
 ID3D12CommandQueue* uploadCmdQueue{ nullptr };
 std::mutex frameMutex{};

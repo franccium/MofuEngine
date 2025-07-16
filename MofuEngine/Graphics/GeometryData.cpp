@@ -617,8 +617,7 @@ PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data, std::file
 
 	assert(blob.Offset() == groupSize);
 	//TODO: refactor
-	std::filesystem::path modelPath{ targetPath.replace_extension(".emodel") };
-	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
+	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
@@ -714,8 +713,7 @@ PackGeometryForEngine(const MeshGroup& group, std::filesystem::path targetPath)
 
 	assert(blob.Offset() == groupSize);
 	//TODO: refactor
-	std::filesystem::path modelPath{ targetPath.replace_extension(".model") };
-	std::ofstream file{ modelPath, std::ios::out | std::ios::binary };
+	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);

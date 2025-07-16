@@ -20,14 +20,18 @@ struct Project
 	ProjectProperties Properties{};
 	std::filesystem::path ProjectDirectory;
 	std::filesystem::path ProjectFilePath;
+	std::filesystem::path AssetRegistryFilePath{ "AssetRegistry.ar" };
 };
 
 void CreateNewProject();
 void LoadProject(std::filesystem::path projectPath);
+void UnloadProject();
 void SaveProject();
 const Project& GetActiveProject();
 
-const std::filesystem::path GetAssetPath();
-const std::filesystem::path GetResourcePath();
+const std::filesystem::path GetProjectDirectory();
+const std::filesystem::path GetAssetRegistryPath();
+const std::filesystem::path GetAssetDirectory();
+const std::filesystem::path GetResourceDirectory();
 
 }
