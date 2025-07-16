@@ -15,6 +15,12 @@ normal map importing
 texture packing
 
 
+Project stuff
+Asset Registry for the project
+Asset Manager
+Prefabs
+
+
 clean default material
 vertex color test shader
 resource reuse

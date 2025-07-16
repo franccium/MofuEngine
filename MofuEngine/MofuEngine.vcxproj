@@ -109,6 +109,8 @@
   <ItemGroup>
     <ClCompile Include="Content\AssetImporter.cpp" />
     <ClCompile Include="Content\ContentManagement.cpp" />
+    <ClCompile Include="Content\EditorContentManager.cpp" />
+    <ClCompile Include="Content\Guid.cpp" />
     <ClCompile Include="Content\NormalMapProcessing.cpp" />
     <ClCompile Include="Content\PrimitiveMeshGeneration.cpp" />
     <ClCompile Include="Content\ResourceCreation.cpp" />
@@ -132,6 +134,7 @@
     <ClCompile Include="Editor\EditorInterface.cpp" />
     <ClCompile Include="Editor\ImporterView.cpp" />
     <ClCompile Include="Editor\MaterialEditor.cpp" />
+    <ClCompile Include="Editor\Project\Project.cpp" />
     <ClCompile Include="Editor\SceneEditorView.cpp" />
     <ClCompile Include="Editor\TextureView.cpp" />
     <ClCompile Include="Editor\ValueDisplay.cpp" />
@@ -139,6 +142,7 @@
     <ClCompile Include="External\imgui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="External\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="External\imgui\imgui.cpp" />
+    <ClCompile Include="External\imgui\ImGuizmo.cpp" />
     <ClCompile Include="External\imgui\imgui_demo.cpp" />
     <ClCompile Include="External\imgui\imgui_draw.cpp" />
     <ClCompile Include="External\imgui\imgui_tables.cpp" />
@@ -197,9 +201,12 @@
     <ClInclude Include="Common\CommonHeaders.h" />
     <ClInclude Include="Common\id.h" />
     <ClInclude Include="Common\StandardTypes.h" />
+    <ClInclude Include="Content\Asset.h" />
     <ClInclude Include="Content\AssetImporter.h" />
     <ClInclude Include="Content\ContentManagement.h" />
     <ClInclude Include="Content\ContentUtils.h" />
+    <ClInclude Include="Content\EditorContentManager.h" />
+    <ClInclude Include="Content\Guid.h" />
     <ClInclude Include="Content\NormalMapProcessing.h" />
     <ClInclude Include="Content\PrimitiveMeshGeneration.h" />
     <ClInclude Include="Content\ResourceCreation.h" />
@@ -225,6 +232,7 @@
     <ClInclude Include="Editor\EditorInterface.h" />
     <ClInclude Include="Editor\ImporterView.h" />
     <ClInclude Include="Editor\MaterialEditor.h" />
+    <ClInclude Include="Editor\Project\Project.h" />
     <ClInclude Include="Editor\SceneEditorView.h" />
     <ClInclude Include="Editor\TextureView.h" />
     <ClInclude Include="Editor\ValueDisplay.h" />
@@ -235,6 +243,7 @@
     <ClInclude Include="External\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="External\imgui\imconfig.h" />
     <ClInclude Include="External\imgui\imgui.h" />
+    <ClInclude Include="External\imgui\ImGuizmo.h" />
     <ClInclude Include="External\imgui\imgui_internal.h" />
     <ClInclude Include="External\imgui\imstb_rectpack.h" />
     <ClInclude Include="External\imgui\imstb_textedit.h" />

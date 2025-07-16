@@ -8,14 +8,15 @@
 #include "EngineAPI/ECS/SceneAPI.h"
 
 #include "Graphics/D3D12/D3D12Core.h"
+#include "Project/Project.h"
 
 namespace mofu::editor::material {
 namespace {
 
-constexpr const char* WHITE_TEXTURE{ "Assets/EngineTextures/white_placeholder_texture.tex" };
-constexpr const char* GRAY_TEXTURE{ "Assets/EngineTextures/gray_placeholder_texture.tex" };
-constexpr const char* BLACK_TEXTURE{ "Assets/EngineTextures/black_placeholder_texture.tex" };
-constexpr const char* ERROR_TEXTURE{ "Assets/EngineTextures/error_texture.tex" };
+constexpr const char* WHITE_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/white_placeholder_texture.tex" };
+constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/gray_placeholder_texture.tex" };
+constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/black_placeholder_texture.tex" };
+constexpr const char* ERROR_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/error_texture.tex" };
 constexpr const char* DEFAULT_TEXTURES_PATHS[TextureUsage::Count]{
 	ERROR_TEXTURE,
 	GRAY_TEXTURE,
@@ -61,7 +62,7 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 			ImGui::CloseCurrentPopup();
 		}
 		texFiles.clear();
-		content::ListFilesByExtension(".tex", std::filesystem::path("Assets/Generated"), texFiles);
+		content::ListFilesByExtension(".tex", project::GetResourcePath(), texFiles);
 		ImGui::OpenPopup("Select Texture");
 		isBrowserOpen = true;
 		textureBeingChanged = texUse;

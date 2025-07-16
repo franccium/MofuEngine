@@ -8,6 +8,7 @@
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "ECS/ComponentRegistry.h"
 #include "SceneEditorView.h"
+#include "Editor/Project/Project.h"
 
 namespace mofu::editor::assets {
 [[nodiscard]] id_t 
@@ -190,8 +191,6 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state)
 
 	u32 meshCount{ (u32)state.LodGroups[0].Meshes.size() };
 
-	std::filesystem::path texParentPath{ "Assets/ab/imp" };
-
 	_materialInfos.resize(meshCount);
 
 	for (u32 meshIdx{ 0 }; meshIdx < meshCount; ++meshIdx)
@@ -228,6 +227,14 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state)
 		info.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
 		info.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
 	}
+}
+
+void 
+Prefab::InitializeFromHierarchy(const Vec<ecs::Entity> entities)
+{
+	// the first entity should be the parent
+	ecs::Entity parent{ entities.front() };
+	// save all components and assets identifiers
 }
 
 }

@@ -8,6 +8,7 @@
 #include "Content/TextureImport.h"
 #include "TextureView.h"
 #include "ImporterView.h"
+#include "Editor/Project/Project.h"
 
 namespace mofu::editor {
 
@@ -452,10 +453,10 @@ ExampleAssetsBrowser::Draw(const char* title, bool* p_open)
 bool
 InitializeAssetBrowserGUI()
 {
-    auto assetPath = std::filesystem::path{ content::ASSET_BASE_DIRECTORY_PATH };
+    auto assetPath = editor::project::GetAssetPath();
     if (!std::filesystem::exists(assetPath))
     {
-        log::Error("Asset directory does not exist: %s", content::ASSET_BASE_DIRECTORY_PATH);
+        log::Error("Asset directory does not exist: %s", assetPath.string());
         return false;
     }
     assetBaseDirectory = assetPath;

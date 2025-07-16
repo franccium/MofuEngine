@@ -111,8 +111,11 @@
   <ItemGroup>
     <ClInclude Include="External\tracy\public\tracy\Tracy.hpp" />
     <ClInclude Include="External\tracy\public\tracy\TracyD3D12.hpp" />
+    <ClInclude Include="src\EditorTest.h" />
     <ClInclude Include="src\TestTimer.h" />
-    <ClInclude Include="src\WindowTest.h" />
+    <ClInclude Include="src\WindowTest.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="External\tracy\public\TracyClient.cpp" />

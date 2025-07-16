@@ -216,6 +216,18 @@
     <ClCompile Include="Editor\ImporterView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="External\imgui\ImGuizmo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Project\Project.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Content\Guid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Content\EditorContentManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -499,6 +511,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Content\NormalMapProcessing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\ImGuizmo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Project\Project.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\EditorContentManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Asset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Guid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

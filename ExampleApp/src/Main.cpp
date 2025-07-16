@@ -1,4 +1,4 @@
-#include "WindowTest.h"
+#include "EditorTest.h"
 #pragma comment(lib, "mofuengine.lib")
 
 #include <Windows.h>

@@ -3,6 +3,7 @@
 #include "ECS/Component.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "MaterialEditor.h"
+#include "AssetInteraction.h"
 
 namespace mofu::editor {
 namespace {
@@ -176,6 +177,14 @@ struct SceneHierarchy
                     if (ImGui::Button("Add Material"))
                     {
                         material::OpenMaterialCreator(entityData.id);
+                    }
+                }
+
+                if (ecs::scene::HasComponent<ecs::component::Parent>(entityData.id))
+                {
+                    if (ImGui::Button("Save Hierarchy"))
+                    {
+                        //TODO:
                     }
                 }
 

@@ -7,6 +7,7 @@
 #include "Content/ResourceCreation.h"
 #include "Content/ShaderCompilation.h"
 #include "AssetImporter.h"
+#include "Editor/Project/Project.h"
 
 // TODO: file system
 #include <fstream>
@@ -112,7 +113,7 @@ GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info)
 {
     MeshGroupData data{};
 	GeneratePrimitiveMesh(info, data);
-	SaveGeometry(data, std::filesystem::path{ ASSET_BASE_DIRECTORY_PATH } / "Generated" / "cube.geom");
+	SaveGeometry(data, editor::project::GetResourcePath() / "cube.geom");
 }
 
 void

@@ -4,7 +4,9 @@
 
 #if EDITOR_BUILD
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "Editor/ValueDisplay.h"
+#include "ImGuizmo.h"
 #endif
 
 /*

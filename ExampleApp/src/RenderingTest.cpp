@@ -38,17 +38,17 @@ id_t mtlID{ id::INVALID_ID };
 id_t texturedPsID{ id::INVALID_ID };
 id_t texturedMaterialID{ id::INVALID_ID };
 
-constexpr const char* TEST_MESH_ASSET_PATH{ "Assets/Generated/plane.geom" };
-constexpr const char* TEST_MESH_PATH{ "Assets/Generated/planeModel.model" };
-constexpr const char* TEST_IMPORTED_MESH_PATH{ "Assets/Generated/testmodel.model" };
-constexpr const char* TEST_BISTRO_MESH_PATH{ "Assets/Generated/BistroInterior.model" };
+constexpr const char* TEST_MESH_ASSET_PATH{ "Projects/TestProject/Assets/Generated/plane.geom" };
+constexpr const char* TEST_MESH_PATH{ "Projects/TestProject/Assets/Generated/planeModel.model" };
+constexpr const char* TEST_IMPORTED_MESH_PATH{ "Projects/TestProject/Assets/Generated/testmodel.model" };
+constexpr const char* TEST_BISTRO_MESH_PATH{ "Projects/TestProject/Assets/Generated/BistroInterior.model" };
 
-constexpr const char* TEST_TEXTURE_PATH{ "Assets/Generated/testTextureEnginePacked.tex" };
+constexpr const char* TEST_TEXTURE_PATH{ "Projects/TestProject/Assets/Generated/testTextureEnginePacked.tex" };
 
-constexpr const char* WHITE_TEXTURE{ "Assets/Generated/Textures/white_placeholder_texture.tex" };
-constexpr const char* GRAY_TEXTURE{ "Assets/Generated/Textures/gray_placeholder_texture.tex" };
-constexpr const char* BLACK_TEXTURE{ "Assets/Generated/Textures/black_placeholder_texture.tex" };
-constexpr const char* ERROR_TEXTURE{ "Assets/Generated/Textures/eror_texture.tex" };
+constexpr const char* WHITE_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/white_placeholder_texture.tex" };
+constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/gray_placeholder_texture.tex" };
+constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/black_placeholder_texture.tex" };
+constexpr const char* ERROR_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/eror_texture.tex" };
 
 struct ModelData
 {
@@ -65,15 +65,15 @@ struct ModelData
 };
 
 constexpr ModelData CYBORG_MODEL{
-	"Assets/Generated/cyborg.model",
+	"Projects/TestProject/Assets/Generated/cyborg.model",
 	//"Assets/Generated/testroomwithmonkeys.model",
 	//"Assets/Generated/campfire_scene_simplest.model",
 	//TEST_MESH_PATH,
-	"Assets/Generated/Body_B.tga.tex",
-	"Assets/Generated/Body_N.tga.tex",
-	"Assets/Generated/Body_Metal.tga.tex",
-	"Assets/Generated/Body_E.tga.tex",
-	"Assets/Generated/Body_AO.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_B.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_N.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_Metal.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_E.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_AO.tga.tex",
 	//TEST_TEXTURE_PATH,
 	//TEST_TEXTURE_PATH,
 	//TEST_TEXTURE_PATH,
@@ -83,12 +83,12 @@ constexpr ModelData CYBORG_MODEL{
 };
 
 constexpr ModelData BISTRO_INTERIOR_MODEL{
-	"Assets/Generated/BistroInterior.model",
-	"Assets/Generated/Body_B.tga.tex",
-	"Assets/Generated/Body_N.tga.tex",
-	"Assets/Generated/Body_Metal.tga.tex",
-	"Assets/Generated/Body_E.tga.tex",
-	"Assets/Generated/Body_AO.tga.tex",
+	"Projects/TestProject/Assets/Generated/BistroInterior.model",
+	"Projects/TestProject/Assets/Generated/Body_B.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_N.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_Metal.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_E.tga.tex",
+	"Projects/TestProject/Assets/Generated/Body_AO.tga.tex",
 	3000
 };
 

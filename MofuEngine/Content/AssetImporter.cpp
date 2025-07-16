@@ -10,6 +10,7 @@
 #include "Editor/TextureView.h"
 #include "Editor/ImporterView.h"
 #include "Editor/MaterialEditor.h"
+#include "Editor/Project/Project.h"
 
 namespace mofu::content {
 namespace {
@@ -123,7 +124,7 @@ ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImp
 		if (texturePath.is_absolute()) 
 		{
 			texturePath = texturePath.filename();
-			texturePath = "Assets" / std::filesystem::path{ "ab" } / texturePath;
+			texturePath = editor::project::GetAssetPath() / std::filesystem::path{ "ab" } / texturePath;
 		}
 		if (!basePath.empty())
 		{
