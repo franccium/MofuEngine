@@ -41,7 +41,7 @@ AddLog(LogSeverityLevel level, const char* fmt, va_list args) IM_FMTARGS(2)
 void 
 Initialize()
 {
-    Clear();
+    //Clear();
 }
 
 void

@@ -39,6 +39,12 @@ GetImTextureID(id_t textureID, u32 mipLevel, u32 format)
 	return pi->ui.getImTextureID(textureID, mipLevel, format);
 }
 
+id_t 
+AddIcon(const u8* const blob)
+{
+	return pi->ui.addIcon(blob);
+}
+
 void
 DestroyViewTexture(id_t textureID)
 {

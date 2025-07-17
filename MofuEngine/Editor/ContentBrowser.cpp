@@ -83,6 +83,8 @@ struct AssetTreeNode
 {
     //TODO: imitates a directory hierarchy? kinda a B-Tree
     std::string Name;
+    AssetTreeNode* Parent;
+    Vec<AssetTreeNode*> Children;
     Vec<std::pair<content::AssetHandle, content::AssetPtr>> Assets;
 };
 
@@ -93,9 +95,9 @@ struct AssetBrowser
     bool AllowSorting = true;
     bool AllowDragUnselected = false;
     bool AllowBoxSelect = true;
-    f32 IconSize = 64.0f;
-    int  IconSpacing = 10;
-    int  IconHitSpacing = 4;
+    f32 IconSize = 80.0f;
+    int  IconSpacing = 24;
+    int  IconHitSpacing = 24;
     bool StretchSpacing = true;
 
     // State
@@ -166,12 +168,25 @@ AssetBrowser fileBrowser;
 
 BrowserMode browserMode{ BrowserMode::Assets };
 
+std::bitset<content::AssetType::Count> assetTypeFilter{};
+
 void
-RenderToggleBrowserModeButton()
+DrawAssetTypeFilter()
 {
-    if (ImGui::Button("Mode"))
+    if (ImGui::Button("All")) assetTypeFilter.set();
+    ImGui::SameLine();
+    if (ImGui::Button("None"))  assetTypeFilter.reset();
+
+    for (u32 i{ 0 }; i < content::AssetType::Count; ++i)
     {
-        browserMode = browserMode == BrowserMode::Assets ? BrowserMode::AllFiles : BrowserMode::Assets;
+        content::AssetType::type type{ (content::AssetType::type)i };
+        bool isSelected{ assetTypeFilter.test(i) };
+
+        ImGui::SameLine();
+        if (ImGui::Checkbox(content::ASSET_TYPE_TO_STRING[type], &isSelected))
+        {
+            assetTypeFilter.set(i, isSelected);
+        }
     }
 }
 
@@ -181,6 +196,12 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
     // Menu bar
     if (ImGui::BeginMenuBar())
     {
+        if (ImGui::MenuItem("Mode"))
+        {
+            browserMode = browserMode == BrowserMode::Assets ? BrowserMode::AllFiles : BrowserMode::Assets;
+        }
+        DrawAssetTypeFilter();
+
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Generate items"))
@@ -239,6 +260,9 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         ImVec2 startPos = ImGui::GetCursorScreenPos();
         startPos = ImVec2(startPos.x + LayoutOuterPadding, startPos.y + LayoutOuterPadding);
         ImGui::SetCursorScreenPos(startPos);
+        ImGui::Dummy(ImVec2(0.f, 0.f));
+
+        if (assetTypeFilter == 0) ImGui::TextUnformatted("Select at least one asset type");
 
         // Multi-select
         ImGuiMultiSelectFlags multiselectFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_ClearOnClickVoid | ImGuiMultiSelectFlags_NavWrapX;
@@ -262,32 +286,47 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(LayoutSelectableSpacing, LayoutSelectableSpacing));
 
         // Rendering parameters
-        const ImU32 iconTypeOverlayColors[content::AssetType::Count] = { 0, IM_COL32(200, 70, 70, 255), IM_COL32(70, 170, 70, 255), IM_COL32(5, 70, 200, 255), IM_COL32(200, 200, 70, 255) };
+        const ImU32 iconTypeOverlayColors[content::AssetType::Count] = { 0, IM_COL32(200, 70, 70, 255), IM_COL32(70, 170, 70, 255), 
+            IM_COL32(5, 70, 200, 255), IM_COL32(200, 200, 230, 255), IM_COL32(10, 190, 140, 255) };
         const ImU32 iconBgColor = ImGui::GetColorU32(IM_COL32(35, 35, 35, 220));
         const ImVec2 iconTypeOverlaySize = ImVec2(4.0f, 4.0f);
         const bool displayLabel = (LayoutItemSize.x >= ImGui::CalcTextSize("999").x);
 
         const int columnCount = LayoutColumnCount;
+        s32 drawnItemCount{ 0 };
+        s32 discardedItemCount{ 0 };
         ImGuiListClipper clipper;
         clipper.Begin(LayoutLineCount, LayoutItemStep.y);
         if (itemCurrentIdxToFocus != -1)
-            clipper.IncludeItemByIndex(itemCurrentIdxToFocus / columnCount); // Ensure focused item line is not clipped.
+            clipper.IncludeItemByIndex(itemCurrentIdxToFocus / columnCount);
         if (multiselectIO->RangeSrcItem != -1)
-            clipper.IncludeItemByIndex((int)multiselectIO->RangeSrcItem / columnCount); // Ensure RangeSrc item line is not clipped.
+            clipper.IncludeItemByIndex((int)multiselectIO->RangeSrcItem / columnCount);
         while (clipper.Step())
         {
             for (int lineIdx = clipper.DisplayStart; lineIdx < clipper.DisplayEnd; lineIdx++)
             {
-                const int minCurrLineIdx = lineIdx * columnCount;
-                const int maxCurrLineIdx = std::min((lineIdx + 1) * columnCount, Items.Size);
+                const int minCurrLineIdx = lineIdx * columnCount + discardedItemCount;
+                int maxCurrLineIdx = std::min(minCurrLineIdx + columnCount, Items.Size);
                 for (int itemIdx = minCurrLineIdx; itemIdx < maxCurrLineIdx; ++itemIdx)
                 {
                     auto& item = Items[itemIdx];
+                    if (!assetTypeFilter.test(item.second->Type))
+                    {
+                        maxCurrLineIdx++;
+                        if (maxCurrLineIdx >= Items.Size)
+                        {
+                            lineIdx = clipper.DisplayEnd;
+                            break;
+                        }
+                        discardedItemCount++;
+                        continue;
+                    }
                     u64 id{ item.first.id };
+
                     ImGui::PushID(id);
 
                     // Position item
-                    ImVec2 pos = ImVec2(startPos.x + (itemIdx % columnCount) * LayoutItemStep.x, startPos.y + lineIdx * LayoutItemStep.y);
+                    ImVec2 pos = ImVec2(startPos.x + (drawnItemCount % columnCount) * LayoutItemStep.x, startPos.y + lineIdx * LayoutItemStep.y);
                     ImGui::SetCursorScreenPos(pos);
 
                     ImGui::SetNextItemSelectionUserData(itemIdx);
@@ -328,32 +367,50 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                         ImGui::EndDragDropSource();
                     }
 
+                    bool itemIsHovered = ImGui::IsItemHovered();
+
                     // Render asset icon
                     if (itemIsVisible)
                     {
                         ImVec2 boxMin(pos.x - 1, pos.y - 1);
                         ImVec2 boxMax(boxMin.x + LayoutItemSize.x + 2, boxMin.y + LayoutItemSize.y + 2);
-                        drawList->AddRectFilled(boxMin, boxMax, iconBgColor);
-                        if (ShowTypeOverlay && item.second->Type != 0)
+                        if (item.second->Type == content::AssetType::Texture)
+                        {
+                            id_t iconID{ item.second->AdditionalData };
+                            if (id::IsValid(iconID))
+                            {
+                                drawList->AddImage(graphics::ui::GetImTextureID(iconID), boxMin, boxMax);
+                            }
+                            else
+                            {
+                                // TODO: placeholder icon
+                                drawList->AddRectFilled(boxMin, boxMax, iconBgColor);
+                            }
+                        }
+                        else
+                        {
+                            drawList->AddRectFilled(boxMin, boxMax, iconBgColor);
+                        }
+                        if (ShowTypeOverlay)
                         {
                             ImU32 typeColor = iconTypeOverlayColors[item.second->Type % IM_ARRAYSIZE(iconTypeOverlayColors)];
-                            drawList->AddRectFilled(ImVec2(boxMax.x - 2 - iconTypeOverlaySize.x, boxMin.y + 2), 
+                            drawList->AddRectFilled(ImVec2(boxMax.x - 2 - iconTypeOverlaySize.x, boxMin.y + 2),
                                 ImVec2(boxMax.x - 2, boxMin.y + 2 + iconTypeOverlaySize.y), typeColor);
                         }
                         if (displayLabel)
                         {
                             ImU32 labelColor = ImGui::GetColorU32(itemIsSelected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
                             char label[32];
-
+                            s32 textOffset{ drawnItemCount % 2 ? 16 : 0 };
                             snprintf(label, 32, "%s", item.second->Name.data());
                             bool isImported{ std::filesystem::exists(content::assets::GetAsset(id)->ImportedFilePath) };
-                            drawList->AddText(ImVec2(boxMin.x, boxMax.y - ImGui::GetFontSize()), labelColor, label);
-                            drawList->AddText(ImVec2(boxMin.x, boxMin.y), labelColor, isImported ? "Imported" : "Not Imported");
+                            drawList->AddText(ImVec2(boxMin.x, boxMax.y - ImGui::GetFontSize() + textOffset), labelColor, label);
+                            drawList->AddText(ImVec2(boxMin.x, boxMin.y), labelColor, isImported ? "im" : "nim");
                         }
 
                         if (itemIsSelected)
                         {
-                            if (ImGui::IsItemHovered())
+                            if (itemIsHovered)
                             {
                                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                                 {
@@ -369,9 +426,18 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                                 }
                             }
                         }
+                        //if (itemIsHovered)
+                        //{
+                        //    char label[64];
+                        //    snprintf(label, 64, "%s", item.second->Name.data());
+                        //    ImGui::BeginTooltip();
+                        //    ImGui::TextUnformatted(label);
+                        //    ImGui::EndTooltip();
+                        //}
                     }
 
                     ImGui::PopID();
+                    drawnItemCount++;
                 }
             }
         }
@@ -429,6 +495,15 @@ RenderAssetBrowser()
 void
 RenderFileBrowser()
 {
+    if (ImGui::BeginMenuBar())
+    {
+        if (ImGui::MenuItem("Mode"))
+        {
+            browserMode = browserMode == BrowserMode::Assets ? BrowserMode::AllFiles : BrowserMode::Assets;
+        }
+        ImGui::EndMenuBar();
+    }
+
     if (currentDirectory != projectBaseDirectory)
     {
         if (ImGui::Button("<---"))
@@ -451,6 +526,9 @@ RenderFileBrowser()
         }
         else
         {
+            std::string extension{ path.extension().string() };
+            if (content::IsEngineAssetExtension(extension)) continue;
+
             //TODO:
             ImGui::PushID(path.string().c_str());
 
@@ -459,27 +537,22 @@ RenderFileBrowser()
 
             if (ImGui::IsItemHovered())
             {
-                if (clicked)
-                   assets::ViewImportSettings(content::GetAssetTypeFromExtension(path.extension().string().data()));
-                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                if (content::IsAllowedAssetExtension(extension))
                 {
-                    content::ImportAsset(path);
-                }
-            }
-
-            if (path.extension() == ".model")
-            {
-                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-                {
-                    editor::assets::DropModelIntoScene(path);
-                }
-            }
-
-            if (path.extension() == ".etex")
-            {
-                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-                {
-                    editor::texture::OpenTextureView(path);
+                    content::AssetHandle handle{ content::assets::GetHandleFromPath(path) };
+                    assert(handle != content::INVALID_HANDLE);
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                    {
+                        assets::ViewImportSettings(handle);
+                    }
+                    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    {
+                        content::ImportAsset(handle);
+                    }
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    {
+                        editor::InspectAsset(handle);
+                    }
                 }
             }
 
@@ -493,7 +566,6 @@ RenderContentBrowser()
 {
     ImGui::Begin("Content Browser", nullptr, ImGuiWindowFlags_MenuBar);
 
-    RenderToggleBrowserModeButton();
     if (browserMode == BrowserMode::Assets)
     {
         RenderAssetBrowser();
@@ -517,6 +589,7 @@ InitializeAssetBrowserGUI()
     currentDirectory = projectBaseDirectory;
     assert(std::filesystem::exists(projectBaseDirectory) && std::filesystem::exists(assetBaseDirectory)
         && std::filesystem::exists(assetImportedDirectory) && std::filesystem::exists(currentDirectory));
+    assetTypeFilter.set();
 
     return true;
 }
@@ -528,8 +601,25 @@ RenderAssetBrowserGUI()
 }
 
 void
-AddNewRegisteredAsset(content::AssetHandle handle)
+AddRegisteredAsset(content::AssetHandle handle, content::AssetPtr asset)
 {
+    //if (asset->Type == content::AssetType::Texture)
+    //{
+    //    std::filesystem::path metadataPath{ asset->GetMetadataPath() };
+    //    if (std::filesystem::exists(metadataPath) && !id::IsValid(asset->AdditionalData))
+    //    {
+    //        std::unique_ptr<u8[]> iconBuffer{};
+    //        u64 iconSize{};
+    //        content::assets::GetTextureIconData(metadataPath, iconSize, iconBuffer);
+    //        if (iconSize != 0)
+    //        {
+    //            id_t iconId{ graphics::ui::AddIcon(iconBuffer.get()) };
+    //            asset->AdditionalData = iconId;
+    //        }
+    //    }
+    //}
+    content::assets::ParseMetadata(asset);
+
     assetBrowser.AddItem(handle);
 }
 

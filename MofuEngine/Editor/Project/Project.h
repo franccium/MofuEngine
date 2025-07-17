@@ -11,6 +11,12 @@ struct ProjectProperties
 	std::filesystem::path AssetDirectory{ "Assets" };
 	std::filesystem::path ScriptDirectory{ "Scripts" };
 	std::filesystem::path ResourceDirectory{ "Resources" };
+	std::filesystem::path ResourceMetadataDirectory{ "Metadata" };
+
+	// editable directories where imported assets will be saved to by default
+	std::filesystem::path TextureDirectory{ "Textures" };
+	std::filesystem::path MeshDirectory{ "Meshes" };
+	std::filesystem::path PrefabDirectory{ "Prefabs" };
 
 	u32 StartScene{ 0 };
 };
@@ -29,9 +35,14 @@ void UnloadProject();
 void SaveProject();
 const Project& GetActiveProject();
 
+void RefreshAllAssets();
+
 const std::filesystem::path GetProjectDirectory();
 const std::filesystem::path GetAssetRegistryPath();
 const std::filesystem::path GetAssetDirectory();
 const std::filesystem::path GetResourceDirectory();
+const std::filesystem::path& GetTextureDirectory();
+const std::filesystem::path& GetMeshDirectory();
+const std::filesystem::path& GetPrefabDirectory();
 
 }

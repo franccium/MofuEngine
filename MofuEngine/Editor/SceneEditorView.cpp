@@ -39,7 +39,15 @@ CreateEntityTreeNode(ecs::Entity entity, EntityTreeNode* parentNode)
     if (!parentNode) parentNode = rootNode;
     EntityTreeNode* node = new EntityTreeNode{};
     node->ID = entity;
-    snprintf(node->Name, IM_ARRAYSIZE(node->Name), "E %u", (u32)entity);
+    if (ecs::scene::HasComponent<ecs::component::NameComponent>(entity))
+    {
+        const char* name{ ecs::scene::GetComponent<ecs::component::NameComponent>(entity).Name };
+        strcpy(node->Name, name);
+    }
+    else
+    {
+       snprintf(node->Name, IM_ARRAYSIZE(node->Name), "E %u", (u32)entity);
+    }
     node->Parent = parentNode;
     node->IndexInParent = (u16)parentNode->Childs.Size;
     parentNode->Childs.push_back(node);

@@ -24,8 +24,24 @@ struct AssetType
 	};
 };
 
+constexpr const char* ASSET_TYPE_TO_STRING[content::AssetType::Count] {
+	"Unknown",
+	"Mesh",
+	"Texture",
+	"Animation",
+	"Audio",
+	"Material",
+	"Skeleton",
+};
+
+constexpr const char* ASSET_METADATA_EXTENSION{ ".mt" };
+
 const std::unordered_set<std::string_view> ASSET_EXTENSIONS {
 	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".wav"
+};
+
+const std::unordered_set<std::string_view> ENGINE_ASSET_EXTENSIONS {
+	".mesh", ".tex", 
 };
 
 struct Asset
@@ -34,6 +50,9 @@ struct Asset
 	std::string Name;
 	std::filesystem::path OriginalFilePath;
 	std::filesystem::path ImportedFilePath;
+	id_t AdditionalData{ id::INVALID_ID };
+
+	std::filesystem::path GetMetadataPath() const { std::filesystem::path p{ ImportedFilePath }; return p.replace_extension(".mt"); }
 
 	Asset(AssetType::type type, const std::filesystem::path& originalPath, const std::filesystem::path& importedPath)
 		: Type{ type }, OriginalFilePath{ originalPath }, ImportedFilePath{ importedPath } 
@@ -88,6 +107,11 @@ GetAssetTypeFromExtension(std::string_view extension)
 [[nodiscard]] inline bool IsAllowedAssetExtension(std::string_view extension)
 {
 	return ASSET_EXTENSIONS.contains(extension);
+}
+
+[[nodiscard]] inline bool IsEngineAssetExtension(std::string_view extension)
+{
+	return ENGINE_ASSET_EXTENSIONS.contains(extension);
 }
 
 }

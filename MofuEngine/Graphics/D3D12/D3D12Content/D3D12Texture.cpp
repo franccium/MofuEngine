@@ -7,6 +7,7 @@ namespace mofu::graphics::d3d12::content::texture {
 namespace {
 
 util::FreeList<D3D12Texture> textures{};
+util::FreeList<D3D12Texture> icons{};
 util::FreeList<u32> descriptorIndices{};
 std::mutex textureMutex{};
 
@@ -159,6 +160,116 @@ CreateTextureFromResourceData(const u8* const blob)
     return D3D12Texture{ info };
 }
 
+D3D12Texture
+CreateIcon(const u8* const blob)
+{
+    assert(blob);
+    util::BlobStreamReader reader{ blob };
+    const u32 width{ reader.Read<u32>() };
+    const u32 height{ reader.Read<u32>() };
+    const DXGI_FORMAT format{ (DXGI_FORMAT)reader.Read<u32>() };
+
+    const u32 rowPitch{ reader.Read<u32>() };
+    const u32 slicePitch{ reader.Read<u32>() };
+    D3D12_SUBRESOURCE_DATA subresourceData{ reader.Position(), rowPitch, slicePitch };
+
+    D3D12_RESOURCE_DESC1 desc{};
+    //TODO: handle 1D
+    desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    desc.Alignment = 0;
+    desc.Width = width;
+    desc.Height = height;
+    desc.DepthOrArraySize = 1;
+    desc.MipLevels = 1;
+    desc.Format = format;
+    desc.SampleDesc = { 1,0 };
+    desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    const u32 subresourceCount{ 1 };
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT* const layouts{
+        (D3D12_PLACED_SUBRESOURCE_FOOTPRINT* const)_alloca(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) * 1) };
+    u32 numRows{ 0 };
+    u64 rowSizes{ 0 };
+    u64 requiredSize{ 0 };
+    DXDevice* device{ core::Device() };
+
+    device->GetCopyableFootprints1(&desc, 0, 1, 0, layouts, &numRows, &rowSizes, &requiredSize);
+    assert(requiredSize && requiredSize < UINT_MAX);
+
+    upload::D3D12UploadContext context{ (u32)requiredSize };
+    u8* const cpuAddress{ (u8* const)context.CpuAddress() };
+    for (u32 subresourceIdx{ 0 }; subresourceIdx < 1; ++subresourceIdx)
+    {
+        const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& layout{ layouts[subresourceIdx] };
+        const u32 subresourceHeight{ numRows };
+        const u32 subresourceDepth{ layout.Footprint.Depth };
+
+        const D3D12_MEMCPY_DEST copyDest{ cpuAddress + layout.Offset, layout.Footprint.RowPitch, layout.Footprint.RowPitch * subresourceHeight };
+
+        for (u32 depthIdx{ 0 }; depthIdx < subresourceDepth; ++depthIdx)
+        {
+            u8* const srcSlice{ (u8* const)subresourceData.pData + subresourceData.SlicePitch * depthIdx };
+            u8* const destSlice{ (u8* const)copyDest.pData + copyDest.SlicePitch * depthIdx };
+
+            for (u32 rowIdx{ 0 }; rowIdx < subresourceHeight; ++rowIdx)
+            {
+                memcpy(destSlice + copyDest.RowPitch * rowIdx, srcSlice + subresourceData.RowPitch * rowIdx, rowSizes);
+            }
+        }
+    }
+
+    DXResource* resource{ nullptr };
+    DXCall(device->CreateCommittedResource2(&d3dx::HeapProperties.DEFAULT_HEAP, D3D12_HEAP_FLAG_NONE, &desc,
+        D3D12_RESOURCE_STATE_COMMON, nullptr, nullptr, IID_PPV_ARGS(&resource)));
+
+    DXResource* uploadBuffer{ context.UploadBuffer() };
+    for (u32 i{ 0 }; i < subresourceCount; ++i)
+    {
+        D3D12_TEXTURE_COPY_LOCATION src{};
+        src.pResource = uploadBuffer;
+        src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        src.PlacedFootprint = layouts[i];
+
+        D3D12_TEXTURE_COPY_LOCATION dest{};
+        dest.pResource = resource;
+        dest.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dest.SubresourceIndex = i;
+
+        context.CommandList()->CopyTextureRegion(&dest, 0, 0, 0, &src, nullptr);
+    }
+    context.EndUpload();
+
+    assert(resource);
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+    D3D12TextureInitInfo info{};
+    info.resource = resource;
+
+    //if (flags & mofu::content::TextureFlags::IsCubeMap)
+    //{
+    //    srvDesc.Format = format;
+    //    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    //    if (arraySize > 6)
+    //    {
+    //        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+    //        srvDesc.TextureCubeArray.MostDetailedMip = 0;
+    //        srvDesc.TextureCubeArray.MipLevels = mipLevels;
+    //        srvDesc.TextureCubeArray.NumCubes = arraySize / 6;
+    //    }
+    //    else
+    //    {
+    //        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+    //        srvDesc.TextureCube.MostDetailedMip = 0;
+    //        srvDesc.TextureCube.MipLevels = mipLevels;
+    //        srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+    //    }
+
+    //    info.srvDesc = &srvDesc;
+    //}
+
+    return D3D12Texture{ info };
+}
+
 [[nodiscard]] DescriptorHandle
 CreateSRVForMipLevel(DXResource* texture, u32 mipLevel, DXGI_FORMAT format)
 {
@@ -192,6 +303,18 @@ AddTexture(const u8* const blob)
     D3D12Texture texture{ CreateTextureFromResourceData(blob) };
     std::lock_guard lock{ textureMutex };
     const id_t id{ textures.add(std::move(texture)) };
+    descriptorIndices.add(textures[id].Srv().index);
+    return id;
+}
+
+id_t
+AddIcon(const u8* const blob)
+{
+    assert(blob);
+    D3D12Texture iconTexture{ CreateIcon(blob) };
+    //TODO: a seperate thing?
+    std::lock_guard lock{ textureMutex };
+    const id_t id{ textures.add(std::move(iconTexture)) };
     descriptorIndices.add(textures[id].Srv().index);
     return id;
 }

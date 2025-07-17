@@ -110,6 +110,12 @@ GetActiveProject()
 	return activeProject;
 }
 
+void 
+RefreshAllAssets()
+{
+	//content::assets::ImportAllNotImported();
+}
+
 const std::filesystem::path
 GetProjectDirectory()
 {
@@ -132,6 +138,24 @@ const std::filesystem::path
 GetResourceDirectory()
 {
 	return activeProject.ProjectDirectory / activeProject.Properties.ResourceDirectory;
+}
+
+const std::filesystem::path& 
+GetTextureDirectory()
+{
+	return activeProject.Properties.TextureDirectory;
+}
+
+const std::filesystem::path& 
+GetMeshDirectory()
+{
+	return activeProject.Properties.MeshDirectory;
+}
+
+const std::filesystem::path& 
+GetPrefabDirectory()
+{
+	return activeProject.Properties.PrefabDirectory;
 }
 
 }

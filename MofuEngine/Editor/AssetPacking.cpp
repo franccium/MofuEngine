@@ -11,6 +11,8 @@ GetTextureEditorPackedSize(texture::TextureData& data)
 	constexpr u64 su32{ (sizeof(u32)) };
 	u64 size{ 0 };
 
+	size += su32 + data.IconSize;
+
 	// TextureImportSettings
 	size += (u64)data.ImportSettings.Files.length();
 	size += su32 * 5 + sizeof(f32) + sizeof(u8) * 4;
@@ -61,6 +63,10 @@ PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPat
 
 	util::BlobStreamWriter writer{ buffer, bufferSize };
 
+	// Icon data
+	writer.Write<u32>(data.IconSize);
+	writer.WriteBytes(data.Icon, data.IconSize);
+
 	const texture::TextureImportSettings& importSettings{ data.ImportSettings };
 	writer.WriteStringWithLength(importSettings.Files);
 	writer.Write<u32>(importSettings.FileCount);
@@ -103,10 +109,25 @@ PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPat
 		}
 	}
 
-	//TODO: refactor
-	//std::filesystem::path modelPath{ "Assets/Generated/"};
-	//modelPath.append(filename.data());
-	targetPath.replace_extension(".etex");
+	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
+	if (!file) return;
+
+	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
+	file.close();
+}
+
+void
+SaveIcon(texture::TextureData& data, std::filesystem::path targetPath)
+{
+	const u64 iconSize{ data.IconSize };
+	u8* buffer{ new u8[iconSize] };
+	u32 bufferSize{ (u32)iconSize };
+	const texture::TextureInfo& info{ data.Info };
+
+	util::BlobStreamWriter writer{ buffer, bufferSize };
+	u8* const icon{ data.Icon };
+	writer.WriteBytes(icon, iconSize);
+
 	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 

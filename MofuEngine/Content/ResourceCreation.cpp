@@ -1,6 +1,7 @@
 #include "ResourceCreation.h"
 #include <array>
 #include "Graphics/Renderer.h"
+#include "Content/EditorContentManager.h"
 
 namespace mofu::content {
 namespace {
@@ -153,7 +154,8 @@ id_t
 CreateTextureResource(const void* const blob)
 {
 	assert(blob);
-	return graphics::AddTexture((const u8* const)blob);
+	id_t texId{ graphics::AddTexture((const u8* const)blob) };
+	return texId;
 }
 
 id_t
@@ -266,7 +268,17 @@ id_t
 CreateResourceFromBlob(const void* const blob, AssetType::type resourceType)
 {
 	assert(blob);
-	return resourceCreators[resourceType](blob);
+	id_t resourceId{ resourceCreators[resourceType](blob) };
+	return resourceId;
+}
+
+id_t
+CreateResourceFromBlobWithHandle(const void* const blob, AssetType::type resourceType, AssetHandle handle)
+{
+	assert(blob);
+	id_t resourceId{ resourceCreators[resourceType](blob) };
+	content::assets::PairAssetWithResource(handle, resourceId, resourceType);
+	return resourceId;
 }
 
 void

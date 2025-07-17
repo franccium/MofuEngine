@@ -9,6 +9,7 @@ struct Guid
 	Guid();
 	Guid(u64 id);
 	operator u64() const { return id; }
+	bool operator==(const Guid& o) const { return id == o.id; }
 };
 
 }

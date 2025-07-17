@@ -17,6 +17,7 @@
 #include "EngineAPI/ECS/SystemAPI.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "Editor/Project/Project.h"
+#include "Editor/EditorInterface.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -137,8 +138,6 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 bool MofuInitialize()
 {
-	editor::project::LoadProject(TEST_PROJECT_FILE_PATH);
-
 	mofu::InitializeEngineModules();
 	while (!CompileEngineShaders())
 	{
@@ -153,6 +152,10 @@ bool MofuInitialize()
 	ImGui::StyleColorsDark();
 
 	if (!graphics::Initialize(graphics::GraphicsPlatform::Direct3D12)) return false;
+
+	editor::project::LoadProject(TEST_PROJECT_FILE_PATH);
+
+	if (!editor::InitializeEditorGUI()) return false;
 
 	platform::WindowInitInfo info[]
 	{
@@ -189,6 +192,8 @@ bool MofuInitialize()
 	renderItemIDsCache.resize(renderItemCount);
 	//!!! content::GetRenderItemIDs(renderItemIDsCache.data(), renderItemCount);
 	GetRenderItemIDS(renderItemIDsCache);
+
+	editor::project::RefreshAllAssets();
 
 	return true;
 }

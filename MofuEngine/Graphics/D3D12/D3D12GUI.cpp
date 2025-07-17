@@ -86,7 +86,6 @@ Initialize(ID3D12CommandQueue* queue)
 
     if(!ImGui_ImplDX12_Init(&initInfo)) return false;
 
-    if (!editor::InitializeEditorGUI()) return false;
     return true;
 }
 

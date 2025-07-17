@@ -50,4 +50,44 @@ constexpr v3 v3one{ 1.f, 1.f, 1.f };
 constexpr v4 v4one{ 1.f, 1.f, 1.f, 1.f };
 
 constexpr quat quatIndentity{ 0.f, 0.f, 0.f, 1.f };
+
+    struct matrix_t
+    {
+    public:
+
+        union
+        {
+            float m[4][4];
+            float m16[16];
+            struct
+            {
+                v4 right, up, dir, position;
+            } v;
+            v4 component[4];
+        };
+
+        static matrix_t Identity()
+        {
+            matrix_t m{};
+            m.m16[0] = 1.f;
+            m.m16[1] = 0.f;
+            m.m16[2] = 0.f;
+            m.m16[3] = 0.f;
+            m.m16[5] = 0.f;
+            m.m16[6] = 1.f;
+            m.m16[7] = 0.f;
+            m.m16[8] = 0.f;
+            m.m16[9] = 0.f;
+            m.m16[10] = 0.f;
+            m.m16[11] = 1.f;
+            m.m16[12] = 0.f;
+            m.m16[13] = 0.f;
+            m.m16[14] = 0.f;
+            m.m16[15] = 0.f;
+            return m;
+        }
+
+        operator float* () { return m16; }
+        operator const float* () const { return m16; }
+    };
 }

@@ -55,6 +55,7 @@ struct PlatformInterface
 		void(*viewTexture)(id_t);
 		void(*destroyViewTexture)(id_t);
 		u64(*getImTextureID)(id_t, u32, u32);
+		id_t(*addIcon)(const u8* const);
 	} ui;
 
 	GraphicsPlatform platform = (GraphicsPlatform) - 1;

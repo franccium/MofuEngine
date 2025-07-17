@@ -62,6 +62,7 @@ SetupPlatformInterface(PlatformInterface& pi)
 	pi.ui.viewTexture = ui::ViewTextureAsImage;
 	pi.ui.getImTextureID = ui::GetImTextureID;
 	pi.ui.destroyViewTexture = ui::DestroyViewTexture;
+	pi.ui.addIcon = content::texture::AddIcon;
 }
 
 }

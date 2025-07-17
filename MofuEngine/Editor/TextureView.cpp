@@ -30,6 +30,11 @@ FillOutTextureViewData(std::filesystem::path textureAssetPath)
 	assert(buffer.get());
 
 	util::BlobStreamReader reader{ buffer.get() };
+
+	// Icon data
+	u32 iconSize{ reader.Read<u32>() };
+	reader.Skip(iconSize);
+
 	content::texture::TextureImportSettings& importSettings{ texture.ImportSettings };
 	const char* filesBuffer{ reader.ReadStringWithLength() };
 	importSettings.Files = std::string{ filesBuffer };

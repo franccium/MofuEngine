@@ -25,14 +25,31 @@ BuildResourcePath(std::string_view assetFileName, const char* extension)
 }
 
 const std::filesystem::path
-ImportUnknown([[maybe_unused]] std::filesystem::path path)
+ImportUnknown([[maybe_unused]] std::filesystem::path path, [[maybe_unused]] AssetPtr asset)
 {
 	assert(false);
 	return {};
 }
 
+void
+CreateTextureAssetIcon(AssetPtr asset)
+{
+	//TODO: a generic metadata file for this stuff?
+	std::filesystem::path iconPath{ asset->ImportedFilePath };
+	iconPath.replace_extension(".mt");
+	std::unique_ptr<u8[]> buffer;
+	u64 size{ 0 };
+	assert(std::filesystem::exists(iconPath));
+	content::ReadAssetFileNoVersion(std::filesystem::path(iconPath), buffer, size, AssetType::Texture);
+	assert(buffer.get());
+
+	id_t assetID{ graphics::ui::AddIcon(buffer.get()) };
+	assert(id::IsValid(assetID));
+	asset->AdditionalData = assetID;
+}
+
 const std::filesystem::path
-ImportTexture(std::filesystem::path path)
+ImportTexture(std::filesystem::path path, AssetPtr asset)
 {
 	//assert(std::filesystem::exists(path));
 	texture::TextureData data{};
@@ -45,11 +62,30 @@ ImportTexture(std::filesystem::path path)
 	if (data.Info.ImportError != texture::ImportError::Succeeded)
 	{
 		log::Error("Texture import error: ", data.Info.ImportError);
+		return {};
 	}
 
 	std::filesystem::path importedAssetPath{ BuildResourcePath(path.stem().string(), ".tex") };
 	PackTextureForEngine(data, importedAssetPath);
-	PackTextureForEditor(data, BuildResourcePath(path.stem().string(), ".etex"));
+	std::filesystem::path metadataPath{ BuildResourcePath(path.stem().string(), ".mt") };
+	PackTextureForEditor(data, metadataPath);
+
+	asset->ImportedFilePath = importedAssetPath;
+
+	//assets::GetTextureMetadata(metadataPath);
+
+	//std::filesystem::path iconPath{ BuildResourcePath(path.stem().string(), ".ic") };
+	//SaveIcon(data, iconPath);
+	//CreateTextureAssetIcon(asset);
+
+	std::unique_ptr<u8[]> iconBuffer{};
+	u64 iconSize{};
+	content::assets::GetTextureIconData(metadataPath, iconSize, iconBuffer);
+	if (iconSize != 0)
+	{
+		id_t iconId{ graphics::ui::AddIcon(iconBuffer.get()) };
+		asset->AdditionalData = iconId;
+	}
 
 	return importedAssetPath;
 }
@@ -461,7 +497,7 @@ ImportMeshes(ufbx_scene* scene, FBXImportState& state)
 }
 
 const std::filesystem::path
-ImportFBX(std::filesystem::path path)
+ImportFBX(std::filesystem::path path, AssetPtr asset)
 {
 	log::Info("Importing mesh: %s", path.string().c_str());
 
@@ -507,7 +543,7 @@ ImportFBX(std::filesystem::path path)
 	return importedAssetPath;
 }
 
-using AssetImporter = const std::filesystem::path(*)(std::filesystem::path path);
+using AssetImporter = const std::filesystem::path(*)(std::filesystem::path path, AssetPtr asset);
 constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
 	ImportFBX,
@@ -528,8 +564,14 @@ ImportAsset(std::filesystem::path path)
 	if (it != assetTypeFromExtension.end())
 	{
 		AssetType::type assetType{ it->second };
-		const std::filesystem::path importedPath{ assetImporters[assetType](path) };
-		Asset* asset = new Asset{ assetType, path, importedPath };
+		Asset* asset = new Asset{ assetType, path, {} };
+		const std::filesystem::path importedPath{ assetImporters[assetType](path, asset) };
+		asset->ImportedFilePath = importedPath;
+		if (!std::filesystem::exists(asset->ImportedFilePath))
+		{
+			std::string filePath{ path.string() };
+			log::Error("Error importing asset [%s]", filePath.data());
+		}
 		assets::RegisterAsset(asset);
 		return;
 	}
@@ -544,13 +586,18 @@ ImportAsset(AssetHandle handle)
 	assert(asset);
 	if (!std::filesystem::exists(asset->ImportedFilePath))
 	{
-		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath);
+		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath, asset);
 	}
 	else
 	{
 		//TODO: reimport, handle something?
 		log::Info("Reimporting asset %ul", handle.id);
-		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath);
+		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath, asset);
+	}
+	if (!std::filesystem::exists(asset->ImportedFilePath))
+	{
+		std::string filePath{ asset->OriginalFilePath.string() };
+		log::Error("Error importing asset %u [%s]", handle.id, filePath.data());
 	}
 }
 

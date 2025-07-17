@@ -6,5 +6,5 @@ namespace mofu::content {
 
 void PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPath);
 void PackTextureForEngine(texture::TextureData& data, std::filesystem::path targetPath);
-
+void SaveIcon(texture::TextureData& data, std::filesystem::path targetPath);
 }

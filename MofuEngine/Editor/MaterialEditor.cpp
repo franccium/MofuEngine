@@ -6,6 +6,7 @@
 #include "TextureView.h"
 #include "ValueDisplay.h"
 #include "EngineAPI/ECS/SceneAPI.h"
+#include "Content/EditorContentManager.h"
 
 #include "Graphics/D3D12/D3D12Core.h"
 #include "Project/Project.h"
@@ -72,6 +73,19 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 	{
 		texture::OpenTextureView(materialInitInfo.TextureIDs[texUse]);
 	}
+
+	content::AssetHandle handle{ content::assets::GetAssetFromResource(materialInitInfo.TextureIDs[texUse], content::AssetType::Texture) };
+	if (handle != content::INVALID_HANDLE)
+	{
+		ImGui::TextUnformatted("Path");
+		content::AssetPtr asset{ content::assets::GetAsset(handle) };
+		auto str{ asset->OriginalFilePath.string() };
+		ImGui::TextUnformatted(str.data());
+	}
+	else
+	{
+		ImGui::TextUnformatted("No Path Data");
+	}
 }
 
 void
@@ -83,7 +97,23 @@ RenderTextureBrowser()
 		{
 			if (ImGui::Selectable(texPath.data()))
 			{
-				materialInitInfo.TextureIDs[textureBeingChanged] = content::CreateResourceFromAsset(texPath, content::AssetType::Texture);
+				content::AssetHandle assetHandle{ content::assets::GetHandleFromImportedPath(texPath) };
+				if (assetHandle != content::INVALID_HANDLE)
+				{
+
+					std::unique_ptr<u8[]> buffer;
+					u64 size{ 0 };
+					content::ReadAssetFileNoVersion(texPath, buffer, size, content::AssetType::Texture);
+					assert(buffer.get());
+
+					materialInitInfo.TextureIDs[textureBeingChanged] = content::CreateResourceFromBlobWithHandle(
+						buffer.get(), content::AssetType::Texture, assetHandle);
+				}
+				else
+				{
+					log::Warn("Can't find assetHandle from path");
+				}
+				//materialInitInfo.TextureIDs[textureBeingChanged] = content::CreateResourceFromAsset(texPath, content::AssetType::Texture);
 				ImGui::CloseCurrentPopup();
 			}
 		}

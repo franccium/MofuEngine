@@ -11,6 +11,7 @@
 *.sln.docstates
 
 ExampleApp/Assets/*
+ExampleApp/Projects/*
 
 bin/*
 bin-int/*
@@ -372,3 +373,4 @@ FodyWeavers.xsd
 /ExampleApp/Assets/furtniture
 /ExampleApp/Assets/nature
 /ExampleApp/Assets/Sponza.fbx
+/ExampleApp/Projects/TestProject/Resources

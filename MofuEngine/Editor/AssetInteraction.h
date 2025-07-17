@@ -13,6 +13,7 @@ public:
 	void Instantiate(const ecs::scene::Scene& scene);
 	void InitializeFromFBXState(const content::FBXImportState& state);
 	void InitializeFromHierarchy(const Vec<ecs::Entity> entities);
+	void Serialize();
 
 private:
 	std::string _name;

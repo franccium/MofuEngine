@@ -50,6 +50,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	ecs::component::WorldTransform wt{};
 	ecs::component::RenderMaterial material{};
 	ecs::component::RenderMesh mesh{};
+	ecs::component::NameComponent name{};
 
 	// root
 	mesh.MeshID = uploadedGeometryInfo.GeometryContentID;
@@ -65,11 +66,14 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		ecs::component::Child child;
 	};
 	Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
+	std::string filename{ modelPath.stem().string() };
+	strcpy(name.Name, filename.data());
 
 	// create root entity
 	ecs::component::Parent parentEntity{ {} };
 	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity) };
+		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent, ecs::component::NameComponent>(
+			lt, wt, mesh, material, parentEntity, name) };
 	spawnedEntities[0] = { rootEntityData.id, mesh, material, false };
 
 	ecs::component::Child child{ {}, rootEntityData.id };
@@ -83,9 +87,11 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		mesh.MeshID = meshId;
 		material.MaterialIDs = &materials[i];
 		material.MaterialCount = 1;
+		snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
 
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child>(lt, wt, mesh, material, child) };
+			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child, ecs::component::NameComponent>(
+				lt, wt, mesh, material, child, name) };
 		assert(ecs::scene::GetComponent<ecs::component::Child>(e.id).ParentEntity == child.ParentEntity);
 		spawnedEntities[i] = { e.id, mesh, material, true, child };
 	}
@@ -235,6 +241,19 @@ Prefab::InitializeFromHierarchy(const Vec<ecs::Entity> entities)
 	// the first entity should be the parent
 	ecs::Entity parent{ entities.front() };
 	// save all components and assets identifiers
+	for (const ecs::Entity e : entities)
+	{
+		//TODO: for each component... (make some nice range for easy access finally instead of going and testing over the bitset)
+		content::AssetHandle meshAsset{};
+		content::AssetHandle materialAsset{};
+
+	}
+}
+
+void
+Prefab::Serialize()
+{
+	//TODO:
 }
 
 }

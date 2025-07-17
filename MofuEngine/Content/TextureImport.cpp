@@ -409,21 +409,22 @@ CompressImage(TextureData* const data, ScratchImage& scratch)
 }
 
 void
-CopyIcon(const Image& bcImage, TextureData* const data)
+CopyIcon(const Image& image, TextureData* const data)
 {
-	ScratchImage scratch;
-	if (FAILED(Decompress(bcImage, DXGI_FORMAT_UNKNOWN, scratch)))
-		return;
-	assert(scratch.GetImages());
+	//ScratchImage scratch;
+	//if (FAILED(Decompress(bcImage, DXGI_FORMAT_UNKNOWN, scratch)))
+		//return;
+	//assert(scratch.GetImages());
 
-	const Image& image{ scratch.GetImages()[0] };
+	//const Image& image{ scratch.GetImages()[0] };
 	// 4 x u32 for width, height, rowPitch and slicePitch + slicePitch bytes
-	data->IconSize = (u32)(sizeof(u32) * 4 + image.slicePitch);
-	data->Icon = (u8* const)CoTaskMemRealloc(data->Icon, data->IconSize);
+	data->IconSize = (u32)(sizeof(u32) * 5 + image.slicePitch);
+	data->Icon = new u8[data->IconSize];
 	assert(data->Icon);
 	util::BlobStreamWriter blob{ data->Icon, data->IconSize };
 	blob.Write((u32)image.width);
 	blob.Write((u32)image.height);
+	blob.Write((u32)image.format);
 	blob.Write((u32)image.rowPitch);
 	blob.Write((u32)image.slicePitch);
 	blob.WriteBytes(image.pixels, image.slicePitch);
@@ -480,13 +481,14 @@ PrefilterIbl(TextureData* const data, IblFilter::Type filterType)
 
 		// decompress the first image to be used in the editor as an icon
 		assert(bcScratch.GetImages());
-		CopyIcon(bcScratch.GetImages()[0], data);
+		//CopyIcon(bcScratch.GetImages()[0], data);
 
 		cubemaps = std::move(bcScratch);
 	}
 
 	CopySubresources(cubemaps, data);
 	TextureInfoFromMetadata(cubemaps.GetMetadata(), data->Info);
+	CopyIcon(cubemaps.GetImages()[data->Info.MipLevels / 2], data);
 }
 
 [[nodiscard]] ScratchImage
@@ -883,13 +885,14 @@ Import(TextureData* const data)
 
 		// decompress the first image to be used in the editor as an icon
 		assert(bcScratch.GetImages());
-		CopyIcon(bcScratch.GetImages()[0], data);
+		//CopyIcon(bcScratch.GetImages()[0], data);
 
 		scratch = std::move(bcScratch);
 	}
 
 	CopySubresources(scratch, data);
 	TextureInfoFromMetadata(scratch.GetMetadata(), data->Info);
+	CopyIcon(scratch.GetImages()[data->Info.MipLevels / 2], data);
 }
 
 void

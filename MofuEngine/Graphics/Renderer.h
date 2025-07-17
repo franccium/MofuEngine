@@ -214,6 +214,7 @@ void RemoveSurface(surface_id id);
 
 Camera CreateCamera(CameraInitInfo info);
 void RemoveCamera(camera_id id);
+const Camera& GetMainCamera();
 
 const char* GetEngineShadersPath();
 const char* GetEngineShadersPath(GraphicsPlatform platform);

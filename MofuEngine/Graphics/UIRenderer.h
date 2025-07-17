@@ -19,5 +19,6 @@ void Shutdown();
 void StartNewFrame();
 void ViewTexture(id_t textureID);
 void DestroyViewTexture(id_t textureID);
-u64 GetImTextureID(id_t textureID, u32 mipLevel = 0, u32 format = 0);
+[[nodiscard]] u64 GetImTextureID(id_t textureID, u32 mipLevel = 0, u32 format = 0);
+[[nodiscard]] id_t AddIcon(const u8* const blob);
 }

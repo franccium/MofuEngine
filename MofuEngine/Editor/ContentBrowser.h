@@ -13,6 +13,6 @@ enum class BrowserMode
 bool InitializeAssetBrowserGUI();
 void RenderAssetBrowserGUI();
 
-void AddNewRegisteredAsset(content::AssetHandle handle);
+void AddRegisteredAsset(content::AssetHandle handle, content::AssetPtr asset);
 void DeleteRegisteredAsset(content::AssetHandle handle);
 }

@@ -49,7 +49,8 @@ struct TextureFlags
 	};
 };
 
-id_t CreateResourceFromBlob(const void* const blob, AssetType::type resourceType);
+[[nodiscard]] id_t CreateResourceFromBlob(const void* const blob, AssetType::type resourceType);
+[[nodiscard]] id_t CreateResourceFromBlobWithHandle(const void* const blob, AssetType::type resourceType, AssetHandle handle);
 void DestroyResource(id_t resourceId, AssetType::type resourceType);
 
 void GetLODOffsets(const id_t* const geometryIDs, const f32* const thresholds, u32 idCount, Vec<LodOffset>& offsets);

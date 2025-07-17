@@ -63,16 +63,24 @@ RemoveSurface(surface_id id)
     gfxInterface.surface.remove(id);
 }
 
+Camera cam{};
 Camera 
 CreateCamera(CameraInitInfo info)
 {
-	return gfxInterface.camera.create(info);
+    cam = gfxInterface.camera.create(info);
+	return cam;
 }
 
 void 
 RemoveCamera(camera_id id)
 {
 	gfxInterface.camera.remove(id);
+}
+
+const 
+Camera& GetMainCamera()
+{
+    return cam;
 }
 
 const char* 
