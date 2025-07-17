@@ -38,18 +38,6 @@ constexpr size_t ENTITY_BLOCK_ALIGNMENT{ 64 }; // 64 byte alignment
 memory::SlabAllocator<ENTITY_BLOCK_SIZE, ENTITY_BLOCK_ALIGNMENT> entityBlockAllocator;
 memory::PoolAllocator<EntityBlock> entityBlockHeaderPool;
 
-void RegisterEntityBlock(const CetMask& signature, EntityBlock* block)
-{
-	for (auto& [querySignature, matchingBlocks] : queryToBlockMap)
-	{
-		if ((signature & querySignature) == querySignature)
-		{
-			matchingBlocks.push_back(block);
-		}
-	}
-	// store the Cet somewhere?
-}
-
 EntityBlock*
 CreateBlock(const CetLayout& layout)
 {
@@ -62,6 +50,16 @@ CreateBlock(const CetLayout& layout)
 	block->CetSize = layout.CetSize;
 	block->EntityCount = 0;
 
+	Vec<ComponentID> componentIDs{};
+	for (ComponentID cid = 0; cid < component::ComponentTypeCount; ++cid)
+	{
+		if (!block->Signature.test(cid)) continue;
+		componentIDs.emplace_back(cid);
+	}
+	u16 componentCount{ (u16)componentIDs.size() };
+	block->ComponentCount = componentCount;
+	block->ComponentIDs = new ComponentID[componentCount];
+	std::copy(componentIDs.begin(), componentIDs.end(), block->ComponentIDs);
 	block->ComponentData = (u8*)entityBlockAllocator.Allocate();
 	block->Entities = reinterpret_cast<Entity*>(block->ComponentData);
 
@@ -98,11 +96,6 @@ AddEntity(Vec<EntityBlock*> matchingBlocks, Entity entity)
 
 	u32 idx{ id::Index(entity) };
 	entityDatas.emplace_back(chosenBlock, row, id::Generation(entity), entity); // TODO: what to do here
-
-	//GetEntityComponent<component::LocalTransform>(entity) = component::LocalTransform{};
-	//GetEntityComponent<component::LocalTransform>(entity).Position = { -3.0f, -10.f, 10.f}; //TODO: temporary initial transform
-	//if(idx == 1) GetEntityComponent<component::LocalTransform>(entity).Position = { 0.0f, -10.f, 10.f}; //TODO: temporary initial transform
-	//log::Info("Added entity %u to block", id::Index(entity));
 }
 
 
@@ -131,15 +124,12 @@ RemoveEntity(EntityBlock* block, Entity entity)
 		//id::AdvanceGeneration((id_t&)block->Entities[newRow]);
 
 		// copy over component values
-		for (ComponentID componentID = 0; componentID < component::ComponentTypeCount; ++componentID)
+		for (ComponentID cid : block->GetComponentView())
 		{
-			if (block->Signature.test(componentID))
-			{
-				u32 componentSize{ component::GetComponentSize(componentID) };
-				u32 oldOffset{ block->ComponentOffsets[componentID] + componentSize * lastRow };
-				u32 newOffset{ block->ComponentOffsets[componentID] + componentSize * newRow };
-				memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, component::GetComponentSize(componentID));
-			}
+			u32 componentSize{ component::GetComponentSize(cid) };
+			u32 oldOffset{ block->ComponentOffsets[cid] + componentSize * lastRow };
+			u32 newOffset{ block->ComponentOffsets[cid] + componentSize * newRow };
+			memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, component::GetComponentSize(cid));
 		}
 
 		Entity movedEntity{ block->Entities[newRow] };
@@ -156,14 +146,14 @@ MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlo
 	u32 newRow{ newBlock->EntityCount };
 
 	// copy over component values
-	for (ComponentID componentID = 0; componentID < component::ComponentTypeCount; ++componentID)
+	for (ComponentID cid : oldBlock->GetComponentView())
 	{
-		if (oldBlock->Signature.test(componentID) && newBlock->Signature.test(componentID))
+		if (newBlock->Signature.test(cid))
 		{
-			u32 componentSize{ component::GetComponentSize(componentID) };
-			u32 oldOffset{ oldBlock->ComponentOffsets[componentID] + componentSize * oldRow };
-			u32 newOffset{ newBlock->ComponentOffsets[componentID] + componentSize * newRow };
-			memcpy(newBlock->ComponentData + newOffset, oldBlock->ComponentData + oldOffset, component::GetComponentSize(componentID));
+			u32 componentSize{ component::GetComponentSize(cid) };
+			u32 oldOffset{ oldBlock->ComponentOffsets[cid] + componentSize * oldRow };
+			u32 newOffset{ newBlock->ComponentOffsets[cid] + componentSize * newRow };
+			memcpy(newBlock->ComponentData + newOffset, oldBlock->ComponentData + oldOffset, component::GetComponentSize(cid));
 		}
 	}
 

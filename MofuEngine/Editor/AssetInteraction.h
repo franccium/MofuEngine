@@ -12,8 +12,6 @@ public:
 
 	void Instantiate(const ecs::scene::Scene& scene);
 	void InitializeFromFBXState(const content::FBXImportState& state);
-	void InitializeFromHierarchy(const Vec<ecs::Entity> entities);
-	void Serialize();
 
 private:
 	std::string _name;
@@ -24,4 +22,6 @@ private:
 
 void DropModelIntoScene(std::filesystem::path modelPath, u32* materials = nullptr);
 void AddFBXImportedModelToScene(const content::FBXImportState& state);
+
+void SerializeEntityHierarchy(const Vec<ecs::Entity>& entities);
 }

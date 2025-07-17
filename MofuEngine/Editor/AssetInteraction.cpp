@@ -117,6 +117,48 @@ AddFBXImportedModelToScene(const content::FBXImportState& state)
 }
 
 void 
+SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
+{
+	using namespace ecs;
+
+	Entity parent{ entities.front() };
+	const char* parentName{ scene::GetComponent<component::NameComponent>(parent).Name };
+	std::string prefabFilename{ parentName };
+	prefabFilename += ".pre";
+	const std::filesystem::path resourcesPath{ mofu::editor::project::GetResourceDirectory() };
+	std::filesystem::path prefabPath{ resourcesPath / prefabFilename };
+
+	YAML::Emitter out;
+	{
+		out << YAML::BeginMap;
+
+		for (Entity entity : entities)
+		{
+			const EntityData& entityData{ scene::GetEntityData(entity) };
+			const EntityBlock* const block{ scene::GetEntityData(entity).block };
+
+			const component::LocalTransform& lt{ scene::GetComponent<component::LocalTransform>(entity) };
+
+			out << YAML::Key << entity;
+			out << YAML::Value << YAML::BeginMap;
+
+			ForEachComponent(block, entityData.row, [&out](ComponentID cid, u8* data) {
+				out << YAML::Key << component::ComponentNames[cid];
+				component::SerializeLUT[cid](out, data);
+				});
+
+			out << YAML::EndMap;
+		}
+
+
+		out << YAML::EndMap;
+	}
+
+	std::ofstream outFile(prefabPath);
+	outFile << out.c_str();
+}
+
+void 
 Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 {
 	assert(std::filesystem::exists(_geometryPath));
@@ -233,27 +275,6 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state)
 		info.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
 		info.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
 	}
-}
-
-void 
-Prefab::InitializeFromHierarchy(const Vec<ecs::Entity> entities)
-{
-	// the first entity should be the parent
-	ecs::Entity parent{ entities.front() };
-	// save all components and assets identifiers
-	for (const ecs::Entity e : entities)
-	{
-		//TODO: for each component... (make some nice range for easy access finally instead of going and testing over the bitset)
-		content::AssetHandle meshAsset{};
-		content::AssetHandle materialAsset{};
-
-	}
-}
-
-void
-Prefab::Serialize()
-{
-	//TODO:
 }
 
 }

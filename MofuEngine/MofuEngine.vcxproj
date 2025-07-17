@@ -210,6 +210,7 @@
     <ClInclude Include="Content\NormalMapProcessing.h" />
     <ClInclude Include="Content\PrimitiveMeshGeneration.h" />
     <ClInclude Include="Content\ResourceCreation.h" />
+    <ClInclude Include="Content\SerializationUtils.h" />
     <ClInclude Include="Content\ShaderCompilation.h" />
     <ClInclude Include="Content\TextureImport.h" />
     <ClInclude Include="Core\EngineModules.h" />

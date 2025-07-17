@@ -10,6 +10,7 @@
 #include "Content/Asset.h"
 #include "EngineAPI/Camera.h"
 #include "Graphics/Renderer.h"
+#include "Content/SerializationUtils.h"
 #endif
 
 /*
@@ -306,8 +307,8 @@ struct DirectionalLight : Component
 
 struct PointLight : Component
 {
-	v3 Attenuation{ 1.f, 1.f, 1.f };
 	f32 Range{ 5.f };
+	v3 Attenuation{ 1.f, 1.f, 1.f };
 
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] PointLight& c)
@@ -324,8 +325,8 @@ struct PointLight : Component
 
 struct SpotLight : Component
 {
-	v3 Attenuation{ 1.f, 1.f, 1.f };
 	f32 Range{ 5.f };
+	v3 Attenuation{ 1.f, 1.f, 1.f };
 	f32 Umbra{ 45.f };
 	f32 Penumbra{ 45.f };
 
@@ -361,5 +362,83 @@ struct NameComponent : Component
 	}
 #endif
 };
+
+#if EDITOR_BUILD
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const LocalTransform& lt)
+{
+	//out << YAML::Key << "LocalTransform" << YAML::BeginMap;
+	out << YAML::BeginMap;
+	out << YAML::Key << "Position" << YAML::Value << lt.Position;
+	out << YAML::Key << "Rotation" << YAML::Value << lt.Rotation;
+	out << YAML::Key << "Scale" << YAML::Value << lt.Scale;
+	out << YAML::Key << "Forward" << YAML::Value << lt.Forward;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const Child& wt)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Parent" << YAML::Value << wt.ParentEntity;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const RenderMesh& wt)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Mesh" << YAML::Value << wt.MeshAsset;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const RenderMaterial& wt)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Material" << YAML::Value << wt.MaterialAsset;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const Light& wt)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Intensity" << YAML::Value << wt.Intensity;
+	out << YAML::Key << "Color" << YAML::Value << wt.Color;
+	out << YAML::Key << "Enabled" << YAML::Value << wt.Enabled;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const PointLight& wt)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Range" << YAML::Value << wt.Range;
+	out << YAML::Key << "Attenuation" << YAML::Value << wt.Attenuation;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const SpotLight& wt)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Range" << YAML::Value << wt.Range;
+	out << YAML::Key << "Attenuation" << YAML::Value << wt.Attenuation;
+	out << YAML::Key << "Umbra" << YAML::Value << wt.Umbra;
+	out << YAML::Key << "Penumbra" << YAML::Value << wt.Penumbra;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const NameComponent& wt)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Name" << YAML::Value << wt.Name;
+	out << YAML::EndMap;
+	return out;
+}
+
+#endif
+
 
 }

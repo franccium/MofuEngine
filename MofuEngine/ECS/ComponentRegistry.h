@@ -1,9 +1,9 @@
 #pragma once
+#include <array>
+#include <tuple>
 #include "ECSCommon.h"
 #include "Component.h"
 #include "Transform.h"
-#include <array>
-#include <tuple>
 
 namespace mofu::ecs::scene {
     template<IsComponent C>
@@ -24,12 +24,8 @@ using ComponentTypes = std::tuple<
     DirectionalLight,
     PointLight,
     SpotLight,
-    NameComponent,
-    TestComponent,
-    TestComponent2,
-    TestComponent3,
-    TestComponent4,
-    TestComponent5
+    NameComponent
+    //NOTE: dont put a , after the last item
 >;
 constexpr u32 ComponentTypeCount{ std::tuple_size_v<ComponentTypes> };
 
@@ -60,11 +56,6 @@ constexpr std::array<u32, ComponentTypeCount> ComponentSizes {
     sizeof(PointLight),
     sizeof(SpotLight),
     sizeof(NameComponent),
-    sizeof(TestComponent),
-    sizeof(TestComponent2),
-    sizeof(TestComponent3),
-    sizeof(TestComponent4),
-    sizeof(TestComponent5),
 };
 
 template<ComponentID ID>
@@ -80,6 +71,8 @@ void RenderOneComponent(void* raw)
 }
 
 
+///////////////////////////////// DSIPLAYING COMPONENT DATA ///////////////////////////////////////////////////////////////
+
 using RenderFunc = void(*)(void*);
 
 template<u32... Is>
@@ -90,7 +83,7 @@ constexpr auto MakeRenderLUT(std::index_sequence<Is...>)
 
 constexpr auto RenderLUT{ MakeRenderLUT(std::make_index_sequence<ComponentTypeCount>{}) };
 
-constexpr std::array<const char*, ComponentTypeCount> ComponentNames{
+constexpr std::array<const char*, ComponentTypeCount> ComponentNames {
     "LocalTransform",
 	"WorldTransform",
 	"Parent",
@@ -103,11 +96,6 @@ constexpr std::array<const char*, ComponentTypeCount> ComponentNames{
     "PointLight",
     "SpotLight",
     "NameComponent",
-	"TestComponent",
-	"TestComponent2",
-	"TestComponent3",
-	"TestComponent4",
-	"TestComponent5",
 };
 
 //TODO: passing component ids as arguments might be a better idea
@@ -127,5 +115,45 @@ constexpr auto MakeAddLUT(std::index_sequence<Is...>)
 }
 
 inline constexpr auto AddLUT = MakeAddLUT(std::make_index_sequence<ComponentTypeCount>{});
+
+
+///////////////////////////////// SERIALIZATION ///////////////////////////////////////////////////////////////
+
+//namespace detail {
+//template<typename T, typename = void>
+//struct IsYamlSerializable : std::false_type {};
+//
+//// checks whether an appropriate overload for YAML exists, if it does, it assumes the type to be serializable
+//template<typename T>
+//struct IsYamlSerializable<T, std::void_t<decltype(operator<<(std::declval<YAML::Emitter&>(), std::declval<const T&>()))>> : std::true_type {};
+//}
+//
+//template<typename T>
+//constexpr bool IsYamlSerializable_v = detail::IsYamlSerializable<T>::value;
+
+using SerializeFunc = void(*)(YAML::Emitter&, const u8* const);
+
+template<ComponentID ID>
+void SerializeComponent(YAML::Emitter& out, const u8* const componentData) 
+{
+    using T = ComponentTypeByID<ID>;
+
+    if constexpr (IsYamlSerializable<T>) 
+    {
+        out << *reinterpret_cast<const T*>(componentData);
+    }
+    else 
+    {
+        out << YAML::Null;
+    }
+}
+
+template<u32... Is>
+constexpr auto MakeSerializeLUT(std::index_sequence<Is...>)
+{
+    return std::array<SerializeFunc, sizeof...(Is)>{ &SerializeComponent<Is>... };
+}
+
+inline constexpr auto SerializeLUT = MakeSerializeLUT(std::make_index_sequence<ComponentTypeCount>{});
 
 }
