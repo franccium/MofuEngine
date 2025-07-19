@@ -114,6 +114,7 @@ void
 RefreshAllAssets()
 {
 	//content::assets::ImportAllNotImported();
+	content::assets::RegisterAllAssetsOfType(content::AssetType::Material);
 }
 
 const std::filesystem::path

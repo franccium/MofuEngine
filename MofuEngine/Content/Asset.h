@@ -3,10 +3,12 @@
 #include "Guid.h"
 #include <filesystem>
 #include <unordered_set>
+#include <array>
 
 namespace mofu::content {
 using AssetHandle = Guid;
 const AssetHandle INVALID_HANDLE{ AssetHandle(0) };
+inline bool IsValid(AssetHandle handle) { return handle != INVALID_HANDLE; }
 
 struct AssetType
 {
@@ -18,6 +20,7 @@ struct AssetType
 		Animation,
 		Audio,
 		Material,
+		Shader,
 		Skeleton,
 
 		Count
@@ -31,17 +34,18 @@ constexpr const char* ASSET_TYPE_TO_STRING[content::AssetType::Count] {
 	"Animation",
 	"Audio",
 	"Material",
+	"Shader",
 	"Skeleton",
 };
 
 constexpr const char* ASSET_METADATA_EXTENSION{ ".mt" };
 
 const std::unordered_set<std::string_view> ASSET_EXTENSIONS {
-	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".wav"
+	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".wav", ".mat", 
 };
 
 const std::unordered_set<std::string_view> ENGINE_ASSET_EXTENSIONS {
-	".mesh", ".tex", 
+	".mesh", ".tex", ".mat", 
 };
 
 struct Asset
@@ -87,13 +91,24 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtensi
 	{ ".jpeg", AssetType::Texture },
 	{ ".bmp", AssetType::Texture },
 	{ ".wav", AssetType::Audio },
+	{ ".mat", AssetType::Material },
 };
 
 const std::unordered_map<std::string_view, AssetType::type> assetTypeFromEngineExtension {
 	{ ".mesh", AssetType::Mesh },
-	{ ".emesh", AssetType::Mesh },
 	{ ".tex", AssetType::Texture },
-	{ ".etex", AssetType::Texture },
+	{ ".mat", AssetType::Material },
+};
+
+constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET{
+	".mt",
+	".mesh",
+	".tex",
+	".anim",
+	".aud",
+	".mat",
+	".sd",
+	".sk",
 };
 
 [[nodiscard]] inline AssetType::type 

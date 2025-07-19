@@ -50,13 +50,13 @@ CetMask PreviewCetMaskPlusComponents(CetMask signature)
 	return signature;
 }
 
-CetLayout GenerateCetLayout(const CetMask cetMask);
+CetLayout GenerateCetLayout(const CetMask& cetMask);
 
 bool IsEntityAlive(Entity id);
 EntityData& GetEntityData(Entity id);
 const Vec<EntityData>& GetAllEntityData();
 
-std::vector<EntityBlock*> GetBlocksFromCet(const CetMask& querySignature);
+Vec<EntityBlock*> GetBlocksFromCet(const CetMask& querySignature);
 
 template<IsComponent C>
 C&
@@ -98,14 +98,13 @@ AddEntityComponent(Entity e)
 	AddComponents<C>(e);
 }
 
-EntityData& CreateEntity(CetLayout& layout);
+EntityData& CreateEntity(const CetMask& signature);
 
 template<IsComponent... C>
 EntityData& CreateEntity()
 {
 	const CetMask cetMask{ GetCetMask<C...>() };
-	CetLayout layout{ GenerateCetLayout(cetMask) };
-	return CreateEntity(layout);
+	return CreateEntity(cetMask);
 }
 
 void RemoveEntity(Entity entity);

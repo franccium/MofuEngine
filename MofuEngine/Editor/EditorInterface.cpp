@@ -45,6 +45,9 @@ InspectAsset(content::AssetHandle handle)
     case content::AssetType::Texture:
         texture::OpenTextureView(asset->ImportedFilePath.replace_extension(".etex")); //TODO: what to do with the editor files finally
         break;
+    case content::AssetType::Material:
+        material::OpenMaterialView(handle);
+        break;
     }
 }
 

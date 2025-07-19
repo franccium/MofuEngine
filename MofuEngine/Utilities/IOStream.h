@@ -25,6 +25,15 @@ public:
 		_position += length;
 	}
 
+	template<typename T>
+	void ReadVector(T* vectorStart, u32 count)
+	{
+		static_assert(std::is_arithmetic_v<T>, "Template argument has to be a primitive type.");
+		u32 size{ count * sizeof(T) };
+		memcpy(vectorStart, _position, size);
+		_position += size;
+	}
+
 	const char* ReadStringWithLength()
 	{
 		u32 length{ Read<u32>() };
@@ -86,6 +95,21 @@ public:
 		assert(&_position[length] <= &_buffer[_bufferSize]);
 		memcpy(_position, bytes, length);
 		_position += length;
+	}
+
+	template<typename T>
+	void WriteVector(const T* vectorStart, u32 count)
+	{
+		static_assert(std::is_arithmetic_v<T>, "Template argument has to be a primitive type.");
+		u32 size{ sizeof(T) * count };
+		assert(&_position[size] <= &_buffer[_bufferSize]);
+		memcpy(_position, vectorStart, size);
+		_position += size;
+		/*for (u32 i{ 0 }; i < count; ++i)
+		{
+			*((T*)_position) = vectorStart[i];
+			_position += sizeof(T);
+		}*/
 	}
 
 	constexpr void Skip(u64 offset)

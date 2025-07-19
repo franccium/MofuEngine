@@ -3,6 +3,7 @@
 #include <filesystem>
 #include "Content/AssetImporter.h"
 #include "ECS/Scene.h"
+#include "Material.h"
 
 namespace mofu::editor::assets
 {
@@ -12,16 +13,22 @@ public:
 
 	void Instantiate(const ecs::scene::Scene& scene);
 	void InitializeFromFBXState(const content::FBXImportState& state);
+	void ExtractMaterials();
 
 private:
 	std::string _name;
 	std::string _geometryPath;
+	Vec<material::EditorMaterial> _materials;
 	Vec<graphics::MaterialInitInfo> _materialInfos;
 	Vec<std::string> _textureImageFiles;
+
+	Vec<content::AssetHandle> _meshAssets;
+	Vec<content::AssetHandle> _materialAssets;
 };
 
 void DropModelIntoScene(std::filesystem::path modelPath, u32* materials = nullptr);
 void AddFBXImportedModelToScene(const content::FBXImportState& state);
 
 void SerializeEntityHierarchy(const Vec<ecs::Entity>& entities);
+void DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::path& path);
 }

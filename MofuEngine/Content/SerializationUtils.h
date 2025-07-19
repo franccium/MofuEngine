@@ -8,11 +8,15 @@ using namespace mofu;
 namespace mofu {
 // checks whether an appropriate overload for YAML exists, if it does, it assumes the type to be serializable
 template<typename T>
-concept IsYamlSerializable = requires(YAML::Emitter & out, const T& t) 
+concept IsYamlSerializable = requires(YAML::Emitter& out, const T& t) 
 {
     { out << t } -> std::same_as<YAML::Emitter&>;
 };
-
+template<typename T>
+concept IsYamlDeserializable = requires(const YAML::Node& node, T& t)
+{
+    { node >> t } -> std::same_as<bool>;
+};
 }
 
 namespace YAML {
@@ -39,4 +43,29 @@ inline Emitter& operator<<(Emitter& out, const m4x4& m)
     out << Flow << BeginSeq << m.m << EndSeq;
     return out;
 }
+
+inline bool operator>>(const Node& node, v2& v)
+{
+    v.x = node[0].as<f32>();
+    v.y = node[1].as<f32>();
+    return true;
+}
+
+inline bool operator>>(const Node& node, v3& v)
+{
+    v.x = node[0].as<f32>();
+    v.y = node[1].as<f32>();
+    v.z = node[2].as<f32>();
+    return true;
+}
+
+inline bool operator>>(const Node& node, v4& v)
+{
+    v.x = node[0].as<f32>();
+    v.y = node[1].as<f32>();
+    v.z = node[2].as<f32>();
+    v.w = node[3].as<f32>();
+    return true;
+}
+
 }

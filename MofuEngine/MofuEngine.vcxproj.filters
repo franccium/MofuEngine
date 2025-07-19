@@ -228,6 +228,9 @@
     <ClCompile Include="Content\EditorContentManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\Material.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -529,6 +532,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Content\SerializationUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

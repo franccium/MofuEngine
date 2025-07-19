@@ -10,7 +10,7 @@ class QueryView
 	using BlockPtr = EntityBlock*;
 
 public:
-	explicit QueryView(std::vector<BlockPtr>& blocks)
+	explicit QueryView(Vec<BlockPtr>& blocks)
 		: _blocks(std::move(blocks))
 	{
 	}
@@ -60,7 +60,7 @@ public:
 	Iterator end() { return { _blocks.data() + _blocks.size(), _blocks.data() + _blocks.size() }; }
 
 private:
-	std::vector<BlockPtr> _blocks{};
+	Vec<BlockPtr> _blocks{};
 };
 
 }

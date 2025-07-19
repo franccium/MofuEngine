@@ -78,7 +78,7 @@ public:
 private:
 	// systems' order index -- ptr to System
 	//using SystemEntry = std::pair<u32, std::unique_ptr<System>>;
-	std::array<std::vector<SystemEntry>, SystemGroup::Count> _systems;
+	std::array<std::vector<SystemEntry>, SystemGroup::Count> _systems; //TODO: own vector
 };
 
 }

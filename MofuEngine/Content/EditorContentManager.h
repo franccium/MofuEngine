@@ -18,8 +18,13 @@ void PairAssetWithResource(AssetHandle handle, id_t resourceID, AssetType::type 
 [[nodiscard]] id_t GetResourceFromAsset(AssetHandle handle, AssetType::type type);
 [[nodiscard]] Vec<id_t> GetResourcesFromAsset(AssetHandle handle, AssetType::type type);
 
-void ImportAllNotImported();
+id_t CreateResourceFromHandle(AssetHandle handle);
 
+void ImportAllNotImported(AssetType::type type);
+// TODO: this is useless, only need it to register all materials
+void RegisterAllAssetsOfType(AssetType::type type);
+
+void LoadEditorAssets();
 void InitializeAssetRegistry();
 void ShutdownAssetRegistry();
 

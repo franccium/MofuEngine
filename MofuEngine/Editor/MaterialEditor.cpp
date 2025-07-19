@@ -7,6 +7,7 @@
 #include "ValueDisplay.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "Content/EditorContentManager.h"
+#include "Material.h"
 
 #include "Graphics/D3D12/D3D12Core.h"
 #include "Project/Project.h"
@@ -14,10 +15,10 @@
 namespace mofu::editor::material {
 namespace {
 
-constexpr const char* WHITE_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/white_placeholder_texture.tex" };
-constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/gray_placeholder_texture.tex" };
-constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/black_placeholder_texture.tex" };
-constexpr const char* ERROR_TEXTURE{ "Projects/TestProject/Assets/EngineTextures/error_texture.tex" };
+constexpr const char* WHITE_TEXTURE{ "Projects/TestProject/Resources/Editor/white_placeholder_texture.tex" };
+constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Resources/Editor/gray_placeholder_texture.tex" };
+constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Resources/Editor/black_placeholder_texture.tex" };
+constexpr const char* ERROR_TEXTURE{ "Projects/TestProject/Resources/Editor/error_texture.tex" };
 constexpr const char* DEFAULT_TEXTURES_PATHS[TextureUsage::Count]{
 	ERROR_TEXTURE,
 	GRAY_TEXTURE,
@@ -43,6 +44,10 @@ bool isBrowserOpen{ false };
 TextureUsage::Usage textureBeingChanged{};
 
 Vec<std::string> texFiles{};
+Vec<std::string> matFiles{};
+
+constexpr u32 MAX_NAME_LENGTH{ 16 };
+char nameBuffer[MAX_NAME_LENGTH]{};
 
 [[nodiscard]] id_t
 LoadTexture(const char* path)
@@ -100,14 +105,7 @@ RenderTextureBrowser()
 				content::AssetHandle assetHandle{ content::assets::GetHandleFromImportedPath(texPath) };
 				if (assetHandle != content::INVALID_HANDLE)
 				{
-
-					std::unique_ptr<u8[]> buffer;
-					u64 size{ 0 };
-					content::ReadAssetFileNoVersion(texPath, buffer, size, content::AssetType::Texture);
-					assert(buffer.get());
-
-					materialInitInfo.TextureIDs[textureBeingChanged] = content::CreateResourceFromBlobWithHandle(
-						buffer.get(), content::AssetType::Texture, assetHandle);
+					materialInitInfo.TextureIDs[textureBeingChanged] = content::assets::CreateResourceFromHandle(assetHandle);
 				}
 				else
 				{
@@ -128,7 +126,9 @@ InitializeMaterialEditor()
 {
 	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
 	{
-		DEFAULT_TEXTURES[i] = LoadTexture(DEFAULT_TEXTURES_PATHS[i]);
+		//TODO: standardise loading editor default assets
+		content::AssetHandle handle{ content::assets::GetHandleFromImportedPath(DEFAULT_TEXTURES_PATHS[i]) };
+		DEFAULT_TEXTURES[i] = content::assets::CreateResourceFromHandle(handle);
 		assert(id::IsValid(DEFAULT_TEXTURES[i]));
 	}
 	return true;
@@ -169,8 +169,33 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 		{
 			materialInitInfo.TextureIDs[i] = DEFAULT_TEXTURES[i];
 		}
+		editorMaterial.TextureIDs[i] = materialInitInfo.TextureIDs[i];
+	}
+	bool textured{ materialInitInfo.TextureCount != 0 };
+	std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShaders(textured) };
+	materialInitInfo.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
+	materialInitInfo.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
+	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
+	{
+		editorMaterial.ShaderIDs[i] = materialInitInfo.ShaderIDs[i];
 	}
 	editorMaterial.Surface = materialInitInfo.Surface;
+	editorMaterial.TextureCount = materialInitInfo.TextureCount;
+	isOpen = true;
+}
+
+void 
+OpenMaterialView(content::AssetHandle handle)
+{
+	content::AssetPtr asset{ content::assets::GetAsset(handle) };
+	LoadMaterialAsset(editorMaterial, asset->ImportedFilePath);
+	materialInitInfo = {};
+	materialInitInfo.Type = editorMaterial.Type;
+	materialInitInfo.Surface = editorMaterial.Surface;
+	materialInitInfo.TextureCount = editorMaterial.TextureCount;
+	memcpy(materialInitInfo.ShaderIDs, editorMaterial.ShaderIDs, graphics::ShaderType::Count * sizeof(id_t));
+	materialInitInfo.TextureIDs = new id_t[editorMaterial.TextureCount];
+	memcpy(materialInitInfo.TextureIDs, editorMaterial.TextureIDs, editorMaterial.TextureCount * sizeof(id_t));
 	isOpen = true;
 }
 
@@ -249,7 +274,7 @@ RenderMaterialEditor()
 
 	DisplayMaterialSurfaceProperties(editorMaterial.Surface);
 
-	if (ImGui::Button("Save"))
+	if (ImGui::Button("Update"))
 	{
 		//TODO: or edit the material texture data itself
 		id_t newMaterialID{ content::CreateMaterial(materialInitInfo) };
@@ -262,6 +287,78 @@ RenderMaterialEditor()
 
 		graphics::RemoveRenderItem(id::Index(materialOwner) - 1);
 		graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+	}
+	static bool saving{ false };
+	if (ImGui::Button("Save"))
+	{
+		saving = true;
+	}
+	if (saving)
+	{
+		//if (ImGui::BeginPopup("Saving"))
+		{
+			ImGui::InputText("Filename", nameBuffer, MAX_NAME_LENGTH);
+			{
+
+				if (ImGui::Button("Confirm"))
+				{
+					std::filesystem::path outPath{ project::GetResourceDirectory() };
+					outPath.append(nameBuffer);
+					outPath.replace_extension(".mat");
+
+					for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
+					{
+						editorMaterial.TextureIDs[i] = materialInitInfo.TextureIDs[i];
+					}
+					for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
+					{
+						editorMaterial.ShaderIDs[i] = materialInitInfo.ShaderIDs[i];
+					}
+					editorMaterial.Surface = materialInitInfo.Surface;
+					editorMaterial.TextureCount = materialInitInfo.TextureCount;
+
+					PackMaterialAsset(editorMaterial, outPath);
+					//CreateMaterialAsset(outPath);
+					saving = false;
+				}
+			}
+			//ImGui::EndPopup();
+		}
+	}
+	static bool loading{ false };
+	if (ImGui::Button("Load"))
+	{
+		loading = true;
+	}
+	if (loading)
+	{
+		//if (ImGui::BeginPopup("Select Texture"))
+		{
+			matFiles.clear();
+			content::ListFilesByExtensionRec(".mat", project::GetResourceDirectory(), matFiles);
+
+			for (std::string_view matPath : matFiles)
+			{
+				if (ImGui::Selectable(matPath.data()))
+				{
+					content::AssetHandle assetHandle{ content::assets::GetHandleFromImportedPath(matPath) };
+					if (assetHandle != content::INVALID_HANDLE)
+					{
+						//TODO: refactor
+						LoadMaterialAsset(editorMaterial, matPath);
+						materialInitInfo = {};
+						LoadMaterialDataFromAsset(materialInitInfo, assetHandle);
+					}
+					else
+					{
+						log::Warn("Can't find Material assetHandle from path");
+					}
+					loading = false;
+					//ImGui::CloseCurrentPopup();
+				}
+			}
+			//ImGui::EndPopup();
+		}
 	}
 
 	if (isBrowserOpen) RenderTextureBrowser();

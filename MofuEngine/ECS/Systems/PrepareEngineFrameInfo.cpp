@@ -26,8 +26,6 @@ namespace mofu::graphics::d3d12 {
 			renderItemIDs.clear();
 			thresholds.clear();
 			
-			u32 renderItemCount{ 0 };
-
 			frameInfo.LastFrameTime = 16.7f;
 			frameInfo.AverageFrameTime = 16.7f;
 			frameInfo.CameraID = camera_id{ 0 };
@@ -36,11 +34,10 @@ namespace mofu::graphics::d3d12 {
 				: ecs::scene::GetRW<ecs::component::WorldTransform,
 					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
 			{
-				renderItemIDs.emplace_back(mesh.MeshID);
+				renderItemIDs.emplace_back(mesh.RenderItemID);
 				thresholds.emplace_back(0.f);
-				renderItemCount++;
 			}
-			renderItemCount = (u32)renderItemIDs.size();
+			u32 renderItemCount = (u32)renderItemIDs.size();
 
 			frameInfo.RenderItemCount = renderItemCount;
 			frameInfo.RenderItemIDs = renderItemIDs.data();

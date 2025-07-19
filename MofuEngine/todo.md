@@ -19,6 +19,7 @@ Project stuff
 Asset Registry for the project
 Asset Manager
 Prefabs
+Handling Asset deletion
 
 
 clean default material

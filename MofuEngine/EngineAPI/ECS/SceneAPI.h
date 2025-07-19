@@ -62,11 +62,11 @@ inline EntityData& SpawnEntity(const C... components)
 	return entityData;
 }
 
-// NOTE: not all components are known at compile time, for instance with editor, we can select an entity which should
-// create an entity with Parent component initialized with the correct parent Entity
-inline void SpawnEntity()
+inline EntityData& SpawnEntity(const CetMask& signature)
 {
+	EntityData& entityData{ scene::CreateEntity(signature) };
 
+	return entityData;
 }
 
 void DestroyEntity(Entity entity);
@@ -75,12 +75,5 @@ void DestroyScene();
 
 u32 GetRenderItemCount();
 void GetRenderItemIDs(Vec<id_t>& outIDs);
-
-struct PrefabEntity
-{
-	PrefabEntity* Parent{ nullptr };
-	PrefabEntity** Children{ nullptr };
-	// components
-};
 
 }

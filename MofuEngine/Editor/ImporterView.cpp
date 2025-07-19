@@ -39,12 +39,16 @@ RenderMeshImportSettings()
 	if (ImGui::Button("Restore Defaults")) geometryImportSettings = {};
 }
 
-
 using SettingsRenderer = void(*)();
 constexpr std::array<SettingsRenderer, content::AssetType::Count> settingsRenderers {
 	RenderUnknownSettings,
 	RenderMeshImportSettings,
 	RenderTextureImportSettings,
+	RenderUnknownSettings,
+	RenderUnknownSettings,
+	RenderUnknownSettings,
+	RenderUnknownSettings,
+	RenderUnknownSettings,
 };
 
 } // anonymous namespace
@@ -154,6 +158,9 @@ RenderImportSummary()
 	if (ImGui::Button("Add To Scene"))
 	{
 		assets::AddFBXImportedModelToScene(fbxState);
+	}
+	if (ImGui::Button("Extract materials"))
+	{
 	}
 
 	ImGui::End();

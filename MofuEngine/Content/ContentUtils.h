@@ -91,6 +91,19 @@ ListFilesByExtension(const char* extension, const std::filesystem::path fromFold
 	}
 }
 
+inline void
+ListFilesByExtensionRec(const char* extension, const std::filesystem::path fromFolder, Vec<std::string>& outFiles)
+{
+	outFiles.clear();
+	for (auto& entry : std::filesystem::recursive_directory_iterator(fromFolder))
+	{
+		if (entry.is_regular_file() && entry.path().extension() == extension)
+		{
+			outFiles.push_back(entry.path().string());
+		}
+	}
+}
+
 inline bool
 ReadFileToByteBuffer(std::filesystem::path path, std::unique_ptr<u8[]>& outData, u64& outFileSize)
 {

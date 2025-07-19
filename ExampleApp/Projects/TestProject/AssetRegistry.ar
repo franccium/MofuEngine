@@ -1,11 +1,11 @@
-18351818403767434129:
+12629753260395758505:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\trim_diff.png
-  ImportedFilePath: Projects/TestProject\Resources\trim_diff.tex
-2280856057016251982:
-  Type: 1
-  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A.fbx
-  ImportedFilePath: ""
+  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_AoRM_1K.png
+  ImportedFilePath: Projects/TestProject\Resources\Sink_A_AoRM_1K.tex
+2651443651965142210:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel010.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel010.mat
 14111518878377110413:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\cyborg.fbx
@@ -14,26 +14,34 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Ambient Occlusion_1K.png
   ImportedFilePath: Projects/TestProject\Resources\Sink_A_Ambient Occlusion_1K.tex
-12629753260395758505:
+2280856057016251982:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A.fbx
+  ImportedFilePath: ""
+18351818403767434129:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_AoRM_1K.png
-  ImportedFilePath: Projects/TestProject\Resources\Sink_A_AoRM_1K.tex
-4569573846566311468:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\steel01_nml.png
-  ImportedFilePath: Projects/TestProject\Resources\steel01_nml.tex
-2431909026762621498:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Diffuse_1K.png
-  ImportedFilePath: Projects/TestProject\Resources\Sink_A_Diffuse_1K.tex
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\trim_diff.png
+  ImportedFilePath: Projects/TestProject\Resources\trim_diff.tex
 904736347443590168:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\steel01_rough.png
   ImportedFilePath: Projects/TestProject\Resources\steel01_rough.tex
+2431909026762621498:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Diffuse_1K.png
+  ImportedFilePath: Projects/TestProject\Resources\Sink_A_Diffuse_1K.tex
+4569573846566311468:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\steel01_nml.png
+  ImportedFilePath: Projects/TestProject\Resources\steel01_nml.tex
 10909188880592144247:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Roughness_1K.png
   ImportedFilePath: Projects/TestProject\Resources\Sink_A_Roughness_1K.tex
+18243188077801361412:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\base_AO.png
+  ImportedFilePath: Projects/TestProject\Resources\base_AO.tex
 15787060415004291062:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\furtniture\Urinal_B.fbx
@@ -42,22 +50,22 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Metalness_1K.png
   ImportedFilePath: Projects/TestProject\Resources\Sink_A_Metalness_1K.tex
-18243188077801361412:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\base_AO.png
-  ImportedFilePath: Projects/TestProject\Resources\base_AO.tex
+3070840626449134472:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel013.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel013.mat
 2018800600360885154:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Normal_1K.png
   ImportedFilePath: Projects/TestProject\Resources\Sink_A_Normal_1K.tex
-7102356286713454142:
+3597044868423222086:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Equipe_E.tga.png
-  ImportedFilePath: Projects/TestProject\Resources\Equipe_E.tex
-9387748443364965447:
+  OriginalFilePath: Projects/TestProject\Assets\ba\car\textures\0_01___Default_normal_0.jpeg
+  ImportedFilePath: Projects/TestProject\Resources\0_01___Default_normal_0.tex
+9576679108653050184:
   Type: 1
-  OriginalFilePath: Projects/TestProject\Assets\ab\Toilet_Round_A.fbx
-  ImportedFilePath: ""
+  OriginalFilePath: Projects/TestProject\Assets\ba\boat\boat.fbx
+  ImportedFilePath: Projects/TestProject\Resources\boat.mesh
 14272441433431426759:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\table\textures\wooden_picnic_table_bottom_rough_1k.png
@@ -66,26 +74,22 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\leather_rough.png
   ImportedFilePath: Projects/TestProject\Resources\leather_rough.tex
-9576679108653050184:
-  Type: 1
-  OriginalFilePath: Projects/TestProject\Assets\ba\boat\boat.fbx
-  ImportedFilePath: ""
-3597044868423222086:
+7102356286713454142:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ba\car\textures\0_01___Default_normal_0.jpeg
-  ImportedFilePath: Projects/TestProject\Resources\0_01___Default_normal_0.tex
-8179160113850239545:
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Equipe_E.tga.png
+  ImportedFilePath: Projects/TestProject\Resources\Equipe_E.tex
+9387748443364965447:
   Type: 1
-  OriginalFilePath: Projects/TestProject\Assets\ab\vertex_colored_cube.fbx
+  OriginalFilePath: Projects/TestProject\Assets\ab\Toilet_Round_A.fbx
   ImportedFilePath: ""
 16687973121019033593:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\specular.jpg
   ImportedFilePath: Projects/TestProject\Resources\specular.tex
-5094280636151106568:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_rough.png
-  ImportedFilePath: Projects/TestProject\Resources\cloth_rough.tex
+8179160113850239545:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\ab\vertex_colored_cube.fbx
+  ImportedFilePath: ""
 12142917356162691900:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\amomonha\a.fbx
@@ -94,22 +98,26 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\trim_rough.png
   ImportedFilePath: Projects/TestProject\Resources\trim_rough.tex
+11108078888033152907:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\boat0.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\boat0.mat
+5094280636151106568:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_rough.png
+  ImportedFilePath: Projects/TestProject\Resources\cloth_rough.tex
 4720309508626726975:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_AO_alpha.png
   ImportedFilePath: Projects/TestProject\Resources\base_AO_alpha.tex
-3347990530389534575:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\base_diff.png
-  ImportedFilePath: Projects/TestProject\Resources\base_diff.tex
 9276262214793611001:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Equipe_E.tga.png
   ImportedFilePath: Projects/TestProject\Resources\Equipe_E.tex
-17215922970461007899:
+3347990530389534575:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\base_metal.png
-  ImportedFilePath: Projects/TestProject\Resources\base_metal.tex
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\base_diff.png
+  ImportedFilePath: Projects/TestProject\Resources\base_diff.tex
 10082845289468461774:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\NguyenPhung_SFiGun_Metal.tga.png
@@ -118,6 +126,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\car\textures\internal_ground_ao_texture.jpeg
   ImportedFilePath: Projects/TestProject\Resources\internal_ground_ao_texture.tex
+17215922970461007899:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\base_metal.png
+  ImportedFilePath: Projects/TestProject\Resources\base_metal.tex
 14533957193845059825:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_nml.png
@@ -130,10 +142,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_rough.png
   ImportedFilePath: Projects/TestProject\Resources\base_rough.tex
-5073820861732076315:
+8492039648115338636:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_diff.png
-  ImportedFilePath: Projects/TestProject\Resources\cloth_diff.tex
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_N.tga.png
+  ImportedFilePath: Projects/TestProject\Resources\Body_N.tex
 6367594233100196883:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\nature\Pebbles01.fbx
@@ -142,10 +154,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_emissive.jpeg
   ImportedFilePath: Projects/TestProject\Resources\default_emissive.tex
-8492039648115338636:
+5073820861732076315:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_N.tga.png
-  ImportedFilePath: ""
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_diff.png
+  ImportedFilePath: Projects/TestProject\Resources\cloth_diff.tex
 8029212836012091898:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_metal.png
@@ -154,29 +166,29 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_nml.png
   ImportedFilePath: ""
-531991163554765438:
+4955251347499960139:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\leather_diff.png
-  ImportedFilePath: ""
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_Metal.tga.png
+  ImportedFilePath: Projects/TestProject\Resources\Body_Metal.tex
+1753554833459391681:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_baseColor.jpeg
+  ImportedFilePath: Projects/TestProject\Resources\default_baseColor.tex
 4626754421643682255:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\trim_nml.png
   ImportedFilePath: ""
-1753554833459391681:
+531991163554765438:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_baseColor.jpeg
-  ImportedFilePath: ""
-4955251347499960139:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_Metal.tga.png
-  ImportedFilePath: ""
-7827153631042723020:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\leather_nml.png
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\leather_diff.png
   ImportedFilePath: ""
 14831124920341547463:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\ba\car\source\carrr.fbx
+  ImportedFilePath: ""
+7827153631042723020:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\leather_nml.png
   ImportedFilePath: ""
 7637104855253268665:
   Type: 1
@@ -190,17 +202,21 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\longsword_metal.png
   ImportedFilePath: ""
-12289683644130759747:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\longsword_nml.png
-  ImportedFilePath: ""
 6854622211896251463:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\ba\Untitled.fbx
   ImportedFilePath: ""
+12289683644130759747:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\longsword_nml.png
+  ImportedFilePath: ""
 185170413438640742:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\longsword_rough.png
+  ImportedFilePath: ""
+10284724250531968918:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_metallicRoughness.png
   ImportedFilePath: ""
 4432951298591729152:
   Type: 2
@@ -210,21 +226,17 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\steel01_diff.png
   ImportedFilePath: ""
-10284724250531968918:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_metallicRoughness.png
-  ImportedFilePath: ""
 6917234963236312705:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\steel01_metal.png
   ImportedFilePath: ""
-7709815931617674150:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\amomonha\trim_metal.png
-  ImportedFilePath: ""
 6587850682997517664:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\roughness.jpg
+  ImportedFilePath: ""
+7709815931617674150:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\trim_metal.png
   ImportedFilePath: ""
 5624191606177359112:
   Type: 1
@@ -234,10 +246,6 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\poly_0_norm_pLMf0SJy.jpg
   ImportedFilePath: ""
-8619708741313693986:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\poly_0_occl_pLMf0SJy.jpg
-  ImportedFilePath: ""
 3633749647160415606:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\nature\Bush01.fbx
@@ -246,13 +254,21 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\car\textures\0_01___Default_metallic-0_01___Default_roughness_2@channels.jpeg
   ImportedFilePath: ""
-3485722804174689691:
+8619708741313693986:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\poly_0_pLMf0SJy.jpg
+  OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\poly_0_occl_pLMf0SJy.jpg
   ImportedFilePath: ""
 5844021959173966246:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\BistroInterior.fbx
+  ImportedFilePath: ""
+1692069884721373315:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aaa.mat
+  ImportedFilePath: Projects/TestProject\Resources\aaa.mat
+3485722804174689691:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\poly_0_pLMf0SJy.jpg
   ImportedFilePath: ""
 4337939404900888153:
   Type: 2
@@ -261,19 +277,19 @@
 17273046450042452368:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_AO.tga.png
-  ImportedFilePath: ""
-2531960871563791584:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_B.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_AO.tex
 15965035781961944423:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\testtexture.png
   ImportedFilePath: ""
+2531960871563791584:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_B.tga.png
+  ImportedFilePath: Projects/TestProject\Resources\Body_B.tex
 9595022399823491193:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_E.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_E.tex
 2833888499136605936:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_Roug.tga.png
@@ -290,13 +306,13 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Equipe_Metal.tga.png
   ImportedFilePath: ""
-13864701522770563720:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Equipe_N.tga.png
-  ImportedFilePath: ""
 15004772115773178838:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\nature\Rock01.fbx
+  ImportedFilePath: ""
+13864701522770563720:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Equipe_N.tga.png
   ImportedFilePath: ""
 2269008166792702458:
   Type: 2
@@ -326,33 +342,33 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Hair_B.tga.png
   ImportedFilePath: ""
-10415230923530699647:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Hair_N.tga.png
-  ImportedFilePath: ""
 3868409167849807975:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\furtniture\Toilet_Elongated_C.fbx
   ImportedFilePath: ""
-15379784051449229524:
+10415230923530699647:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Hair_Roug.tga.png
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Hair_N.tga.png
   ImportedFilePath: ""
 14971877485768899491:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Hair_A.tga.png
   ImportedFilePath: ""
+15379784051449229524:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Hair_Roug.tga.png
+  ImportedFilePath: ""
 3433989117089125483:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\HeadvsArm_AO.tga.png
   ImportedFilePath: ""
-2486544583652810534:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\HeadvsArm_B.tga.png
-  ImportedFilePath: ""
 15608246496875973132:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Hair_AO.tga.png
+  ImportedFilePath: ""
+2486544583652810534:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\HeadvsArm_B.tga.png
   ImportedFilePath: ""
 9733851688497549499:
   Type: 2
@@ -393,7 +409,11 @@
 10798939392367170498:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Plane_B.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Plane_B.tex
+8551329482777753081:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel018.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel018.mat
 14177079396525573098:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Plane_Metal.tga.png
@@ -413,27 +433,31 @@
 15569553549142538553:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Body_AO.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_AO.tex
 6620538410775096959:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Body_B.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_B.tex
+11879317069370476465:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel017.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel017.mat
 4601233456054913295:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Body_E.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_E.tex
 5754681126511094820:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Body_Metal.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_Metal.tex
 6076570304830867154:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Body_N.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_N.tex
 9847550238984025636:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Body_Roug.tga.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Body_Roug.tex
 4730360501212467150:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Equipe_AO.tga.png
@@ -446,13 +470,13 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Equipe_Metal.tga.png
   ImportedFilePath: ""
-17748077299239711111:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Equipe_N.tga.png
-  ImportedFilePath: ""
 2615578199543106094:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\nature\Flower01.fbx
+  ImportedFilePath: ""
+17748077299239711111:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Equipe_N.tga.png
   ImportedFilePath: ""
 11742748809283637346:
   Type: 2
@@ -470,6 +494,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Eye_Rough.tga.png
   ImportedFilePath: ""
+11509196311947562661:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel015.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel015.mat
 2492184780950108669:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Hair_B.tga.png
@@ -533,14 +561,14 @@
 7765732548868776524:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Plane_N.tga.png
+  ImportedFilePath: Projects/TestProject\Resources\Plane_N.tex
+463961622949868313:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\table\textures\wooden_picnic_table_top_metal_1k.png
   ImportedFilePath: ""
 14964652713965547870:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Plane_Roug.tga.png
-  ImportedFilePath: ""
-463961622949868313:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\table\textures\wooden_picnic_table_top_metal_1k.png
   ImportedFilePath: ""
 9878410630346996967:
   Type: 1
@@ -554,22 +582,22 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\characters\Y Bot.fbx
   ImportedFilePath: ""
-8635802761296488074:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\EngineTextures\black_placeholder_texture.png
-  ImportedFilePath: ""
 13904810130578851673:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\EngineTextures\gray_placeholder_texture.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Editor\gray_placeholder_texture.tex
+8635802761296488074:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\EngineTextures\black_placeholder_texture.png
+  ImportedFilePath: Projects/TestProject\Resources\Editor\black_placeholder_texture.tex
 18242375964021523369:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\EngineTextures\error_texture.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Editor\error_texture.tex
 5883755397647517831:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\EngineTextures\white_placeholder_texture.png
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Editor\white_placeholder_texture.tex
 10873162688709925769:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\furtniture\InteriorTest.fbx
@@ -702,3 +730,47 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\table\wooden_picnic_table_top_rough_1k.png
   ImportedFilePath: ""
+10674184673363204740:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aa.mat
+  ImportedFilePath: Projects/TestProject\Resources\aa.mat
+3928982218948612376:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aaa2.mat
+  ImportedFilePath: Projects/TestProject\Resources\aaa2.mat
+16225003003959265027:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aweg.mat
+  ImportedFilePath: Projects/TestProject\Resources\aweg.mat
+9393343722473010412:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\fajen.mat
+  ImportedFilePath: Projects/TestProject\Resources\fajen.mat
+16323034729930313522:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\sth.mat
+  ImportedFilePath: Projects/TestProject\Resources\sth.mat
+808726654482558739:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\oject0.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\oject0.mat
+14296969003912472085:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\boat0.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\boat0.mat
+13849275450436849121:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel011.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel011.mat
+10265783636974238974:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel012.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel012.mat
+2426583709396414375:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel014.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel014.mat
+5995382489422298531:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel016.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel016.mat

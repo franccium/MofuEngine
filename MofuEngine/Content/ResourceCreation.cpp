@@ -271,15 +271,15 @@ CreateResourceFromBlob(const void* const blob, AssetType::type resourceType)
 	id_t resourceId{ resourceCreators[resourceType](blob) };
 	return resourceId;
 }
-
-id_t
-CreateResourceFromBlobWithHandle(const void* const blob, AssetType::type resourceType, AssetHandle handle)
-{
-	assert(blob);
-	id_t resourceId{ resourceCreators[resourceType](blob) };
-	content::assets::PairAssetWithResource(handle, resourceId, resourceType);
-	return resourceId;
-}
+//
+//id_t
+//CreateResourceFromBlobWithHandle(const void* const blob, AssetType::type resourceType, AssetHandle handle)
+//{
+//	assert(blob);
+//	id_t resourceId{ resourceCreators[resourceType](blob) };
+//	content::assets::PairAssetWithResource(handle, resourceId, resourceType);
+//	return resourceId;
+//}
 
 void
 DestroyResource(id_t resourceId, AssetType::type resourceType)

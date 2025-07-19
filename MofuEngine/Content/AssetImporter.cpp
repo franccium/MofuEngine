@@ -211,7 +211,8 @@ ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImp
 
 		if (contentSize > 0)
 		{
-			std::filesystem::path targetPath{ texturePath.parent_path() / "imp" };
+			std::filesystem::path targetPath{ editor::project::GetAssetDirectory() / "ImportedTextures" };
+			std::filesystem::path assetPath{ editor::project::GetResourceDirectory() / "ImportedTextures" };
 			if (!std::filesystem::exists(targetPath)) 
 			{
 				std::filesystem::create_directory(targetPath);
@@ -219,10 +220,15 @@ ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImp
 			//char name[16];
 			//sprintf_s(name, "%u%s\0", textureIdx, texturePath.extension().string().data());
 			targetPath /= texturePath.filename();
+			assetPath /= texturePath.filename();
+			assetPath.replace_extension(".tex");
 			ImportImageFromBytes(data.get(), contentSize, texturePath.extension().string().data(), targetPath);
 			state.Textures[textureIdx] = {};
 			state.SourceImages[textureIdx] = {};
-			state.ImageFiles[textureIdx] = targetPath.replace_extension(".tex").string();
+			state.ImageFiles[textureIdx] = assetPath.string();
+
+			Asset* asset = new Asset{ AssetType::Texture, targetPath, assetPath };
+			assets::RegisterAsset(asset);
 		}
 	}
 }
@@ -548,6 +554,10 @@ constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
 	ImportFBX,
 	ImportTexture,
+	ImportUnknown,
+	ImportUnknown,
+	ImportUnknown,
+	ImportUnknown
 };
 
 } // anonymous namespace

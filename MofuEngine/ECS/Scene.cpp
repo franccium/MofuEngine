@@ -24,7 +24,7 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 Vec<Scene> scenes;
 u32 currentSceneIndex;
 
-std::unordered_map<CetMask, std::vector<EntityBlock*>> queryToBlockMap;
+std::unordered_map<CetMask, Vec<EntityBlock*>> queryToBlockMap;
 //constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
 //constexpr u32 TEST_BLOCK_COUNT{ 5 };
 Vec<EntityBlock*> blocks{};
@@ -166,7 +166,7 @@ MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlo
 
 } // anonymous namespace
 
-std::vector<EntityBlock*>
+Vec<EntityBlock*>
 GetBlocksFromCet(const CetMask& querySignature)
 {
 	//TODO: caching has to be updated, also just better query mechanism overall is needed
@@ -177,7 +177,7 @@ GetBlocksFromCet(const CetMask& querySignature)
 	//}
 
 	// Build the list if not cached
-	std::vector<EntityBlock*> result;
+	Vec<EntityBlock*> result;
 	for (auto block : blocks)
 	{
 		if ((block->Signature & querySignature) == querySignature)
@@ -203,10 +203,9 @@ const Vec<EntityData>& GetAllEntityData()
 }
 
 EntityData&
-CreateEntity(CetLayout& layout)
+CreateEntity(const CetMask& signature)
 {
 	Vec<EntityBlock*> matchingBlocks{};
-	CetMask& signature{ layout.Signature };
 	for (EntityBlock* b : blocks)
 	{
 		if (signature == b->Signature) // match the whole signature not just a part of it
@@ -217,6 +216,8 @@ CreateEntity(CetLayout& layout)
 	if (matchingBlocks.empty())
 	{
 		// if no matching block found, create a new one
+		CetLayout layout{ GenerateCetLayout(signature) };
+
 		EntityBlock* b{ CreateBlock(layout) };
 		matchingBlocks.emplace_back(b);
 	}
@@ -238,7 +239,7 @@ CreateScene()
 }
 
 CetLayout
-GenerateCetLayout(const CetMask cetMask)
+GenerateCetLayout(const CetMask& cetMask)
 {
 	CetLayout layout{};
 	layout.Signature = cetMask;

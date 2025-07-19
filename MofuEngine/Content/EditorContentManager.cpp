@@ -7,6 +7,8 @@
 #include <ranges>
 #include "Utilities/Logger.h"
 #include <unordered_set>
+#include "Content/ContentUtils.h"
+#include "Editor/Material.h"
 
 namespace mofu::content::assets {
 namespace {
@@ -190,6 +192,8 @@ PairAssetWithResource(AssetHandle handle, id_t resourceID, AssetType::type type)
 AssetHandle
 GetAssetFromResource(id_t resourceID, AssetType::type type)
 {
+	if (!id::IsValid(resourceID)) return INVALID_HANDLE;
+
 	auto set{ assetResourcePairs[type] };
 	auto result = std::ranges::find_if(set.begin(), set.end(), [&](const auto& item) {
 		return item.second == resourceID;
@@ -198,7 +202,6 @@ GetAssetFromResource(id_t resourceID, AssetType::type type)
 	if (result != set.end())
 	{
 		AssetHandle handle{ result->first };
-		id_t id{ result->second };
 		return handle;
 	}
 	return INVALID_HANDLE;
@@ -220,23 +223,67 @@ GetResourcesFromAsset(AssetHandle handle, AssetType::type type)
 	return {};
 }
 
+id_t 
+CreateResourceFromHandle(AssetHandle handle)
+{
+	AssetPtr asset{ GetAsset(handle) };
+	assert(asset);
+	assert(std::filesystem::exists(asset->ImportedFilePath));
+
+	std::unique_ptr<u8[]> buffer{};
+	u64 size{};
+	AssetType::type type{ asset->Type };
+	content::ReadAssetFileNoVersion(asset->ImportedFilePath, buffer, size, type);
+	assert(buffer.get());
+
+	id_t resourceID{ content::CreateResourceFromBlob(buffer.get(), type) };
+	PairAssetWithResource(handle, resourceID, type);
+	return resourceID;
+}
+
 void
-ImportAllNotImported()
+ImportAllNotImported(AssetType::type type)
 {
 	// for now only textures
-	u32 imported{ 0 };
 	for (const auto& [handle, asset] : assetRegistry)
 	{
-		if (imported > 10) return;
 		if (std::filesystem::exists(asset->ImportedFilePath)) continue;
 
 		// import
-		if (asset->Type == AssetType::Texture)
+		if (asset->Type == type)
 		{
 			ImportAsset(handle);
-			imported++;
 		}
 	}
+}
+
+// TODO: this is useless, only need it to register all materials
+void
+RegisterAllAssetsOfType(AssetType::type type)
+{
+	assert(type == AssetType::Material);
+
+	Vec<std::string> files{};
+	ListFilesByExtension(EXTENSION_FOR_ENGINE_ASSET[type], editor::project::GetResourceDirectory(), files);
+	for (const auto& assetPath : files)
+	{
+		if (IsValid(GetHandleFromImportedPath(assetPath))) continue;
+		
+		editor::material::CreateMaterialAsset(assetPath);
+
+		//std::unique_ptr<u8[]> buffer{};
+		//u64 size{};
+		//content::ReadAssetFileNoVersion(assetPath, buffer, size, type);
+
+		//id_t resourceID{ content::CreateResourceFromBlob(buffer.get(), type) };
+		//PairAssetWithResource(AssetHandle{}, resourceID, type);
+	}
+}
+
+void 
+LoadEditorAssets()
+{
+
 }
 
 // loads the registry from file
@@ -246,6 +293,8 @@ InitializeAssetRegistry()
 	DeserializeRegistry();
 
 	RegisterAllAssetsInProject();
+
+	LoadEditorAssets();
 }
 
 // saves the registry to a file

@@ -4,6 +4,7 @@
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "MaterialEditor.h"
 #include "AssetInteraction.h"
+#include "Project/Project.h"
 
 namespace mofu::editor {
 namespace {
@@ -20,6 +21,8 @@ struct EntityTreeNode
 
 EntityTreeNode* rootNode{ nullptr };
 Vec<std::pair<ecs::Entity, EntityTreeNode*>> entityToPair{};
+
+Vec<std::string> prefabFiles{};
 
 constexpr EntityTreeNode*
 FindParentAsNode(ecs::Entity parentEntity)
@@ -94,6 +97,34 @@ struct SceneHierarchy
 
     void Draw(EntityTreeNode* root_node)
     {
+        ImGui::BeginGroup();
+        static bool show{ false };
+        if (ImGui::Button("Import Hierarchy"))
+        {
+            prefabFiles.clear();
+            show = true;
+        }
+        if (show)
+        {
+            content::ListFilesByExtensionRec(".pre", project::GetResourceDirectory() / "Prefabs", prefabFiles);
+
+            for (std::string_view path : prefabFiles)
+            {
+                if (ImGui::Selectable(path.data()))
+                {
+                    Vec<ecs::Entity> entities{};
+                    assets::DeserializeEntityHierarchy(entities, path);
+                    for (const ecs::Entity e : entities)
+                    {
+                        AddEntityToSceneView(e);
+                    }
+                    //ImGui::CloseCurrentPopup();
+                }
+            }
+
+        }
+        ImGui::EndGroup();
+
         // Left side: draw tree
         if (ImGui::BeginChild("##tree", ImVec2(300, 0), ImGuiChildFlags_ResizeX | ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened))
         {

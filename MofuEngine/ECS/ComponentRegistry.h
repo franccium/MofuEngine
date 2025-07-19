@@ -156,4 +156,31 @@ constexpr auto MakeSerializeLUT(std::index_sequence<Is...>)
 
 inline constexpr auto SerializeLUT = MakeSerializeLUT(std::make_index_sequence<ComponentTypeCount>{});
 
+
+using DeserializeFunc = void(*)(const YAML::Node&, u8*);
+
+template<ComponentID ID>
+void DeserializeComponent(const YAML::Node& node, u8* data) 
+{
+    using T = ComponentTypeByID<ID>;
+
+    if constexpr (IsYamlDeserializable<T>)
+    {
+        //*reinterpret_cast<T*>(data) = node.as<T>();
+        node >> *reinterpret_cast<T*>(data);
+    }
+    else
+    {
+        new (reinterpret_cast<T*>(data)) T{};
+    }
+}
+
+template<u32... Is>
+constexpr auto MakeDeserializeLUT(std::index_sequence<Is...>) 
+{
+    return std::array<DeserializeFunc, sizeof...(Is)>{ &DeserializeComponent<Is>... };
+}
+
+constexpr auto DeserializeLUT = MakeDeserializeLUT(std::make_index_sequence<ComponentTypeCount>{});
+
 }
