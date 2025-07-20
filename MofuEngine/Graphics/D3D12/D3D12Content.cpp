@@ -282,8 +282,8 @@ GetMaterialReflection(id_t materialID)
 void 
 GetMaterials(const id_t* const materialIds, u32 materialCount, const MaterialsCache& cache, u32& outDescriptorIndexCount)
 {
-    assert(materialIds && materialCount);
-    assert(cache.RootSignatures && cache.MaterialTypes);
+    //assert(materialIds && materialCount);
+    //assert(cache.RootSignatures && cache.MaterialTypes);
 
     u32 totalIndexCount{ 0 };
     std::lock_guard lock{ materialMutex };
@@ -513,7 +513,7 @@ RemoveRenderItem(id_t id)
 void
 GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds)
 {
-	assert(frameInfo.RenderItemIDs && frameInfo.RenderItemCount && frameInfo.Thresholds);
+	//assert(frameInfo.RenderItemIDs && frameInfo.RenderItemCount && frameInfo.Thresholds);
 	assert(!renderItemIDs.empty());
 
 	FrameCache.LODOffsets.clear();
@@ -545,11 +545,11 @@ GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds)
 void
 GetRenderItems(const id_t* const itemIDs, u32 idCount, const RenderItemsCache& cache)
 {
-	assert(itemIDs && idCount);
-	assert(cache.EntityIDs && cache.SubmeshGpuIDs && cache.GpassPso && cache.DepthPso);
-
+	//assert(itemIDs && idCount);
+	//assert(cache.EntityIDs && cache.SubmeshGpuIDs && cache.GpassPso && cache.DepthPso);
 	std::lock_guard lock{ renderItemMutex };
 	std::lock_guard psoLock{ psoMutex };
+
 	for (u32 i{ 0 }; i < idCount; ++i)
 	{
 		const D3D12RenderItem& item{ renderItems[itemIDs[i]] };

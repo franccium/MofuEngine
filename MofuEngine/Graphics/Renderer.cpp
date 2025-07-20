@@ -11,6 +11,7 @@ constexpr const char* ENGINE_SHADERS_PATHS[]{
 
 PlatformInterface gfxInterface;
 FrameInfo frameInfo{};
+Vec<ecs::Entity> visibleEntities{};
 
 bool SetupPlatformInterface(GraphicsPlatform platform)
 {
@@ -81,6 +82,12 @@ const
 Camera& GetMainCamera()
 {
     return cam;
+}
+
+Vec<ecs::Entity>&
+GetVisibleEntities()
+{
+    return visibleEntities;
 }
 
 const char* 

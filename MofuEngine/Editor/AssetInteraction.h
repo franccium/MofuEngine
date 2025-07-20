@@ -12,12 +12,12 @@ class Prefab
 public:
 
 	void Instantiate(const ecs::scene::Scene& scene);
-	void InitializeFromFBXState(const content::FBXImportState& state);
+	void InitializeFromFBXState(const content::FBXImportState& state, bool extractMaterials);
 	void ExtractMaterials();
 
 private:
 	std::string _name;
-	std::string _geometryPath;
+	std::filesystem::path _geometryPath;
 	Vec<material::EditorMaterial> _materials;
 	Vec<graphics::MaterialInitInfo> _materialInfos;
 	Vec<std::string> _textureImageFiles;
@@ -27,7 +27,7 @@ private:
 };
 
 void DropModelIntoScene(std::filesystem::path modelPath, u32* materials = nullptr);
-void AddFBXImportedModelToScene(const content::FBXImportState& state);
+void AddFBXImportedModelToScene(const content::FBXImportState& state, bool extractMaterials);
 
 void SerializeEntityHierarchy(const Vec<ecs::Entity>& entities);
 void DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::path& path);

@@ -21,6 +21,8 @@ Asset Manager
 Prefabs
 Handling Asset deletion
 
+updating and saving material assets 
+duplicating material assets
 
 clean default material
 vertex color test shader

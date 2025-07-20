@@ -1,4 +1,5 @@
 #include "../MofuEngine/Graphics/D3D12/Shaders/Common.hlsli"
+#include "BRDF.hlsli"
 
 struct VertexOut
 {
@@ -103,30 +104,30 @@ float3 PhongBRDF(float3 N, float3 L, float3 V, float3 diffuseColor, float3 specu
     return diffuseColor + pow(VoR, max(shininess, 1.f)) * specularColor;
 }
 
-//float3 CookTorranceBRDF(Surface S, float3 L)
-//{
-//    const float3 N = S.Normal;
-//    const float3 H = normalize(S.V + L); // halfway vector of view and light dir, microsurface normal
-//    const float NoV = abs(S.NoV) + 1e-5f; // make sure its not 0 for divisions
-//    const float NoL = saturate(dot(N, L));
-//    const float NoH = saturate(dot(N, H));
-//    const float VoH = saturate(dot(S.V, H));
+float3 CookTorranceBRDF(Surface S, float3 L)
+{
+    const float3 N = S.Normal;
+    const float3 H = normalize(S.V + L); // halfway vector of view and light dir, microsurface normal
+    const float NoV = abs(S.NoV) + 1e-5f; // make sure its not 0 for divisions
+    const float NoL = saturate(dot(N, L));
+    const float NoH = saturate(dot(N, H));
+    const float VoH = saturate(dot(S.V, H));
 
-//    const float D = D_GGX(NoH, S.a2);
-//    const float G = V_SmithGGXCorrelated(NoV, NoL, S.a2);
-//    const float3 F = F_Schlick(S.SpecularColor, VoH);
+    const float D = D_GGX(NoH, S.a2);
+    const float G = V_SmithGGXCorrelated(NoV, NoL, S.a2);
+    const float3 F = F_Schlick(S.SpecularColor, VoH);
 
-//    float3 specularBRDF = (D * G) * F;
-//    float3 rho = 1.f - F;
-//    float3 diffuseBRDF = Diffuse_Lambert() * S.DiffuseColor * rho;
-//    //float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
+    float3 specularBRDF = (D * G) * F;
+    float3 rho = 1.f - F;
+    float3 diffuseBRDF = Diffuse_Lambert() * S.DiffuseColor * rho;
+    //float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
 
-//    float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, float2(NoV, S.PerceptualRoughness), 0).rg;
-//    float3 energyLossCompensation = 1.f + S.SpecularColor * (rcp(brdfLut.x) - 1.f);
-//    specularBRDF *= energyLossCompensation;
+    //float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, float2(NoV, S.PerceptualRoughness), 0).rg;
+    //float3 energyLossCompensation = 1.f + S.SpecularColor * (rcp(brdfLut.x) - 1.f);
+    //specularBRDF *= energyLossCompensation;
 
-//    return (diffuseBRDF + specularBRDF * S.SpecularStrength) * NoL;
-//}
+    return (diffuseBRDF + specularBRDF * S.SpecularStrength) * NoL;
+}
 
 VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
 {
@@ -166,22 +167,11 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     float3 tangent = float3(tXY, sqrt(saturate(1.f - dot(tXY, tXY))) * tSign);
     tangent = tangent - normal * dot(normal, tangent); // use Gram-Schmidt orthogonalization to restore orthogonality
     
-    //vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
-    //vsOut.WorldPosition = worldPosition.xyz;
-    //vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
-    //vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), handSign);
-    
-     uint ColorTSign; // rgb - color, z - tangent and normal signs
-    float2 UV;
-    uint16_t2 Normal;
-    uint16_t2 Tangent;
-    
     vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
     vsOut.WorldPosition = worldPosition.xyz;
-    vsOut.WorldNormal = float3(element.Normal.x, element.Normal.y, 0.f);
-    vsOut.WorldTangent = float4(element.Tangent.x, element.Tangent.y, 0.f, 0.f);
+    vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
+    vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), handSign);
     vsOut.UV = element.UV;
-    //vsOut.UV = float2(VertexIdx / 1000.f, VertexIdx / 1000.f);
 #else
 #undef ELEMENTS_TYPE
     vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
@@ -198,13 +188,6 @@ Surface GetSurface(VertexOut psIn, float3 V)
 {
     Surface S;
 
-    /*
-        BaseColor = 0,
-		Normal,
-		MetallicRoughness,
-		Emissive,
-		AmbientOcclusion,
-    */
 #if 0
     float2 uv = psIn.UV;
     S.AmbientOcclusion = 0.1f;
@@ -247,27 +230,6 @@ Surface GetSurface(VertexOut psIn, float3 V)
     // transform from tangent-space to world-space
     S.Normal = normalize(mul(n, TBN));
     
-    //float2 uv = psIn.UV;
-    //S.AmbientOcclusion = 0.1f;
-    //S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb;
-    //S.EmissiveColor = 0.3f;
-    //float2 metalRough = float2(0.03f, 0.045f);
-    //S.Metallic = metalRough.r;
-    //S.PerceptualRoughness = metalRough.g;
-    //S.EmissiveIntensity = 1.f;
-    
-    ////float3 n = Sample(SrvIndices[1], LinearSampler, uv).rgb;
-    ////n = n * 2.f - 1.f;
-    ////n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
-    //float3 n = normalize(psIn.WorldNormal);
-    
-    //const float3 N = psIn.WorldNormal;
-    //const float3 T = psIn.WorldTangent.xyz;
-    //const float3 B = cross(N, T) * psIn.WorldTangent.w;
-    //const float3x3 TBN = float3x3(T, B, N);
-    //// transform from tangent-space to world-space
-    //S.Normal = normalize(mul(n, TBN));
-    
 #else
 /*
     S.BaseColor = 1.f;
@@ -309,7 +271,7 @@ float3 GetSpecularDominantDir(float3 N, float3 R, float roughness)
 
 float3 CalculateLighting(Surface S, float3 L, float3 lightColor)
 {
-#if 1 // PHONG
+#if 0 // PHONG
     const float NoL = saturate(dot(S.Normal, L));
     float3 color = PhongBRDF(S.Normal, L, S.V, S.DiffuseColor, 1.f, (1.f - S.PerceptualRoughness) * 100.f) * (NoL / PI) * lightColor;
 #else // PBR
@@ -335,10 +297,13 @@ PixelOut TestShaderPS(in VertexOut psIn)
     float specularPower = 16.f;
 
     float3 lightDirection = float3(0.7f, 0.7f, -0.2f);
-    float NdotL = saturate(dot(normal, lightDirection));
+    float3 lightDirection2 = float3(-0.7f, -0.7f, 0.2f);
     float3 lightColor = float3(1.f, 1.f, 1.f);
+    float3 lightColor2 = float3(1.f, 1.f, 1.f);
     float lightIntensity = 1.f;
+    float lightIntensity2 = 1.f;
     color += CalculateLighting(S, lightDirection, lightColor * lightIntensity);
+    color += CalculateLighting(S, lightDirection2, lightColor2 * lightIntensity2);
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);
     //color += ambientColor;

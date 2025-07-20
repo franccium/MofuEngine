@@ -105,7 +105,7 @@ RemoveEntity(EntityBlock* block, Entity entity)
 	// the last entity in block moved in to fill the gap
 	// if its the last entity remove the block
 
-	u32 lastRow{ --block->EntityCount };
+	const u32 lastRow{ --block->EntityCount };
 	if (lastRow == 0)
 	{
 		// delete the block
@@ -114,10 +114,10 @@ RemoveEntity(EntityBlock* block, Entity entity)
 		return;
 	}
 
-	EntityData& data{ GetEntityData(entity) };
+	const EntityData& data{ GetEntityData(entity) };
 	if (data.row != lastRow)
 	{
-		u32 newRow{ data.row };
+		const u32 newRow{ data.row };
 		block->Entities[newRow] = block->Entities[lastRow];
 
 		//TODO: i dont yet validate generation
@@ -126,10 +126,10 @@ RemoveEntity(EntityBlock* block, Entity entity)
 		// copy over component values
 		for (ComponentID cid : block->GetComponentView())
 		{
-			u32 componentSize{ component::GetComponentSize(cid) };
-			u32 oldOffset{ block->ComponentOffsets[cid] + componentSize * lastRow };
-			u32 newOffset{ block->ComponentOffsets[cid] + componentSize * newRow };
-			memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, component::GetComponentSize(cid));
+			const u32 componentSize{ component::GetComponentSize(cid) };
+			const u32 oldOffset{ block->ComponentOffsets[cid] + componentSize * lastRow };
+			const u32 newOffset{ block->ComponentOffsets[cid] + componentSize * newRow };
+			memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, componentSize);
 		}
 
 		Entity movedEntity{ block->Entities[newRow] };
@@ -141,18 +141,18 @@ RemoveEntity(EntityBlock* block, Entity entity)
 void
 MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlock)
 {
-	Entity entity{ entityData.id };
-	u32 oldRow{ entityData.row };
-	u32 newRow{ newBlock->EntityCount };
+	const Entity entity{ entityData.id };
+	const u32 oldRow{ entityData.row };
+	const u32 newRow{ newBlock->EntityCount };
 
 	// copy over component values
 	for (ComponentID cid : oldBlock->GetComponentView())
 	{
 		if (newBlock->Signature.test(cid))
 		{
-			u32 componentSize{ component::GetComponentSize(cid) };
-			u32 oldOffset{ oldBlock->ComponentOffsets[cid] + componentSize * oldRow };
-			u32 newOffset{ newBlock->ComponentOffsets[cid] + componentSize * newRow };
+			const u32 componentSize{ component::GetComponentSize(cid) };
+			const u32 oldOffset{ oldBlock->ComponentOffsets[cid] + componentSize * oldRow };
+			const u32 newOffset{ newBlock->ComponentOffsets[cid] + componentSize * newRow };
 			memcpy(newBlock->ComponentData + newOffset, oldBlock->ComponentData + oldOffset, component::GetComponentSize(cid));
 		}
 	}

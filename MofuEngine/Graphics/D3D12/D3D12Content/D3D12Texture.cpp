@@ -330,7 +330,7 @@ RemoveTexture(id_t id)
 void 
 GetDescriptorIndices(const id_t* const textureIDs, u32 idCount, u32* const outIndices)
 {
-    assert(textureIDs && idCount && outIndices);
+    //assert(textureIDs && idCount && outIndices);
     std::lock_guard lock{ textureMutex };
     for (u32 i{ 0 }; i < idCount; ++i)
     {

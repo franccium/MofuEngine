@@ -35,6 +35,8 @@ struct GPassCache
 	// NOTE: when adding new arrays, make sure to update Resize() and StructSize
 	Vec<id_t> D3D12RenderItemIDs{};
 	u32 DescriptorIndexCount{ 0 };
+	u64 LastBufferSize{ 0 };
+	u64 HighestBufferSize{ 0 };
 
 	// Render Items Cache
 	ecs::Entity* EntityIDs{ nullptr };
@@ -75,40 +77,40 @@ struct GPassCache
 			ValidatePipelineState(DepthPipelineStates[i]);
 		}
 
-#define CHECK_ARRAY(ptr) \
-            if (ptr != nullptr && count == 0) { \
-                assert(false && #ptr " is allocated but count is zero"); \
-                return false; \
-            } \
-            if (ptr == nullptr && count > 0) { \
-                assert(false && #ptr " is null but count suggests it should be allocated"); \
-                return false; \
-            }
-
-		// Render Items Cache
-		CHECK_ARRAY(EntityIDs);
-		CHECK_ARRAY(SubmeshGpuIDs);
-		CHECK_ARRAY(MaterialIDs);
-		CHECK_ARRAY(GPassPipelineStates);
-		CHECK_ARRAY(DepthPipelineStates);
-
-		// Materials Cache
-		CHECK_ARRAY(RootSignatures);
-		CHECK_ARRAY(MaterialTypes);
-		CHECK_ARRAY(DescriptorIndices);
-		CHECK_ARRAY(TextureCounts);
-		CHECK_ARRAY(MaterialSurfaces);
-
-		// Submesh Views Cache
-		CHECK_ARRAY(PositionBuffers);
-		CHECK_ARRAY(ElementBuffers);
-		CHECK_ARRAY(IndexBufferViews);
-		CHECK_ARRAY(PrimitiveTopologies);
-		CHECK_ARRAY(ElementTypes);
-
-		// Per-object data
-		CHECK_ARRAY(PerObjectData);
-		CHECK_ARRAY(SrvIndices);
+//#define CHECK_ARRAY(ptr) \
+//            if (ptr != nullptr && count == 0) { \
+//                assert(false && #ptr " is allocated but count is zero"); \
+//                return false; \
+//            } \
+//            if (ptr == nullptr && count > 0) { \
+//                assert(false && #ptr " is null but count suggests it should be allocated"); \
+//                return false; \
+//            }
+//
+//		// Render Items Cache
+//		CHECK_ARRAY(EntityIDs);
+//		CHECK_ARRAY(SubmeshGpuIDs);
+//		CHECK_ARRAY(MaterialIDs);
+//		CHECK_ARRAY(GPassPipelineStates);
+//		CHECK_ARRAY(DepthPipelineStates);
+//
+//		// Materials Cache
+//		CHECK_ARRAY(RootSignatures);
+//		CHECK_ARRAY(MaterialTypes);
+//		CHECK_ARRAY(DescriptorIndices);
+//		CHECK_ARRAY(TextureCounts);
+//		CHECK_ARRAY(MaterialSurfaces);
+//
+//		// Submesh Views Cache
+//		CHECK_ARRAY(PositionBuffers);
+//		CHECK_ARRAY(ElementBuffers);
+//		CHECK_ARRAY(IndexBufferViews);
+//		CHECK_ARRAY(PrimitiveTopologies);
+//		CHECK_ARRAY(ElementTypes);
+//
+//		// Per-object data
+//		CHECK_ARRAY(PerObjectData);
+//		CHECK_ARRAY(SrvIndices);
 
 #undef CHECK_ARRAY
 
@@ -159,18 +161,19 @@ struct GPassCache
 
 	constexpr u32 Size() const { return (u32)D3D12RenderItemIDs.size(); }
 
-	constexpr void Resize()
+	void Resize()
 	{
 		const u64 RenderItemCount{ D3D12RenderItemIDs.size() };
-		const u64 OldBufferSize{ _buffer.size() };
 		const u64 NewBufferSize{ RenderItemCount * STRUCT_SIZE };
 
-		if (NewBufferSize != OldBufferSize)
+		if (NewBufferSize != LastBufferSize)
 		{
-			if (NewBufferSize > OldBufferSize)
+			if (NewBufferSize > HighestBufferSize)
 			{
 				_buffer.resize(NewBufferSize);
+				HighestBufferSize = NewBufferSize;
 			}
+			LastBufferSize = NewBufferSize;
 
 			EntityIDs = (ecs::Entity*)_buffer.data();
 			SubmeshGpuIDs = (id_t*)(&EntityIDs[RenderItemCount]);

@@ -71,23 +71,67 @@ static void CreateSceneHierarchyTree(const Vec<ecs::EntityData>& entityData)
 	}
 }
 
-void CreateEntity(EntityTreeNode* node)
+void DeleteEntity(EntityTreeNode* node)
+{
+    if (!node) return;
+    ecs::Entity selected{ node->ID };
+    log::Error("Not Implemented");
+}
+
+void 
+CreateEntity(EntityTreeNode* node)
 {
 	ecs::Entity selected{ node ? node->ID : id::INVALID_ID };
 
     ecs::component::LocalTransform lt{};
-    ecs::component::WorldTransform wt{};
 
     //TODO: cleaner
-    ecs::EntityData entityData = id::IsValid(selected)
-        ? ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform, 
-            ecs::component::Parent>(lt, wt, ecs::component::Parent{ {} })
-        : ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform>(lt, wt);
-
-	log::Info("Created entity %u", entityData.id);
-	if (id::IsValid(selected)) log::Info("Entity has parent: %u", selected);
+    const ecs::EntityData& entityData = id::IsValid(selected)
+        ? ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Child>(lt, ecs::component::Child{ {}, selected })
+        : ecs::scene::SpawnEntity<ecs::component::LocalTransform>(lt);
 
 	CreateEntityTreeNode(entityData.id, node);
+}
+
+void 
+DuplicateEntity(EntityTreeNode* node)
+{
+    if (!node) return;
+    ecs::Entity selected{ node->ID };
+
+    const ecs::EntityData& duplicatedData{ ecs::scene::GetEntityData(selected) };
+    const ecs::EntityBlock* const duplicatedBlock{ duplicatedData.block };
+
+    const ecs::EntityData& newData = ecs::scene::SpawnEntity(duplicatedBlock->Signature);
+    const ecs::EntityBlock* const newBlock{ newData.block }; // in case the original block got filled, grab the one given
+
+    const u32 duplicatedRow{ duplicatedData.row };
+    const u32 newRow{ newData.row };
+
+    // copy over component values
+    for (ecs::ComponentID cid : newBlock->GetComponentView())
+    {
+        const u32 componentSize{ ecs::component::GetComponentSize(cid) };
+        const u32 duplicatedOffset{ duplicatedBlock->ComponentOffsets[cid] + componentSize * duplicatedRow };
+        const u32 newOffset{ newBlock->ComponentOffsets[cid] + componentSize * newRow };
+        memcpy(newBlock->ComponentData + newOffset, duplicatedBlock->ComponentData + duplicatedOffset, componentSize);
+    }
+
+    const ecs::Entity newEntity{ newData.id };
+    if (ecs::scene::HasComponent<ecs::component::RenderMesh>(newEntity))
+    {
+        ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(newEntity) };
+        const ecs::component::RenderMaterial& material{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(newEntity) };
+        mesh.RenderItemID = graphics::AddRenderItem(newEntity, mesh.MeshID, material.MaterialCount, material.MaterialIDs);
+    }
+
+    EntityTreeNode* parentNode{ rootNode };
+    if (ecs::scene::HasComponent<ecs::component::Child>(newEntity))
+    {
+        ecs::component::Child child{ ecs::scene::GetComponent<ecs::component::Child>(newEntity) };
+        parentNode = FindParentAsNode(child.ParentEntity);
+    }
+    CreateEntityTreeNode(newEntity, node);
 }
 
 struct SceneHierarchy
@@ -104,7 +148,8 @@ struct SceneHierarchy
             prefabFiles.clear();
             show = true;
         }
-        if (show)
+        //if (ImGui::BeginPopup("Select"))
+        if(show)
         {
             content::ListFilesByExtensionRec(".pre", project::GetResourceDirectory() / "Prefabs", prefabFiles);
 
@@ -121,12 +166,18 @@ struct SceneHierarchy
                     //ImGui::CloseCurrentPopup();
                 }
             }
-
+            //ImGui::EndPopup();
+        }
+        if (ImGui::Button("Add Entity"))
+        {
+            ecs::component::LocalTransform transform{};
+            ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform>(transform) };
+            AddEntityToSceneView(entityData.id);
         }
         ImGui::EndGroup();
 
         // Left side: draw tree
-        if (ImGui::BeginChild("##tree", ImVec2(300, 0), ImGuiChildFlags_ResizeX | ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened))
+        if (ImGui::BeginChild("##tree", ImVec2(250, 0), ImGuiChildFlags_ResizeX | ImGuiChildFlags_ResizeY | ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened))
         {
             // draw the filter field
             ImGui::SetNextItemWidth(-FLT_MIN);
@@ -170,9 +221,6 @@ struct SceneHierarchy
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 2.0f); // Default twice larger
 
-                //ecs::component::RenderComponentFields<ecs::component::LocalTransform>(
-                //    ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(entity));
-
                 using namespace ecs;
 
                 //TODO: make an iterator or a view
@@ -200,14 +248,6 @@ struct SceneHierarchy
                             }
                         }
                     }
-                        
-                    //for (ComponentID cid : block->GetComponentView())
-                    //{
-                    //    if (ImGui::Selectable(ecs::component::ComponentNames[cid]))
-                    //    {
-                    //        ecs::component::AddLUT[cid](entity);
-                    //    }
-                    //}
                     ImGui::EndPopup();
                 }
 
@@ -231,7 +271,6 @@ struct SceneHierarchy
                 {
                     if (ImGui::Button("Save Hierarchy"))
                     {
-                        //TODO:
                         Vec<ecs::Entity> entities{};
                         entities.emplace_back(entity);
                         for (auto c : node->Children)
@@ -276,6 +315,10 @@ struct SceneHierarchy
         {
             if (ImGui::MenuItem("Create Child Entity"))
                 CreateEntity(node);
+            if (ImGui::MenuItem("Delete Entity"))
+                DeleteEntity(node);
+            if (ImGui::MenuItem("Duplicate Entity"))
+                DuplicateEntity(node);
             ImGui::EndPopup();
         }
         

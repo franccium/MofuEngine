@@ -62,32 +62,45 @@ namespace mofu::graphics::d3d12 {
 			const geometry::SubmeshViewsCache submeshViewCache{ frameCache.GetSubmeshViewsCache() };
 			geometry::GetSubmeshViews(frameCache.SubmeshGpuIDs, renderItemCount, submeshViewCache);
 
-			for (auto [entity, material]
-				: ecs::scene::GetRW<ecs::component::RenderMaterial>())
+			u32 renderItemIndex{ 0 };
+
+			Vec<ecs::Entity>& visible{ graphics::GetVisibleEntities() };
+			for (auto e : visible)
 			{
-				u32 renderItemIndex = id::Index(entity) - 1;
-				frameCache.MaterialIDs[renderItemIndex] = material.MaterialIDs[0];
+				auto material{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(e) };
+				renderItemIndex = id::Index(e) - 1;
+				if (renderItemIndex < renderItemCount)
+				{
+					frameCache.MaterialIDs[renderItemIndex] = material.MaterialIDs[0];
+					renderItemIndex++;
+				}
 			}
+
+			/*for (auto [entity, material, vis]
+				: ecs::scene::GetRW<ecs::component::RenderMaterial, ecs::component::PotentiallyVisible>())
+			{
+				if (renderItemIndex < renderItemCount)
+				{
+					renderItemIndex = id::Index(entity) - 1;
+					frameCache.MaterialIDs[renderItemIndex] = material.MaterialIDs[0];
+				}
+			}*/
 
 			const material::MaterialsCache materialsCache{ frameCache.GetMaterialsCache() };
 			material::GetMaterials(frameCache.MaterialIDs, renderItemCount, materialsCache, frameCache.DescriptorIndexCount);
 
-			u32 renderItemIndex{ 0 };
 			hlsl::PerObjectData* currentDataPtr{ nullptr };
 
-			for (auto [entity, transform, mesh, material] 
-				: ecs::scene::GetRW<ecs::component::WorldTransform, 
-					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
+			renderItemIndex = 0;
+			for (auto e : visible)
 			{
-				//if (entity != frameCache.EntityIDs[renderItemIndex])
-				//{
-					// PER OBJECT DATA
-				renderItemIndex = id::Index(entity) - 1; //FIXME: make this make sense, placeholder solution now that assumes first entity is camera and the rest are all renderable render items; cant just renderItemIndex cause first block contains entities 1 and 9, so the parent entities lose their render items
+				auto& wt{ ecs::scene::GetComponent<ecs::component::WorldTransform>(e) };
+				renderItemIndex = id::Index(e) - 1;
 				if (renderItemIndex < renderItemCount)
 				{
 					currentDataPtr = cbuffer.AllocateSpace<hlsl::PerObjectData>();
 					//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);
-					FillPerObjectData(currentDataPtr, transform, materialsCache.MaterialSurfaces[renderItemIndex], frameInfo.Camera->ViewProjection());
+					FillPerObjectData(currentDataPtr, wt, materialsCache.MaterialSurfaces[renderItemIndex], frameInfo.Camera->ViewProjection());
 					//}
 					assert(currentDataPtr);
 					frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);
@@ -97,6 +110,29 @@ namespace mofu::graphics::d3d12 {
 					log::Warn("renderItemIndex > renderItemCount");
 				}
 			}
+
+			//for (auto [entity, transform, mesh, material, vis] 
+			//	: ecs::scene::GetRW<ecs::component::WorldTransform, 
+			//		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::PotentiallyVisible>())
+			//{
+			//	//if (entity != frameCache.EntityIDs[renderItemIndex])
+			//	//{
+			//		// PER OBJECT DATA
+			//	renderItemIndex = id::Index(entity) - 1; //FIXME: make this make sense, placeholder solution now that assumes first entity is camera and the rest are all renderable render items; cant just renderItemIndex cause first block contains entities 1 and 9, so the parent entities lose their render items
+			//	if (renderItemIndex < renderItemCount)
+			//	{
+			//		currentDataPtr = cbuffer.AllocateSpace<hlsl::PerObjectData>();
+			//		//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);
+			//		FillPerObjectData(currentDataPtr, transform, materialsCache.MaterialSurfaces[renderItemIndex], frameInfo.Camera->ViewProjection());
+			//		//}
+			//		assert(currentDataPtr);
+			//		frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);
+			//	}
+			//	else
+			//	{
+			//		log::Warn("renderItemIndex > renderItemCount");
+			//	}
+			//}
 
 			// TEXTURES
 			if (frameCache.DescriptorIndexCount != 0)

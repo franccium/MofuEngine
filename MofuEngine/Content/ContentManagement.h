@@ -30,7 +30,8 @@ constexpr const char* ASSET_SERIALIZED_FILE_VERSIONS[AssetType::Count]
 };
 
 id_t GetDefaultMaterial();
-std::pair<id_t, id_t> GetDefaultPsVsShaders(bool textured);
+std::pair<id_t, id_t> GetDefaultPsVsShaders();
+std::pair<id_t, id_t> GetDefaultPsVsShadersTextured();
 
 bool LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size);
 

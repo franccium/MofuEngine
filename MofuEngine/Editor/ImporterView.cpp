@@ -125,7 +125,7 @@ RenderImportSummary()
 {
 	if (!isOpen) return;
 
-	ImGui::Begin("FBX Import Summary", nullptr);
+	ImGui::Begin("FBX Import Summary", &isOpen);
 
 	ImGui::Text("File: %s", fbxState.FbxFile.data());
 	if (fbxState.Errors)
@@ -157,10 +157,11 @@ RenderImportSummary()
 
 	if (ImGui::Button("Add To Scene"))
 	{
-		assets::AddFBXImportedModelToScene(fbxState);
+		assets::AddFBXImportedModelToScene(fbxState, false);
 	}
 	if (ImGui::Button("Extract materials"))
 	{
+		assets::AddFBXImportedModelToScene(fbxState, true);
 	}
 
 	ImGui::End();

@@ -398,13 +398,6 @@ inline YAML::Emitter& operator<<(YAML::Emitter& out, const Child& wt)
 	return out;
 }
 
-inline bool operator>>(const YAML::Node& node, Child& lt)
-{
-	u32 id{ node["Parent"].as<id_t>() };
-	lt.ParentEntity = Entity{ id };
-	return true;
-}
-
 inline YAML::Emitter& operator<<(YAML::Emitter& out, const RenderMesh& wt)
 {
 	out << YAML::BeginMap;

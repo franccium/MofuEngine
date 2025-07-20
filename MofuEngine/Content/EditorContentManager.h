@@ -25,6 +25,7 @@ void ImportAllNotImported(AssetType::type type);
 void RegisterAllAssetsOfType(AssetType::type type);
 
 void LoadEditorAssets();
+void SaveAssetRegistry();
 void InitializeAssetRegistry();
 void ShutdownAssetRegistry();
 

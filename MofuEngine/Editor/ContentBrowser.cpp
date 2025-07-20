@@ -245,6 +245,10 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
             ImGui::PopItemWidth();
             ImGui::EndMenu();
         }
+        if (ImGui::Button("Save Assets"))
+        {
+            content::assets::SaveAssetRegistry();
+        }
         ImGui::EndMenuBar();
     }
 

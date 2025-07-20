@@ -14,6 +14,7 @@
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
 
+#define ENABLE_DEBUG_LAYER 1
 #define ENABLE_GPU_BASED_VALIDATION 1
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
@@ -392,7 +393,7 @@ Initialize()
 
     HRESULT hr{ S_OK };
     u32 dxgiFactoryFlags{ 0 };
-#ifdef _DEBUG
+#if ENABLE_DEBUG_LAYER
     {
         ComPtr<DXDebug> debugInterface;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface))))
@@ -438,7 +439,7 @@ Initialize()
 
     if (!InitializeModules()) return InitializeFailed();
 
-#ifdef _DEBUG
+#if ENABLE_DEBUG_LAYER
     {
         ComPtr<ID3D12InfoQueue> infoQueue;
         DXCall(mainDevice->QueryInterface(IID_PPV_ARGS(&infoQueue)));
@@ -491,7 +492,7 @@ Shutdown()
     ProcessDeferredReleases(0);
 
     Release(dxgiFactory);
-#ifdef _DEBUG
+#if ENABLE_DEBUG_LAYER
     if (mainDevice)
     {
         {
@@ -670,6 +671,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             ZoneScopedNC("Main GPass Execution", tracy::Color::PaleVioletRed1);
             if (renderItemsUpdated)
             {
+                ZoneScopedNC("Main GPass Bundles Update", tracy::Color::PaleVioletRed1);
                 for (u32 i{ 0 }; i < GPASS_WORKERS; ++i)
                 {
                     mainBundles[i]->SetDescriptorHeaps(1, &heaps[0]);
@@ -683,6 +685,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             }
             else
             {
+                ZoneScopedNC("Main GPass Bundles Start", tracy::Color::PaleVioletRed1);
                 for (u32 i{ FIRST_MAIN_GPASS_WORKER }; i < LAST_GPASS_WORKER; ++i)
                 {
                     TracyD3D12ZoneC(tracyQueueContext, gfxCommand.CommandList(i), "Main GPass Worker", tracy::Color::Red3);

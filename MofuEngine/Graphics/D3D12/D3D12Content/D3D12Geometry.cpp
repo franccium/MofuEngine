@@ -25,8 +25,8 @@ std::mutex submeshMutex{};
 void
 GetSubmeshViews(const id_t* const gpuIds, u32 idCount, const SubmeshViewsCache& cache)
 {
-	assert(gpuIds && idCount > 0);
-	assert(cache.PositionBuffers&& cache.ElementBuffers&& cache.IndexBufferViews);
+	//assert(gpuIds && idCount > 0);
+	//assert(cache.PositionBuffers&& cache.ElementBuffers&& cache.IndexBufferViews);
 
 	std::lock_guard lock{ submeshMutex };
 	for (u32 i{ 0 }; i < idCount; ++i)

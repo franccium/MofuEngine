@@ -71,6 +71,6 @@ namespace detail {
 		constexpr name() : IdBase{0} {};					\
 	};
 #else // RELEASE
-#define DEFINE_TYPED_ID(name) using name = id::id;
+#define DEFINE_TYPED_ID(name) using name = id_t;
 #endif
 }

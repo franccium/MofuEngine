@@ -19,4 +19,5 @@ void OpenMaterialCreator(ecs::Entity entityID);
 id_t GetDefaultTextureID(TextureUsage::Usage usage);
 graphics::MaterialInitInfo GetDefaultMaterialInitInfo();
 EditorMaterial GetDefaultEditorMaterial();
+EditorMaterial GetDefaultEditorMaterialUntextured();
 }

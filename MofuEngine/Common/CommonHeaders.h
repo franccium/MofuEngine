@@ -23,6 +23,7 @@
 #endif
 #else
 #define DEBUG_OP(expr)
+#define DEBUG_LOG(expr)
 #define DEBUG_LOGW(expr)
 #endif
 

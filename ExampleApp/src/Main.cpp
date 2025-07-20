@@ -1,10 +1,13 @@
 #include "EditorTest.h"
 #pragma comment(lib, "mofuengine.lib")
 
+
 #include <Windows.h>
 //NOTE: enable when tracking memory
+#ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
+#endif
 
 using namespace mofu;
 
@@ -15,7 +18,7 @@ extern void MofuShutdown();
 int WINAPI 
 WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-#if _DEBUG
+#ifdef _DEBUG
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	//NOTE: enable when tracking memory
 	_CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF);

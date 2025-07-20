@@ -11,6 +11,7 @@
 #include "Editor/Project/Project.h"
 #include "Content/EditorContentManager.h"
 #include "Material.h"
+#include <stack>
 
 namespace mofu::editor::assets {
 [[nodiscard]] id_t 
@@ -50,7 +51,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	material::LoadMaterialDataFromAsset(materialInfo, )*/
 
 
-	v3 pos{ 0.f, 0.f, 0.f };
+	v3 pos{ 0.f, 0.f, 20.f };
 	quat rot{ quatIndentity };
 	v3 scale{ 1.f, 1.f, 1.f };
 	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
@@ -110,22 +111,29 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 			assert(c.child.ParentEntity == child.ParentEntity);
 			assert(ecs::scene::GetComponent<ecs::component::Child>(c.entity).ParentEntity == child.ParentEntity);
 		}
-		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent< ecs::component::RenderMesh >(c.entity) };
+		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(c.entity) };
 		mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialIDs);
 		editor::AddEntityToSceneView(c.entity);
 	}
 }
 
-void 
-AddFBXImportedModelToScene(const content::FBXImportState& state)
+void
+AddFBXImportedModelToScene(const content::FBXImportState& state, bool extractMaterials)
 {
 	Prefab prefab{};
-	prefab.InitializeFromFBXState(state);
-	prefab.ExtractMaterials();
-	prefab.Instantiate(mofu::ecs::scene::GetCurrentScene());
+	prefab.InitializeFromFBXState(state, extractMaterials);
+	if (extractMaterials)
+	{
+		prefab.ExtractMaterials();
+		prefab.Instantiate(mofu::ecs::scene::GetCurrentScene());
+	}
+	else
+	{
+		prefab.Instantiate(mofu::ecs::scene::GetCurrentScene());
+	}
 }
 
-void 
+void
 SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
 {
 	using namespace ecs;
@@ -135,11 +143,17 @@ SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
 	std::string prefabFilename{ parentName };
 	prefabFilename += ".pre";
 	const std::filesystem::path resourcesPath{ mofu::editor::project::GetResourceDirectory() };
-	std::filesystem::path prefabPath{ resourcesPath / "Prefabs" / prefabFilename};
+	std::filesystem::path prefabPath{ resourcesPath / "Prefabs" / prefabFilename };
+	//TODO: can use sth better for sure
+	std::stack<std::pair<id_t, u32>> lastParent{}; // pairs parent id to his index for deserialization
+	lastParent.push({ parent, 0 });
+	Vec<u32> parents(entities.size());
+	u32 currentIndex{};
 
 	YAML::Emitter out;
 	{
 		out << YAML::BeginMap;
+		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginMap;
 
 		for (Entity entity : entities)
 		{
@@ -156,6 +170,20 @@ SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
 			}
 			out << YAML::EndSeq;
 
+			if (block->Signature.test(component::ID<ecs::component::Parent>))
+			{
+				parents[currentIndex] = lastParent.top().second;
+				lastParent.push({ entity, currentIndex });
+			}
+			else
+			{
+				if (lastParent.top().first != scene::GetComponent<component::Child>(entity).ParentEntity)
+				{
+					lastParent.pop();
+				}
+				parents[currentIndex] = lastParent.top().second;
+			}
+
 			{
 				out << YAML::Key << "Components";
 				out << YAML::Value << YAML::BeginMap;
@@ -165,13 +193,22 @@ SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
 					component::SerializeLUT[cid](out, data);
 					});
 				out << YAML::EndMap;
-			}
+			} // Components
 
 			out << YAML::EndMap;
-		}
+			currentIndex++;
+		} // Entity
 
 		out << YAML::EndMap;
-	}
+	} // Entities
+
+	{
+		out << YAML::Key << "Parents" << YAML::Value << YAML::BeginSeq;
+		for (auto p : parents) out << p;
+		out << YAML::EndSeq;
+	} // Parents
+
+	out << YAML::EndMap;
 
 	std::ofstream outFile(prefabPath);
 	outFile << out.c_str();
@@ -193,7 +230,8 @@ DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::pa
 
 	YAML::Node data = YAML::LoadFile(path.string());
 
-	for (auto entityNode : data) 
+	auto entityNodes{ data["Entities"] };
+	for (auto entityNode : entityNodes) 
 	{
 		// get the Cet mask, find a block and initialize space for the components
 		// then go over all component IDs and fill their data
@@ -231,7 +269,19 @@ DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::pa
 			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
 			renderables.emplace_back(entity, mesh, material);
 		}
-	}
+	} // Entities
+
+	auto parentNodes{ data["Parents"] };
+	{
+		//TODO: noly works if its the only thing adding entities at the moment and if all the entities are from the same generation
+		Entity firstParentID{ entities[0] };
+		//NOTE: assumes the first entity is never a child
+		for (u32 i{ 1 }; i < entities.size(); ++i)
+		{
+			Entity parentID{ id::Index(firstParentID) + parentNodes[i].as<u32>() };
+			ecs::scene::GetComponent<component::Child>(entities[i]).ParentEntity = parentID;
+		}
+	} // Parents
 
 	if (!renderables.empty())
 	{
@@ -244,9 +294,16 @@ DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::pa
 		{
 			e.Mesh.MeshID = uploadedGeometryInfo.SubmeshGpuIDs[i++];
 			e.Material.MaterialIDs = new id_t[1]; //TODO:
-			graphics::MaterialInitInfo mat{};
-			material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
-			e.Material.MaterialIDs[0] = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
+			if (content::IsValid(e.Material.MaterialAsset))
+			{
+				graphics::MaterialInitInfo mat{};
+				material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
+				e.Material.MaterialIDs[0] = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
+			}
+			else
+			{
+				e.Material.MaterialIDs[0] = content::GetDefaultMaterial();
+			}
 			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialIDs);
 		}
 	}
@@ -265,10 +322,26 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 	id_t* materialIDs = new id_t[submeshCount];
 	for (u32 i{ 0 }; i < submeshCount; ++i)
 	{
-		//materialIDs[i] = content::CreateMaterial(_materialInfos[i]);
-		graphics::MaterialInitInfo mat{};
-		material::LoadMaterialDataFromAsset(mat, _materialAssets[i]);
-		materialIDs[i] = content::CreateMaterial(mat);
+		if (content::IsValid(_materialAssets[i]))
+		{
+			//materialIDs[i] = content::CreateMaterial(_materialInfos[i]);
+			id_t matId{ content::assets::GetResourceFromAsset(_materialAssets[i], content::AssetType::Material) };
+			if (id::IsValid(matId))
+			{
+				materialIDs[i] = matId;
+			}
+			else
+			{
+				graphics::MaterialInitInfo mat{};
+				material::LoadMaterialDataFromAsset(mat, _materialAssets[i]);
+				materialIDs[i] = content::CreateMaterial(mat);
+				content::assets::PairAssetWithResource(_materialAssets[i], materialIDs[i], content::AssetType::Material);
+			}
+		}
+		else
+		{
+			materialIDs[i] = content::GetDefaultMaterial();
+		}
 	}
 
 	v3 pos{ 0.f, 0.f, 0.f };
@@ -296,8 +369,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 	};
 	Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
 
-	std::string filename{ "testPrefab" };
-	strcpy(name.Name, filename.data());
+	strcpy(name.Name, _name.c_str());
 
 	// create root entity
 	ecs::component::Parent parentEntity{ {} };
@@ -343,10 +415,9 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 }
 
 void
-Prefab::InitializeFromFBXState(const content::FBXImportState& state)
+Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extractMaterials)
 {
-	std::filesystem::path p{ state.OutModelFile };
-	_name = p.stem().string();
+	_name = state.OutModelFile.stem().string();
 	_geometryPath = state.OutModelFile;
 	_textureImageFiles = state.ImageFiles;
 
@@ -357,49 +428,62 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state)
 	_materialInfos.resize(meshCount);
 	_materials.resize(meshCount);
 
-	for (u32 meshIdx{ 0 }; meshIdx < meshCount; ++meshIdx)
+	if (extractMaterials)
 	{
-		content::Mesh mesh{ state.LodGroups[0].Meshes[meshIdx] };
-		material::EditorMaterial& mat{ _materials[meshIdx] };
-		graphics::MaterialInitInfo& info{ _materialInfos[meshIdx] };
-
-		const id_t materialIdx{ mesh.MaterialIndices[0] };
-		if (id::IsValid(materialIdx))
+		for (u32 meshIdx{ 0 }; meshIdx < meshCount; ++meshIdx)
 		{
-			mat = state.Materials[materialIdx];
-		}
-		else
-		{
-			// default material
-			mat = material::GetDefaultEditorMaterial();
-		}
-		log::Info("Mesh Index: %u; Material Index: %u ", meshIdx, materialIdx);
+			content::Mesh mesh{ state.LodGroups[0].Meshes[meshIdx] };
+			material::EditorMaterial& mat{ _materials[meshIdx] };
+			graphics::MaterialInitInfo& info{ _materialInfos[meshIdx] };
 
-		info.TextureCount = material::TextureUsage::Count;
-		mat.TextureCount = material::TextureUsage::Count;
-		info.TextureIDs = new id_t[material::TextureUsage::Count];
-
-		for (u32 texIdx{ 0 }; texIdx < material::TextureUsage::Count; ++texIdx)
-		{
-			if (id::IsValid(mat.TextureIDs[texIdx]))
+			const id_t materialIdx{ mesh.MaterialIndices[0] };
+			if (id::IsValid(materialIdx))
 			{
-				info.TextureIDs[texIdx] = mat.TextureIDs[texIdx];
+				mat = state.Materials[materialIdx];
 			}
 			else
 			{
-				info.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
-				mat.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
+				// default material
+				mat = material::GetDefaultEditorMaterial();
 			}
-		}
+			log::Info("Mesh Index: %u; Material Index: %u ", meshIdx, materialIdx);
 
-		info.Surface = mat.Surface;
-		info.Type = mat.Type;
-		bool textured{ true };
-		std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShaders(textured) };
-		info.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
-		info.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
-		mat.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
-		mat.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
+			info.TextureCount = material::TextureUsage::Count;
+			mat.TextureCount = material::TextureUsage::Count;
+			info.TextureIDs = new id_t[material::TextureUsage::Count];
+
+			for (u32 texIdx{ 0 }; texIdx < material::TextureUsage::Count; ++texIdx)
+			{
+				if (id::IsValid(mat.TextureIDs[texIdx]))
+				{
+					info.TextureIDs[texIdx] = mat.TextureIDs[texIdx];
+				}
+				else
+				{
+					info.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
+					mat.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
+				}
+			}
+
+			info.Surface = mat.Surface;
+			info.Type = mat.Type;
+			std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
+			info.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
+			info.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
+			mat.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
+			mat.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
+		}
+	}
+	else
+	{
+		_materialAssets.resize(meshCount);
+		for (u32 meshIdx{ 0 }; meshIdx < meshCount; ++meshIdx)
+		{
+			_materialAssets[meshIdx] = content::INVALID_HANDLE;
+			//material::EditorMaterial& mat{ _materials[meshIdx] };
+
+			//mat = material::GetDefaultEditorMaterialUntextured();
+		}
 	}
 }
 

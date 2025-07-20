@@ -231,13 +231,12 @@
     <ClCompile Include="Editor\Material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ECS\Systems\TestCullingSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="Graphics\D3D12\Shaders\CommonTypes.hlsli" />
-    <None Include="Graphics\D3D12\Shaders\Common.hlsli" />
-    <None Include="Graphics\D3D12\Shaders\CommonFunctions.hlsli" />
-    <None Include="Graphics\D3D12\Shaders\CommonConstants.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\StandardTypes.h">
@@ -537,11 +536,6 @@
     <ClInclude Include="Editor\Material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Graphics\D3D12\Shaders\FullscreenTriangle.hlsl" />
-    <FxCompile Include="Graphics\D3D12\Shaders\PostProcess.hlsl" />
-    <FxCompile Include="Graphics\D3D12\Shaders\ColorFill.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ECS\implementationnotes.txt" />

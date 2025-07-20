@@ -286,6 +286,12 @@ LoadEditorAssets()
 
 }
 
+void 
+SaveAssetRegistry()
+{
+	SerializeRegistry();
+}
+
 // loads the registry from file
 void
 InitializeAssetRegistry()

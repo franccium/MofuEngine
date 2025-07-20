@@ -14,7 +14,7 @@ namespace mofu::content {
 struct FBXImportState
 {
 	std::string FbxFile;
-	std::string OutModelFile;
+	std::filesystem::path OutModelFile;
 	Vec<LodGroup> LodGroups;
 	Vec<editor::material::EditorMaterial> Materials;
 	Vec<editor::texture::ViewableTexture> Textures;

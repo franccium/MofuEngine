@@ -358,7 +358,6 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 		Mesh mesh{};
 		mesh.Name = std::string(name) + "_part_" + std::to_string(part.index);
 		mesh.LodThreshold = 0.f;
-		mesh.ElementType = ElementType::StaticNormalTexture; // TODO: temporary
 
 		Vec<Vertex>& vertices{ mesh.Vertices };
 		Vec<u32> partIndices{};
@@ -381,7 +380,7 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 				ufbx_vec2 uv{ m->vertex_uv[index] };
 				v.Position = { (f32)pos.x, (f32)pos.y, (f32)pos.z };
 				v.Normal = { (f32)normal.x, (f32)normal.y, (f32)normal.z };
-				v.UV = { (f32)uv.x, (f32)uv.y };
+				v.UV = { (f32)uv.x, 1.f - (f32)uv.y };
 				
 				vertices.emplace_back(v);
 			}
@@ -434,13 +433,11 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 		{
 			const u32 materialIdx = (u32)fbxMat->typed_id;
 			assert(materialIdx < state.Materials.size());
-			editor::material::EditorMaterial mat{ state.Materials[materialIdx] };
 			mesh.MaterialIndices.emplace_back(materialIdx);
 		}
 		else
 		{
-			// default material
-			editor::material::EditorMaterial defaultMat{};
+			// assing invalid id which indicates the mesh should use the default material
 			mesh.MaterialIndices.emplace_back(id::INVALID_ID);
 		}
 
@@ -512,7 +509,7 @@ ImportFBX(std::filesystem::path path, AssetPtr asset)
 
 	std::filesystem::path importedAssetPath{ BuildResourcePath(path.stem().string(), ".mesh") };
 
-	state.OutModelFile = importedAssetPath.string();
+	state.OutModelFile = importedAssetPath;
 	state.ImportSettings = editor::assets::GetGeometryImportSettings();
 
 	ufbx_load_opts opts{};

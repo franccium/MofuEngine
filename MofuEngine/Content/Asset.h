@@ -100,7 +100,7 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromEngineE
 	{ ".mat", AssetType::Material },
 };
 
-constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET{
+constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET {
 	".mt",
 	".mesh",
 	".tex",

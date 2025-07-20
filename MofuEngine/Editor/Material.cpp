@@ -71,7 +71,7 @@ PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& t
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
 	file.close();
 
-	CreateMaterialAsset(targetPath);
+	CreateMaterialAsset(targetPath); // TODO: standardise stuff like this
 }
 
 void
@@ -114,7 +114,7 @@ LoadMaterialAsset(EditorMaterial& outMaterial, const std::filesystem::path& path
 
 	log::Warn("Shader serialization is TODO");
 	bool textured{ outMaterial.TextureCount != 0 };
-	std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShaders(textured) };
+	std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
 	outMaterial.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
 	outMaterial.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
 

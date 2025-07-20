@@ -159,7 +159,7 @@ bool MofuInitialize()
 
 	platform::WindowInitInfo info[]
 	{
-		{&WindowProc, nullptr, L"TestW1", 100, 50, 1600, 900},
+		{&WindowProc, nullptr, L"MofuEngine", 100, 50, 1600, 900},
 		//{&WindowProc, nullptr, L"TestW2", 600, 100, 800, 600},
 		//{&WindowProc, nullptr, L"TestW3", 300, 600, 200, 600},
 		//{&WindowProc, nullptr, L"TestW4", 400, 800, 1300, 200},

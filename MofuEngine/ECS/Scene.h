@@ -72,7 +72,7 @@ template<IsComponent C>
 bool
 EntityHasComponent(Entity e)
 {
-	EntityData data{ GetEntityData(e) };
+	const EntityData& data{ GetEntityData(e) };
 	return data.block->Signature.test(component::ID<C>);
 }
 

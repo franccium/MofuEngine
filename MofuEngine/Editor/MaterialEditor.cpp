@@ -37,6 +37,7 @@ id_t usedTextures[TextureUsage::Count];
 ecs::Entity materialOwner{};
 ecs::component::RenderMaterial material{};
 EditorMaterial editorMaterial{};
+content::AssetHandle currentMaterialAsset{};
 graphics::MaterialInitInfo materialInitInfo{};
 
 bool isOpen{ false };
@@ -172,7 +173,7 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 		editorMaterial.TextureIDs[i] = materialInitInfo.TextureIDs[i];
 	}
 	bool textured{ materialInitInfo.TextureCount != 0 };
-	std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShaders(textured) };
+	std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
 	materialInitInfo.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
 	materialInitInfo.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
 	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
@@ -232,11 +233,26 @@ GetDefaultEditorMaterial()
 	mat.Surface = graphics::MaterialSurface{};
 	mat.Flags = 0;
 	mat.Name = "Default material";
-	auto psvs{ content::GetDefaultPsVsShaders(true) };
+	auto psvs{ content::GetDefaultPsVsShadersTextured() };
 	mat.ShaderIDs[0] = psvs.first;
 	mat.ShaderIDs[1] = psvs.second;
 	mat.TextureCount = TextureUsage::Count;
 	for (u32 i{ 0 }; i < TextureUsage::Count; ++i) mat.TextureIDs[i] = DEFAULT_TEXTURES[i];
+	return mat;
+}
+
+EditorMaterial
+GetDefaultEditorMaterialUntextured()
+{
+	EditorMaterial mat{};
+	mat.Type = graphics::MaterialType::Opaque;
+	mat.Surface = graphics::MaterialSurface{};
+	mat.Flags = 0;
+	mat.Name = "Default material";
+	auto psvs{ content::GetDefaultPsVsShaders() };
+	mat.ShaderIDs[0] = psvs.first;
+	mat.ShaderIDs[1] = psvs.second;
+	mat.TextureCount = 0;
 	return mat;
 }
 
@@ -248,7 +264,7 @@ GetDefaultMaterialInitInfo()
 	info.Surface = graphics::MaterialSurface{};
 	info.TextureCount = TextureUsage::Count;
 	info.TextureIDs = &DEFAULT_TEXTURES[0];
-	auto psvs{ content::GetDefaultPsVsShaders(true) };
+	auto psvs{ content::GetDefaultPsVsShadersTextured() };
 	info.ShaderIDs[0] = psvs.first;
 	info.ShaderIDs[1] = psvs.second;
 	return info;
@@ -259,18 +275,21 @@ RenderMaterialEditor()
 {
 	if (!isOpen) return;
 
-	ImGui::Begin("Material View", nullptr);
+	ImGui::Begin("Material View", &isOpen);
 
 	ImGui::Text("Type: %s", MATERIAL_SURFACE_TYPE_TO_STRING[materialInitInfo.Type]);
 	ImGui::NextColumn();
 
 	// imageButton for basecolor, normal, etc::
 
-	DisplayTexture(TextureUsage::BaseColor, "Base Color:", "##Base");
-	DisplayTexture(TextureUsage::Normal, "Normal:", "##Normal");
-	DisplayTexture(TextureUsage::MetallicRoughness, "MetallicRoughness:", "##MetRou");
-	DisplayTexture(TextureUsage::Emissive, "Emissive:", "##Emiss");
-	DisplayTexture(TextureUsage::AmbientOcclusion, "Ambient Occlusion:", "##AO");
+	if (editorMaterial.TextureCount != 0)
+	{
+		DisplayTexture(TextureUsage::BaseColor, "Base Color:", "##Base");
+		DisplayTexture(TextureUsage::Normal, "Normal:", "##Normal");
+		DisplayTexture(TextureUsage::MetallicRoughness, "MetallicRoughness:", "##MetRou");
+		DisplayTexture(TextureUsage::Emissive, "Emissive:", "##Emiss");
+		DisplayTexture(TextureUsage::AmbientOcclusion, "Ambient Occlusion:", "##AO");
+	}
 
 	DisplayMaterialSurfaceProperties(editorMaterial.Surface);
 
@@ -283,10 +302,31 @@ RenderMaterialEditor()
 		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(materialOwner) };
 		mat.MaterialIDs[0] = newMaterialID;
 
-		//graphics::d3d12::core::RenderItemsUpdated();
+		// update the asset
+		// for now just reimport it to the same path
+		content::AssetPtr asset{ content::assets::GetAsset(currentMaterialAsset) };
+		if (asset)
+		{
+			material::PackMaterialAsset(editorMaterial, asset->ImportedFilePath);
+			content::assets::PairAssetWithResource(currentMaterialAsset, newMaterialID, content::AssetType::Material);
+			mat.MaterialAsset = currentMaterialAsset;
 
-		graphics::RemoveRenderItem(id::Index(materialOwner) - 1);
-		graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+			//graphics::d3d12::core::RenderItemsUpdated();
+
+			graphics::RemoveRenderItem(id::Index(materialOwner) - 1);
+			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+			//FIXME: doesnt update assets
+			/*mat.MaterialAsset = content::assets::GetAssetFromResource(newMaterialID, content::AssetType::Material);
+			if (!content::IsValid(mat.MaterialAsset))
+			{
+				std::filesystem::path 
+				material::PackMaterialAsset(editorMaterial, )
+			}*/
+		}
+		else
+		{
+			log::Error("Load the material asset first (TODO)");
+		}
 	}
 	static bool saving{ false };
 	if (ImGui::Button("Save"))
@@ -348,6 +388,7 @@ RenderMaterialEditor()
 						LoadMaterialAsset(editorMaterial, matPath);
 						materialInitInfo = {};
 						LoadMaterialDataFromAsset(materialInitInfo, assetHandle);
+						currentMaterialAsset = assetHandle;
 					}
 					else
 					{

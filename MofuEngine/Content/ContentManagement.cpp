@@ -92,11 +92,15 @@ GetDefaultMaterial()
 }
 
 std::pair<id_t, id_t> 
-GetDefaultPsVsShaders(bool textured)
+GetDefaultPsVsShadersTextured()
 {
-    return textured
-        ? std::pair<id_t, id_t>{ defaultVSID, defaultTexturedPSID }
-        : std::pair<id_t, id_t>{ defaultVSID , defaultPSID };
+    return std::pair<id_t, id_t>{ defaultVSID, defaultTexturedPSID };
+}
+
+std::pair<id_t, id_t>
+GetDefaultPsVsShaders()
+{
+    return std::pair<id_t, id_t>{ defaultVSID , defaultPSID };
 }
 
 bool

@@ -225,6 +225,8 @@ void RemoveSubmesh(id_t id);
 id_t AddTexture(const u8* const data);
 void RemoveTexture(id_t id);
 
+Vec<ecs::Entity>& GetVisibleEntities();
+
 id_t AddMaterial(MaterialInitInfo info);
 void RemoveMaterial(id_t id);
 MaterialInitInfo GetMaterialReflection(id_t id);
