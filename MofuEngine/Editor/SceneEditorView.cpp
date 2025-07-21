@@ -142,17 +142,14 @@ struct SceneHierarchy
     void Draw(EntityTreeNode* root_node)
     {
         ImGui::BeginGroup();
-        static bool show{ false };
         if (ImGui::Button("Import Hierarchy"))
         {
             prefabFiles.clear();
-            show = true;
-        }
-        //if (ImGui::BeginPopup("Select"))
-        if(show)
-        {
             content::ListFilesByExtensionRec(".pre", project::GetResourceDirectory() / "Prefabs", prefabFiles);
-
+            ImGui::OpenPopup("ImportHierarchyPopup");
+        }
+        if (ImGui::BeginPopup("ImportHierarchyPopup"))
+        {
             for (std::string_view path : prefabFiles)
             {
                 if (ImGui::Selectable(path.data()))
@@ -163,10 +160,10 @@ struct SceneHierarchy
                     {
                         AddEntityToSceneView(e);
                     }
-                    //ImGui::CloseCurrentPopup();
+                    ImGui::CloseCurrentPopup();
                 }
             }
-            //ImGui::EndPopup();
+            ImGui::EndPopup();
         }
         if (ImGui::Button("Add Entity"))
         {

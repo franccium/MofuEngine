@@ -19,7 +19,7 @@ namespace {
 bool
 InitializeEditorGUI()
 {
-    return InitializeSceneEditorView() && InitializeAssetBrowserGUI() && material::InitializeMaterialEditor();
+    return InitializeSceneEditorView() && material::InitializeMaterialEditor();
 }
 
 void 

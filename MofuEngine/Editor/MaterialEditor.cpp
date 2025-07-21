@@ -70,7 +70,7 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 		}
 		texFiles.clear();
 		content::ListFilesByExtension(".tex", project::GetResourceDirectory(), texFiles);
-		ImGui::OpenPopup("Select Texture");
+		ImGui::OpenPopup("SelectTexturePopup");
 		isBrowserOpen = true;
 		textureBeingChanged = texUse;
 	}
@@ -97,7 +97,7 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 void
 RenderTextureBrowser()
 {
-	if (ImGui::BeginPopup("Select Texture"))
+	if (ImGui::BeginPopup("SelectTexturePopup"))
 	{
 		for (std::string_view texPath : texFiles)
 		{
@@ -335,71 +335,61 @@ RenderMaterialEditor()
 	}
 	if (saving)
 	{
-		//if (ImGui::BeginPopup("Saving"))
+		ImGui::InputText("Filename", nameBuffer, MAX_NAME_LENGTH);
 		{
-			ImGui::InputText("Filename", nameBuffer, MAX_NAME_LENGTH);
+			if (ImGui::Button("Confirm"))
 			{
+				std::filesystem::path outPath{ project::GetResourceDirectory() };
+				outPath.append(nameBuffer);
+				outPath.replace_extension(".mat");
 
-				if (ImGui::Button("Confirm"))
+				for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
 				{
-					std::filesystem::path outPath{ project::GetResourceDirectory() };
-					outPath.append(nameBuffer);
-					outPath.replace_extension(".mat");
-
-					for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
-					{
-						editorMaterial.TextureIDs[i] = materialInitInfo.TextureIDs[i];
-					}
-					for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
-					{
-						editorMaterial.ShaderIDs[i] = materialInitInfo.ShaderIDs[i];
-					}
-					editorMaterial.Surface = materialInitInfo.Surface;
-					editorMaterial.TextureCount = materialInitInfo.TextureCount;
-
-					PackMaterialAsset(editorMaterial, outPath);
-					//CreateMaterialAsset(outPath);
-					saving = false;
+					editorMaterial.TextureIDs[i] = materialInitInfo.TextureIDs[i];
 				}
+				for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
+				{
+					editorMaterial.ShaderIDs[i] = materialInitInfo.ShaderIDs[i];
+				}
+				editorMaterial.Surface = materialInitInfo.Surface;
+				editorMaterial.TextureCount = materialInitInfo.TextureCount;
+
+				PackMaterialAsset(editorMaterial, outPath);
+				//CreateMaterialAsset(outPath);
+				saving = false;
 			}
-			//ImGui::EndPopup();
 		}
 	}
-	static bool loading{ false };
 	if (ImGui::Button("Load"))
 	{
-		loading = true;
+		ImGui::OpenPopup("LoadMaterialPopup");
 	}
-	if (loading)
+	if (ImGui::BeginPopup("LoadMaterialPopup"))
 	{
-		//if (ImGui::BeginPopup("Select Texture"))
-		{
-			matFiles.clear();
-			content::ListFilesByExtensionRec(".mat", project::GetResourceDirectory(), matFiles);
+		matFiles.clear();
+		content::ListFilesByExtensionRec(".mat", project::GetResourceDirectory(), matFiles);
 
-			for (std::string_view matPath : matFiles)
+		for (std::string_view matPath : matFiles)
+		{
+			if (ImGui::Selectable(matPath.data()))
 			{
-				if (ImGui::Selectable(matPath.data()))
+				content::AssetHandle assetHandle{ content::assets::GetHandleFromImportedPath(matPath) };
+				if (assetHandle != content::INVALID_HANDLE)
 				{
-					content::AssetHandle assetHandle{ content::assets::GetHandleFromImportedPath(matPath) };
-					if (assetHandle != content::INVALID_HANDLE)
-					{
-						//TODO: refactor
-						LoadMaterialAsset(editorMaterial, matPath);
-						materialInitInfo = {};
-						LoadMaterialDataFromAsset(materialInitInfo, assetHandle);
-						currentMaterialAsset = assetHandle;
-					}
-					else
-					{
-						log::Warn("Can't find Material assetHandle from path");
-					}
-					loading = false;
-					//ImGui::CloseCurrentPopup();
+					//TODO: refactor
+					LoadMaterialAsset(editorMaterial, matPath);
+					materialInitInfo = {};
+					LoadMaterialDataFromAsset(materialInitInfo, assetHandle);
+					currentMaterialAsset = assetHandle;
 				}
+				else
+				{
+					log::Warn("Can't find Material assetHandle from path");
+				}
+				ImGui::CloseCurrentPopup();
 			}
-			//ImGui::EndPopup();
 		}
+		ImGui::EndPopup();
 	}
 
 	if (isBrowserOpen) RenderTextureBrowser();

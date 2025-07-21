@@ -296,6 +296,8 @@ SaveAssetRegistry()
 void
 InitializeAssetRegistry()
 {
+	editor::InitializeAssetBrowserGUI();
+
 	DeserializeRegistry();
 
 	RegisterAllAssetsInProject();

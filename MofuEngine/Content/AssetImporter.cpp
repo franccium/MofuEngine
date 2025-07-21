@@ -65,18 +65,12 @@ ImportTexture(std::filesystem::path path, AssetPtr asset)
 		return {};
 	}
 
-	std::filesystem::path importedAssetPath{ BuildResourcePath(path.stem().string(), ".tex") };
-	PackTextureForEngine(data, importedAssetPath);
-	std::filesystem::path metadataPath{ BuildResourcePath(path.stem().string(), ".mt") };
+	std::filesystem::path texturePath{ editor::project::GetResourceDirectory() / "Textures" };
+	texturePath.append(path.stem().string() + ".tex");
+	asset->ImportedFilePath = texturePath;
+	PackTextureForEngine(data, texturePath);
+	std::filesystem::path metadataPath{ texturePath.replace_extension(".mt") };
 	PackTextureForEditor(data, metadataPath);
-
-	asset->ImportedFilePath = importedAssetPath;
-
-	//assets::GetTextureMetadata(metadataPath);
-
-	//std::filesystem::path iconPath{ BuildResourcePath(path.stem().string(), ".ic") };
-	//SaveIcon(data, iconPath);
-	//CreateTextureAssetIcon(asset);
 
 	std::unique_ptr<u8[]> iconBuffer{};
 	u64 iconSize{};
@@ -87,7 +81,7 @@ ImportTexture(std::filesystem::path path, AssetPtr asset)
 		asset->AdditionalData = iconId;
 	}
 
-	return importedAssetPath;
+	return asset->ImportedFilePath;
 }
 
 Color 

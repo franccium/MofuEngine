@@ -42,7 +42,7 @@ FillOutTextureViewData(std::filesystem::path textureAssetPath)
 	importSettings.Dimension = (content::texture::TextureDimension::Dimension)reader.Read<u32>();
 	importSettings.MipLevels = reader.Read<u32>();
 	texture.ImportSettings.AlphaThreshold = reader.Read<f32>();
-	importSettings.OutputFormat = (DXGI_FORMAT)reader.Read<u32>(); //FIXME: unknown 
+	importSettings.OutputFormat = (DXGI_FORMAT)reader.Read<u32>();
 	importSettings.CubemapSize = reader.Read<u32>();
 	importSettings.PreferBC7  = reader.Read<u8>();
 	importSettings.Compress = reader.Read<u8>();

@@ -16,6 +16,12 @@
 namespace mofu::editor {
 
 namespace {
+std::filesystem::path assetBaseDirectory;
+std::filesystem::path assetImportedDirectory;
+std::filesystem::path currentDirectory;
+std::filesystem::path projectBaseDirectory;
+
+std::bitset<content::AssetType::Count> itemTypeFilter{};
 
 struct Selection : ImGuiSelectionBasicStorage
 {
@@ -82,6 +88,7 @@ struct Selection : ImGuiSelectionBasicStorage
 struct AssetTreeNode
 {
     //TODO: imitates a directory hierarchy? kinda a B-Tree
+    std::filesystem::path FullPath;
     std::string Name;
     AssetTreeNode* Parent;
     Vec<AssetTreeNode*> Children;
@@ -101,7 +108,10 @@ struct AssetBrowser
     bool StretchSpacing = true;
 
     // State
-    ImVector<std::pair<content::AssetHandle, content::AssetPtr>> Items;
+    //ImVector<std::pair<content::AssetHandle, content::AssetPtr>> Items;
+    Vec<std::unique_ptr<AssetTreeNode>> AssetTree{};
+    AssetTreeNode* CurrentNode{};
+	AssetTreeNode* GetRootNode() const { return AssetTree[0].get(); }
     Selection Selection;
     bool RequestDelete = false; // deferred deletion request
     bool RequestSort = false; // deferred sort request
@@ -118,23 +128,77 @@ struct AssetBrowser
 
     AssetBrowser()
     {
+        
     }
 
-    void AddItem(content::AssetHandle handle)
+    void CreateRoot()
     {
-        Items.push_back({ handle, content::assets::GetAsset(handle) });
+        auto root{ std::make_unique<AssetTreeNode>(assetImportedDirectory, assetImportedDirectory.filename().string(), nullptr) };
+        CurrentNode = root.get();
+        AssetTree.emplace_back(std::move(root));
+    }
+
+    AssetTreeNode* 
+    FindOrCreateNodeForPath(const std::filesystem::path& assetPath) 
+    {
+        std::filesystem::path relativePath = std::filesystem::relative(assetPath, assetImportedDirectory);
+
+        AssetTreeNode* currentNode{ GetRootNode() };
+
+        // iterate through each path component until the filename
+        for (const auto& component : relativePath.parent_path())
+        {
+            // skip empty components
+            if (component.empty() || component == ".") continue;
+
+            // Check if this component already exists as a child
+            AssetTreeNode* componentAsChild = nullptr;
+            for (auto& child : currentNode->Children) 
+            {
+                if (child->Name == component.string()) 
+                {
+                    componentAsChild = child;
+                    break;
+                }
+            }
+
+            // If not found, create a new node
+            if (!componentAsChild) 
+            {
+                auto node{ std::make_unique<AssetTreeNode>(currentNode->FullPath / component, component.string(), currentNode) };
+                componentAsChild = node.get();
+                AssetTree.emplace_back(std::move(node));
+
+                currentNode->Children.emplace_back(componentAsChild);
+            }
+
+            // Move to this child for next iteration
+            currentNode = componentAsChild;
+        }
+
+        return currentNode;
+    }
+
+    void AddItem(content::AssetHandle handle) 
+    {
+        content::AssetPtr asset{ content::assets::GetAsset(handle) };
+        const auto& assetPath{ asset->ImportedFilePath };
+        AssetTreeNode* parentDirectory{ FindOrCreateNodeForPath(assetPath) };
+        parentDirectory->Assets.emplace_back(handle, asset);
         RequestSort = true;
     }
 
-    void ClearItems()
+    void AddItem(content::AssetHandle handle, content::AssetPtr asset)
     {
-        Items.clear();
-        Selection.Clear();
+        const auto& assetPath{ asset->ImportedFilePath };
+        AssetTreeNode* parentDirectory{ FindOrCreateNodeForPath(assetPath) };
+        parentDirectory->Assets.emplace_back(handle, asset);
+        RequestSort = true;
     }
 
     // Logic would be written in the main code BeginChild() and outputting to local variables.
     // We extracted it into a function so we can call it easily from multiple places.
-    void UpdateLayoutSizes(f32 availWidth)
+    void UpdateLayoutSizes(const AssetTreeNode* currentNode, f32 availWidth)
     {
         // Layout: when not stretching: allow extending into right-most spacing.
         LayoutItemSpacing = (float)IconSpacing;
@@ -144,7 +208,7 @@ struct AssetBrowser
         // Layout: calculate number of icon per line and number of lines
         LayoutItemSize = ImVec2(floorf(IconSize), floorf(IconSize));
         LayoutColumnCount = std::max((int)(availWidth / (LayoutItemSize.x + LayoutItemSpacing)), 1);
-        LayoutLineCount = (Items.Size + LayoutColumnCount - 1) / LayoutColumnCount;
+        LayoutLineCount = (currentNode->Assets.size() + LayoutColumnCount - 1) / LayoutColumnCount;
 
         // Layout: when stretching: allocate remaining space to more spacing. Round before division, so item_spacing may be non-integer.
         if (StretchSpacing && LayoutColumnCount > 1)
@@ -159,33 +223,28 @@ struct AssetBrowser
 };
 
 
-std::filesystem::path assetBaseDirectory;
-std::filesystem::path assetImportedDirectory;
-std::filesystem::path currentDirectory;
-std::filesystem::path projectBaseDirectory;
+
 AssetBrowser assetBrowser;
 AssetBrowser fileBrowser;
 
 BrowserMode browserMode{ BrowserMode::Assets };
 
-std::bitset<content::AssetType::Count> assetTypeFilter{};
-
 void
 DrawAssetTypeFilter()
 {
-    if (ImGui::Button("All")) assetTypeFilter.set();
+    if (ImGui::Button("All")) itemTypeFilter.set();
     ImGui::SameLine();
-    if (ImGui::Button("None"))  assetTypeFilter.reset();
+    if (ImGui::Button("None"))  itemTypeFilter.reset();
 
     for (u32 i{ 0 }; i < content::AssetType::Count; ++i)
     {
         content::AssetType::type type{ (content::AssetType::type)i };
-        bool isSelected{ assetTypeFilter.test(i) };
+        bool isSelected{ itemTypeFilter.test(i) };
 
         ImGui::SameLine();
         if (ImGui::Checkbox(content::ASSET_TYPE_TO_STRING[type], &isSelected))
         {
-            assetTypeFilter.set(i, isSelected);
+            itemTypeFilter.set(i, isSelected);
         }
     }
 }
@@ -196,6 +255,13 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
     // Menu bar
     if (ImGui::BeginMenuBar())
     {
+        if (CurrentNode->Parent)
+        {
+            if (ImGui::Button(".."))
+            {
+                CurrentNode = CurrentNode->Parent;
+            }
+        }
         if (ImGui::MenuItem("Mode"))
         {
             browserMode = browserMode == BrowserMode::Assets ? BrowserMode::AllFiles : BrowserMode::Assets;
@@ -212,8 +278,6 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                     content::AssetHandle handle{ content::assets::RegisterAsset(asset) };
                 }
             }
-            if (ImGui::MenuItem("Clear items"))
-                ClearItems();
             ImGui::Separator();
             if (ImGui::MenuItem("Close", NULL, false, pOpen != NULL))
                 *pOpen = false;
@@ -258,7 +322,7 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
         const float availWidth = ImGui::GetContentRegionAvail().x;
-        UpdateLayoutSizes(availWidth);
+        UpdateLayoutSizes(CurrentNode, availWidth);
 
         // Calculate and store start position
         ImVec2 startPos = ImGui::GetCursorScreenPos();
@@ -266,7 +330,7 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         ImGui::SetCursorScreenPos(startPos);
         ImGui::Dummy(ImVec2(0.f, 0.f));
 
-        if (assetTypeFilter == 0) ImGui::TextUnformatted("Select at least one asset type");
+        if (itemTypeFilter == 0) ImGui::TextUnformatted("Select at least one asset type");
 
         // Multi-select
         ImGuiMultiSelectFlags multiselectFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_ClearOnClickVoid | ImGuiMultiSelectFlags_NavWrapX;
@@ -275,16 +339,18 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         if (AllowDragUnselected)
             multiselectFlags |= ImGuiMultiSelectFlags_SelectOnClickRelease;
 
-        ImGuiMultiSelectIO* multiselectIO = ImGui::BeginMultiSelect(multiselectFlags, Selection.Size, Items.Size);
+        auto& assets{ CurrentNode->Assets };
+        u32 assetCount{ (u32)assets.size() };
+        ImGuiMultiSelectIO* multiselectIO = ImGui::BeginMultiSelect(multiselectFlags, Selection.Size, assetCount);
 
         // Use custom selection adapter: store ID in selection
         Selection.UserData = this;
-        Selection.AdapterIndexToStorageId = [](ImGuiSelectionBasicStorage* self_, int idx) { 
-            AssetBrowser* self = (AssetBrowser*)self_->UserData; return (ImGuiID)self->Items[idx].first.id; };
+        Selection.AdapterIndexToStorageId = [](ImGuiSelectionBasicStorage* self_, int idx) {
+            AssetBrowser* self = (AssetBrowser*)self_->UserData; return (ImGuiID)self->CurrentNode->Assets[idx].first.id; };
         Selection.ApplyRequests(multiselectIO);
 
         const bool deleteRequested = (ImGui::Shortcut(ImGuiKey_Delete, ImGuiInputFlags_Repeat) && (Selection.Size > 0)) || RequestDelete;
-        const int itemCurrentIdxToFocus = deleteRequested ? Selection.ApplyDeletionPreLoop(multiselectIO, Items.Size) : -1;
+        const int itemCurrentIdxToFocus = deleteRequested ? Selection.ApplyDeletionPreLoop(multiselectIO, assetCount) : -1;
         RequestDelete = false;
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(LayoutSelectableSpacing, LayoutSelectableSpacing));
@@ -293,10 +359,11 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         const ImU32 iconTypeOverlayColors[content::AssetType::Count] = { 0, IM_COL32(200, 70, 70, 255), IM_COL32(70, 170, 70, 255), 
             IM_COL32(5, 70, 200, 255), IM_COL32(200, 200, 230, 255), IM_COL32(10, 190, 140, 255) };
         const ImU32 iconBgColor = ImGui::GetColorU32(IM_COL32(35, 35, 35, 220));
+        const ImU32 nodeBgColor = ImGui::GetColorU32(IM_COL32(35, 35, 45, 220));
         const ImVec2 iconTypeOverlaySize = ImVec2(4.0f, 4.0f);
         const bool displayLabel = (LayoutItemSize.x >= ImGui::CalcTextSize("999").x);
 
-        const int columnCount = LayoutColumnCount;
+        const u32 columnCount = LayoutColumnCount;
         s32 drawnItemCount{ 0 };
         s32 discardedItemCount{ 0 };
         ImGuiListClipper clipper;
@@ -305,19 +372,63 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
             clipper.IncludeItemByIndex(itemCurrentIdxToFocus / columnCount);
         if (multiselectIO->RangeSrcItem != -1)
             clipper.IncludeItemByIndex((int)multiselectIO->RangeSrcItem / columnCount);
-        while (clipper.Step())
+
+        Vec<AssetTreeNode*>& currentChildren{ CurrentNode->Children };
+        u32 childrenNodesCount{ (u32)currentChildren.size() };
+		bool changedNode{ false };
+        //for (auto node : CurrentNode->Children)
+        //{
+        //    if (ImGui::Button(node->Name.c_str()))
+        //    {
+        //        CurrentNode = node;
+        //    }
+        //}
+
+        while (clipper.Step() && !changedNode)
         {
-            for (int lineIdx = clipper.DisplayStart; lineIdx < clipper.DisplayEnd; lineIdx++)
+            for (int lineIdx = clipper.DisplayStart; lineIdx < clipper.DisplayEnd && !changedNode; ++lineIdx)
             {
-                const int minCurrLineIdx = lineIdx * columnCount + discardedItemCount;
-                int maxCurrLineIdx = std::min(minCurrLineIdx + columnCount, Items.Size);
+                const u32 minCurrLineIdx = lineIdx * columnCount + discardedItemCount;
+                int maxCurrLineIdx = std::min(minCurrLineIdx + columnCount, assetCount);
                 for (int itemIdx = minCurrLineIdx; itemIdx < maxCurrLineIdx; ++itemIdx)
                 {
-                    auto& item = Items[itemIdx];
-                    if (!assetTypeFilter.test(item.second->Type))
+                    if (itemIdx < childrenNodesCount)
+                    {
+						auto node{ currentChildren[itemIdx] };
+
+                        ImVec2 pos = ImVec2(startPos.x + (drawnItemCount % columnCount) * LayoutItemStep.x, startPos.y + lineIdx * LayoutItemStep.y);
+                        ImGui::SetCursorScreenPos(pos);
+                        ImGui::PushID(itemIdx);
+                        bool itemIsSelected = Selection.Contains(itemIdx);
+
+                        ImVec2 boxMin(pos.x - 1, pos.y - 1);
+                        ImVec2 boxMax(boxMin.x + LayoutItemSize.x + 2, boxMin.y + LayoutItemSize.y + 2);
+                        ImGui::Selectable("", itemIsSelected, ImGuiSelectableFlags_None, LayoutItemSize);
+                        drawList->AddRectFilled(boxMin, boxMax, nodeBgColor);
+                        drawnItemCount++;
+
+                        if (ImGui::IsItemHovered())
+                        {
+                            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                            {
+                                CurrentNode = node;
+                                changedNode = true;
+                            }
+                        }
+
+                        ImU32 labelColor = ImGui::GetColorU32(itemIsSelected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
+                        s32 textOffset{ drawnItemCount % 2 ? 16 : 0 };
+                        drawList->AddText(ImVec2(boxMin.x, boxMax.y - ImGui::GetFontSize() + textOffset), labelColor, node->Name.c_str());
+
+                        ImGui::PopID();
+                        continue;
+                    }
+
+                    auto& item = assets[itemIdx];
+                    if (!itemTypeFilter.test(item.second->Type))
                     {
                         maxCurrLineIdx++;
-                        if (maxCurrLineIdx >= Items.Size)
+                        if (maxCurrLineIdx >= assetCount)
                         {
                             lineIdx = clipper.DisplayEnd;
                             break;
@@ -430,14 +541,14 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                                 }
                             }
                         }
-                        //if (itemIsHovered)
-                        //{
-                        //    char label[64];
-                        //    snprintf(label, 64, "%s", item.second->Name.data());
-                        //    ImGui::BeginTooltip();
-                        //    ImGui::TextUnformatted(label);
-                        //    ImGui::EndTooltip();
-                        //}
+                        if (itemIsHovered)
+                        {
+                            char label[64];
+                            snprintf(label, 64, "%s", item.second->Name.data());
+                            ImGui::BeginTooltip();
+                            ImGui::TextUnformatted(label);
+                            ImGui::EndTooltip();
+                        }
                     }
 
                     ImGui::PopID();
@@ -462,7 +573,8 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         Selection.ApplyRequests(multiselectIO);
         if (deleteRequested)
         {
-            if (ImGui::BeginPopup("Confirmation")) {
+            if (ImGui::BeginPopup("Confirmation")) 
+            {
                 bool deleteConfirmed = false;
 
                 ImGui::Text("Do you want to delete %u items?", multiselectIO->ItemsCount);
@@ -480,14 +592,14 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
 
                 if (deleteConfirmed) 
                 {
-                    Selection.ApplyDeletionPostLoop(multiselectIO, Items, itemCurrentIdxToFocus);
+                    //Selection.ApplyDeletionPostLoop(multiselectIO, assets, itemCurrentIdxToFocus);
                 }
             }
         }
     }
     ImGui::EndChild();
 
-    ImGui::Text("Selected: %d/%d items", Selection.Size, Items.Size);
+    ImGui::Text("Selected: %d/%d items", Selection.Size, CurrentNode->Assets.size());
 }
 
 void
@@ -593,7 +705,24 @@ InitializeAssetBrowserGUI()
     currentDirectory = projectBaseDirectory;
     assert(std::filesystem::exists(projectBaseDirectory) && std::filesystem::exists(assetBaseDirectory)
         && std::filesystem::exists(assetImportedDirectory) && std::filesystem::exists(currentDirectory));
-    assetTypeFilter.set();
+    itemTypeFilter.set();
+
+    assetBrowser.CreateRoot();
+    //TODO:
+    //AssetTreeNode* lastParent{nullptr};
+    //// if no filesystem thing, keep a stack of last parent and a stack of currentDirectory, the the items that are directories push themselves onto stack and we put assets in the last directory
+    //for (const auto& entry : std::filesystem::recursive_directory_iterator{assetImportedDirectory})
+    //{
+    //    if (entry.is_directory())
+    //    {
+    //        AssetTreeNode node{};
+    //        node.Parent = lastParent;
+    //        node.Directory = entry;
+    //        lastParent->Children.emplace_back(&node);
+    //        node.Assets;
+    //        assetBrowser.AssetTree.emplace_back(std::move(node));
+    //    }
+    //}
 
     return true;
 }
@@ -607,21 +736,6 @@ RenderAssetBrowserGUI()
 void
 AddRegisteredAsset(content::AssetHandle handle, content::AssetPtr asset)
 {
-    //if (asset->Type == content::AssetType::Texture)
-    //{
-    //    std::filesystem::path metadataPath{ asset->GetMetadataPath() };
-    //    if (std::filesystem::exists(metadataPath) && !id::IsValid(asset->AdditionalData))
-    //    {
-    //        std::unique_ptr<u8[]> iconBuffer{};
-    //        u64 iconSize{};
-    //        content::assets::GetTextureIconData(metadataPath, iconSize, iconBuffer);
-    //        if (iconSize != 0)
-    //        {
-    //            id_t iconId{ graphics::ui::AddIcon(iconBuffer.get()) };
-    //            asset->AdditionalData = iconId;
-    //        }
-    //    }
-    //}
     content::assets::ParseMetadata(asset);
 
     assetBrowser.AddItem(handle);
