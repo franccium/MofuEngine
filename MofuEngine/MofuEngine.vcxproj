@@ -118,6 +118,7 @@
     <ClCompile Include="Content\AssetImporter.cpp" />
     <ClCompile Include="Content\ContentManagement.cpp" />
     <ClCompile Include="Content\EditorContentManager.cpp" />
+    <ClCompile Include="Content\EnvironmentMapProcessing.cpp" />
     <ClCompile Include="Content\Guid.cpp" />
     <ClCompile Include="Content\NormalMapProcessing.cpp" />
     <ClCompile Include="Content\PrimitiveMeshGeneration.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="Content\ContentManagement.h" />
     <ClInclude Include="Content\ContentUtils.h" />
     <ClInclude Include="Content\EditorContentManager.h" />
+    <ClInclude Include="Content\EnvironmentMapProcessing.h" />
     <ClInclude Include="Content\Guid.h" />
     <ClInclude Include="Content\NormalMapProcessing.h" />
     <ClInclude Include="Content\PrimitiveMeshGeneration.h" />

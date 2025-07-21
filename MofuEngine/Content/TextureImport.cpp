@@ -3,39 +3,12 @@
 #include "Utilities/IOStream.h"
 #include <DirectXTex.h>
 #include "NormalMapProcessing.h"
+#include "EnvironmentMapProcessing.h"
 
 using namespace DirectX;
 using namespace Microsoft::WRL;
 
 namespace mofu::content::texture {
-
-HRESULT EquirectangularToCubemap(const Image* envMaps, u32 envMapCount, u32 cubemapSize,
-	bool usePrefilterSize, bool mirrorCubemap, ScratchImage& cubeMaps) 
-{
-	assert(false);
-	return S_OK;
-}
-HRESULT EquirectangularToCubemap(ID3D11Device* device, const Image* envMaps, u32 envMapCount, u32 cubemapSize,
-	bool usePrefilterSize, bool mirrorCubemap, ScratchImage& cubeMaps)
-{
-	assert(false);
-	return S_OK;
-}
-HRESULT PrefilterDiffuse(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredDiffuse)
-{
-	assert(false);
-	return S_OK;
-}
-HRESULT PrefilterSpecular(ID3D11Device* device, const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredSpecular)
-{
-	assert(false);
-	return S_OK;
-}
-HRESULT BrdfIntegrationLut(ID3D11Device* device, u32 sampleCount, ScratchImage& brdfLut)
-{
-	assert(false);
-	return S_OK;
-}
 
 namespace {
 
@@ -287,8 +260,8 @@ CreateDevice()
 	if (!d3d11CreateDevice) return;
 
 	u32 createDeviceFlags{ 0 };
-#ifdef DEBUG
-	createDeviceFlags |= D3D11CREATEDEVICEDEBUG;
+#ifdef _DEBUG
+	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
 	Vec<ComPtr<IDXGIAdapter>> adapters{ GetAdaptersByPerformance() };
@@ -630,11 +603,11 @@ GenerateMipmaps(const ScratchImage& source, TextureInfo& info, u32 mipLevels, bo
 
 	if (!is3d)
 	{
-		hr = GenerateMipMaps(source.GetImages(), source.GetImageCount(), source.GetMetadata(), TEX_FILTER_DEFAULT, mipLevels, mipScratch);
+		hr = GenerateMipMaps(source.GetImages(), source.GetImageCount(), metadata, TEX_FILTER_DEFAULT, mipLevels, mipScratch);
 	}
 	else
 	{
-		hr = GenerateMipMaps3D(source.GetImages(), source.GetImageCount(), source.GetMetadata(), TEX_FILTER_DEFAULT, mipLevels, mipScratch);
+		hr = GenerateMipMaps3D(source.GetImages(), source.GetImageCount(), metadata, TEX_FILTER_DEFAULT, mipLevels, mipScratch);
 	}
 
 	if (FAILED(hr))
@@ -784,7 +757,6 @@ Decompress(TextureData* const data)
 		CopySubresources(scratch, data);
 		TextureInfoFromMetadata(scratch.GetMetadata(), data->Info);
 	}
-
 }
 
 void

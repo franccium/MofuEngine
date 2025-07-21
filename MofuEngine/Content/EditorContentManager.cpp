@@ -207,12 +207,23 @@ GetAssetFromResource(id_t resourceID, AssetType::type type)
 	return INVALID_HANDLE;
 }
 
+// finds an existing resource for that asset; if none, creates one
 id_t
 GetResourceFromAsset(AssetHandle handle, AssetType::type type)
 {
 	//TODO: this could have multiple results
-	assert(false);
-	return id::INVALID_ID;
+	auto set{ assetResourcePairs[type] };
+	auto result = std::ranges::find_if(set.begin(), set.end(), [&](const auto& item) {
+		return item.first == handle;
+		});
+
+	if (result != set.end())
+	{
+		id_t id{ result->second };
+		return id;
+	}
+	log::Warn("No existing resource for handle %u, creating one...", handle.id);
+	return CreateResourceFromHandle(handle);
 }
 
 Vec<id_t>

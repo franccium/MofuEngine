@@ -234,6 +234,9 @@
     <ClCompile Include="ECS\Systems\TestCullingSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Content\EnvironmentMapProcessing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -534,6 +537,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\EnvironmentMapProcessing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

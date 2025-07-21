@@ -143,9 +143,16 @@ ViewTextureAsImage(id_t textureID)
 }
 
 u64
-GetImTextureID(id_t textureID, u32 mipLevel, u32 format)
+GetImTextureIDIcon(id_t textureID, u32 mipLevel, u32 format)
 {
-    const DescriptorHandle& handle{ content::texture::GetDescriptorHandle(textureID, mipLevel, (DXGI_FORMAT)format) };
+    DescriptorHandle handle{ content::texture::GetDescriptorHandle(textureID, mipLevel, (DXGI_FORMAT)format) };
+    return (u64)handle.gpu.ptr;
+}
+
+u64
+GetImTextureID(id_t textureID, u32 arrayIndex, u32 mipLevel, u32 depthIndex, u32 format, bool isCubemap)
+{
+    DescriptorHandle handle{ content::texture::GetDescriptorHandle(textureID, arrayIndex, mipLevel, depthIndex, (DXGI_FORMAT)format, isCubemap) };
     return (u64)handle.gpu.ptr;
 }
 

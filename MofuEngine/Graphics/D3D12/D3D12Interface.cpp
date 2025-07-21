@@ -60,6 +60,7 @@ SetupPlatformInterface(PlatformInterface& pi)
 	pi.ui.shutdown = ui::Shutdown;
 	pi.ui.startNewFrame = ui::StartNewFrame;
 	pi.ui.viewTexture = ui::ViewTextureAsImage;
+	pi.ui.getImTextureIDIcon = ui::GetImTextureIDIcon;
 	pi.ui.getImTextureID = ui::GetImTextureID;
 	pi.ui.destroyViewTexture = ui::DestroyViewTexture;
 	pi.ui.addIcon = content::texture::AddIcon;

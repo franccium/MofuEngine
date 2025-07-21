@@ -191,11 +191,6 @@ PackTextureForEngine(texture::TextureData& data, std::filesystem::path targetPat
         }
     }
 
-	//TODO:assert(writer.Offset() == textureDataSize);
-	//TODO: refactor
-	//std::filesystem::path modelPath{ "Assets/Generated/"};
-	//modelPath.append(filename.data());
-	targetPath.replace_extension(".tex");
 	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
 	if (!file) return;
 

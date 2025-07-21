@@ -147,6 +147,19 @@ DisplayMaterialSurfaceProperties(const graphics::MaterialSurface& surface)
 	DisplayFloat(surface.AmbientOcclusion, "Ambient Occlusion");
 }
 
+void
+DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& surface)
+{
+	ImGui::TextUnformatted("Surface:");
+	constexpr f32 min{ 0.f };
+	constexpr f32 max{ 1.f };
+	DisplayEditableVector4(&surface.BaseColor, "Base Color", min, max);
+	DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
+	DisplayEditableFloat(&surface.Roughness, "Roughness", min, max);
+	DisplayEditableVector3(&surface.Emissive, "Emission Color", min, max);
+	DisplayEditableFloat(&surface.EmissiveIntensity, "Emission Intensity", min, max);
+	DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
+}
 
 void
 OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
@@ -291,7 +304,7 @@ RenderMaterialEditor()
 		DisplayTexture(TextureUsage::AmbientOcclusion, "Ambient Occlusion:", "##AO");
 	}
 
-	DisplayMaterialSurfaceProperties(editorMaterial.Surface);
+	DisplayEditableMaterialSurfaceProperties(editorMaterial.Surface);
 
 	if (ImGui::Button("Update"))
 	{

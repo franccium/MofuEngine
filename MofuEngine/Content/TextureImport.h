@@ -20,7 +20,23 @@ struct ImportError
 		FormatMismatch,
 		FileNotFound,
 		NeedSixImages,
+
+		Count
 	};
+};
+
+constexpr const char* TEXTURE_IMPORT_ERROR_STRING[ImportError::Count] {
+	"None",
+	"Unknown",
+	"Compress",
+	"Decompress",
+	"Load",
+	"MipmapGeneration",
+	"MaxSizeExceeded",
+	"SizeMismatch",
+	"FormatMismatch",
+	"FileNotFound",
+	"NeedSixImages",
 };
 
 struct IblFilter

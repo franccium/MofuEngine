@@ -8,11 +8,14 @@ namespace mofu::editor::assets {
 void ViewFBXImportSummary(content::FBXImportState state);
 void ViewImportSettings(content::AssetType::type assetType);
 void ViewImportSettings(content::AssetHandle handle);
+void AddFile(const std::string& filename);
+void RefreshFiles(const Vec<std::string>& files);
 void RenderImportSummary();
 void RenderImportSettings();
 
 void RenderTextureImportSettings();
 
-content::GeometryImportSettings GetGeometryImportSettings();
-content::texture::TextureImportSettings GetTextureImportSettings();
+const content::GeometryImportSettings& GetGeometryImportSettings();
+const content::texture::TextureImportSettings& GetTextureImportSettings();
+content::texture::TextureImportSettings& GetTextureImportSettingsA(); // TODO: temporary
 }

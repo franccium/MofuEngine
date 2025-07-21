@@ -180,6 +180,9 @@ public:
 
 	void Release();
 
+	[[nodiscard]] DescriptorHandle GetSRV(u32 arrayindex, u32 mipLevel, u32 depthIndex,
+		DXGI_FORMAT format, bool isCubemap = false);
+
 	[[nodiscard]] constexpr DXResource* const Resource() const { return _resource; }
 	[[nodiscard]] constexpr DescriptorHandle Srv() const { return _srv; }
 

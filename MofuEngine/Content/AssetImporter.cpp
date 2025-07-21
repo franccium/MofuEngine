@@ -55,19 +55,20 @@ ImportTexture(std::filesystem::path path, AssetPtr asset)
 	texture::TextureData data{};
 	data.ImportSettings = editor::assets::GetTextureImportSettings();
 
-	data.ImportSettings.Files = path.string(); //TODO: char* 
-	data.ImportSettings.FileCount = 1;
+	//data.ImportSettings.Files = path.string(); //TODO: char* 
+	//data.ImportSettings.FileCount = 1;
 
 	texture::Import(&data);
 	if (data.Info.ImportError != texture::ImportError::Succeeded)
 	{
-		log::Error("Texture import error: ", data.Info.ImportError);
+		log::Error("Texture import error: %s", texture::TEXTURE_IMPORT_ERROR_STRING[data.Info.ImportError]);
 		return {};
 	}
 
 	std::filesystem::path texturePath{ editor::project::GetResourceDirectory() / "Textures" };
 	texturePath.append(path.stem().string() + ".tex");
 	asset->ImportedFilePath = texturePath;
+	asset->RelatedCount = data.ImportSettings.FileCount;
 	PackTextureForEngine(data, texturePath);
 	std::filesystem::path metadataPath{ texturePath.replace_extension(".mt") };
 	PackTextureForEditor(data, metadataPath);

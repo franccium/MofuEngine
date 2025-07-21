@@ -18,7 +18,8 @@ void EndGUIFrame(DXGraphicsCommandList* cmdList);
 
 void ViewTextureAsImage(id_t textureID);
 void DestroyViewTexture(id_t textureID);
-u64 GetImTextureID(id_t textureID, u32 mipLevel, u32 format);
+[[nodiscard]] u64 GetImTextureIDIcon(id_t textureID, u32 mipLevel, u32 format);
+[[nodiscard]] u64 GetImTextureID(id_t textureID, u32 arrayIndex, u32 mipLevel, u32 depthIndex, u32 format, bool isCubemap = false);
 
 
 }

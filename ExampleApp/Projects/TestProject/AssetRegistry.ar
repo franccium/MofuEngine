@@ -165,7 +165,7 @@
 17215922970461007899:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_metal.png
-  ImportedFilePath: Projects/TestProject\Resources\base_metal.tex
+  ImportedFilePath: ""
 10082845289468461774:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\NguyenPhung_SFiGun_Metal.tga.png
@@ -177,7 +177,7 @@
 14533957193845059825:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_nml.png
-  ImportedFilePath: Projects/TestProject\Resources\base_nml.tex
+  ImportedFilePath: Projects/TestProject\Resources\Textures\base_nml.tex
 364955242412427183:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_normal.jpeg
@@ -1326,3 +1326,27 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\testttttt3.mat
   ImportedFilePath: Projects/TestProject\Resources\Materials\testttttt3.mat
+15084960714313741493:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\test_cube_1.png
+  ImportedFilePath: Projects/TestProject\Resources\Textures\test_cube_1.tex
+5300091225479738622:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\test_cube_2.png
+  ImportedFilePath: Projects/TestProject\Resources\Textures\test_cube_2.tex
+853862925799802973:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\test_cube_3.png
+  ImportedFilePath: Projects/TestProject\Resources\Textures\test_cube_3.tex
+11259363770198855719:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\test_cube_4.png
+  ImportedFilePath: Projects/TestProject\Resources\Textures\test_cube_4.tex
+15901087282519050491:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\test_cube_5.png
+  ImportedFilePath: Projects/TestProject\Resources\Textures\test_cube_5.tex
+783618723220444671:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\test_cube_6.png
+  ImportedFilePath: Projects/TestProject\Resources\Textures\test_cube_6.tex

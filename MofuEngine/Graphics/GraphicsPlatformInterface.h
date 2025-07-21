@@ -54,7 +54,8 @@ struct PlatformInterface
 		void(*startNewFrame)();
 		void(*viewTexture)(id_t);
 		void(*destroyViewTexture)(id_t);
-		u64(*getImTextureID)(id_t, u32, u32);
+		u64(*getImTextureIDIcon)(id_t, u32, u32);
+		u64(*getImTextureID)(id_t, u32, u32, u32, u32, bool);
 		id_t(*addIcon)(const u8* const);
 	} ui;
 

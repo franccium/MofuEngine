@@ -113,6 +113,7 @@ struct AssetBrowser
     AssetTreeNode* CurrentNode{};
 	AssetTreeNode* GetRootNode() const { return AssetTree[0].get(); }
     Selection Selection;
+    std::set<content::AssetHandle> Selected{};
     bool RequestDelete = false; // deferred deletion request
     bool RequestSort = false; // deferred sort request
     f32 ZoomWheelAccum = 0.0f; // Mouse wheel accumulator to handle smooth wheels better
@@ -266,6 +267,10 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         {
             browserMode = browserMode == BrowserMode::Assets ? BrowserMode::AllFiles : BrowserMode::Assets;
         }
+        if (ImGui::MenuItem("Clear Selection"))
+        {
+            Selected.clear();
+        }
         DrawAssetTypeFilter();
 
         if (ImGui::BeginMenu("File"))
@@ -346,7 +351,7 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         // Use custom selection adapter: store ID in selection
         Selection.UserData = this;
         Selection.AdapterIndexToStorageId = [](ImGuiSelectionBasicStorage* self_, int idx) {
-            AssetBrowser* self = (AssetBrowser*)self_->UserData; return (ImGuiID)self->CurrentNode->Assets[idx].first.id; };
+            AssetBrowser* self = (AssetBrowser*)self_->UserData; return ImGui::GetID(self->CurrentNode->Assets[idx].first.id); };
         Selection.ApplyRequests(multiselectIO);
 
         const bool deleteRequested = (ImGui::Shortcut(ImGuiKey_Delete, ImGuiInputFlags_Repeat) && (Selection.Size > 0)) || RequestDelete;
@@ -436,22 +441,60 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                         discardedItemCount++;
                         continue;
                     }
-                    u64 id{ item.first.id };
 
-                    ImGui::PushID(id);
+                    content::AssetHandle handle{ item.first };
+                    ImGuiID imGuiID{ ImGui::GetID(handle.id) };
+                    ImGui::PushOverrideID(imGuiID);
 
                     // Position item
                     ImVec2 pos = ImVec2(startPos.x + (drawnItemCount % columnCount) * LayoutItemStep.x, startPos.y + lineIdx * LayoutItemStep.y);
                     ImGui::SetCursorScreenPos(pos);
 
                     ImGui::SetNextItemSelectionUserData(itemIdx);
-                    bool itemIsSelected = Selection.Contains(id);
+
+                    bool itemIsSelected{ Selected.contains(handle) };
+                    
+                    //bool itemIsSelected = Selection.Contains(imGuiID);
                     bool itemIsVisible = ImGui::IsRectVisible(LayoutItemSize);
-                    ImGui::Selectable("", itemIsSelected, ImGuiSelectableFlags_None, LayoutItemSize);
+                    if (ImGui::Selectable("", itemIsSelected, ImGuiSelectableFlags_None, LayoutItemSize))
+                    {
+                        if (itemIsSelected)
+                        {
+                            Selected.erase(handle);
+
+                            Vec<std::string> files{};
+                            for (const content::AssetHandle h : Selected)
+                            {
+                                content::AssetPtr a{ content::assets::GetAsset(h) };
+                                if (a->Type == content::AssetType::Texture)
+                                {
+                                    files.emplace_back(a->OriginalFilePath.string());
+                                }
+                            }
+                            assets::RefreshFiles(files);
+                        }
+                        else
+                        {
+                            Selected.emplace(handle);
+                        }
+                        itemIsSelected = !itemIsSelected;
+                    }
 
                     // Update our selection state immediately because we use this to alter the color of our text/icon
-                    if (ImGui::IsItemToggledSelection())
+                    //TODO: use the imgui Multiselection
+                   /* if (ImGui::IsItemToggledSelection())
+                    {
+                        if (!itemIsSelected)
+                        {
+                            Selected.emplace_back(item.first);
+                        }
+                        else
+                        {
+                            Selected.erase_unordered(item.first);
+                        }
                         itemIsSelected = !itemIsSelected;
+                    }*/
+
 
                     // Focus (for after deletion)
                     if (itemCurrentIdxToFocus == itemIdx)
@@ -501,6 +544,12 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                                 // TODO: placeholder icon
                                 drawList->AddRectFilled(boxMin, boxMax, iconBgColor);
                             }
+                            if (item.second->RelatedCount != 1)
+                            {
+                                char label[2];
+                                snprintf(label, 2, "%u", item.second->RelatedCount);
+                                drawList->AddText(ImVec2(boxMin.x, boxMin.y + ImGui::GetFontSize() + 4), ImGuiCol_TextDisabled, label);
+                            }
                         }
                         else
                         {
@@ -518,7 +567,7 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                             char label[32];
                             s32 textOffset{ drawnItemCount % 2 ? 16 : 0 };
                             snprintf(label, 32, "%s", item.second->Name.data());
-                            bool isImported{ std::filesystem::exists(content::assets::GetAsset(id)->ImportedFilePath) };
+                            bool isImported{ std::filesystem::exists(content::assets::GetAsset(handle)->ImportedFilePath) };
                             drawList->AddText(ImVec2(boxMin.x, boxMax.y - ImGui::GetFontSize() + textOffset), labelColor, label);
                             drawList->AddText(ImVec2(boxMin.x, boxMin.y), labelColor, isImported ? "im" : "nim");
                         }
@@ -529,15 +578,33 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                             {
                                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                                 {
-                                    assets::ViewImportSettings(id);
+                                    if (item.second->Type == content::AssetType::Texture)
+                                    {
+                                        //void* it = NULL;
+                                        //ImGuiID itemID = 0;
+                                        //Vec<ImGuiID> chosenAssets{};
+                                        //while (Selection.GetNextSelectedItem(&it, &itemID))
+                                        //{
+                                        //    chosenAssets.emplace_back(itemID);
+                                        //}
+                                        /*for (const content::AssetHandle h : Selected)
+                                        {
+                                            content::AssetPtr a{ content::assets::GetAsset(h) };
+                                            if (a->Type == content::AssetType::Texture)
+                                            {
+                                            }
+                                        }*/
+                                        assets::AddFile(item.second->OriginalFilePath.string());
+                                    }
+                                    assets::ViewImportSettings(handle);
                                 }
-                                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                                if (ImGui::IsKeyPressed(ImGuiKey_C))
                                 {
-                                    content::ImportAsset(id);
+                                    content::ImportAsset(handle);
                                 }
                                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
                                 {
-                                    editor::InspectAsset(id);
+                                    editor::InspectAsset(handle);
                                 }
                             }
                         }
@@ -659,10 +726,35 @@ RenderFileBrowser()
                     assert(handle != content::INVALID_HANDLE);
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                     {
-                        assets::ViewImportSettings(handle);
+                        //content::AssetPtr asset{};
+                        //if (asset->Type == content::AssetType::Texture)
+                        //{
+                        //    void* it = NULL;
+                        //    ImGuiID id = 0;
+                        //    Vec<content::AssetPtr> chosenAssets{};
+                        //    while (Selection.GetNextSelectedItem(&it, &id))
+                        //    {
+                        //        chosenAssets.emplace_back(assets[id].second);
+                        //    }
+                        //    content::texture::TextureImportSettings settings{};
+                        //    settings.FileCount = chosenAssets.size();
+                        //    for (const content::AssetPtr a : chosenAssets)
+                        //    {
+                        //        settings.Files += a->ImportedFilePath.string() + ";";
+                        //    }
+                        //    assets::ViewImportSettings(id, settings);
+                        //}
+                        //else
+                        {
+                            assets::ViewImportSettings(handle);
+                        }
                     }
                     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                     {
+                        //FIXME: temporary
+                        content::texture::TextureImportSettings& settings{ assets::GetTextureImportSettingsA() };
+                        settings.FileCount = 1;
+                        settings.Files = path.string();
                         content::ImportAsset(handle);
                     }
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -708,21 +800,6 @@ InitializeAssetBrowserGUI()
     itemTypeFilter.set();
 
     assetBrowser.CreateRoot();
-    //TODO:
-    //AssetTreeNode* lastParent{nullptr};
-    //// if no filesystem thing, keep a stack of last parent and a stack of currentDirectory, the the items that are directories push themselves onto stack and we put assets in the last directory
-    //for (const auto& entry : std::filesystem::recursive_directory_iterator{assetImportedDirectory})
-    //{
-    //    if (entry.is_directory())
-    //    {
-    //        AssetTreeNode node{};
-    //        node.Parent = lastParent;
-    //        node.Directory = entry;
-    //        lastParent->Children.emplace_back(&node);
-    //        node.Assets;
-    //        assetBrowser.AssetTree.emplace_back(std::move(node));
-    //    }
-    //}
 
     return true;
 }

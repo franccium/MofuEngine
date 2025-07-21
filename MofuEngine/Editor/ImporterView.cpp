@@ -13,6 +13,7 @@ namespace {
 
 bool isOpen{ false }; // TODO: something better this is placeholder
 content::FBXImportState fbxState;
+content::AssetHandle activeAssetHandle{ content::INVALID_HANDLE };
 content::AssetType::type activeAssetImportType{ content::AssetType::Unknown };
 
 content::GeometryImportSettings geometryImportSettings{};
@@ -79,7 +80,7 @@ RenderTextureImportSettings()
 	DisplaySliderUint("Mip Levels", &textureImportSettings.MipLevels, 0, 14);
 	ImGui::SliderFloat("Alpha Threshold", &textureImportSettings.AlphaThreshold, 0.f, 1.f);
 	ImGui::TextUnformatted("Format: "); ImGui::SameLine();
-	ImGui::TextUnformatted(texture::FORMAT_STRING);
+	ImGui::TextUnformatted(texture::TEXTURE_FORMAT_STRING[textureImportSettings.OutputFormat]);
 	DisplaySliderUint("Cubemap Size", &textureImportSettings.CubemapSize, 16, 4096);
 
 	ImGui::Checkbox("Prefer BC7", (bool*)&textureImportSettings.PreferBC7);
@@ -107,7 +108,27 @@ void
 ViewImportSettings(content::AssetHandle handle)
 {
 	content::AssetPtr asset{ content::assets::GetAsset(handle) };
+	activeAssetHandle = handle;
 	activeAssetImportType = asset->Type;
+}
+
+void
+AddFile(const std::string& filename)
+{
+	textureImportSettings.Files += filename + ";";
+	textureImportSettings.FileCount++;
+}
+
+void
+RefreshFiles(const Vec<std::string>& files)
+{
+	textureImportSettings.Files.clear();
+
+	textureImportSettings.FileCount = files.size();
+	for (const auto& file : files)
+	{
+		textureImportSettings.Files += file + ";";
+	}
 }
 
 constexpr const char* ErrorString[7]{
@@ -174,15 +195,25 @@ RenderImportSettings()
 
 	settingsRenderers[activeAssetImportType]();
 
+	if (ImGui::Button("Import"))
+	{
+		content::ImportAsset(activeAssetHandle);
+	}
+
 	ImGui::End();
 }
 
-content::GeometryImportSettings GetGeometryImportSettings()
+const content::GeometryImportSettings& GetGeometryImportSettings()
 {
 	return geometryImportSettings;
 }
 
-content::texture::TextureImportSettings GetTextureImportSettings()
+const content::texture::TextureImportSettings& GetTextureImportSettings()
+{
+	return textureImportSettings;
+}
+
+content::texture::TextureImportSettings& GetTextureImportSettingsA()
 {
 	return textureImportSettings;
 }

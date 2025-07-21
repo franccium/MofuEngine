@@ -6,22 +6,60 @@
 #include "Content/AssetImporter.h"
 #include "ValueDisplay.h"
 #include "ImporterView.h"
+#include "Content/EditorContentManager.h"
 
 #include "imgui.h"
 
 namespace mofu::editor::texture {
 namespace {
+
+struct Cubemap
+{
+	u32 ArrayIndex{ id::INVALID_ID };
+	u32 MipIndex{ id::INVALID_ID };
+	ImTextureID PosX;
+	ImTextureID NegX;
+	ImTextureID PosY;
+	ImTextureID NegY;
+	ImTextureID PosZ;
+	ImTextureID NegZ;
+};
+
 id_t textureID{ id::INVALID_ID };
 bool isOpen{ false };
 ViewableTexture texture{};
+content::AssetHandle textureAsset{ content::INVALID_HANDLE };
 ImTextureID imTextureID{};
-u32 selectedSlice = 0;
-u32 selectedMip = 0;
+u32 arrayIndex{ 0 };
+u32 mipIndex{ 0 };
+u32 depthIndex{ 0 };
+u32 maxArrayIndex{ 0 };
+u32 maxMipIndex{ 0 };
+u32 maxDepthIndex{ 0 };
+Cubemap cubemap;
+bool viewAsCubemap{ false };
 
 std::filesystem::path textureAssetFilePath{};
 
 void
-FillOutTextureViewData(std::filesystem::path textureAssetPath)
+SetCubemap()
+{
+	u32 index{ arrayIndex * 6 };
+	if (index != cubemap.ArrayIndex || mipIndex != cubemap.MipIndex)
+	{
+		assert(index * 5 <= texture.ArraySize);
+		cubemap = {index, mipIndex, 
+		graphics::ui::GetImTextureID(textureID, 0, mipIndex, depthIndex, texture.Format, viewAsCubemap),
+		graphics::ui::GetImTextureID(textureID, index + 1, mipIndex, depthIndex, texture.Format, viewAsCubemap), 
+		graphics::ui::GetImTextureID(textureID, index + 2, mipIndex, depthIndex, texture.Format, viewAsCubemap), 
+		graphics::ui::GetImTextureID(textureID, index + 3, mipIndex, depthIndex, texture.Format, viewAsCubemap), 
+		graphics::ui::GetImTextureID(textureID, index + 4, mipIndex, depthIndex, texture.Format, viewAsCubemap), 
+		graphics::ui::GetImTextureID(textureID, index + 5, mipIndex, depthIndex, texture.Format, viewAsCubemap), };
+	}
+}
+
+void
+FillOutTextureViewData(const std::filesystem::path& textureAssetPath)
 {
 	textureAssetFilePath = textureAssetPath;
 	std::unique_ptr<u8[]> buffer;
@@ -78,107 +116,138 @@ FillOutTextureViewData(std::filesystem::path textureAssetPath)
 		}
 	}
 
-	texture.Slices = new ImageSlice*[arraySize];
+	texture.Slices.resize(arraySize);
 	for (u32 i{ 0 }; i < arraySize; ++i)
 	{
-		texture.Slices[i] = new ImageSlice[mipLevels];
+		texture.Slices[i].resize(mipLevels);
 		for (u32 j{ 0 }; j < mipLevels; ++j)
 		{
-			const u32 width{ reader.Read<u32>() };
-			const u32 height{ reader.Read<u32>() };
-			const u32 rowPitch{ reader.Read<u32>() };
-			const u32 slicePitch{ reader.Read<u32>() };
-			texture.Slices[i][j] = ImageSlice{ width, height, rowPitch, slicePitch, new u8[slicePitch] };
-			reader.ReadBytes(texture.Slices[i][j].RawContent, slicePitch);
-			//TODO: reader.Skip(slicePitch * depthPerMipLevel[j]);
+			texture.Slices[i][j].resize(depthPerMipLevel[j]);
+			for (u32 k{ 0 }; k < depthPerMipLevel[j]; ++k)
+			{
+				const u32 width{ reader.Read<u32>() };
+				const u32 height{ reader.Read<u32>() };
+				const u32 rowPitch{ reader.Read<u32>() };
+				const u32 slicePitch{ reader.Read<u32>() };
+				texture.Slices[i][j][k] = ImageSlice{width, height, rowPitch, slicePitch, new u8[slicePitch]};
+				reader.ReadBytes(texture.Slices[i][j][k].RawContent, slicePitch);
+			}
 		}
 	}
 
+	viewAsCubemap = texture.Flags & content::TextureFlags::IsCubeMap;
+
+	maxArrayIndex = texture.Slices.size() - 1;
+	maxMipIndex = texture.Slices[0].size() - 1;
+	maxDepthIndex = texture.Slices[0][0].size() - 1;
+
+	if (viewAsCubemap) maxArrayIndex /= 6;
 }
 
 void
 ReimportTexture()
 {
+	assert(false); // TODO:
 	content::texture::TextureData data{};
 	//data.ImportSettings = texture.ImportSettings;
 	data.ImportSettings = assets::GetTextureImportSettings();
 
 	content::ReimportTexture(data, textureAssetFilePath);
-
-	OpenTextureView(textureAssetFilePath);
+	//OpenTextureView(textureAssetFilePath);
 }
 
 void 
 RenderTextureWithConfig()
 {
-	ImGui::Begin("Texture View", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	ImGui::Begin("Texture View", &isOpen, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-	u32 maxSlice = texture.ArraySize;
-	u32 maxMip = texture.MipLevels;
-
-	ImGui::Text("Slice:"); ImGui::SameLine();
-	ImGui::SliderInt("##Slice", (int*)&selectedSlice, 0, maxSlice - 1);
+	ImGui::Text("Image:"); ImGui::SameLine();
+	u32 array{ arrayIndex };
+	ImGui::SliderInt("##Image", (int*)&array, 0, maxArrayIndex);
+	if (array != arrayIndex)
+	{
+		imTextureID = graphics::ui::GetImTextureID(textureID, array, mipIndex, depthIndex, texture.Format, viewAsCubemap);
+		arrayIndex = array;
+	}
 
 	ImGui::Text("Mip:"); ImGui::SameLine();
-	u32 mipLevel{ selectedMip };
-	ImGui::SliderInt("##Mip", (int*)&selectedMip, 0, maxMip - 1);
-	if (mipLevel != selectedMip)
+	u32 mip{ mipIndex };
+	ImGui::SliderInt("##Mip", (int*)&mip, 0, maxMipIndex);
+	if (mip != mipIndex)
 	{
-		imTextureID = mipLevel > 0 ? (ImTextureID)graphics::ui::GetImTextureID(textureID, mipLevel, texture.Format) 
-			: (ImTextureID)graphics::ui::GetImTextureID(textureID);
+		imTextureID = graphics::ui::GetImTextureID(textureID, arrayIndex, mip, depthIndex, texture.Format, viewAsCubemap);
+		mipIndex = mip;
+	}
+
+	u32 depth{ depthIndex };
+	ImGui::Text("Depth:"); ImGui::SameLine();
+	ImGui::SliderInt("##Depth", (int*)&depth, 0, maxDepthIndex);
+	if (depth != depthIndex)
+	{
+		imTextureID = graphics::ui::GetImTextureID(textureID, arrayIndex, mipIndex, depth, texture.Format, viewAsCubemap);
 	}
 
 	assets::RenderTextureImportSettings();
-	//content::texture::TextureImportSettings& settings{ texture.ImportSettings };
-	//ImGui::SeparatorText("Import Settings");
-	//ImGui::TextUnformatted("Files:");
-	//for (std::string_view s : content::SplitString(settings.Files, ';'))
-	//{
-	//	ImGui::TextUnformatted(s.data());
-	//}
-	//if (ImGui::BeginCombo("Dimension", DIMENSION_TO_STRING[settings.Dimension]))
-	//{
-	//	for (u32 i{ 0 }; i < content::texture::TextureDimension::Count; ++i)
-	//	{
-	//		const char* dimStr{ DIMENSION_TO_STRING[i] };
-	//		bool chosen{ i == settings.Dimension };
-	//		if (ImGui::Selectable(dimStr, chosen))
-	//			settings.Dimension = (content::texture::TextureDimension::Dimension)i;
-	//		if (chosen)
-	//			ImGui::SetItemDefaultFocus();
-	//	}
-	//	ImGui::EndCombo();
-	//}
-
-	//DisplaySliderUint("Mip Levels", &settings.MipLevels, 0, 14);
-	//ImGui::SliderFloat("Alpha Threshold", &settings.AlphaThreshold, 0.f, 1.f);
-	//ImGui::TextUnformatted("Format: "); ImGui::SameLine();
-	//ImGui::TextUnformatted(FORMAT_STRING);
-	//DisplaySliderUint("Cubemap Size", &settings.CubemapSize, 16, 4096);
-
-	//ImGui::Checkbox("Prefer BC7", (bool*)&settings.PreferBC7);
-	//ImGui::Checkbox("Compress", (bool*)&settings.Compress);
-	//ImGui::Checkbox("Prefilter Cubemap", (bool*)&settings.PrefilterCubemap);
-	//ImGui::Checkbox("Mirror Cubemap", (bool*)&settings.MirrorCubemap);
 
 	if (ImGui::Button("Reimport")) 
 	{
 		ReimportTexture();
 	}
 
-	ImageSlice* slice = &texture.Slices[selectedSlice][selectedMip];
+	ImageSlice* slice = &texture.Slices[arrayIndex][mipIndex][depthIndex];
 	assert(slice && slice->RawContent);
 
 	ImGui::SeparatorText("Texture Info");
 	ImGui::Text("Dimensions: %ux%u", slice->Width, slice->Height);
 	ImGui::Text("Row Pitch: %u", slice->RowPitch);
 	ImGui::Text("Slice Pitch: %u", slice->SlicePitch);
-	ImGui::Text("Format: 0x%X", texture.Format);
+	ImGui::Text("Format: %s", TEXTURE_FORMAT_STRING[texture.Format]);
 
 	ImGui::NextColumn();
 	ImGui::SeparatorText("Preview");
-	ImVec2 imageSize{ (f32)slice->Width, (f32)slice->Height };
-	ImGui::Image(imTextureID, ImGui::GetContentRegionAvail(), { 0, 0 }, { 1, 1 });
+	
+	if (viewAsCubemap)
+	{
+		//TODO: cube array 
+		ImVec2 avail{ ImGui::GetContentRegionAvail() };
+		f32 cellWidth{ avail.x / 4 };
+		f32 cellHeight{ avail.y / 3 };
+		ImVec2 cellSize{ cellWidth, cellHeight };
+
+		ImGui::BeginTable("Cubemap Display", 4, ImGuiTableFlags_SizingFixedFit);
+		for (u32 i{ 0 }; i < 4; ++i)
+		{
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, cellWidth);
+		}
+
+		ImGui::TableNextRow(ImGuiTableRowFlags_None, cellHeight);
+		ImGui::TableSetColumnIndex(1);
+		ImGui::Image(cubemap.PosY, cellSize);
+		
+		ImGui::TableNextRow(ImGuiTableRowFlags_None, cellHeight);
+		ImGui::TableNextColumn();
+		ImGui::Image(cubemap.NegX, cellSize);
+
+		ImGui::TableNextColumn();
+		ImGui::Image(cubemap.PosZ, cellSize);
+
+		ImGui::TableNextColumn();
+		ImGui::Image(cubemap.PosX, cellSize);
+
+		ImGui::TableNextColumn();
+		ImGui::Image(cubemap.NegZ, cellSize);
+
+		ImGui::TableNextRow(ImGuiTableRowFlags_None, cellHeight);
+		ImGui::TableSetColumnIndex(1);
+		ImGui::Image(cubemap.NegY, cellSize);
+
+		ImGui::EndTable();
+	}
+	else
+	{
+		ImVec2 imageSize{ (f32)slice->Width, (f32)slice->Height };
+		ImGui::Image(imTextureID, ImGui::GetContentRegionAvail(), { 0, 0 }, { 1, 1 });
+	}
 
 	ImGui::End();
 }
@@ -186,25 +255,22 @@ RenderTextureWithConfig()
 } // anonymous namespace
 
 void
-OpenTextureView(std::filesystem::path textureAssetPath)
+OpenTextureView(content::AssetHandle handle)
 {
-	FillOutTextureViewData(textureAssetPath);
+	content::AssetPtr asset{ content::assets::GetAsset(handle) };
+	std::filesystem::path metadataPath{ asset->ImportedFilePath };
+	metadataPath.replace_extension(".mt");
+	FillOutTextureViewData(metadataPath);
 
-	//TODO: placeholder solution
-	std::filesystem::path engineAssetPath{ textureAssetPath };
-	engineAssetPath.replace_extension(".tex");
-	textureID = content::CreateResourceFromAsset(engineAssetPath, content::AssetType::Texture);
-	imTextureID = (ImTextureID)graphics::ui::GetImTextureID(textureID);
+	textureID = content::assets::GetResourceFromAsset(handle, content::AssetType::Texture);
+	imTextureID = graphics::ui::GetImTextureID(textureID, arrayIndex, mipIndex, depthIndex, texture.Format, viewAsCubemap);
 	assert(id::IsValid(textureID) && imTextureID);
-	isOpen = true;
-}
 
-void
-OpenTextureView(id_t texID)
-{
-	textureID = texID;
-	imTextureID = (ImTextureID)graphics::ui::GetImTextureID(texID);
-	assert(id::IsValid(texID) && imTextureID);
+	if (viewAsCubemap)
+	{
+		SetCubemap();
+	}
+
 	isOpen = true;
 }
 

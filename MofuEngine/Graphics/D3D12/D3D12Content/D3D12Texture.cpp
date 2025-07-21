@@ -49,13 +49,14 @@ CreateTextureFromResourceData(const u8* const blob)
     {
         for (u32 j{ 0 }; j < mipLevels; ++j)
         {
-            const u32 rowPitch{ reader.Read<u32>() };
-            const u32 slicePitch{ reader.Read<u32>() };
-
-            subresources.emplace_back(D3D12_SUBRESOURCE_DATA{ reader.Position(), rowPitch, slicePitch });
-            // skip the rest of the slices
-            //TODO: reader.Skip(slicePitch * depthPerMipLevel[j]);
-            reader.Skip(slicePitch);
+            for (u32 k{ 0 }; k < depthPerMipLevel[j]; ++k)
+            {
+                const u32 rowPitch{ reader.Read<u32>() };
+                const u32 slicePitch{ reader.Read<u32>() };
+                subresources.emplace_back(D3D12_SUBRESOURCE_DATA{ reader.Position(), rowPitch, slicePitch });
+                // skip the rest of the slices
+                reader.Skip(slicePitch * depthPerMipLevel[j]);
+            }
         }
     }
 
@@ -135,10 +136,11 @@ CreateTextureFromResourceData(const u8* const blob)
     D3D12TextureInitInfo info{};
     info.resource = resource;
 
+    srvDesc.Format = format;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
     if (flags & mofu::content::TextureFlags::IsCubeMap)
     {
-        srvDesc.Format = format;
-        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         if (arraySize > 6)
         {
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
@@ -153,9 +155,36 @@ CreateTextureFromResourceData(const u8* const blob)
             srvDesc.TextureCube.MipLevels = mipLevels;
             srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
         }
-
-        info.srvDesc = &srvDesc;
     }
+    else if (flags & mofu::content::TextureFlags::IsVolumeMap)
+    {
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+        srvDesc.Texture3D.MipLevels = mipLevels;
+        srvDesc.Texture3D.MostDetailedMip = 0;
+        srvDesc.Texture3D.ResourceMinLODClamp = 0.f;
+    }
+    else
+    {
+        if (arraySize > 1)
+        {
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+            srvDesc.Texture2DArray.ArraySize = arraySize;
+            srvDesc.Texture2DArray.FirstArraySlice = 0;
+            srvDesc.Texture2DArray.MipLevels = mipLevels;
+            srvDesc.Texture2DArray.MostDetailedMip = 0;
+            srvDesc.Texture2DArray.PlaneSlice = 0;
+            srvDesc.Texture2DArray.ResourceMinLODClamp = 0.f;
+        }
+        else
+        {
+            srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            srvDesc.Texture2D.MipLevels = mipLevels;
+            srvDesc.Texture2D.MostDetailedMip = 0;
+            srvDesc.Texture2D.PlaneSlice = 0;
+            srvDesc.Texture2D.ResourceMinLODClamp = 0.f;
+        }
+    }
+    info.srvDesc = &srvDesc;
 
     return D3D12Texture{ info };
 }
@@ -339,12 +368,20 @@ GetDescriptorIndices(const id_t* const textureIDs, u32 idCount, u32* const outIn
     }
 }
 
-const DescriptorHandle&
+DescriptorHandle
 GetDescriptorHandle(id_t textureID, u32 mipLevel, DXGI_FORMAT format)
 {
     assert(id::IsValid(textureID));
     std::lock_guard lock{ textureMutex };
     return mipLevel == 0 ? textures[textureID].Srv() : CreateSRVForMipLevel(textures[textureID].Resource(), mipLevel, format);
+}
+
+DescriptorHandle
+GetDescriptorHandle(id_t textureID, u32 arrayIndex, u32 mipLevel, u32 depthIndex, DXGI_FORMAT format, bool isCubemap)
+{
+    assert(id::IsValid(textureID));
+    std::lock_guard lock{ textureMutex };
+    return textures[textureID].GetSRV(arrayIndex, mipLevel, depthIndex, format, isCubemap);
 }
 
 }

@@ -62,11 +62,14 @@ SplitString(std::string s, char delimiter)
 
 	while ((end = s.find(delimiter, start)) != std::string::npos)
 	{
+		//TODO: can i do a non-owning substr
 		substring = s.substr(start, end - start);
 		start = end + sizeof(char);
 		strings.emplace_back(substring);
 	}
-	strings.emplace_back(s.substr(start));
+	substring = s.substr(start);
+	if(!substring.empty())
+		strings.emplace_back(substring);
 
 	return strings;
 }

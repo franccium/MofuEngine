@@ -43,7 +43,7 @@ InspectAsset(content::AssetHandle handle)
         assets::DropModelIntoScene(asset->ImportedFilePath);
         break;
     case content::AssetType::Texture:
-        texture::OpenTextureView(asset->ImportedFilePath.replace_extension(".etex")); //TODO: what to do with the editor files finally
+        texture::OpenTextureView(handle);
         break;
     case content::AssetType::Material:
         material::OpenMaterialView(handle);

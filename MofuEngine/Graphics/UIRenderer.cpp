@@ -33,10 +33,16 @@ ViewTexture(id_t textureID)
 	pi->ui.viewTexture(textureID);
 }
 
-u64
+ImTextureID
 GetImTextureID(id_t textureID, u32 mipLevel, u32 format)
 {
-	return pi->ui.getImTextureID(textureID, mipLevel, format);
+	return (ImTextureID)pi->ui.getImTextureIDIcon(textureID, mipLevel, format);
+}
+
+ImTextureID
+GetImTextureID(id_t textureID, u32 arrayIndex, u32 mipLevel, u32 depthIndex, u32 format, bool isCubemap)
+{
+	return (ImTextureID)pi->ui.getImTextureID(textureID, arrayIndex, mipLevel, depthIndex, format, isCubemap);
 }
 
 id_t 

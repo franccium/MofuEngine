@@ -55,6 +55,11 @@ struct Asset
 	std::filesystem::path OriginalFilePath;
 	std::filesystem::path ImportedFilePath;
 	id_t AdditionalData{ id::INVALID_ID };
+	union
+	{
+		u32 RelatedCount;
+		id_t AdditionalData2;
+	};
 
 	std::filesystem::path GetMetadataPath() const { std::filesystem::path p{ ImportedFilePath }; return p.replace_extension(".mt"); }
 

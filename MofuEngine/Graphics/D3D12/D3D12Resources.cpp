@@ -84,6 +84,76 @@ D3D12Texture::Release()
 	core::DeferredRelease(_resource);
 }
 
+DescriptorHandle 
+D3D12Texture::GetSRV(u32 arrayIndex, u32 mipLevel, u32 depthIndex, DXGI_FORMAT format, bool isCubemap)
+{
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = format;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	bool is3D = depthIndex > 0;
+	if (isCubemap)
+	{
+		if (arrayIndex > 5)
+		{
+			u32 cubeIdx{ arrayIndex / 6 };
+			u32 faceIdx{ arrayIndex % 6 };
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+			srvDesc.TextureCubeArray.MostDetailedMip = mipLevel;
+			srvDesc.TextureCubeArray.MipLevels = 1;
+			srvDesc.TextureCubeArray.First2DArrayFace = cubeIdx * 6 + faceIdx;
+			srvDesc.TextureCubeArray.NumCubes = 1;
+		}
+		else
+		{
+			/*srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			srvDesc.TextureCube.MostDetailedMip = mipLevel;
+			srvDesc.TextureCube.MipLevels = 1;
+			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;*/
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			srvDesc.Texture2DArray.MostDetailedMip = mipLevel;
+			srvDesc.Texture2DArray.MipLevels = 1;
+			srvDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+			srvDesc.Texture2DArray.ArraySize = 1;
+			srvDesc.Texture2DArray.PlaneSlice = 0;
+			srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+		}
+	}
+	else if (is3D)
+	{
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+		srvDesc.Texture3D.MostDetailedMip = mipLevel;
+		srvDesc.Texture3D.MipLevels = 1;
+		srvDesc.Texture3D.ResourceMinLODClamp = 0.f;
+	}
+	else
+	{
+		if (arrayIndex > 0)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			srvDesc.Texture2DArray.MostDetailedMip = mipLevel;
+			srvDesc.Texture2DArray.MipLevels = 1;
+			srvDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+			srvDesc.Texture2DArray.ArraySize = 1;
+			srvDesc.Texture2DArray.PlaneSlice = 0;
+			srvDesc.Texture2DArray.ResourceMinLODClamp = 0.f;
+		}
+		else
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MostDetailedMip = mipLevel;
+			srvDesc.Texture2D.MipLevels = 1;
+			srvDesc.Texture2D.PlaneSlice = 0;
+			srvDesc.Texture2D.ResourceMinLODClamp = 0.f;
+		}
+	}
+
+	DescriptorHandle srv = core::SrvHeap().AllocateDescriptor();
+	core::Device()->CreateShaderResourceView(_resource, &srvDesc, srv.cpu);
+
+	return srv;
+}
+
 ////////////////// RENDER TEXTURE ////////////////////////////////////////////////
 D3D12RenderTexture::D3D12RenderTexture(D3D12TextureInitInfo info)
 {
