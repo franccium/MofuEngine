@@ -68,7 +68,6 @@ namespace mofu::graphics::d3d12 {
 			for (auto e : visible)
 			{
 				auto material{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(e) };
-				renderItemIndex = id::Index(e) - 1;
 				if (renderItemIndex < renderItemCount)
 				{
 					frameCache.MaterialIDs[renderItemIndex] = material.MaterialIDs[0];
@@ -95,7 +94,6 @@ namespace mofu::graphics::d3d12 {
 			for (auto e : visible)
 			{
 				auto& wt{ ecs::scene::GetComponent<ecs::component::WorldTransform>(e) };
-				renderItemIndex = id::Index(e) - 1;
 				if (renderItemIndex < renderItemCount)
 				{
 					currentDataPtr = cbuffer.AllocateSpace<hlsl::PerObjectData>();
@@ -104,6 +102,7 @@ namespace mofu::graphics::d3d12 {
 					//}
 					assert(currentDataPtr);
 					frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);
+					renderItemIndex++;
 				}
 				else
 				{

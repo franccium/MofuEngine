@@ -3,6 +3,7 @@
 #include "Asset.h"
 #include "Utilities/IOStream.h"
 #include <filesystem>
+#include "ECS/Transform.h"
 
 namespace mofu::content::assets {
 bool IsAssetAlreadyRegistered(const std::filesystem::path& path);
@@ -34,4 +35,10 @@ void GetTextureMetadata(const std::filesystem::path& path, u64& outTextureSize, 
 void GetTextureIconData(const std::filesystem::path& path, u64& outIconSize, std::unique_ptr<u8[]>& iconBuffer);
 
 void ParseMetadata(AssetPtr asset);
+
+void LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh& mesh, ecs::component::RenderMaterial& material);
+
+const content::AssetHandle DEFAULT_MESH_HANDLE{ 10 };
+const content::AssetHandle DEFAULT_MATERIAL_UNTEXTURED_HANDLE{ 11 };
+
 }

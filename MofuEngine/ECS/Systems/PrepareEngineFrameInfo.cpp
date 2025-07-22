@@ -22,20 +22,23 @@ namespace mofu::graphics::d3d12 {
 		{
 			ZoneScopedN("PrepareEngineFrameInfo");
 			graphics::FrameInfo frameInfo{};
-			
+			Vec<ecs::Entity>& visibleEntities{ graphics::GetVisibleEntities() };
+
 			renderItemIDs.clear();
 			thresholds.clear();
-			
+			visibleEntities.clear();
+
 			frameInfo.LastFrameTime = 16.7f;
 			frameInfo.AverageFrameTime = 16.7f;
 			frameInfo.CameraID = camera_id{ 0 };
 
-			for (auto [entity, transform, mesh, material]
+			for (auto [entity, transform, mesh]
 				: ecs::scene::GetRW<ecs::component::WorldTransform,
-					ecs::component::RenderMesh, ecs::component::RenderMaterial>())
+					ecs::component::RenderMesh>())
 			{
 				renderItemIDs.emplace_back(mesh.RenderItemID);
 				thresholds.emplace_back(0.f);
+				visibleEntities.emplace_back(entity);
 			}
 			u32 renderItemCount = (u32)renderItemIDs.size();
 

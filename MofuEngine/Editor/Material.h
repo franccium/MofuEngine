@@ -40,7 +40,7 @@ struct EditorMaterial
 // NOTE: intended only for the editor, this is not an engine-ready blob
 void PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& targetPath);
 void LoadMaterialAsset(EditorMaterial& outMaterial, const std::filesystem::path& path);
-void CreateMaterialAsset(const std::filesystem::path& path);
+content::AssetHandle CreateMaterialAsset(const std::filesystem::path& path);
 void LoadMaterialDataFromAsset(graphics::MaterialInitInfo& outMaterial, content::AssetHandle materialAsset);
 
 }

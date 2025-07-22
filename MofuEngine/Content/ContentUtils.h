@@ -125,4 +125,31 @@ ReadFileToByteBuffer(std::filesystem::path path, std::unique_ptr<u8[]>& outData,
 	return true;
 }
 
+// NOTE: expecting filename to be ..._copyX.ext
+inline std::filesystem::path
+CreateUniqueDuplicateName(const std::filesystem::path& originalPath)
+{
+	std::filesystem::path duplicatePath{ originalPath };
+	std::string stem{ duplicatePath.stem().string() };
+	std::string extension{ duplicatePath.extension().string() };
+	u32 num{ 1 };
+
+	// if the original path already ends with _copyx, find the next number
+	size_t copyPos{ stem.rfind("_copy") };
+	if (copyPos != std::string::npos)
+	{
+		std::string substr{ stem.substr(copyPos + 5) };
+		num = std::stoi(substr);
+		stem = stem.substr(0, copyPos);
+	}
+
+	while (std::filesystem::exists(duplicatePath))
+	{
+		duplicatePath = originalPath.parent_path() / (stem + "_copy" + std::to_string(num) + extension);
+		num++;
+	}
+
+	return duplicatePath;
+}
+
 }

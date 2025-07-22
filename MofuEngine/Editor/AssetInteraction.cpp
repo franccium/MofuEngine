@@ -503,6 +503,7 @@ Prefab::ExtractMaterials()
 		snprintf(filename, 32, "%s%u.mat", _name.c_str(), matIdx);
 		matPath.append(filename);
 		material::PackMaterialAsset(mat, matPath);
+		material::CreateMaterialAsset(matPath);
 		log::Info("Extracted material: %s", filename);
 
 		content::AssetHandle handle{ content::assets::GetHandleFromImportedPath(matPath) };

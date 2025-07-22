@@ -57,6 +57,8 @@ namespace mofu::graphics::d3d12 {
 
 			//	log::Info("found %f", dotf);
 			//}
+			
+			//FIXME: breaks my bundles probably, when adding a new entity sohuld assume its visible for the first frame at least
 			u32 id{ 0 };
 			for (auto [entity, lt, wt, mesh]
 				: ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::RenderMesh>())
@@ -95,6 +97,8 @@ namespace mofu::graphics::d3d12 {
 			frameInfo.RenderItemCount = renderItemCount;
 			frameInfo.RenderItemIDs = renderItemIDs2.data();
 			frameInfo.Thresholds = thresholds2.data();
+
+			
 
 			log::Info("culled %u", id - visibleEntities.size());
 

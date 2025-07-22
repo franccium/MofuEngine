@@ -29,15 +29,13 @@ constexpr const char* DEFAULT_TEXTURES_PATHS[TextureUsage::Count]{
 constexpr const char* MATERIAL_SURFACE_TYPE_TO_STRING[graphics::MaterialType::Count]{
 	"Opaque",
 };
-
 id_t DEFAULT_TEXTURES[TextureUsage::Count];
 id_t DEFAULT_SHADERS[graphics::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
 id_t usedTextures[TextureUsage::Count];
 
 ecs::Entity materialOwner{};
-ecs::component::RenderMaterial material{};
 EditorMaterial editorMaterial{};
-content::AssetHandle currentMaterialAsset{};
+content::AssetHandle currentMaterialAsset{ content::INVALID_HANDLE };
 graphics::MaterialInitInfo materialInitInfo{};
 
 bool isOpen{ false };
@@ -62,25 +60,45 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 	constexpr ImVec2 imageSize{ 64,64 };
 
 	ImGui::Text(label); ImGui::SameLine();
-	if (ImGui::ImageButton(id, graphics::ui::GetImTextureID(materialInitInfo.TextureIDs[texUse]), imageSize))
+	if (id::IsValid(editorMaterial.TextureIDs[texUse]))
 	{
-		if (isBrowserOpen)
+		if (ImGui::ImageButton(id, graphics::ui::GetImTextureID(editorMaterial.TextureIDs[texUse]), imageSize))
 		{
-			ImGui::CloseCurrentPopup();
+			if (isBrowserOpen)
+			{
+				ImGui::CloseCurrentPopup();
+			}
+			texFiles.clear();
+			content::ListFilesByExtension(".tex", project::GetResourceDirectory(), texFiles);
+			ImGui::OpenPopup("SelectTexturePopup");
+			isBrowserOpen = true;
+			textureBeingChanged = texUse;
 		}
-		texFiles.clear();
-		content::ListFilesByExtension(".tex", project::GetResourceDirectory(), texFiles);
-		ImGui::OpenPopup("SelectTexturePopup");
-		isBrowserOpen = true;
-		textureBeingChanged = texUse;
+	}
+	else
+	{
+		ImGui::PushID(texUse);
+		if (ImGui::Button("No Tex", imageSize))
+		{
+			if (isBrowserOpen)
+			{
+				ImGui::CloseCurrentPopup();
+			}
+			texFiles.clear();
+			content::ListFilesByExtension(".tex", project::GetResourceDirectory(), texFiles);
+			ImGui::OpenPopup("SelectTexturePopup");
+			isBrowserOpen = true;
+			textureBeingChanged = texUse;
+		}
+		ImGui::PopID();
 	}
 
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 	{
-		texture::OpenTextureView(materialInitInfo.TextureIDs[texUse]);
+		texture::OpenTextureView(editorMaterial.TextureIDs[texUse]);
 	}
 
-	content::AssetHandle handle{ content::assets::GetAssetFromResource(materialInitInfo.TextureIDs[texUse], content::AssetType::Texture) };
+	content::AssetHandle handle{ content::assets::GetAssetFromResource(editorMaterial.TextureIDs[texUse], content::AssetType::Texture) };
 	if (handle != content::INVALID_HANDLE)
 	{
 		ImGui::TextUnformatted("Path");
@@ -92,6 +110,18 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 	{
 		ImGui::TextUnformatted("No Path Data");
 	}
+}
+
+void
+UpdateMaterialInitInfo()
+{
+	materialInitInfo = {};
+	materialInitInfo.Type = editorMaterial.Type;
+	materialInitInfo.Surface = editorMaterial.Surface;
+	materialInitInfo.TextureCount = editorMaterial.TextureCount;
+	memcpy(materialInitInfo.ShaderIDs, editorMaterial.ShaderIDs, graphics::ShaderType::Count * sizeof(id_t));
+	materialInitInfo.TextureIDs = new id_t[editorMaterial.TextureCount];
+	memcpy(materialInitInfo.TextureIDs, editorMaterial.TextureIDs, editorMaterial.TextureCount * sizeof(id_t));
 }
 
 void
@@ -138,53 +168,64 @@ InitializeMaterialEditor()
 void
 DisplayMaterialSurfaceProperties(const graphics::MaterialSurface& surface)
 {
-	ImGui::TextUnformatted("Surface:");
-	DisplayVector4(surface.BaseColor, "Base Color");
-	DisplayFloat(surface.Metallic, "Metallic");
-	DisplayFloat(surface.Roughness, "Roughness");
-	DisplayVector3(surface.Emissive, "Emission Color");
-	DisplayFloat(surface.EmissiveIntensity, "Emission Intensity");
-	DisplayFloat(surface.AmbientOcclusion, "Ambient Occlusion");
+	if (ImGui::BeginTable("Surface Properties", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+	{
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Surface:");
+		ImGui::TableNextRow();
+		DisplayVector4(surface.BaseColor, "Base Color");
+		ImGui::TableNextRow();
+		DisplayFloat(surface.Metallic, "Metallic");
+		ImGui::TableNextRow();
+		DisplayFloat(surface.Roughness, "Roughness");
+		ImGui::TableNextRow();
+		DisplayVector3(surface.Emissive, "Emission Color");
+		ImGui::TableNextRow();
+		DisplayFloat(surface.EmissiveIntensity, "Emission Intensity");
+		ImGui::TableNextRow();
+		DisplayFloat(surface.AmbientOcclusion, "Ambient Occlusion");
+		ImGui::EndTable();
+	}
 }
 
 void
 DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& surface)
 {
-	ImGui::TextUnformatted("Surface:");
-	constexpr f32 min{ 0.f };
-	constexpr f32 max{ 1.f };
-	DisplayEditableVector4(&surface.BaseColor, "Base Color", min, max);
-	DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
-	DisplayEditableFloat(&surface.Roughness, "Roughness", min, max);
-	DisplayEditableVector3(&surface.Emissive, "Emission Color", min, max);
-	DisplayEditableFloat(&surface.EmissiveIntensity, "Emission Intensity", min, max);
-	DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
+	if (ImGui::BeginTable("Surface Properties", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+	{
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Surface:");
+		ImGui::TableNextRow();
+		constexpr f32 min{ 0.f };
+		constexpr f32 max{ 1.f };
+		DisplayEditableVector4(&surface.BaseColor, "Base Color", min, max);
+		ImGui::TableNextRow();
+		DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
+		ImGui::TableNextRow();
+		DisplayEditableFloat(&surface.Roughness, "Roughness", min, max);
+		ImGui::TableNextRow();
+		DisplayEditableVector3(&surface.Emissive, "Emission Color", min, max);
+		ImGui::TableNextRow();
+		DisplayEditableFloat(&surface.EmissiveIntensity, "Emission Intensity", min, max);
+		ImGui::TableNextRow();
+		DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
+		ImGui::EndTable();
+	}
 }
 
 void
 OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 {
 	materialOwner = entityID;
-	material = mat;
+	editorMaterial = {};
 	materialInitInfo = graphics::GetMaterialReflection(mat.MaterialIDs[0]);
-	if (materialInitInfo.TextureCount < TextureUsage::Count)
-	{
-		//TODO: all sorts of wrong
-		id_t* textures{ materialInitInfo.TextureIDs };
-		materialInitInfo.TextureIDs = new id_t[TextureUsage::Count];
-		memcpy(materialInitInfo.TextureIDs, textures, sizeof(id_t) * materialInitInfo.TextureCount);
-		for (u32 i{ materialInitInfo.TextureCount }; i < TextureUsage::Count; ++i) materialInitInfo.TextureIDs[i] = id::INVALID_ID;
-		materialInitInfo.TextureCount = TextureUsage::Count;
-		delete[] textures;
-	}
-	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
-	{
-		if (!id::IsValid(materialInitInfo.TextureIDs[i]))
-		{
-			materialInitInfo.TextureIDs[i] = DEFAULT_TEXTURES[i];
-		}
-		editorMaterial.TextureIDs[i] = materialInitInfo.TextureIDs[i];
-	}
+	editorMaterial.TextureCount = materialInitInfo.TextureCount;
+	// TODO: figure out which texture is for what usage
+	memcpy(editorMaterial.TextureIDs, materialInitInfo.TextureIDs, sizeof(id_t) * materialInitInfo.TextureCount);
 	bool textured{ materialInitInfo.TextureCount != 0 };
 	std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
 	materialInitInfo.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
@@ -203,13 +244,8 @@ OpenMaterialView(content::AssetHandle handle)
 {
 	content::AssetPtr asset{ content::assets::GetAsset(handle) };
 	LoadMaterialAsset(editorMaterial, asset->ImportedFilePath);
-	materialInitInfo = {};
-	materialInitInfo.Type = editorMaterial.Type;
-	materialInitInfo.Surface = editorMaterial.Surface;
-	materialInitInfo.TextureCount = editorMaterial.TextureCount;
-	memcpy(materialInitInfo.ShaderIDs, editorMaterial.ShaderIDs, graphics::ShaderType::Count * sizeof(id_t));
-	materialInitInfo.TextureIDs = new id_t[editorMaterial.TextureCount];
-	memcpy(materialInitInfo.TextureIDs, editorMaterial.TextureIDs, editorMaterial.TextureCount * sizeof(id_t));
+	currentMaterialAsset = handle;
+	UpdateMaterialInitInfo();
 	isOpen = true;
 }
 
@@ -217,13 +253,7 @@ void
 OpenMaterialCreator(ecs::Entity entityID)
 {
 	materialOwner = entityID;
-	material = ecs::scene::GetComponent<ecs::component::RenderMaterial>(entityID);
-	materialInitInfo.Type = graphics::MaterialType::Opaque;
-	materialInitInfo.Surface = graphics::MaterialSurface{};
-	materialInitInfo.TextureCount = TextureUsage::Count;
-	materialInitInfo.TextureIDs = &DEFAULT_TEXTURES[0];
-	memcpy(materialInitInfo.ShaderIDs, DEFAULT_SHADERS, graphics::ShaderType::Count * sizeof(id_t));
-	isOpen = true;
+	OpenMaterialView(content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE);
 }
 
 id_t 
@@ -290,19 +320,15 @@ RenderMaterialEditor()
 
 	ImGui::Begin("Material View", &isOpen);
 
+	ImGui::Text("Material: %lu", currentMaterialAsset.id);
 	ImGui::Text("Type: %s", MATERIAL_SURFACE_TYPE_TO_STRING[materialInitInfo.Type]);
 	ImGui::NextColumn();
 
-	// imageButton for basecolor, normal, etc::
-
-	if (editorMaterial.TextureCount != 0)
-	{
-		DisplayTexture(TextureUsage::BaseColor, "Base Color:", "##Base");
-		DisplayTexture(TextureUsage::Normal, "Normal:", "##Normal");
-		DisplayTexture(TextureUsage::MetallicRoughness, "MetallicRoughness:", "##MetRou");
-		DisplayTexture(TextureUsage::Emissive, "Emissive:", "##Emiss");
-		DisplayTexture(TextureUsage::AmbientOcclusion, "Ambient Occlusion:", "##AO");
-	}
+	DisplayTexture(TextureUsage::BaseColor, "Base Color:", "##Base");
+	DisplayTexture(TextureUsage::Normal, "Normal:", "##Normal");
+	DisplayTexture(TextureUsage::MetallicRoughness, "MetallicRoughness:", "##MetRou");
+	DisplayTexture(TextureUsage::Emissive, "Emissive:", "##Emiss");
+	DisplayTexture(TextureUsage::AmbientOcclusion, "Ambient Occlusion:", "##AO");
 
 	DisplayEditableMaterialSurfaceProperties(editorMaterial.Surface);
 
@@ -339,10 +365,25 @@ RenderMaterialEditor()
 		else
 		{
 			log::Error("Load the material asset first (TODO)");
+			graphics::RemoveRenderItem(id::Index(materialOwner) - 1);
+			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
 		}
 	}
 	static bool saving{ false };
 	if (ImGui::Button("Save"))
+	{
+		content::AssetPtr mat{ content::assets::GetAsset(currentMaterialAsset) };
+		if (mat)
+		{
+			PackMaterialAsset(editorMaterial, mat->ImportedFilePath);
+			UpdateMaterialInitInfo();
+		}
+		else
+		{
+			log::Error("Save the current material first");
+		}
+	}
+	if (ImGui::Button("Save As New"))
 	{
 		saving = true;
 	}
@@ -352,7 +393,7 @@ RenderMaterialEditor()
 		{
 			if (ImGui::Button("Confirm"))
 			{
-				std::filesystem::path outPath{ project::GetResourceDirectory() };
+				std::filesystem::path outPath{ project::GetResourceDirectory() / "Materials"};
 				outPath.append(nameBuffer);
 				outPath.replace_extension(".mat");
 
@@ -368,7 +409,7 @@ RenderMaterialEditor()
 				editorMaterial.TextureCount = materialInitInfo.TextureCount;
 
 				PackMaterialAsset(editorMaterial, outPath);
-				//CreateMaterialAsset(outPath);
+				currentMaterialAsset = material::CreateMaterialAsset(outPath);
 				saving = false;
 			}
 		}
@@ -403,6 +444,26 @@ RenderMaterialEditor()
 			}
 		}
 		ImGui::EndPopup();
+	}
+	if (ImGui::Button("Default Material"))
+	{
+		editorMaterial = GetDefaultEditorMaterialUntextured();
+		UpdateMaterialInitInfo();
+	}
+	if (ImGui::Button("Duplicate Material"))
+	{
+		content::AssetPtr mat{ content::assets::GetAsset(currentMaterialAsset) };
+		if (mat)
+		{
+			std::filesystem::path duplicatePath{ content::CreateUniqueDuplicateName(mat->ImportedFilePath) };
+			PackMaterialAsset(editorMaterial, duplicatePath);
+			currentMaterialAsset = CreateMaterialAsset(duplicatePath);
+			UpdateMaterialInitInfo();
+		}
+		else
+		{
+			log::Error("Save the current material first");
+		}
 	}
 
 	if (isBrowserOpen) RenderTextureBrowser();

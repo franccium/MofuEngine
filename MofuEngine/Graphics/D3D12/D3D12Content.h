@@ -24,6 +24,7 @@ struct RenderItemsCache
 
 id_t AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
 void RemoveRenderItem(id_t id);
+void UpdateRenderItemData(id_t oldRenderItemID, id_t newRenderItemID);
 
 void GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds);
 void GetRenderItems(const id_t* const itemIDs, u32 idCount, const RenderItemsCache& cache);

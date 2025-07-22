@@ -5,6 +5,7 @@
 #include "MaterialEditor.h"
 #include "AssetInteraction.h"
 #include "Project/Project.h"
+#include "Content/EditorContentManager.h"
 
 namespace mofu::editor {
 namespace {
@@ -23,6 +24,7 @@ EntityTreeNode* rootNode{ nullptr };
 Vec<std::pair<ecs::Entity, EntityTreeNode*>> entityToPair{};
 
 Vec<std::string> prefabFiles{};
+Vec<std::string> meshFiles{};
 
 constexpr EntityTreeNode*
 FindParentAsNode(ecs::Entity parentEntity)
@@ -34,6 +36,48 @@ FindParentAsNode(ecs::Entity parentEntity)
     assert(false);
    //TODO: return std::find;
     return nullptr;
+}
+
+void
+PrepareAddedComponent(ecs::ComponentID cid, ecs::Entity entity)
+{
+    switch (cid)
+    {
+    case ecs::component::ID<ecs::component::RenderMesh>:
+    {
+        if (!ecs::scene::HasComponent<ecs::component::WorldTransform>(entity))
+        {
+            ecs::scene::AddComponent<ecs::component::WorldTransform>(entity);
+        }
+        if (!ecs::scene::HasComponent<ecs::component::RenderMaterial>(entity))
+        {
+            ecs::scene::AddComponent<ecs::component::RenderMaterial>(entity);
+            PrepareAddedComponent(ecs::component::ID<ecs::component::RenderMaterial>, entity);
+        }
+        ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entity) };
+        mesh.MeshID = content::GetDefaultMesh();
+        mesh.MeshAsset = content::assets::DEFAULT_MESH_HANDLE;
+
+        const ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entity) };
+
+        mesh.RenderItemID = graphics::AddRenderItem(entity, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+
+        break;
+    }
+    case ecs::component::ID<ecs::component::RenderMaterial>:
+    {
+        ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entity) };
+        ecs::component::RenderMaterial material{};
+        material.MaterialCount = 1;
+        material.MaterialIDs = new id_t[1];
+        material.MaterialIDs[0] = content::GetDefaultMaterial();
+        material.MaterialAsset = content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE;
+        mat = material;
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 void
@@ -88,7 +132,7 @@ CreateEntity(EntityTreeNode* node)
     //TODO: cleaner
     const ecs::EntityData& entityData = id::IsValid(selected)
         ? ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Child>(lt, ecs::component::Child{ {}, selected })
-        : ecs::scene::SpawnEntity<ecs::component::LocalTransform>(lt);
+        : ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent>(lt, {});
 
 	CreateEntityTreeNode(entityData.id, node);
 }
@@ -168,7 +212,7 @@ struct SceneHierarchy
         if (ImGui::Button("Add Entity"))
         {
             ecs::component::LocalTransform transform{};
-            ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform>(transform) };
+            ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent>(transform, {}) };
             AddEntityToSceneView(entityData.id);
         }
         ImGui::EndGroup();
@@ -242,6 +286,7 @@ struct SceneHierarchy
                             if (ImGui::Selectable(ecs::component::ComponentNames[cid]))
                             {
                                 ecs::component::AddLUT[cid](entity);
+                                PrepareAddedComponent(cid, entity);
                             }
                         }
                     }
@@ -261,6 +306,39 @@ struct SceneHierarchy
                     if (ImGui::Button("Add Material"))
                     {
                         material::OpenMaterialCreator(entity);
+                    }
+                }
+                if (ecs::scene::HasComponent<ecs::component::RenderMesh>(entity))
+                {
+                    //TODO: move this somewhere 
+                    if (ImGui::Button("Change"))
+                    {
+                        ImGui::OpenPopup("ChangeMeshPopup");
+                    }
+                    if (ImGui::BeginPopup("ChangeMeshPopup"))
+                    {
+                        meshFiles.clear();
+                        content::ListFilesByExtensionRec(".mesh", editor::project::GetResourceDirectory(), meshFiles);
+
+                        for (std::string_view path : meshFiles)
+                        {
+                            if (ImGui::Selectable(path.data()))
+                            {
+                                content::AssetHandle assetHandle{ content::assets::GetHandleFromImportedPath(path) };
+                                if (assetHandle != content::INVALID_HANDLE)
+                                {
+                                    ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entity) };
+                                    ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entity) };
+                                    content::assets::LoadMeshAsset(assetHandle, entity, mesh, mat);
+                                }
+                                else
+                                {
+                                    log::Warn("Can't find Mesh assetHandle from path");
+                                }
+                                ImGui::CloseCurrentPopup();
+                            }
+                        }
+                        ImGui::EndPopup();
                     }
                 }
 

@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include "Content/ContentUtils.h"
 #include "Editor/Material.h"
+#include "EngineAPI/ECS/SceneAPI.h"
+#include "Editor/SceneEditorView.h"
 
 namespace mofu::content::assets {
 namespace {
@@ -239,7 +241,12 @@ CreateResourceFromHandle(AssetHandle handle)
 {
 	AssetPtr asset{ GetAsset(handle) };
 	assert(asset);
-	assert(std::filesystem::exists(asset->ImportedFilePath));
+	if (!std::filesystem::exists(asset->ImportedFilePath))
+	{
+		log::Error("CreateResourceFromHandle: Asset not imported");
+		assert(std::filesystem::exists(asset->OriginalFilePath));
+		ImportAsset(handle);
+	}
 
 	std::unique_ptr<u8[]> buffer{};
 	u64 size{};
@@ -294,7 +301,8 @@ RegisterAllAssetsOfType(AssetType::type type)
 void 
 LoadEditorAssets()
 {
-
+	AssetPtr mesh{ GetAsset(DEFAULT_MESH_HANDLE) };
+	content::LoadEngineMeshes(mesh->ImportedFilePath);
 }
 
 void 
@@ -413,5 +421,80 @@ GetTextureMetadata(const std::filesystem::path& path, u64& outTextureSize, std::
 
 	file.close();
 }
+
+
+void
+LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh& mesh, ecs::component::RenderMaterial& material)
+{
+	if (id::IsValid(mesh.MeshID))
+	{
+		//TODO: handle this?
+	}
+
+	id_t meshID{ CreateResourceFromHandle(asset) };
+	content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
+	u32 submeshCount{ uploadedGeometryInfo.SubmeshCount };
+
+	assert(material.MaterialIDs);
+	if (!id::IsValid(material.MaterialIDs[0]))
+	{
+		material.MaterialCount = 1;
+		material.MaterialIDs[0] = content::GetDefaultMaterial();
+		material.MaterialAsset = DEFAULT_MATERIAL_UNTEXTURED_HANDLE;
+	}
+	// root
+	mesh.MeshID = uploadedGeometryInfo.GeometryContentID;
+
+	if (submeshCount > 1)
+	{
+		// have to create some entities
+		struct RenderableEntitySpawnContext
+		{
+			ecs::Entity	entity;
+			ecs::component::RenderMesh Mesh;
+			ecs::component::RenderMaterial Material;
+		};
+		Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
+		std::string entityName{ "this todo" };
+		//strcpy(name.Name, filename.data());
+
+		spawnedEntities[0] = { entity, mesh, material };
+
+		ecs::component::Child child{ {}, entity };
+		ecs::component::LocalTransform lt{};
+		ecs::component::WorldTransform wt{};
+		ecs::component::RenderMesh mesh{};
+		ecs::component::RenderMaterial mat{};
+		for (u32 i{ 1 }; i < submeshCount; ++i)
+		{
+			id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
+			mesh.MeshID = meshId;
+			mat.MaterialIDs = new id_t[1];
+			mat.MaterialIDs[0] = material.MaterialIDs[0];
+			mat.MaterialCount = 1;
+			//snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
+
+			ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+				ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child>(
+					lt, wt, mesh, mat, child) };
+			spawnedEntities[i] = { e.id, mesh, material };
+		}
+
+		for (auto& c : spawnedEntities)
+		{
+			ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(c.entity) };
+			mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialIDs);
+			if(c.entity != entity) 
+				editor::AddEntityToSceneView(c.entity);
+		}
+	}
+	else
+	{
+		id_t oldID{ mesh.RenderItemID };
+		mesh.RenderItemID = graphics::AddRenderItem(entity, mesh.MeshID, material.MaterialCount, material.MaterialIDs);
+		//graphics::UpdateRenderItemData(oldID, mesh.RenderItemID);
+	}
+}
+
 
 }

@@ -55,6 +55,7 @@ SetupPlatformInterface(PlatformInterface& pi)
 
 	pi.resources.addRenderItem = content::render_item::AddRenderItem;	
 	pi.resources.removeRenderItem = content::render_item::RemoveRenderItem;
+	pi.resources.updateRenderItemData = content::render_item::UpdateRenderItemData;
 
 	//TODO: pi.ui.initialize = ui::Initialize;
 	pi.ui.shutdown = ui::Shutdown;

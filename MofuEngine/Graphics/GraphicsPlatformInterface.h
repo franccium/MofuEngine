@@ -45,6 +45,7 @@ struct PlatformInterface
 
 		id_t(*addRenderItem)(ecs::Entity, id_t, u32, const id_t* const);
 		void(*removeRenderItem)(id_t);
+		void(*updateRenderItemData)(id_t, id_t);
 	} resources;
 
 	struct

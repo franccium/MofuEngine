@@ -70,8 +70,6 @@ PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& t
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
 	file.close();
-
-	CreateMaterialAsset(targetPath); // TODO: standardise stuff like this
 }
 
 void
@@ -129,12 +127,12 @@ LoadMaterialAsset(EditorMaterial& outMaterial, const std::filesystem::path& path
 	}
 }
 
-void
+content::AssetHandle
 CreateMaterialAsset(const std::filesystem::path& path)
 {
 	assert(std::filesystem::exists(path));
 	content::Asset* asset = new content::Asset{ content::AssetType::Material, path, path };
-	content::assets::RegisterAsset(asset);
+	return content::assets::RegisterAsset(asset);
 }
 
 void

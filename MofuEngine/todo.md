@@ -11,18 +11,16 @@ culling
 
 lights
 
-normal map importing
 texture packing
 
-
 Project stuff
-Asset Registry for the project
-Asset Manager
-Prefabs
 Handling Asset deletion
 
-updating and saving material assets 
-duplicating material assets
+create material assets for roughness and metallic testing
+adding renderable entities with scene view
+create spheres
+serialize a scene with them
+then maybe ibl
 
 clean default material
 vertex color test shader

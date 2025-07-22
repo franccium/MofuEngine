@@ -327,6 +327,12 @@ AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, c
 	return gfxInterface.resources.addRenderItem(entityID, geometryContentID, materialCount, materialIDs);
 }
 
+void
+UpdateRenderItemData(id_t oldRenderItemID, id_t newRenderItemID)
+{
+    gfxInterface.resources.updateRenderItemData(oldRenderItemID, newRenderItemID);
+}
+
 void RemoveRenderItem(id_t id)
 {
 	gfxInterface.resources.removeRenderItem(id);

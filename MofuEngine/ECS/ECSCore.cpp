@@ -8,8 +8,8 @@ struct D3D12FrameInfo;
 
 #include "Systems/TransformSystem.cpp"
 #include "Systems/SubmitEntityRenderSystem.cpp"
-//#include "Systems/PrepareEngineFrameInfo.cpp"
-#include "Systems/TestCullingSystem.cpp"
+#include "Systems/PrepareEngineFrameInfo.cpp"
+//#include "Systems/TestCullingSystem.cpp"
 #include "Systems/PrepareFrameRenderSystem.cpp"
 #include "Systems/PreparePerObjectDataRenderSystem.cpp"
 #include "Systems/InputTestSystem.cpp"

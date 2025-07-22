@@ -29,10 +29,12 @@ constexpr const char* ASSET_SERIALIZED_FILE_VERSIONS[AssetType::Count]
 	SKELETON_SERIALIZED_ASSET_VERSION
 };
 
+id_t GetDefaultMesh();
 id_t GetDefaultMaterial();
 std::pair<id_t, id_t> GetDefaultPsVsShaders();
 std::pair<id_t, id_t> GetDefaultPsVsShadersTextured();
 
+bool LoadEngineMeshes(std::filesystem::path defaultGeometryPath);
 bool LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size);
 
 void ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type);

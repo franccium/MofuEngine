@@ -3,10 +3,22 @@
 using namespace DirectX;
 
 namespace mofu::content::texture {
+namespace {
+
+constexpr u32 PREFILTERED_DIFFUSE_CUBEMAP_SIZE{ 32 };
+constexpr u32 PREFILTERED_SPECULAR_CUBEMAP_SIZE{ 256 };
+constexpr u32 ROUGHNESS_MIP_LEVELS{ 6 };
+constexpr u32 BRDF_INTEGRATION_LUT_SIZE{ 256 };
+
+} // anonymous namespace
+
 HRESULT
 EquirectangularToCubemap(const Image* envMaps, u32 envMapCount, u32 cubemapSize, 
 	bool usePrefilterSize, bool mirrorCubemap, ScratchImage& cubeMaps)
 {
+	if (usePrefilterSize) cubemapSize = PREFILTERED_SPECULAR_CUBEMAP_SIZE;
+	assert(envMaps && envMapCount);
+
 	return E_NOTIMPL;
 }
 

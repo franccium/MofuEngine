@@ -326,6 +326,14 @@ RemoveMaterial(id_t id)
 
 namespace render_item {
 
+void 
+UpdateRenderItemData(id_t oldRenderItemID, id_t newRenderItemID)
+{
+	//TODO:
+	assert(id::IsValid(renderItems[newRenderItemID].SubmeshGpuID));
+	*renderItemIDs[oldRenderItemID].get() = newRenderItemID;
+}
+
 /*
 * creates a buffer that is an array of id_t
 * buffer[0] = geometryContentID
@@ -538,7 +546,10 @@ GetRenderItemIds(const FrameInfo& frameInfo, Vec<id_t>& outIds)
 	// go through all render items for each geometry and only copy the render item IDs that belong to the selected LOD
 	for (u32 i{ 0 }; i < count; ++i)
 	{
-		outIds[i] = *renderItemIDs[i].get();
+		/*assert(id::IsValid(*renderItemIDs[i].get()));
+		outIds[i] = *renderItemIDs[i].get();*/
+		assert(id::IsValid(*renderItemIDs[frameInfo.RenderItemIDs[i]].get()));
+		outIds[i] = *renderItemIDs[frameInfo.RenderItemIDs[i]].get();
 	}
 }
 

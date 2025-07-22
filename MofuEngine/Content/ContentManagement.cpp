@@ -16,6 +16,7 @@
 
 namespace mofu::content {
 namespace {
+id_t defaultMeshID{};
 id_t defaultMaterialID{};
 id_t defaultVSID{};
 id_t defaultPSID{};
@@ -85,6 +86,12 @@ CreateDefaultMaterial()
 
 } // anonymous namespace
 
+id_t
+GetDefaultMesh()
+{
+    return defaultMeshID;
+}
+
 id_t 
 GetDefaultMaterial()
 {
@@ -101,6 +108,18 @@ std::pair<id_t, id_t>
 GetDefaultPsVsShaders()
 {
     return std::pair<id_t, id_t>{ defaultVSID , defaultPSID };
+}
+
+bool 
+LoadEngineMeshes(std::filesystem::path defaultGeometryPath)
+{
+    assert(std::filesystem::exists(defaultGeometryPath));
+    std::unique_ptr<u8[]> geometryBuffer;
+    u64 size;
+    ReadAssetFileNoVersion(defaultGeometryPath, geometryBuffer, size, content::AssetType::Mesh);
+    assert(geometryBuffer.get());
+    defaultMeshID = content::CreateResourceFromBlob(geometryBuffer.get(), content::AssetType::Mesh);
+    return defaultMeshID != id::INVALID_ID;
 }
 
 bool

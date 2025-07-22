@@ -502,7 +502,9 @@ ImportFBX(std::filesystem::path path, AssetPtr asset)
 	FBXImportState state{};
 	state.FbxFile = path.filename().string();
 
-	std::filesystem::path importedAssetPath{ BuildResourcePath(path.stem().string(), ".mesh") };
+	std::filesystem::path importedAssetPath{ editor::project::GetResourceDirectory() / "Meshes" };
+	importedAssetPath.append(state.FbxFile);
+	importedAssetPath.replace_extension(".mesh");
 
 	state.OutModelFile = importedAssetPath;
 	state.ImportSettings = editor::assets::GetGeometryImportSettings();
