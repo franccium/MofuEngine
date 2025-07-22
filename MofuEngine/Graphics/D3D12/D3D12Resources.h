@@ -146,6 +146,82 @@ private:
 	std::mutex _mutex{};
 };
 
+class UAVClearableBuffer
+{
+public:
+	UAVClearableBuffer() = default;
+	UAVClearableBuffer(const D3D12BufferInitInfo& info);
+	DISABLE_COPY(UAVClearableBuffer);
+
+	constexpr UAVClearableBuffer(UAVClearableBuffer&& o) 
+		: _buffer{ std::move(o._buffer) }, _uav{ o._uav }, _uavShaderVisible{ o._uavShaderVisible } 
+	{ o.Reset(); }
+
+	constexpr UAVClearableBuffer& operator=(UAVClearableBuffer&& o)
+	{
+		assert(this != &o);
+		if (this != &o)
+		{
+			Release();
+			Move(o);
+		}
+		return *this;
+	}
+
+	~UAVClearableBuffer() { Release(); }
+
+	void Release();
+
+	void ClearUAV(DXGraphicsCommandList* const cmdList, const u32* const clearValues) const
+	{
+		assert(Buffer());
+		assert(_uav.IsValid() && _uavShaderVisible.IsValid() && _uavShaderVisible.IsShaderVisible());
+		cmdList->ClearUnorderedAccessViewUint(_uavShaderVisible.gpu, _uav.cpu, Buffer(), clearValues, 0, nullptr);
+	}
+
+	void ClearUAV(DXGraphicsCommandList* const cmdList, const f32* const clearValues) const
+	{
+		assert(Buffer());
+		assert(_uav.IsValid() && _uavShaderVisible.IsValid() && _uavShaderVisible.IsShaderVisible());
+		cmdList->ClearUnorderedAccessViewFloat(_uavShaderVisible.gpu, _uav.cpu, Buffer(), clearValues, 0, nullptr);
+	}
+
+	[[nodiscard]] constexpr DXResource* Buffer() const { return _buffer.Buffer(); }
+	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS GpuAdress() const { return _buffer.GpuAddress(); }
+	[[nodiscard]] constexpr u32 Size() const { return _buffer.Size(); }
+	[[nodiscard]] constexpr DescriptorHandle UAV() const { return _uav; }
+	[[nodiscard]] constexpr DescriptorHandle UAVShaderVisible() const { return _uavShaderVisible; }
+
+	[[nodiscard]] constexpr static D3D12BufferInitInfo GetDefaultInitInfo(u32 size)
+	{
+		assert(size);
+		D3D12BufferInitInfo info{};
+		info.size = size;
+		info.alignment = sizeof(v4);
+		info.flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+		return info;
+	}
+
+private:
+	constexpr void Move(UAVClearableBuffer& o)
+	{
+		_buffer = std::move(o._buffer);
+		_uav = o._uav;
+		_uavShaderVisible = o._uavShaderVisible;
+		o.Reset();
+	}
+
+	constexpr void Reset()
+	{
+		_uav = {};
+		_uavShaderVisible = {};
+	}
+
+	D3D12Buffer _buffer{};
+	DescriptorHandle _uav;
+	DescriptorHandle _uavShaderVisible;
+};
+
 struct D3D12TextureInitInfo
 {
 	DXResource* resource{ nullptr };

@@ -10,6 +10,9 @@
 #include "D3D12Camera.h"
 #include "ECS/ECSCore.h"
 #include "EngineAPI/ECS/SystemAPI.h"
+#include "Graphics/Lights/Light.h"
+#include "Lights/D3D12Light.h"
+#include "Lights/D3D12LightCulling.h"
 
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
@@ -359,6 +362,8 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
     data.ViewWidth = surface.Viewport()->Width;
     data.ViewHeight = surface.Viewport()->Height;
     data.DeltaTime = deltaTime;
+    data.DirectionalLightsCount = graphics::light::GetDirectionalLightsCount(info.LightSetIdx);
+    //data.AmbientLight = ;
     
     hlsl::GlobalShaderData* const shaderData{ cbuffer.AllocateSpace<hlsl::GlobalShaderData>() };
     memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
@@ -371,6 +376,7 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
         surface.Width(),
         surface.Height(),
         frameIndex,
+        surface.LightCullingID(),
         deltaTime
     };
 
@@ -641,6 +647,14 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
                 }
             }
         }
+    }
+
+    {
+        // Lighting Pass
+        u32 lightSetIdx{ frameInfo.LightSetIdx };
+        const graphics::light::LightSet& set{ graphics::light::GetLightSet(lightSetIdx) };
+        light::UpdateLightBuffers(set, lightSetIdx, frameIndex);
+        light::CullLights(cmdListGPassSetup, d3d12FrameInfo, barriers);
     }
 
     // Main GPass

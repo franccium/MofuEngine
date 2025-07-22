@@ -1,4 +1,6 @@
 #include "D3D12Surface.h"
+#include "Lights/D3D12LightCulling.h"
+
 namespace mofu::graphics::d3d12 {
 namespace {
 
@@ -50,6 +52,9 @@ D3D12Surface::CreateSwapChain(DXGIFactory* factory, ID3D12CommandQueue* cmdQueue
     }
 
     Finalize();
+
+    assert(!id::IsValid(_lightCullingID));
+    _lightCullingID = light::AddLightCuller();
 }
 
 void 
@@ -79,6 +84,8 @@ D3D12Surface::Resize(u32 width, u32 height)
 void 
 D3D12Surface::Release()
 {
+    if (id::IsValid(_lightCullingID)) light::RemoveLightCuller(_lightCullingID);
+
     for (u32 i{ 0 }; i < BUFFER_COUNT; ++i)
     {
         RenderTargetData& data{ _renderTargetData[i] };

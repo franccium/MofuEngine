@@ -131,8 +131,9 @@ CreateEntity(EntityTreeNode* node)
 
     //TODO: cleaner
     const ecs::EntityData& entityData = id::IsValid(selected)
-        ? ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Child>(lt, ecs::component::Child{ {}, selected })
-        : ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent>(lt, {});
+        ? ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Child, ecs::component::WorldTransform>(
+            lt, ecs::component::Child{ {}, selected }, {})
+        : ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent, ecs::component::WorldTransform>(lt, {}, {});
 
 	CreateEntityTreeNode(entityData.id, node);
 }
@@ -212,7 +213,8 @@ struct SceneHierarchy
         if (ImGui::Button("Add Entity"))
         {
             ecs::component::LocalTransform transform{};
-            ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent>(transform, {}) };
+            ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, 
+                ecs::component::Parent, ecs::component::WorldTransform>(transform, {}, {}) };
             AddEntityToSceneView(entityData.id);
         }
         ImGui::EndGroup();

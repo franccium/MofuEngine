@@ -352,7 +352,7 @@ RenderMaterialEditor()
 
 			//graphics::d3d12::core::RenderItemsUpdated();
 
-			graphics::RemoveRenderItem(id::Index(materialOwner) - 1);
+			graphics::RemoveRenderItem(mesh.RenderItemID);
 			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
 			//FIXME: doesnt update assets
 			/*mat.MaterialAsset = content::assets::GetAssetFromResource(newMaterialID, content::AssetType::Material);

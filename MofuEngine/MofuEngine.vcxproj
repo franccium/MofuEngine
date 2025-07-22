@@ -226,6 +226,7 @@
     <ClInclude Include="ECS\Systems\SubmitEntityRenderSystem.cpp" />
     <ClInclude Include="ECS\Systems\TransformSystem.cpp" />
     <ClInclude Include="ECS\Transform.h" />
+    <ClInclude Include="ECS\UpdateManager.h" />
     <ClInclude Include="Editor\ContentBrowser.h" />
     <ClInclude Include="Editor\AssetInteraction.h" />
     <ClInclude Include="Editor\AssetPacking.h" />
@@ -278,6 +279,7 @@
     <ClInclude Include="Graphics\GraphicsPlatformInterface.h" />
     <ClInclude Include="Graphics\GraphicsTypes.h" />
     <ClInclude Include="Graphics\Lights\Light.h" />
+    <ClInclude Include="Graphics\Lights\LightsCommon.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Graphics\UIRenderer.h" />
     <ClInclude Include="Input\InputState.h" />

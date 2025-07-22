@@ -1,6 +1,14 @@
 #ifndef COMMON_TYPES
 #define COMMON_TYPES
 
+struct AmbientLightParameters
+{
+    float Intensity;
+    uint DiffuseSrvIndex;
+    uint SpecularSrvIndex;
+    uint BrdfLutSrvIndex;
+};
+
 struct GlobalShaderData
 {
     float4x4 View;
@@ -14,9 +22,10 @@ struct GlobalShaderData
     float3 CameraDirection;
     float ViewHeight;
     
-    float DeltaTime;
+    AmbientLightParameters AmbientLight;
+    uint DirectionalLightsCount;
     
-    uint3 _pad;
+    float DeltaTime;
 };
 
 struct PerObjectData
@@ -60,6 +69,16 @@ struct Frustum
     float3 ConeDirection;
     float UnitRadius; // base radius divided by cone length
 };
+
+#ifndef __cplusplus
+struct ComputeShaderInput
+{
+    uint3 GroupID : SV_GroupID;
+    uint3 GroupThreadID : SV_GroupThreadID;
+    uint3 DispatchThreadID : SV_DispatchThreadID;
+    uint GroupIndex : SV_GroupIndex;
+};
+#endif
 
 struct LightCullingDispatchParameters
 {

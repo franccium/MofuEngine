@@ -9,6 +9,8 @@
 #include "ECS/Transform.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "GPassCache.h"
+#include "Lights/D3D12Light.h"
+#include "Lights/D3D12LightCulling.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -421,6 +423,8 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 	
 	ID3D12RootSignature* currentRootSignature{ nullptr };
 	ID3D12PipelineState* currentPipelineState{ nullptr };
+	const u32 frameIndex{ frameInfo.FrameIndex };
+	const u32 lightCullingID{ frameInfo.LightCullingID };
 
 	assert(cache.IsValid());
 
@@ -432,6 +436,10 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 			cmdList->SetGraphicsRootSignature(currentRootSignature);
 			using idx = OpaqueRootParameters;
 			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+			cmdList->SetGraphicsRootShaderResourceView(idx::DirectionalLights, light::GetNonCullableLightBuffer(frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::CullableLights, light::GetCullableLightBuffer(frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaque(lightCullingID, frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaque(lightCullingID, frameIndex));
 		}
 
 		if (currentPipelineState != cache.GPassPipelineStates[i])
@@ -473,6 +481,8 @@ MainGPassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo,
 
 	ID3D12RootSignature* currentRootSignature{ nullptr };
 	ID3D12PipelineState* currentPipelineState{ nullptr };
+	const u32 frameIndex{ frameInfo.FrameIndex };
+	const u32 lightCullingID{ frameInfo.LightCullingID };
 
 	assert(cache.IsValid());
 
@@ -484,6 +494,11 @@ MainGPassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo,
 			cmdList->SetGraphicsRootSignature(currentRootSignature);
 			using idx = OpaqueRootParameters;
 			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+			cmdList->SetGraphicsRootShaderResourceView(idx::DirectionalLights, light::GetNonCullableLightBuffer(frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::CullableLights, light::GetCullableLightBuffer(frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaque(lightCullingID, frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaque(lightCullingID, frameIndex));
 		}
 
 		if (currentPipelineState != cache.GPassPipelineStates[i])

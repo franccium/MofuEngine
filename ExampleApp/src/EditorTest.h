@@ -18,6 +18,7 @@
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "Editor/Project/Project.h"
 #include "Editor/EditorInterface.h"
+#include "Graphics/Lights/Light.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -227,6 +228,9 @@ void MofuUpdate()
 			renderSurfaces[i].surface.surface.Render(graphics::GetCurrentFrameInfo());
 		}
 	}
+
+	graphics::light::ProcessUpdates(0);
+
 	timer.End();
 
 	FrameMark;

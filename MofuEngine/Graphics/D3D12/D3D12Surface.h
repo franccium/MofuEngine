@@ -21,6 +21,7 @@ public:
 	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE Rtv() const { return _renderTargetData[_currentBackBufferIndex].rtv.cpu; }
 	[[nodiscard]] constexpr const D3D12_VIEWPORT* Viewport() const { return &_viewport; }
 	[[nodiscard]] constexpr const D3D12_RECT* ScissorRect() const { return &_scissorRect; }
+	[[nodiscard]] constexpr const id_t LightCullingID() const { return _lightCullingID; }
 
 private:
 	void Release();
@@ -41,6 +42,7 @@ private:
 	mutable u32 _currentBackBufferIndex{ 0 };
 	u32 _allowTearing{ 0 };
 	u32 _presentFlags{ 0 };
+	id_t _lightCullingID{ id::INVALID_ID };
 };
 
 }

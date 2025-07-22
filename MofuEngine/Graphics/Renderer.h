@@ -13,6 +13,7 @@ struct FrameInfo
     f32 LastFrameTime{ 16.7f };
     f32 AverageFrameTime{ 0.f };
 	u32 RenderItemCount{ 0 };
+	u32 LightSetIdx{ 0 };
 	camera_id CameraID{ id::INVALID_ID };
 	f32* Thresholds{ nullptr };
 	id_t* RenderItemIDs{ nullptr };	

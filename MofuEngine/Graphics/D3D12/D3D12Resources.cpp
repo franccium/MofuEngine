@@ -239,4 +239,33 @@ D3D12DepthBuffer::Release()
 	_texture.Release();
 }
 
+UAVClearableBuffer::UAVClearableBuffer(const D3D12BufferInitInfo& info)
+	: _buffer{ info, false }
+{
+	assert(info.size && info.alignment);
+	NAME_D3D12_OBJECT_INDEXED(Buffer(), info.size, L"UAV Clearable Buffer - size:");
+	assert(info.flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
+	_uav = core::UavHeap().AllocateDescriptor();
+	_uavShaderVisible = core::SrvHeap().AllocateDescriptor();
+
+	D3D12_UNORDERED_ACCESS_VIEW_DESC desc{};
+	desc.Format = DXGI_FORMAT_R32_UINT;
+	desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+	desc.Buffer.FirstElement = 0;
+	desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+	desc.Buffer.NumElements = _buffer.Size() / sizeof(u32); // for the R32_UINT format
+
+	core::Device()->CreateUnorderedAccessView(Buffer(), nullptr, &desc, _uav.cpu);
+	core::Device()->CopyDescriptorsSimple(1, _uavShaderVisible.cpu, _uav.cpu, core::SrvHeap().Type());
+}
+
+void 
+UAVClearableBuffer::Release()
+{
+	core::SrvHeap().FreeDescriptor(_uavShaderVisible);
+	core::UavHeap().FreeDescriptor(_uav);
+	_buffer.Release();
+}
+
 }

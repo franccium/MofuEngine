@@ -9,6 +9,8 @@
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "ECS/ComponentRegistry.h"
 #include "Editor/AssetInteraction.h"
+#include "Editor/SceneEditorView.h"
+#include "Graphics/Lights/Light.h"
 
 #include "../External/tracy/public/tracy/Tracy.hpp"
 
@@ -233,6 +235,56 @@ CreateMaterials()
 #define LOADED_TEST_COUNT 1
 
 void
+AddLights()
+{
+	u32 lightSetOne{ graphics::light::CreateLightSet() };
+
+	ecs::component::LocalTransform lt{};
+	ecs::component::WorldTransform wt{};
+
+	ecs::component::Light light{};
+	ecs::component::DirectionalLight dirLight{};
+
+	ecs::component::PointLight pointLight{};
+	ecs::component::SpotLight spotLight{};
+
+	constexpr u32 DIR_LIGHT_COUNT{ 4 };
+	v3 directions[DIR_LIGHT_COUNT]{ {0.f, 0.f, 1.f }, { 0.f, 0.7f, 0.3f }, { 0.3f, 0.2f, 0.1f }, { 1.f, 0.2f, 0.5f } };
+	v3 colors[DIR_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.1f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f } };
+	f32 intensities[DIR_LIGHT_COUNT]{ 1.f, 1.f, 1.f, 1.f };
+	bool enabled[DIR_LIGHT_COUNT]{ true, true, true, true };
+
+	for (u32 i{ 0 }; i < DIR_LIGHT_COUNT; ++i)
+	{
+		light.Color = colors[i];
+		light.Intensity = intensities[i];
+		light.Enabled = enabled[i];
+		dirLight.Direction = directions[i];
+		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+			ecs::component::Light, ecs::component::DirectionalLight>(lt, wt, light, dirLight) };
+		editor::AddEntityToSceneView(entityData.id);
+
+		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Directional);
+	}
+
+	{
+		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+				ecs::component::Light, ecs::component::PointLight>(lt, wt, light, pointLight) };
+		editor::AddEntityToSceneView(entityData.id);
+
+		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Point);
+	}
+
+	{
+		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+				ecs::component::Light, ecs::component::SpotLight>(lt, wt, light, spotLight) };
+		editor::AddEntityToSceneView(entityData.id);
+
+		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Spot);
+	}
+}
+
+void
 AddRenderItem()
 {
 	ModelData modelData{ CYBORG_MODEL };
@@ -367,6 +419,8 @@ CreateTestRenderItems()
 	AddRenderItem();
 	//AddRenderItem();
 	//AddRenderItem();
+
+	AddLights();
 
 	return loadedModelsCount;
 }

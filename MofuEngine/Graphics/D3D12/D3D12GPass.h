@@ -20,6 +20,10 @@ struct OpaqueRootParameters
 		PositionBuffer,
 		ElementBuffer,
 		SrvIndices,
+		DirectionalLights,
+		CullableLights,
+		LightGrid,
+		LightIndexList,
 
 		Count
 	};

@@ -267,7 +267,7 @@ DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::pa
 		{
 			component::RenderMesh& mesh{ ecs::scene::GetComponent<component::RenderMesh>(entity) };
 			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
-			renderables.emplace_back(entity, mesh, material);
+			renderables.emplace_back(entity, mesh, material); //FIXME: doesn't work with submeshes
 		}
 	} // Entities
 
@@ -296,9 +296,13 @@ DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::pa
 			e.Material.MaterialIDs = new id_t[1]; //TODO:
 			if (content::IsValid(e.Material.MaterialAsset))
 			{
-				graphics::MaterialInitInfo mat{};
-				material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
-				e.Material.MaterialIDs[0] = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
+				e.Material.MaterialIDs[0] = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material);
+				if (!id::IsValid(e.Material.MaterialIDs[0]))
+				{
+					graphics::MaterialInitInfo mat{};
+					material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
+					e.Material.MaterialIDs[0] = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
+				}
 			}
 			else
 			{

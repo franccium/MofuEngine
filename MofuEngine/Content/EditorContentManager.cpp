@@ -301,6 +301,8 @@ RegisterAllAssetsOfType(AssetType::type type)
 void 
 LoadEditorAssets()
 {
+	AssetPtr mat{ GetAsset(DEFAULT_MATERIAL_UNTEXTURED_HANDLE) };
+	PairAssetWithResource(DEFAULT_MATERIAL_UNTEXTURED_HANDLE, content::GetDefaultMaterial(), content::AssetType::Material);
 	AssetPtr mesh{ GetAsset(DEFAULT_MESH_HANDLE) };
 	content::LoadEngineMeshes(mesh->ImportedFilePath);
 }

@@ -16,10 +16,9 @@ texture packing
 Project stuff
 Handling Asset deletion
 
-create material assets for roughness and metallic testing
-adding renderable entities with scene view
-create spheres
-serialize a scene with them
+fix scene view entity selection 
+serialize a scene
+lights
 then maybe ibl
 
 clean default material

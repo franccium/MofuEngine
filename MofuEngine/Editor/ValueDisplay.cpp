@@ -4,6 +4,9 @@ namespace mofu::editor {
 namespace {
 constexpr f32 DRAG_SPEED_FACTOR{ 1000.f };
 
+
+}
+
 void DisplayLabelT(const char* label)
 {
 	ImGui::TableNextRow();
@@ -11,8 +14,6 @@ void DisplayLabelT(const char* label)
 	ImGui::AlignTextToFramePadding();
 	ImGui::TextUnformatted(label);
 	ImGui::TableNextColumn();
-}
-
 }
 
 void DisplayEditableUint(u32* v, const char* label, u32 minVal, u32 maxVal)
@@ -62,7 +63,7 @@ void DisplayEditableVector4(v4* v, const char* label, f32 minVal, f32 maxVal)
 	ImGui::PopID();
 }
 
-void DisplayMatrix4x4(m4x4* m, const char* label)
+void DisplayEditableMatrix4x4(m4x4* m, const char* label)
 {
 	ImGui::TextUnformatted(label);
 	ImGui::PushID(m);
@@ -71,6 +72,15 @@ void DisplayMatrix4x4(m4x4* m, const char* label)
 	ImGui::InputFloat4("##r3", &m->_31);
 	ImGui::InputFloat4("##r4", &m->_41);
 	ImGui::PopID();
+}
+
+void DisplayMatrix4x4(const m4x4& m, const char* label)
+{
+	ImGui::TextUnformatted(label);
+	ImGui::Text("%.3f", m._11);
+	ImGui::Text("%.3f", m._21);
+	ImGui::Text("%.3f", m._31);
+	ImGui::Text("%.3f", m._41);
 }
 
 void DisplayUint(u32 v, const char* label)
@@ -102,7 +112,7 @@ void DisplayVector2(v2 v, const char* label)
 	ImGui::EndTable();
 }
 
-void DisplayVector3(v3 v, const char* label)
+void DisplayVector3(const v3& v, const char* label)
 {
 	ImGui::BeginTable(label, 4);
 	DisplayLabelT(label);
@@ -114,7 +124,7 @@ void DisplayVector3(v3 v, const char* label)
 	ImGui::EndTable();
 }
 
-void DisplayVector4(v4 v, const char* label)
+void DisplayVector4(const v4& v, const char* label)
 {
 	ImGui::BeginTable(label, 5);
 	DisplayLabelT(label);

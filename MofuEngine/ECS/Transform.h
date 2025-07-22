@@ -37,7 +37,9 @@ struct WorldTransform : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] WorldTransform& c)
 	{
-		editor::DisplayMatrix4x4(&c.TRS, "TRS");
+		ImGui::TableSetColumnIndex(0);
+		ImGui::TableNextRow();
+		editor::DisplayMatrix4x4(c.TRS, "TRS");
 	}
 #endif
 };
@@ -51,6 +53,7 @@ struct RenderMesh : Component
 	content::AssetHandle MeshAsset;
 	static void RenderFields([[maybe_unused]] RenderMesh& c)
 	{
+		ImGui::TableNextRow();
 		editor::DisplayUint(c.MeshID, "Mesh ID");
 	}
 #endif
@@ -65,6 +68,7 @@ struct RenderMaterial : Component
 	content::AssetHandle MaterialAsset;
 	static void RenderFields([[maybe_unused]] RenderMaterial& c)
 	{
+		ImGui::TableNextRow();
 		if (c.MaterialIDs == nullptr) return;
 		editor::DisplayUint(c.MaterialIDs[0], "Material ID");
 	}
@@ -94,6 +98,8 @@ struct Parent : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] Parent& c)
 	{
+		ImGui::TableSetColumnIndex(0);
+		ImGui::TableNextRow();
 		ImGui::Text("Parent");
 	}
 #endif
@@ -105,6 +111,8 @@ struct Child : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] Child& c)
 	{
+		ImGui::TableSetColumnIndex(0);
+		ImGui::TableNextRow();
 		ImGui::InputScalar("Data2", ImGuiDataType_U32, &c.ParentEntity);
 	}
 #endif
@@ -298,10 +306,11 @@ struct CullableLight : Component
 
 struct DirectionalLight : Component
 {
+	v3 Direction{ 0.f, 0.f, 1.f };
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] DirectionalLight& c)
 	{
-
+		editor::DisplayVector3(c.Direction, "Direction");
 	}
 #endif
 };
@@ -329,7 +338,7 @@ struct SpotLight : Component
 	f32 Range{ 5.f };
 	v3 Attenuation{ 1.f, 1.f, 1.f };
 	f32 Umbra{ 45.f };
-	f32 Penumbra{ 45.f };
+	f32 Penumbra{ 90.f };
 
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] SpotLight& c)
@@ -341,13 +350,12 @@ struct SpotLight : Component
 		ImGui::TableNextRow();
 		editor::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.Umbra, "Umbra", 0.f, 45.f);
+		editor::DisplayEditableFloat(&c.Umbra, "Umbra", 0.f, math::PI);
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.Penumbra, "Penumbra", 0.f, 45.f);
+		editor::DisplayEditableFloat(&c.Penumbra, "Penumbra", c.Umbra, math::PI);
 	}
 #endif
 };
-
 
 struct NameComponent : Component
 {
@@ -356,10 +364,15 @@ struct NameComponent : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] NameComponent& c)
 	{
-		ImGui::TableNextRow();
-		ImGui::TextUnformatted("Name");
-		ImGui::TableNextRow();
-		ImGui::TextUnformatted(c.Name);
+		constexpr u32 MAX_NAME_LENGTH{ 16 };
+		static char nameBuffer[MAX_NAME_LENGTH];
+		editor::DisplayLabelT("Name");
+		ImGui::InputText("", nameBuffer, MAX_NAME_LENGTH);
+		ImGui::TableNextColumn();
+		if (ImGui::Button("Confirm"))
+		{
+			memcpy(c.Name, nameBuffer, MAX_NAME_LENGTH);
+		}
 	}
 #endif
 };

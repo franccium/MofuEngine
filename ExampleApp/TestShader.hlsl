@@ -72,9 +72,16 @@ StructuredBuffer<float3> VertexPositions : register(t0, space0);
 StructuredBuffer<VertexElement> Elements : register(t1, space0);
 StructuredBuffer<uint> SrvIndices : register(t2, space0);
 
+StructuredBuffer<DirectionalLightParameters> DirectionalLights : register(t3, space0);
+StructuredBuffer<CullableLightParameters> CullableLights : register(t4, space0);
+StructuredBuffer<uint2> LightGrid : register(t5, space0);
+StructuredBuffer<uint> LightIndexList : register(t6, space0);
+
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
 SamplerState AnisotropicSampler : register(s2, space0);
+
+#define TILE_SIZE 32
 
 float4 Sample(uint index, SamplerState s, float2 uv)
 {
@@ -283,6 +290,52 @@ float3 CalculateLighting(Surface S, float3 L, float3 lightColor)
     return color;
 }
 
+float3 CalculatePointLight(Surface S, float3 worldPos, CullableLightParameters light)
+{
+    float3 L = light.Position - worldPos;
+    const float dSq = dot(L, L);
+    float3 color = 0.f;
+    const float rSq = light.Range * light.Range;
+    if(dSq < rSq)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp; // normalize the light vector
+        
+        const float decaySpeed = 0.3f;
+        float lDistNormalized = dSq / rSq;
+        const float attenuation = pow((1 - lDistNormalized), 2) / (1 + decaySpeed * lDistNormalized);
+        color = CalculateLighting(S, L, light.Color * light.Intensity * attenuation);
+    }
+    
+    return color;
+}
+
+float3 CalculateSpotLight(Surface S, float3 worldPos, CullableLightParameters light)
+{
+    float3 L = light.Position - worldPos;
+    const float dSq = dot(L, L);
+    float3 color = 0.f;
+    
+    if (dSq < light.Range * light.Range)
+    {
+        const float dRcp = rsqrt(dSq);
+        L *= dRcp;
+        const float cosAngleToLight = saturate(dot(-L, light.Direction));
+        const float attenuation = 1.f - smoothstep(-light.Range, light.Range, rcp(dRcp));
+        const float angularAttenuation = smoothstep(light.CosPenumbra, light.CosUmbra, cosAngleToLight);
+        color = CalculateLighting(S, L, light.Color * angularAttenuation * attenuation * light.Intensity);
+    }
+    
+    return color;
+}
+
+uint GetGridIndex(float2 posXY, float viewWidth)
+{
+    const uint2 pos = uint2(posXY);
+    const uint tilesX = ceil(viewWidth / TILE_SIZE);
+    return (pos.x / TILE_SIZE) + (tilesX * (pos.y / TILE_SIZE));
+}
+
 [earlydepthstencil]
 PixelOut TestShaderPS(in VertexOut psIn)
 {
@@ -295,15 +348,37 @@ PixelOut TestShaderPS(in VertexOut psIn)
     float3 diffuseColor = float3(1.0, 0.8, 0.8);
     float3 specularColor = float3(0.9, 0.9, 0.9);
     float specularPower = 16.f;
-
-    float3 lightDirection = float3(0.7f, 0.7f, -0.2f);
-    float3 lightDirection2 = float3(-0.7f, -0.7f, 0.2f);
-    float3 lightColor = float3(1.f, 1.f, 1.f);
-    float3 lightColor2 = float3(1.f, 1.f, 1.f);
-    float lightIntensity = 1.f;
-    float lightIntensity2 = 1.f;
-    color += CalculateLighting(S, lightDirection, lightColor * lightIntensity);
-    color += CalculateLighting(S, lightDirection2, lightColor2 * lightIntensity2);
+    
+    uint i = 0;
+    for (i = 0; i < GlobalData.DirectionalLightsCount; ++i)
+    {
+        DirectionalLightParameters light = DirectionalLights[i];
+        
+        color += CalculateLighting(S, -light.Direction, light.Color * light.Intensity);
+    }
+    
+    CullableLightParameters pLight = CullableLights[0];
+    color += CalculatePointLight(S, psIn.WorldPosition, pLight);
+    
+    CullableLightParameters sLight = CullableLights[1];
+    color += CalculateSpotLight(S, psIn.WorldPosition, sLight);
+    //const uint gridIndex = GetGridIndex(psIn.HomogenousPositon.xy, GlobalData.ViewWidth);
+    //uint lightStartIndex = LightGrid[gridIndex].x;
+    //const uint lightCount = LightGrid[gridIndex].y;
+    //const uint maxPointLight = lightStartIndex + (lightCount >> 16);
+    //const uint maxSpotLight = lightStartIndex + (lightCount & 0xFFFF);
+    //for (i = lightStartIndex; i < maxPointLight; ++i)
+    //{
+    //    const uint lightIndex = LightIndexList[i];
+    //    CullableLightParameters light = CullableLights[lightIndex];
+    //    color += CalculatePointLight(S, psIn.WorldPosition, light);
+    //}
+    //for (i = maxPointLight; i < maxSpotLight; ++i)
+    //{
+    //    const uint lightIndex = LightIndexList[i];
+    //    CullableLightParameters light = CullableLights[lightIndex];
+    //    color += CalculateSpotLight(S, psIn.WorldPosition, light);
+    //}
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);
     //color += ambientColor;

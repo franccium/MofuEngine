@@ -14,6 +14,7 @@ struct D3D12FrameInfo
 	u32 SurfaceWidth{ 0 };
 	u32 SurfaceHeight{ 0 };
 	u32 FrameIndex{ 0 };
+	id_t LightCullingID{ 0 };
 	f32 DeltaTime{ 16.7f };
 };
 
