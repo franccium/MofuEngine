@@ -438,8 +438,8 @@ Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
 			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
 			cmdList->SetGraphicsRootShaderResourceView(idx::DirectionalLights, light::GetNonCullableLightBuffer(frameIndex));
 			cmdList->SetGraphicsRootShaderResourceView(idx::CullableLights, light::GetCullableLightBuffer(frameIndex));
-			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaque(lightCullingID, frameIndex));
-			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaque(lightCullingID, frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaqueBuffer(lightCullingID, frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaqueBuffer(lightCullingID, frameIndex));
 		}
 
 		if (currentPipelineState != cache.GPassPipelineStates[i])
@@ -494,11 +494,10 @@ MainGPassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo,
 			cmdList->SetGraphicsRootSignature(currentRootSignature);
 			using idx = OpaqueRootParameters;
 			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
-			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
 			cmdList->SetGraphicsRootShaderResourceView(idx::DirectionalLights, light::GetNonCullableLightBuffer(frameIndex));
 			cmdList->SetGraphicsRootShaderResourceView(idx::CullableLights, light::GetCullableLightBuffer(frameIndex));
-			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaque(lightCullingID, frameIndex));
-			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaque(lightCullingID, frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaqueBuffer(lightCullingID, frameIndex));
+			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaqueBuffer(lightCullingID, frameIndex));
 		}
 
 		if (currentPipelineState != cache.GPassPipelineStates[i])
@@ -577,9 +576,9 @@ AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers)
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-	barriers.AddTransitionBarrier(gpassDepthBuffer.Resource(),
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	//barriers.AddTransitionBarrier(gpassDepthBuffer.Resource(),
+	//	D3D12_RESOURCE_STATE_DEPTH_WRITE,
+	//	D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 }
 
 void 

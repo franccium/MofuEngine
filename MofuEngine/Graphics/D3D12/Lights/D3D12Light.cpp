@@ -31,26 +31,32 @@ public:
 		//D3D12LightSet& lightSet{ lightSets[lightSetIdx] };
 		LightBuffer& ncBuffer{ _lightBuffers[LightBuffer::NonCullableLights] };
 		//const u32 currentNCLightCount{ lightSet.NonCullableLights.size() };
-		const u32 currentNCLightCount{ CurrentNonCullableLightCount };
+		const u32 currentNCLightCount{ CurrentNonCullableLightSize };
 		if (nonCullableLightCount > currentNCLightCount)
 		{
 			// resize the buffer
 			const u32 neededBufferSize{ nonCullableLightCount * sizeof(DirectionalLightParameters) };
 			ResizeBuffer(LightBuffer::NonCullableLights, neededBufferSize, frameIndex);
+			CurrentNonCullableLightSize = nonCullableLightCount;
 		}
 
 		// Update
 		DirectionalLightParameters* const ncLights{ (DirectionalLightParameters* const)ncBuffer.CpuAddress };
+		u32 index{ 0 };
 		for (u32 i{ 0 }; i < set.FirstDisabledNonCullableIndex; ++i)
 		{
-			ncLights[i] = set.NonCullableLights[i];
+			if (set.NonCullableLightOwners[i].Entity != ecs::Entity{ id::INVALID_ID })
+			{
+				ncLights[index] = set.NonCullableLights[i];
+				index++;
+			}
 		}
-		CurrentNonCullableLightCount = nonCullableLightCount;
+		CurrentNonCullableLightCount = index;
 
 		// Cullable
 		const u32 cullableLightCount{ set.FirstDisabledCullableIndex };
 		//const u32 currentCLightCount{ lightSet.CullableLights.size() };
-		const u32 currentCLightCount{ CurrentCullableLightCount };
+		const u32 currentCLightCount{ CurrentCullableLightSize };
 		LightBuffer& cullableBuffer{ _lightBuffers[LightBuffer::CullableLights] };
 		LightBuffer& infoBuffer{ _lightBuffers[LightBuffer::CullingInfos] };
 		LightBuffer& sphereBuffer{ _lightBuffers[LightBuffer::BoundingSpheres] };
@@ -65,6 +71,7 @@ public:
 			ResizeBuffer(LightBuffer::CullingInfos, (neededInfoBufferSize * 3) >> 1, frameIndex);
 			ResizeBuffer(LightBuffer::BoundingSpheres, (neededSpheresBufferSize * 3) >> 1, frameIndex);
 			buffersResized = true;
+			CurrentCullableLightSize = cullableLightCount;
 		}
 		CurrentCullableLightCount = cullableLightCount;
 
@@ -74,25 +81,44 @@ public:
 		{
 			// copy the whole light data
 			//NOTE: copies only non-disabled lights
-			memcpy(cullableBuffer.CpuAddress, set.CullableLights.data(), cullableLightCount);
-			memcpy(infoBuffer.CpuAddress, set.CullingInfos.data(), cullableLightCount);
-			memcpy(sphereBuffer.CpuAddress, set.BoundingSpheres.data(), cullableLightCount);
+			memcpy(cullableBuffer.CpuAddress, set.CullableLights.data(), neededLightBufferSize);
+			memcpy(infoBuffer.CpuAddress, set.CullingInfos.data(), neededInfoBufferSize);
+			memcpy(sphereBuffer.CpuAddress, set.BoundingSpheres.data(), neededSpheresBufferSize);
 
+			for (u32 i{ 0 }; i < set.FirstDisabledCullableIndex; ++i)
+			{
+				std::bitset<FRAME_BUFFER_COUNT>* bset{ (std::bitset<FRAME_BUFFER_COUNT>*)&set.DirtyBits[i]};
+				bset->set(frameIndex, false);
+				/*auto bset{ set.DirtyBits[i] };
+				bset->set(frameIndex, false);
+				set.DirtyBits[i] = bset;*/
+			}
 			currentLightSetIndex = lightSetIdx;
 		}
 		else
 		{
 			// update dirty lights
-			for (u32 i{ set.FirstDirtyCullableIndex }; i < set.FirstDisabledCullableIndex; ++i)
-			{
-				assert(i * sizeof(CullableLightParameters) < neededLightBufferSize);
-				assert(i * sizeof(CullingInfo) < neededInfoBufferSize);
-				assert(i * sizeof(Sphere) < neededSpheresBufferSize);
+			//TODO: just always overwritten for now
+			memcpy(cullableBuffer.CpuAddress, set.CullableLights.data(), neededLightBufferSize);
+			memcpy(infoBuffer.CpuAddress, set.CullingInfos.data(), neededInfoBufferSize);
+			memcpy(sphereBuffer.CpuAddress, set.BoundingSpheres.data(), neededSpheresBufferSize);
 
-				memcpy(cullableBuffer.CpuAddress + i * sizeof(CullableLightParameters), &set.CullableLights[i], sizeof(CullableLightParameters));
-				memcpy(infoBuffer.CpuAddress + i * sizeof(CullingInfo), &set.CullingInfos[i], sizeof(CullingInfo));
-				memcpy(sphereBuffer.CpuAddress + i * sizeof(Sphere), &set.BoundingSpheres[i], sizeof(Sphere));
-			}
+			//for (u32 i{ 0 }; i < set.FirstDisabledCullableIndex; ++i)
+			//{
+			//	if (set.DirtyBits[i].test(frameIndex))
+			//	{
+			//		assert(i * sizeof(CullableLightParameters) < neededLightBufferSize);
+			//		assert(i * sizeof(CullingInfo) < neededInfoBufferSize);
+			//		assert(i * sizeof(Sphere) < neededSpheresBufferSize);
+
+			//		memcpy(cullableBuffer.CpuAddress + i * sizeof(CullableLightParameters), &set.CullableLights[i], sizeof(CullableLightParameters));
+			//		memcpy(infoBuffer.CpuAddress + i * sizeof(CullingInfo), &set.CullingInfos[i], sizeof(CullingInfo));
+			//		memcpy(sphereBuffer.CpuAddress + i * sizeof(Sphere), &set.BoundingSpheres[i], sizeof(Sphere));
+
+			//		std::bitset<FRAME_BUFFER_COUNT>* bset{ (std::bitset<FRAME_BUFFER_COUNT>*)&set.DirtyBits[i] };
+			//		bset->set(frameIndex, false);
+			//	}
+			//}
 		}
 	}
 
@@ -128,7 +154,9 @@ public:
 	}
 
 	u32 CurrentCullableLightCount{ 0 };
+	u32 CurrentCullableLightSize{ 0 };
 	u32 CurrentNonCullableLightCount{ 0 };
+	u32 CurrentNonCullableLightSize{ 0 };
 private:
 	LightBuffer _lightBuffers[LightBuffer::Count]{};
 	u32 currentLightSetIndex{ 0 };

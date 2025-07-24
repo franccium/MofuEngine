@@ -42,5 +42,7 @@ u32 GetDirectionalLightsCount(u32 frameIndex);
 
 D3D12_GPU_VIRTUAL_ADDRESS GetNonCullableLightBuffer(u32 frameIndex);
 D3D12_GPU_VIRTUAL_ADDRESS GetCullableLightBuffer(u32 frameIndex);
+D3D12_GPU_VIRTUAL_ADDRESS GetCullingInfoBuffer(u32 frameIndex);
+D3D12_GPU_VIRTUAL_ADDRESS GetBoundingSpheresBuffer(u32 frameIndex);
 
 }

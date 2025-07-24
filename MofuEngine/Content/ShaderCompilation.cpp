@@ -49,7 +49,8 @@ struct EngineShader {
         FullscreenTriangleVS = 0,
         //ColorFillPS,
         PostProcessPS,
-
+        CalculateGridFrustumsCS,
+        LightCullingCS,
         Count
     };
 };
@@ -65,6 +66,8 @@ constexpr EngineShaderInfo ENGINE_SHADER_FILES[]
     {EngineShader::FullscreenTriangleVS, {"FullscreenTriangle.hlsl", "FullscreenTriangleVS", graphics::ShaderType::Vertex}},
     //{EngineShader::ColorFillPS, {"ColorFill.hlsl", "ColorFillPS", graphics::ShaderType::Pixel}},
     {EngineShader::PostProcessPS, {"PostProcess.hlsl", "PostProcessPS", graphics::ShaderType::Pixel}},
+    {EngineShader::CalculateGridFrustumsCS, {"CalculateGridFrustums.hlsl", "CalculateGridFrustumsCS", graphics::ShaderType::Compute}},
+    {EngineShader::LightCullingCS, {"LightCulling.hlsl", "LightCullingCS", graphics::ShaderType::Compute}},
 };
 static_assert(_countof(ENGINE_SHADER_FILES) == EngineShader::Count);
 
@@ -359,7 +362,13 @@ CompileEngineShaders()
         path += file.info.file;
 
         Vec<std::wstring> extraArgs{};
-        
+        if (file.id == EngineShader::CalculateGridFrustumsCS || file.id == EngineShader::LightCullingCS)
+        {
+            // TODO: get TILE_SIZE value from d3d12
+            extraArgs.emplace_back(L"-D");
+            extraArgs.emplace_back(L"TILE_SIZE=32");
+        }
+
         DxcCompiledShader compiledShader{ compiler.Compile(file.info, path, extraArgs) };
         if (compiledShader.bytecode && compiledShader.bytecode->GetBufferPointer() && compiledShader.bytecode->GetBufferSize())
         {

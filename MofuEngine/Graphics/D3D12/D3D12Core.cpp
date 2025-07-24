@@ -273,7 +273,7 @@ TracyD3D12Ctx tracyQueueContext{ nullptr };
 bool 
 InitializeModules()
 {
-    return upload::Initialize() && shaders::Initialize() && gpass::Initialize() && fx::Initialize();
+    return upload::Initialize() && shaders::Initialize() && gpass::Initialize() && fx::Initialize() && light::InitializeLightCulling();
 }
 
 bool 
@@ -481,6 +481,7 @@ Shutdown()
 
     gpass::Shutdown();
     fx::Shutdown();
+    light::ShutdownLightCulling();
     shaders::Shutdown();
     upload::Shutdown();
 
@@ -649,6 +650,10 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         }
     }
 
+    barriers.AddTransitionBarrier(gpass::DepthBuffer().Resource(),
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    barriers.ApplyBarriers(cmdListGPassSetup);
     {
         // Lighting Pass
         u32 lightSetIdx{ frameInfo.LightSetIdx };

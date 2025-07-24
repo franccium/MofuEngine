@@ -7,6 +7,8 @@
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
 
+#include "Graphics/Lights/Light.h"
+
 #include "tracy/Tracy.hpp"
 
 namespace mofu::graphics::d3d12 {
@@ -21,9 +23,15 @@ struct LightPostFrameSystem : ecs::system::System<LightPostFrameSystem>
 		//{
 		//}
 
-		for (auto [entity, transform, light]
-			: ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::Light>())
+		//for (auto [entity, transform, light]
+		//	: ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::Light>())
+		//{
+		//}
+
+		for (auto [entity, wt, light]
+			: ecs::scene::GetRW<ecs::component::WorldTransform, ecs::component::CullableLight>())
 		{
+			graphics::light::UpdateCullableLightTransform(light, wt);
 		}
 
 		// Update light buffers

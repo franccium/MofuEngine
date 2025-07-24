@@ -16,7 +16,7 @@ struct FrameInfo
 	u32 LightSetIdx{ 0 };
 	camera_id CameraID{ id::INVALID_ID };
 	f32* Thresholds{ nullptr };
-	id_t* RenderItemIDs{ nullptr };	
+	id_t* RenderItemIDs{ nullptr };
 };
 
 DEFINE_TYPED_ID(surface_id)
@@ -92,8 +92,8 @@ struct PerspectiveCameraInitInfo : public CameraInitInfo
 		assert(id::IsValid(id));
 		EntityID = id;
 		Type = Camera::Type::Perspective;
-		Up = v3{ 0.f, 1.f, 0.f };	
-		FieldOfView = 0.25f;	
+		Up = v3{ 0.f, 1.f, 0.f };
+		FieldOfView = 0.25f;
 		AspectRatio = 16.f / 9.f;
 		NearZ = 0.1f;
 		FarZ = 1000.f;

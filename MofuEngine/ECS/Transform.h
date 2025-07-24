@@ -11,6 +11,7 @@
 #include "EngineAPI/Camera.h"
 #include "Graphics/Renderer.h"
 #include "Content/SerializationUtils.h"
+#include "Graphics/Lights/Light.h"
 #endif
 
 /*
@@ -37,9 +38,9 @@ struct WorldTransform : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] WorldTransform& c)
 	{
-		ImGui::TableSetColumnIndex(0);
+		editor::DisplayLabelT("TRS");
 		ImGui::TableNextRow();
-		editor::DisplayMatrix4x4(c.TRS, "TRS");
+		editor::DisplayEditableMatrix4x4(&c.TRS, "TRS");
 	}
 #endif
 };
@@ -254,32 +255,31 @@ struct LocalTransform : Component
 struct Camera : Component
 {
 	v3 TargetPos{};
+	f32 MoveSpeed{ 0.00031f };
 	v3 TargetRot{};
+	f32 RotationSpeed{ 1.5f };
+	f32 SlerpFactor{ 0.5f };
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] Camera& c)
 	{
-
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Camera");
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.MoveSpeed, "MoveSpeed", 0.00007f, 0.001f, "%.5f");
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.RotationSpeed, "RotationSpeed", 0.9f, 2.0f);
+		ImGui::TableNextRow();
+		editor::DisplayEditableFloat(&c.SlerpFactor, "SlerpFactor", 0.1f, 0.99f);
 	}
 #endif
 };
 
 struct Light : Component
 {
-	f32 Intensity{ 1.f };
-	v3 Color{ 1.f, 1.f, 1.f };
-
-	//TODO: might want a table
-	bool Enabled{ true };
-
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] Light& c)
 	{
-		ImGui::TableNextRow();
-		ImGui::TextUnformatted("Light");
-		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
-		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
+
 	}
 #endif
 };
@@ -297,6 +297,7 @@ struct DirtyLight : Component
 struct CullableLight : Component
 {
 #if EDITOR_BUILD
+	u32 LightDataIndex{}; // TODO: a better way?
 	static void RenderFields([[maybe_unused]] CullableLight& c)
 	{
 
@@ -307,10 +308,31 @@ struct CullableLight : Component
 struct DirectionalLight : Component
 {
 	v3 Direction{ 0.f, 0.f, 1.f };
+	f32 Intensity{ 1.f };
+	v3 Color{ 1.f, 1.f, 1.f };
+
+	//TODO: might want a table
+	bool Enabled{ true };
+
 #if EDITOR_BUILD
+	Entity Owner{};
+	u32 LightDataIndex{}; // TODO: a better way?
 	static void RenderFields([[maybe_unused]] DirectionalLight& c)
 	{
-		editor::DisplayVector3(c.Direction, "Direction");
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Directional Light");
+		ImGui::TableNextRow();
+		bool changed{ editor::DisplayEditableVector3(&c.Direction, "Direction") };
+		ImGui::TableNextRow();
+		changed |= editor::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
+		ImGui::TableNextRow();
+		changed |= editor::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
+		ImGui::TableNextRow();
+		changed |= editor::DisplayEditableBool(&c.Enabled, "Enabled");
+		if (changed)
+		{
+			graphics::light::UpdateDirectionalLight(c);
+		}
 	}
 #endif
 };
@@ -320,15 +342,33 @@ struct PointLight : Component
 	f32 Range{ 5.f };
 	v3 Attenuation{ 1.f, 1.f, 1.f };
 
+	f32 Intensity{ 1.f };
+	v3 Color{ 1.f, 1.f, 1.f };
+
+	//TODO: might want a table
+	bool Enabled{ true };
+
 #if EDITOR_BUILD
+	Entity Owner{};
+	u32 LightDataIndex{}; // TODO: a better way?
 	static void RenderFields([[maybe_unused]] PointLight& c)
 	{
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Point Light");
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f);
+		bool changed{ editor::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f) };
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
+		changed |= editor::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
+		ImGui::TableNextRow();
+		changed |= editor::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
+		ImGui::TableNextRow();
+		changed |= editor::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
+		ImGui::TableNextRow();
+		changed |= editor::DisplayEditableBool(&c.Enabled, "Enabled");
+		if (changed)
+		{
+			graphics::light::UpdatePointLight(c);
+		}
 	}
 #endif
 };
@@ -340,7 +380,15 @@ struct SpotLight : Component
 	f32 Umbra{ 45.f };
 	f32 Penumbra{ 90.f };
 
+	f32 Intensity{ 1.f };
+	v3 Color{ 1.f, 1.f, 1.f };
+
+	//TODO: might want a table
+	bool Enabled{ true };
+
 #if EDITOR_BUILD
+	Entity Owner{};
+	u32 LightDataIndex{}; // TODO: a better way?
 	static void RenderFields([[maybe_unused]] SpotLight& c)
 	{
 		ImGui::TableNextRow();
@@ -439,21 +487,14 @@ inline bool operator>>(const YAML::Node& node, RenderMaterial& lt)
 	return true;
 }
 
-inline YAML::Emitter& operator<<(YAML::Emitter& out, const Light& wt)
-{
-	out << YAML::BeginMap;
-	out << YAML::Key << "Intensity" << YAML::Value << wt.Intensity;
-	out << YAML::Key << "Color" << YAML::Value << wt.Color;
-	out << YAML::Key << "Enabled" << YAML::Value << wt.Enabled;
-	out << YAML::EndMap;
-	return out;
-}
-
 inline YAML::Emitter& operator<<(YAML::Emitter& out, const PointLight& wt)
 {
 	out << YAML::BeginMap;
 	out << YAML::Key << "Range" << YAML::Value << wt.Range;
 	out << YAML::Key << "Attenuation" << YAML::Value << wt.Attenuation;
+	out << YAML::Key << "Intensity" << YAML::Value << wt.Intensity;
+	out << YAML::Key << "Color" << YAML::Value << wt.Color;
+	out << YAML::Key << "Enabled" << YAML::Value << wt.Enabled;
 	out << YAML::EndMap;
 	return out;
 }

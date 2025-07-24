@@ -19,6 +19,7 @@
 #include "Editor/Project/Project.h"
 #include "Editor/EditorInterface.h"
 #include "Graphics/Lights/Light.h"
+#include "Editor/SceneEditorView.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -178,8 +179,12 @@ bool MofuInitialize()
 		v3 scale{ 1.f, 1.f, 1.f };
 		ecs::component::LocalTransform lt{ {}, pos, rot, scale };
 		ecs::component::Camera cam{};
-		ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Camera>(lt, cam) };
+		ecs::component::NameComponent name{};
+		snprintf(name.Name, ecs::component::NAME_LENGTH, "Camera %u", i);
+		ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Camera, 
+			ecs::component::NameComponent>(lt, cam, name)};
 		cSurf.entity = entityData.id;
+		editor::AddEntityToSceneView(renderSurfaces[i].entity);
 
 		cSurf.camera = graphics::CreateCamera(graphics::PerspectiveCameraInitInfo{ cSurf.entity });
 		cSurf.camera.AspectRatio((f32)cSurf.surface.window.Width() / cSurf.surface.window.Height());
@@ -195,6 +200,7 @@ bool MofuInitialize()
 	GetRenderItemIDS(renderItemIDsCache);
 
 	editor::project::RefreshAllAssets();
+
 
 	return true;
 }

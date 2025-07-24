@@ -220,10 +220,10 @@ CreateRootSignature(MaterialType::type materialType, ShaderFlags::flags shaderFl
 		parameters[params::PositionBuffer].AsSRV(bufferVisibility, 0);
 		parameters[params::ElementBuffer].AsSRV(bufferVisibility, 1);
 		parameters[params::SrvIndices].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 2); // TODO: needs to be visible to any stage that has to sample textures
-		parameters[params::DirectionalLights].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 3); // TODO: needs to be visible to any stage that has to sample textures
-		parameters[params::CullableLights].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 4); // TODO: needs to be visible to any stage that has to sample textures
-		parameters[params::LightGrid].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5); // TODO: needs to be visible to any stage that has to sample textures
-		parameters[params::LightIndexList].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6); // TODO: needs to be visible to any stage that has to sample textures
+		parameters[params::DirectionalLights].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 3);
+		parameters[params::CullableLights].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 4);
+		parameters[params::LightGrid].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5);
+		parameters[params::LightIndexList].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6);
 
 		const D3D12_STATIC_SAMPLER_DESC samplers[]
 		{

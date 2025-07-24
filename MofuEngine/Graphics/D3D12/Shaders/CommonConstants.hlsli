@@ -9,4 +9,5 @@ static const float INV_PI = 1.f / PI;
 static const float INV_TAU = 1.f / (2.f * PI);
 static const float EPSILON = 1e-5f;
 
+static const float FLT_MAX = 0x7F7FFFFF;
 #endif

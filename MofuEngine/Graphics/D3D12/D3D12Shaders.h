@@ -9,6 +9,8 @@ struct EngineShader
 		FullscreenTriangleVS = 0,
 		//ColorFillPS,
 		PostProcessPS,
+		CalculateGridFrustumsCS,
+		LightCullingCS,
 		Count
 	};
 };

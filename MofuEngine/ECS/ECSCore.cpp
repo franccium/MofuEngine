@@ -14,6 +14,7 @@ struct D3D12FrameInfo;
 #include "Systems/PreparePerObjectDataRenderSystem.cpp"
 #include "Systems/InputTestSystem.cpp"
 #include "Systems/CameraFreeLookSystem.cpp"
+#include "Systems/LightPostFrameSystem.cpp"
 
 
 

@@ -3,6 +3,16 @@
 #include "../GraphicsTypes.h"
 
 #include "ECS/Entity.h"
+//#include "ECS/Transform.h"
+#include <bitset>
+
+namespace mofu::ecs::component {
+	struct WorldTransform;
+	struct DirectionalLight;
+	struct CullableLight;
+	struct PointLight;
+	struct SpotLight;
+}
 
 namespace mofu::graphics::light {
 using DirectionalLightParameters = graphics::d3d12::hlsl::DirectionalLightParameters;
@@ -29,6 +39,7 @@ struct LightOwner
 	u32 DataIndex;
 };
 
+constexpr u32 FRAME_BUFFER_COUNT{ 3 }; // FIXME:
 struct LightSet
 {
 	u32 FirstDisabledNonCullableIndex{ 0 };
@@ -41,11 +52,16 @@ struct LightSet
 	Vec<CullableLightParameters> CullableLights; // sorted, clean - dirty - disabled
 	Vec<CullingInfo> CullingInfos; // sorted, clean - dirty - disabled
 	Vec<Sphere> BoundingSpheres; // sorted, clean - dirty - disabled
+	Vec<std::bitset<FRAME_BUFFER_COUNT>> DirtyBits; // NOTE: don't like having this
 };
 
 bool Initialize();
 void Shutdown();
 
+void UpdateCullableLightTransform(const ecs::component::CullableLight& l, const ecs::component::WorldTransform& wt);
+void UpdateDirectionalLight(ecs::component::DirectionalLight& l);
+void UpdatePointLight(ecs::component::PointLight& l);
+void UpdateSpotLight(ecs::component::SpotLight& l);
 void ProcessUpdates(u32 lightSetIdx);
 void SendLightData();
 
@@ -57,4 +73,5 @@ void RemoveLightSet(u32 lightSetIdx);
 void AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type type);
 
 u32 GetDirectionalLightsCount(u32 lightSetIdx);
+u32 GetCullableLightsCount(u32 lightSetIdx);
 }

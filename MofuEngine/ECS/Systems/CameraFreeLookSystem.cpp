@@ -9,7 +9,7 @@
 #include "EngineAPI/Camera.h"
 #include "Input/InputSystem.h"
 
-#define PRINT_DEBUG 0
+#define PRINT_DEBUG 1
 
 namespace mofu::ecs::system {
 	bool isInputEnabled{ true };
@@ -29,7 +29,8 @@ namespace mofu::ecs::system {
 				v3 spherical{ theta - math::HALF_PI, phi + math::HALF_PI, 0.f };
 				v3 move{};
 				cam.TargetPos = lt.Position;
-				
+				f32 moveSpeed{ cam.MoveSpeed };
+
 				if (input::IsKeyDown(input::Keys::R))
 				{
 					isInputEnabled = !isInputEnabled;
@@ -58,6 +59,10 @@ namespace mofu::ecs::system {
 				{
 					move.y = -1.f;
 				}
+				if (input::IsKeyDown(input::Keys::Shift))
+				{
+					moveSpeed *= 2.f;
+				}
 				xmm moveV{ XMLoadFloat3(&move) };
 				f32 moveMagnitude{ XMVectorGetX(XMVector3LengthSq(moveV)) };
 				/*if (input::IsKeyDown(input::Keys::W))
@@ -81,7 +86,7 @@ namespace mofu::ecs::system {
 					v2 delta{ input::GetMouseDelta() };
 					if (!math::IsEqual(delta.x, 0.f) || !math::IsEqual(delta.y, 0.f))
 					{
-						f32 rotSpeed{ 1.5f };
+						f32 rotSpeed{ cam.RotationSpeed };
 						spherical.y -= delta.x * rotSpeed;
 						spherical.x += delta.y * rotSpeed;
 						spherical.x = math::Clamp(spherical.x, 0.0001f - math::HALF_PI, math::HALF_PI - 0.0001);
@@ -96,13 +101,12 @@ namespace mofu::ecs::system {
 					//XMStoreFloat3(&lt.Forward, XMVector3Normalize(XMVector3Rotate(dir, rot)));
 				}
 
-				f32 slerpFactor{ 0.5f };
 				xmm rotV{ XMLoadFloat4(&lt.Rotation) };
 				xmm targetRot{ XMLoadFloat3(&cam.TargetRot) };
 				xmm targetRotQ{ XMQuaternionRotationRollPitchYawFromVector(targetRot) };
 				xmm rotD{ targetRotQ - rotV };
 
-				xmm newRot{ XMQuaternionSlerp(rotV, targetRotQ, slerpFactor) };
+				xmm newRot{ XMQuaternionSlerp(rotV, targetRotQ, cam.SlerpFactor) };
 				XMStoreFloat4(&lt.Rotation, newRot);
 
 				xmm dirZ{ 0.f, 0.f, 1.f, 0.f };
@@ -118,7 +122,6 @@ namespace mofu::ecs::system {
 				if (moveMagnitude > math::EPSILON)
 				{
 					v4 rot{ lt.Rotation };
-					f32 moveSpeed{ 0.0008f };
 					xmm dir{ XMVector3Rotate(moveV * moveSpeed * fpsScale, XMLoadFloat4(&rot)) };
 					xmm target{ XMLoadFloat3(&cam.TargetPos) };
 					target += (dir * moveSpeed);

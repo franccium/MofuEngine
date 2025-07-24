@@ -64,7 +64,7 @@ struct Cone
     float Radius;
 };
 
-struct Frustum
+struct ConeFrustum
 {
     float3 ConeDirection;
     float UnitRadius; // base radius divided by cone length

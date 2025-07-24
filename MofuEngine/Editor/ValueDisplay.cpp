@@ -16,62 +16,77 @@ void DisplayLabelT(const char* label)
 	ImGui::TableNextColumn();
 }
 
-void DisplayEditableUint(u32* v, const char* label, u32 minVal, u32 maxVal)
+bool DisplayEditableBool(bool* v, const char* label)
+{
+	DisplayLabelT(label);
+	ImGui::PushID(v);
+	bool changed{ ImGui::Checkbox(label, v) };
+	ImGui::PopID();
+	return changed;
+}
+
+bool DisplayEditableUint(u32* v, const char* label, u32 minVal, u32 maxVal)
 {
 	DisplayLabelT(label);
 	ImGui::PushID(v);
 	ImGui::SetNextItemWidth(-FLT_MIN);
-	ImGui::DragScalar("##Editor", ImGuiDataType_U32, v, 1.0f, &minVal, &maxVal);
+	bool changed{ ImGui::DragScalar("##Editor", ImGuiDataType_U32, v, 1.0f, &minVal, &maxVal) };
 	ImGui::PopID();
+	return changed;
 }
 
-void DisplayEditableFloat(f32* v, const char* label, f32 minVal, f32 maxVal)
+bool DisplayEditableFloat(f32* v, const char* label, f32 minVal, f32 maxVal, const char* format)
 {
 	DisplayLabelT(label);
 	ImGui::PushID(v);
 	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
-	ImGui::DragFloat("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f");
+	bool changed{ ImGui::DragFloat("##Editor", (f32*)v, dragSpeed, minVal, maxVal, format) };
 	ImGui::PopID();
+	return changed;
 }
 
-void DisplayEditableVector2(v2* v, const char* label, f32 minVal, f32 maxVal)
+bool DisplayEditableVector2(v2* v, const char* label, f32 minVal, f32 maxVal)
 {
 	DisplayLabelT(label); 
 	ImGui::PushID(v);
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
-	ImGui::DragFloat2("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f");
+	bool changed{ ImGui::DragFloat2("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f") };
 	ImGui::PopID();
+	return changed;
 }
 
-void DisplayEditableVector3(v3* v, const char* label, f32 minVal, f32 maxVal)
+bool DisplayEditableVector3(v3* v, const char* label, f32 minVal, f32 maxVal)
 {
 	DisplayLabelT(label);
 	ImGui::PushID(v);
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
-	ImGui::DragFloat3("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f");
+	bool changed{ ImGui::DragFloat3("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f") };
 	ImGui::PopID();
+	return changed;
 }
 
-void DisplayEditableVector4(v4* v, const char* label, f32 minVal, f32 maxVal)
+bool DisplayEditableVector4(v4* v, const char* label, f32 minVal, f32 maxVal)
 {
 	DisplayLabelT(label); 
 	ImGui::PushID(v);
 	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
-	ImGui::DragFloat4("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f");
+	bool changed{ ImGui::DragFloat4("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f") };
 	ImGui::PopID();
+	return changed;
 }
 
-void DisplayEditableMatrix4x4(m4x4* m, const char* label)
+bool DisplayEditableMatrix4x4(m4x4* m, const char* label)
 {
 	ImGui::TextUnformatted(label);
 	ImGui::PushID(m);
-	ImGui::InputFloat4("##r1", &m->_11);
-	ImGui::InputFloat4("##r2", &m->_21);
-	ImGui::InputFloat4("##r3", &m->_31);
-	ImGui::InputFloat4("##r4", &m->_41);
+	bool changed{ ImGui::InputFloat4("##r1", &m->_11) };
+	changed |= ImGui::InputFloat4("##r2", &m->_21);
+	changed |= ImGui::InputFloat4("##r3", &m->_31);
+	changed |= ImGui::InputFloat4("##r4", &m->_41);
 	ImGui::PopID();
+	return changed;
 }
 
 void DisplayMatrix4x4(const m4x4& m, const char* label)

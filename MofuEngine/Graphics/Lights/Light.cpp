@@ -1,5 +1,6 @@
 #include "Light.h"
 #include "EngineAPI/ECS/SceneAPI.h"
+#include "ECS/Component.h"
 
 namespace mofu::graphics::light {
 namespace {
@@ -34,6 +35,109 @@ ProcessUpdates(u32 lightSetIdx)
 {
 }
 
+void 
+UpdateDirectionalLight(ecs::component::DirectionalLight& l)
+{
+	LightSet& lightSet{ lightSets[currentLightSetKey] };
+
+	if (!l.Enabled && l.LightDataIndex < lightSet.FirstDisabledNonCullableIndex)
+	{
+		lightSet.NonCullableLightOwners[l.LightDataIndex].Entity = ecs::Entity{ id::INVALID_ID };
+		u32 newDataIdx{ (u32)lightSet.NonCullableLightOwners.size() };
+		lightSet.NonCullableLights.emplace_back();
+		lightSet.NonCullableLightOwners.emplace_back(l.Owner, LightType::Directional, newDataIdx);
+		l.LightDataIndex = newDataIdx;
+	}
+	else if (l.Enabled && l.LightDataIndex >= lightSet.FirstDisabledNonCullableIndex)
+	{
+		u32 newDataIdx{ id::INVALID_ID };
+		for (u32 i{ 0 }; i < lightSet.FirstDisabledNonCullableIndex; ++i)
+		{
+			if (lightSet.NonCullableLightOwners[i].Entity == ecs::Entity{ id::INVALID_ID })
+			{
+				newDataIdx = i;
+			}
+		}
+		if (newDataIdx == id::INVALID_ID)
+		{
+			lightSet.NonCullableLights.emplace_back();
+			lightSet.NonCullableLightOwners.emplace_back();
+			newDataIdx = lightSet.FirstDisabledNonCullableIndex;
+			memcpy(&lightSet.NonCullableLights[lightSet.FirstDisabledNonCullableIndex + 1],
+				&lightSet.NonCullableLights[lightSet.FirstDisabledNonCullableIndex], 
+				lightSet.NonCullableLights.size() - lightSet.FirstDisabledNonCullableIndex);
+			memcpy(&lightSet.NonCullableLightOwners[lightSet.FirstDisabledNonCullableIndex + 1],
+				&lightSet.NonCullableLightOwners[lightSet.FirstDisabledNonCullableIndex],
+				lightSet.NonCullableLightOwners.size() - lightSet.FirstDisabledNonCullableIndex);
+			lightSet.FirstDisabledNonCullableIndex++;
+		}
+
+		lightSet.NonCullableLightOwners[newDataIdx] = { l.Owner, LightType::Directional, newDataIdx };
+		l.LightDataIndex = newDataIdx;
+	}
+
+	DirectionalLightParameters& params{ lightSet.NonCullableLights[l.LightDataIndex] };
+	params.Color = l.Color;
+	params.Intensity = l.Intensity;
+	params.Direction = l.Direction;
+}
+
+void
+UpdateCullableLightTransform(const ecs::component::CullableLight& l, const ecs::component::WorldTransform& wt)
+{
+	LightSet& lightSet{ lightSets[currentLightSetKey] };
+	CullableLightParameters& params{ lightSet.CullableLights[l.LightDataIndex] };
+	params.Position = { wt.TRS._41, wt.TRS._42, wt.TRS._43 };
+}
+
+void 
+UpdatePointLight(ecs::component::PointLight& l)
+{
+	LightSet& lightSet{ lightSets[currentLightSetKey] };
+
+	CullableLightParameters& params{ lightSet.CullableLights[l.LightDataIndex] };
+	const ecs::component::LocalTransform& lt{ 
+		ecs::scene::GetComponent<ecs::component::LocalTransform>(lightSet.CullableLightOwners[l.LightDataIndex].Entity) };
+	const ecs::component::WorldTransform& wt{
+		ecs::scene::GetComponent<ecs::component::WorldTransform>(lightSet.CullableLightOwners[l.LightDataIndex].Entity) };
+	params.Color = l.Color;
+	params.Intensity = l.Intensity;
+	params.Range = l.Range;
+	params.Attenuation = l.Attenuation;
+	params.Position = { wt.TRS._41, wt.TRS._42, wt.TRS._43 };
+
+	lightSet.DirtyBits[l.LightDataIndex].set();
+}
+
+void 
+UpdateSpotLight(ecs::component::SpotLight& l)
+{
+	LightSet& lightSet{ lightSets[currentLightSetKey] };
+
+	CullableLightParameters& params{ lightSet.CullableLights[l.LightDataIndex] };
+	const ecs::component::LocalTransform& lt{
+		ecs::scene::GetComponent<ecs::component::LocalTransform>(lightSet.CullableLightOwners[l.LightDataIndex].Entity) };
+	const ecs::component::WorldTransform& wt{
+		ecs::scene::GetComponent<ecs::component::WorldTransform>(lightSet.CullableLightOwners[l.LightDataIndex].Entity) };
+	params.Color = l.Color;
+	params.Intensity = l.Intensity;
+	params.Range = l.Range;
+	params.Attenuation = l.Attenuation;
+
+	l.Umbra = math::Clamp(l.Umbra, 0.f, math::PI);
+	f32 cosUmbra{ DirectX::XMScalarCos(l.Umbra * 0.5f) };
+	l.Penumbra = math::Clamp(l.Penumbra, l.Umbra, math::PI);
+	f32 cosPenumbra{ DirectX::XMScalarCos(l.Penumbra * 0.5f) };
+
+	params.CosUmbra = cosUmbra;
+	params.CosPenumbra = cosPenumbra;
+	//params.Position = lt.Position;
+	params.Position = { wt.TRS._41, wt.TRS._42, wt.TRS._43 };
+	params.Direction = lt.Forward;
+
+	lightSet.DirtyBits[l.LightDataIndex].set();
+}
+
 void
 SendLightData()
 {
@@ -56,8 +160,14 @@ u32
 GetDirectionalLightsCount(u32 lightSetIdx)
 {
 	assert(lightSetIdx < lightSets.size());
-	LightSet& set{ lightSets[lightSetIdx] };
-	return set.FirstDisabledNonCullableIndex;
+	return lightSets[lightSetIdx].FirstDisabledNonCullableIndex;
+}
+
+u32 
+GetCullableLightsCount(u32 lightSetIdx)
+{
+	assert(lightSetIdx < lightSets.size());
+	return lightSets[lightSetIdx].FirstDisabledCullableIndex;
 }
 
 void
@@ -71,30 +181,32 @@ AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type typ
 	{
 	case LightType::Directional:
 	{
-		auto& light{ ecs::scene::GetComponent<ecs::component::Light>(lightEntity) };
 		auto& dLight{ ecs::scene::GetComponent<ecs::component::DirectionalLight>(lightEntity) };
 		//TODO: enabled/disabled 
 		u32 dataIndex{ (u32)set.NonCullableLights.size() };
-	    set.NonCullableLights.emplace_back(DirectionalLightParameters{ dLight.Direction, light.Intensity, light.Color });
+	    set.NonCullableLights.emplace_back(DirectionalLightParameters{ dLight.Direction, dLight.Intensity, dLight.Color });
 		set.NonCullableLightOwners.emplace_back(lightEntity, type, dataIndex);
 		set.FirstDisabledNonCullableIndex++;
+		dLight.LightDataIndex = dataIndex;
+		dLight.Owner = lightEntity;
 		break;
 	}
 	case LightType::Point:
 	{
-		auto& light{ ecs::scene::GetComponent<ecs::component::Light>(lightEntity) };
 		auto& pLight{ ecs::scene::GetComponent<ecs::component::PointLight>(lightEntity) };
+		auto& cLight{ ecs::scene::GetComponent<ecs::component::CullableLight>(lightEntity) };
 		auto& lt{ ecs::scene::GetComponent<ecs::component::LocalTransform>(lightEntity) };
 		//TODO: enabled/disabled 
 		u32 dataIndex{ (u32)set.CullableLights.size() };
 
-		set.CullableLights.emplace_back(CullableLightParameters{ lt.Position, light.Intensity, 
-			{0.f, -1.f, 0.f,}, light.Color, pLight.Range, pLight.Attenuation });
+		set.CullableLights.emplace_back(CullableLightParameters{ lt.Position, pLight.Intensity,
+			{0.f, -1.f, 0.f,}, pLight.Color, pLight.Range, pLight.Attenuation });
 		set.CullableLightOwners.emplace_back(lightEntity, type, dataIndex);
 		set.FirstDisabledCullableIndex++;
 
 		set.CullingInfos.emplace_back();
 		set.BoundingSpheres.emplace_back();
+		set.DirtyBits.emplace_back();
 
 		CullableLightParameters& params{ set.CullableLights[dataIndex] };
 		Sphere& sphere{ set.BoundingSpheres[dataIndex] };
@@ -102,13 +214,18 @@ AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type typ
 
 		CullingInfo& cullingInfo{ set.CullingInfos[dataIndex] };
 		cullingInfo.Range = params.Range;
-		cullingInfo.CosPenumbra = type == LightType::Spot ? params.CosPenumbra : -1.f;
+		cullingInfo.CosPenumbra = type == LightType::Spot ? params.CosPenumbra : -1.f; // CosPenumbra == -1.f marks a point light
+
+		set.DirtyBits[dataIndex].set();
+		pLight.LightDataIndex = dataIndex;
+		cLight.LightDataIndex = dataIndex;
+		pLight.Owner = lightEntity;
 		break;
 	}
 	case LightType::Spot:
 	{
-		auto& light{ ecs::scene::GetComponent<ecs::component::Light>(lightEntity) };
 		auto& sLight{ ecs::scene::GetComponent<ecs::component::SpotLight>(lightEntity) };
+		auto& cLight{ ecs::scene::GetComponent<ecs::component::CullableLight>(lightEntity) };
 		auto& lt{ ecs::scene::GetComponent<ecs::component::LocalTransform>(lightEntity) };
 		//TODO: enabled/disabled 
 		u32 dataIndex{ (u32)set.CullableLights.size() };
@@ -118,12 +235,13 @@ AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type typ
 		sLight.Penumbra = math::Clamp(sLight.Penumbra, sLight.Umbra, math::PI);
 		f32 cosPenumbra{ DirectX::XMScalarCos(sLight.Penumbra * 0.5f) };
 
-		set.CullableLights.emplace_back(CullableLightParameters{ lt.Position, light.Intensity,
-			{0.f, -1.f, 0.f,}, light.Color, sLight.Range, sLight.Attenuation, cosUmbra, cosPenumbra });
+		set.CullableLights.emplace_back(CullableLightParameters{ lt.Position, sLight.Intensity,
+			{0.f, -1.f, 0.f,}, sLight.Color, sLight.Range, sLight.Attenuation, cosUmbra, cosPenumbra });
 		set.CullableLightOwners.emplace_back(lightEntity, type, dataIndex);
 		set.FirstDisabledCullableIndex++;
 		set.CullingInfos.emplace_back();
 		set.BoundingSpheres.emplace_back();
+		set.DirtyBits.emplace_back();
 
 		CullableLightParameters& params{ set.CullableLights[dataIndex] };
 		Sphere& sphere{ set.BoundingSpheres[dataIndex] };
@@ -132,6 +250,11 @@ AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type typ
 		CullingInfo& cullingInfo{ set.CullingInfos[dataIndex] };
 		cullingInfo.Range = params.Range;
 		cullingInfo.CosPenumbra = type == LightType::Spot ? params.CosPenumbra : -1.f;
+
+		set.DirtyBits[dataIndex].set();
+		sLight.LightDataIndex = dataIndex;
+		cLight.LightDataIndex = dataIndex;
+		sLight.Owner = lightEntity;
 		break;
 	}
 	}

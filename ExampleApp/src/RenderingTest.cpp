@@ -117,6 +117,9 @@ Vec<id_t> loadedMeshesIDs{};
 Vec<ecs::Entity> loadedEntities{};
 Vec<id_t> loadedMaterialIDs{};
 
+constexpr f32 INV_RAND_MAX{ 1.f / RAND_MAX };
+f32 Random(f32 min = 0.f) { return std::max(min, rand() * INV_RAND_MAX); }
+
 [[nodiscard]] id_t 
 LoadAsset(const char* path, content::AssetType::type type)
 {
@@ -252,35 +255,88 @@ AddLights()
 	v3 directions[DIR_LIGHT_COUNT]{ {0.f, 0.f, 1.f }, { 0.f, 0.7f, 0.3f }, { 0.3f, 0.2f, 0.1f }, { 1.f, 0.2f, 0.5f } };
 	v3 colors[DIR_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.1f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f } };
 	f32 intensities[DIR_LIGHT_COUNT]{ 1.f, 1.f, 1.f, 1.f };
+	//f32 intensities[DIR_LIGHT_COUNT]{ 0.f, 0.f, 0.f, 0.f };
 	bool enabled[DIR_LIGHT_COUNT]{ true, true, true, true };
 
 	for (u32 i{ 0 }; i < DIR_LIGHT_COUNT; ++i)
 	{
-		light.Color = colors[i];
-		light.Intensity = intensities[i];
-		light.Enabled = enabled[i];
+		dirLight.Color = colors[i];
+		dirLight.Intensity = intensities[i];
+		dirLight.Enabled = enabled[i];
 		dirLight.Direction = directions[i];
-		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-			ecs::component::Light, ecs::component::DirectionalLight>(lt, wt, light, dirLight) };
+		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent, ecs::component::WorldTransform,
+			ecs::component::Light, ecs::component::DirectionalLight>(lt, {}, wt, light, dirLight) };
 		editor::AddEntityToSceneView(entityData.id);
 
 		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Directional);
 	}
 
+	const auto& lightParent{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent, ecs::component::WorldTransform>(lt, {}, wt) };
+	ecs::Entity lightParentEntity{ lightParent.id };
+	editor::AddEntityToSceneView(lightParentEntity);
 	{
-		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-				ecs::component::Light, ecs::component::PointLight>(lt, wt, light, pointLight) };
-		editor::AddEntityToSceneView(entityData.id);
+		constexpr u32 POINT_LIGHT_COUNT{ 8 };
+		v3 positions[POINT_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.0f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f },
+			{ 0.9f, 0.9f, 0.2f }, { 0.6f, 0.8f, 0.3f }, { 0.3f, 0.6f, 0.1f }, { 0.8f, 0.2f, 0.0f } };
+		v3 colors[POINT_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.1f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f },
+			{ 0.9f, 0.9f, 0.2f }, { 0.6f, 0.8f, 0.3f }, { 0.3f, 0.6f, 0.1f }, { 0.8f, 0.2f, 0.0f } };
+		f32 intensities[POINT_LIGHT_COUNT]{ 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f };
+		bool enabled[POINT_LIGHT_COUNT]{ true, true, true, true, true, true, true, true };
+		for (u32 i{ 0 }; i < POINT_LIGHT_COUNT; ++i)
+		{
+			lt.Position = positions[i];
+			pointLight.Color = colors[i];
+			pointLight.Intensity = intensities[i];
+			pointLight.Enabled = enabled[i];
+			/*const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent, ecs::component::WorldTransform,
+					ecs::component::Light, ecs::component::PointLight>(lt, {}, wt, light, pointLight) };*/
+			const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Child, ecs::component::WorldTransform,
+					ecs::component::Light, ecs::component::PointLight, ecs::component::CullableLight>(lt, {{}, lightParentEntity}, wt, light, pointLight, {}) };
+			editor::AddEntityToSceneView(entityData.id);
 
-		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Point);
+			graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Point);
+		}
 	}
 
 	{
-		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-				ecs::component::Light, ecs::component::SpotLight>(lt, wt, light, spotLight) };
+		const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent, ecs::component::WorldTransform,
+				ecs::component::Light, ecs::component::SpotLight, ecs::component::CullableLight>(lt, {}, wt, light, spotLight, {}) };
 		editor::AddEntityToSceneView(entityData.id);
 
 		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Spot);
+	}
+
+	srand(17);
+
+	constexpr s32 startZ = 0;
+	constexpr s32 startX = 0;
+	constexpr s32 startY = 0;
+
+	constexpr f32 scatterScale{ 5.0f };
+	constexpr v3 scale{ 1.f * scatterScale, 0.2f * scatterScale, 1.f * scatterScale };
+	constexpr s32 dim{ 4 };
+	for (s32 x{ -dim + startX }; x < dim + startX; ++x)
+	{
+		for (s32 y{ startY }; y < 10; ++y)
+		{
+			for (s32 z{ startZ }; z < dim + 5 + startZ; ++z)
+			{
+				v3 pos{ (f32)x * scale.x, (f32)y, (f32)z * scale.z };
+				v3 rotEuler{ 3.14f, Random(), 0.f };
+
+				lt.Position = pos;
+				pointLight.Color = { Random(0.2f), Random(0.2f), Random(0.2f) };
+				pointLight.Intensity = { Random(0.5f) };
+				pointLight.Range = { Random(0.5f) * 8.f };
+				pointLight.Enabled = true;
+				const auto& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Child, ecs::component::WorldTransform,
+						ecs::component::Light, ecs::component::PointLight, 
+					ecs::component::CullableLight>(lt, {{}, lightParentEntity}, wt, light, pointLight, {}) };
+				editor::AddEntityToSceneView(entityData.id);
+
+				graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Point);
+			}
+		}
 	}
 }
 

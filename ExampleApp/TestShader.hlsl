@@ -336,6 +336,35 @@ uint GetGridIndex(float2 posXY, float viewWidth)
     return (pos.x / TILE_SIZE) + (tilesX * (pos.y / TILE_SIZE));
 }
 
+float3 Heatmap(StructuredBuffer<uint2> buffer, float2 posXY, float blend, float3 currentColor)
+{
+    const float w = GlobalData.ViewWidth;
+    const uint gridIndex = GetGridIndex(posXY, w);
+    uint numLights = buffer[gridIndex].y;
+    const uint numPointLights = numLights >> 16;
+    const uint numSpotLights = numLights & 0xffff;
+    numLights = numPointLights + numSpotLights;
+    
+    const float3 mapTex[] =
+    {
+        float3(0, 0, 0),
+        float3(0, 0, 1),
+        float3(0, 1, 1),
+        float3(0, 1, 0),
+        float3(1, 1, 0),
+        float3(1, 0, 0)
+    };
+    const uint mapTexLen = 5;
+    const uint maxHeat = 40;
+    float l = saturate((float) numLights / maxHeat) * mapTexLen;
+    float3 a = mapTex[floor(l)];
+    float3 b = mapTex[ceil(l)];
+    float3 heatMap = lerp(a, b, l - floor(l));
+    
+    float3 color = lerp(currentColor.xyz, heatMap, blend);
+    return color;
+}
+
 [earlydepthstencil]
 PixelOut TestShaderPS(in VertexOut psIn)
 {
@@ -356,29 +385,38 @@ PixelOut TestShaderPS(in VertexOut psIn)
         
         color += CalculateLighting(S, -light.Direction, light.Color * light.Intensity);
     }
+  
     
-    CullableLightParameters pLight = CullableLights[0];
-    color += CalculatePointLight(S, psIn.WorldPosition, pLight);
-    
-    CullableLightParameters sLight = CullableLights[1];
-    color += CalculateSpotLight(S, psIn.WorldPosition, sLight);
-    //const uint gridIndex = GetGridIndex(psIn.HomogenousPositon.xy, GlobalData.ViewWidth);
-    //uint lightStartIndex = LightGrid[gridIndex].x;
-    //const uint lightCount = LightGrid[gridIndex].y;
-    //const uint maxPointLight = lightStartIndex + (lightCount >> 16);
-    //const uint maxSpotLight = lightStartIndex + (lightCount & 0xFFFF);
-    //for (i = lightStartIndex; i < maxPointLight; ++i)
+    //for (i = 0; i < 8; ++i)
     //{
-    //    const uint lightIndex = LightIndexList[i];
-    //    CullableLightParameters light = CullableLights[lightIndex];
+    //    CullableLightParameters light = CullableLights[i];
+        
     //    color += CalculatePointLight(S, psIn.WorldPosition, light);
     //}
-    //for (i = maxPointLight; i < maxSpotLight; ++i)
+    
+    //for (i = 8; i < 9; ++i)
     //{
-    //    const uint lightIndex = LightIndexList[i];
-    //    CullableLightParameters light = CullableLights[lightIndex];
-    //    color += CalculateSpotLight(S, psIn.WorldPosition, light);
+    //    CullableLightParameters sLight = CullableLights[i];
+    //    color += CalculateSpotLight(S, psIn.WorldPosition, sLight);
     //}
+    
+    const uint gridIndex = GetGridIndex(psIn.HomogenousPositon.xy, GlobalData.ViewWidth);
+    uint lightStartIndex = LightGrid[gridIndex].x;
+    const uint lightCount = LightGrid[gridIndex].y;
+    const uint maxPointLight = lightStartIndex + (lightCount >> 16);
+    const uint maxSpotLight = lightStartIndex + (lightCount & 0xFFFF);
+    for (i = lightStartIndex; i < maxPointLight; ++i)
+    {
+        const uint lightIndex = LightIndexList[i];
+        CullableLightParameters light = CullableLights[lightIndex];
+        color += CalculatePointLight(S, psIn.WorldPosition, light);
+    }
+    for (i = maxPointLight; i < maxSpotLight; ++i)
+    {
+        const uint lightIndex = LightIndexList[i];
+        CullableLightParameters light = CullableLights[lightIndex];
+        color += CalculateSpotLight(S, psIn.WorldPosition, light);
+    }
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);
     //color += ambientColor;
@@ -392,8 +430,14 @@ PixelOut TestShaderPS(in VertexOut psIn)
     S.EmissiveColor = max(VoN4 * VoN4, 0.1f) * e * e;
 #endif
     
-    psOut.Color = float4(color, 1.f);
+
+#if 0 // Light Grid
+    float4 Position = psIn.HomogenousPositon;
+    color = Heatmap(LightGrid, Position.xy, 0.1f, color);
+#elif 1 // Scene
+#endif
     
+    psOut.Color = float4(color, 1.f);
     
     return psOut;
 }
