@@ -11,6 +11,7 @@
 #include "Editor/AssetInteraction.h"
 #include "Editor/SceneEditorView.h"
 #include "Graphics/Lights/Light.h"
+#include "Content/EditorContentManager.h"
 
 #include "../External/tracy/public/tracy/Tracy.hpp"
 
@@ -306,6 +307,9 @@ AddLights()
 		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Spot);
 	}
 
+	constexpr bool DO_RANDOM_LIGHTS{ false };
+	if (!DO_RANDOM_LIGHTS) return;
+
 	srand(17);
 
 	constexpr s32 startZ = 0;
@@ -472,7 +476,32 @@ AddRenderItem()
 u32
 CreateTestRenderItems()
 {
-	AddRenderItem();
+	content::AssetHandle meshAsset{ content::assets::DEFAULT_MESH_HANDLE };
+	content::AssetHandle materialAsset{ content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE };
+
+	ecs::component::RenderMesh mesh{};
+	ecs::component::RenderMaterial mat{};
+	mesh.MeshID = content::GetDefaultMesh();
+	mesh.MeshAsset = meshAsset;
+	mat.MaterialAsset = materialAsset;
+	mat.MaterialIDs = new id_t[1];
+	mat.MaterialCount = 1;
+	mat.MaterialIDs[0] = content::GetDefaultMaterial();
+
+	ecs::component::LocalTransform transform{};
+	ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform,
+		ecs::component::Parent, ecs::component::WorldTransform, ecs::component::RenderMesh, ecs::component::RenderMaterial>(transform, {}, {},
+			mesh, mat) };
+
+	ecs::component::RenderMesh& meshEd{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entityData.id) };
+	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+	editor::AddEntityToSceneView(entityData.id);
+	
+
+	//ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entityData.id) };
+	//content::assets::LoadMeshAsset(meshAsset, entityData.id, mesh, mat);
+
+	//AddRenderItem();
 	//AddRenderItem();
 	//AddRenderItem();
 

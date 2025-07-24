@@ -363,6 +363,39 @@ struct SceneHierarchy
             }
         }
         ImGui::EndGroup();
+
+        if (ImGui::Button("Save Scene"))
+        {
+            Vec<Vec<ecs::Entity>> hierarchies{};
+            //TODO: more depth levels
+            for (EntityTreeNode* parent : root_node->Children)
+            {
+                hierarchies.emplace_back();
+                Vec<ecs::Entity>& hierarchy{ hierarchies.back() };
+                hierarchy.emplace_back(parent->ID);
+                for (EntityTreeNode* child : parent->Children)
+                {
+                    hierarchy.emplace_back(child->ID);
+                }
+            }
+            assets::SerializeScene(ecs::scene::GetCurrentScene(), hierarchies);
+        }
+
+        if (ImGui::Button("Load Scene"))
+        {
+            Vec<Vec<ecs::Entity>> hierarchies{};
+
+            std::filesystem::path scenePath{ project::GetProjectDirectory() / "Scenes" / "scene0.sc" };
+            assets::DeserializeScene(hierarchies, scenePath);
+
+            for (const auto& hierarchy : hierarchies)
+            {
+                for (ecs::Entity entity : hierarchy)
+                {
+                    AddEntityToSceneView(entity);
+                }
+            }
+        }
     }
 
     void DrawTreeNode(EntityTreeNode* node)

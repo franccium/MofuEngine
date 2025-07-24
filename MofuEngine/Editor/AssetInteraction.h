@@ -31,4 +31,6 @@ void AddFBXImportedModelToScene(const content::FBXImportState& state, bool extra
 
 void SerializeEntityHierarchy(const Vec<ecs::Entity>& entities);
 void DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::path& path);
+void SerializeScene(const ecs::scene::Scene& scene, const Vec<Vec<ecs::Entity>>& hierarchies);
+void DeserializeScene(Vec<Vec<ecs::Entity>>& hierarchies, const std::filesystem::path& path);
 }

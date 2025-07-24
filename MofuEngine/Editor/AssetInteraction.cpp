@@ -14,24 +14,180 @@
 #include <stack>
 
 namespace mofu::editor::assets {
-[[nodiscard]] id_t 
-LoadAsset(std::filesystem::path path, content::AssetType::type type)
+namespace {
+void
+SerializeEntityHierarchy(YAML::Emitter& out, const Vec<ecs::Entity>& entities)
 {
-	std::unique_ptr<u8[]> buffer;
-	u64 size{ 0 };
-	assert(std::filesystem::exists(path));
-	content::ReadAssetFileNoVersion(std::filesystem::path(path), buffer, size, type);	
-	assert(buffer.get());
+	ecs::Entity parent{ entities.front() };
+	assert(ecs::scene::HasComponent<ecs::component::Parent>(parent));
+	//TODO: can use sth better for sure
+	std::stack<std::pair<id_t, u32>> lastParent{}; // pairs parent id to his index for deserialization
+	lastParent.push({ parent, 0 });
+	Vec<u32> parents(entities.size());
+	u32 currentIndex{};
 
-	id_t assetID{ content::CreateResourceFromBlob(buffer.get(), type) };
-	assert(id::IsValid(assetID));
-	return assetID;
+	assert(out.good()); // TODO: the hell does that mean
+	out << YAML::BeginMap;
+
+	out << YAML::Key << "Entities" << YAML::Value << YAML::BeginMap;
+
+	for (ecs::Entity entity : entities)
+	{
+		const ecs::EntityData& entityData{ ecs::scene::GetEntityData(entity) };
+		const ecs::EntityBlock* const block{ ecs::scene::GetEntityData(entity).block };
+
+		out << YAML::Key << entity;
+		out << YAML::Value << YAML::BeginMap;
+
+		out << YAML::Key << "Component IDs" << YAML::BeginSeq;
+		for (auto c : block->GetComponentView())
+		{
+			out << c;
+		}
+		out << YAML::EndSeq;
+
+		if (block->Signature.test(ecs::component::ID<ecs::component::Parent>))
+		{
+			parents[currentIndex] = lastParent.top().second;
+			lastParent.push({ entity, currentIndex });
+		}
+		else
+		{
+			if (lastParent.top().first != ecs::scene::GetComponent<ecs::component::Child>(entity).ParentEntity)
+			{
+				lastParent.pop();
+			}
+			parents[currentIndex] = lastParent.top().second;
+		}
+
+		{
+			out << YAML::Key << "Components";
+			out << YAML::Value << YAML::BeginMap;
+
+			ecs::ForEachComponent(block, entityData.row, [&out](ecs::ComponentID cid, u8* data) {
+				out << YAML::Key << ecs::component::ComponentNames[cid];
+				ecs::component::SerializeLUT[cid](out, data);
+				});
+			out << YAML::EndMap;
+		} // Components
+
+		out << YAML::EndMap;
+		currentIndex++;
+	} // Entity
+
+	out << YAML::EndMap;
+
+	{
+		out << YAML::Key << "Parents" << YAML::Value << YAML::BeginSeq;
+		for (auto p : parents) out << p;
+		out << YAML::EndSeq;
+	} // Parents
+
+	out << YAML::EndMap;
 }
+
+void
+DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entity>& entities)
+{
+	using namespace ecs;
+
+	//TODO: think of something better?
+	struct RenderableEntitySpawnContext
+	{
+		ecs::Entity	entity;
+		ecs::component::RenderMesh& Mesh;
+		ecs::component::RenderMaterial& Material;
+	};
+	Vec<RenderableEntitySpawnContext> renderables{};
+
+	auto entityNodes{ entityHierarchyData["Entities"] };
+	for (auto entityNode : entityNodes)
+	{
+		// get the Cet mask, find a block and initialize space for the components
+		// then go over all component IDs and fill their data
+		const YAML::Node& componentInfo = entityNode.second;
+		const YAML::Node& componentIDs{ componentInfo["Component IDs"] };
+		Vec<ComponentID> cids;
+		CetMask mask{};
+		for (auto a : componentIDs)
+		{
+			ComponentID cid{ a.as<ComponentID>() };
+			cids.emplace_back(cid);
+			mask.set((size_t)cid, 1);
+		}
+
+		const EntityData& entityData{ ecs::scene::SpawnEntity(mask) };
+		const EntityBlock* block{ entityData.block };
+		Entity entity{ entityData.id };
+
+		const YAML::Node& components{ componentInfo["Components"] };
+
+		u32 i{ 0 };
+		for (auto component : components)
+		{
+			ComponentID cid{ cids[i++] };
+			auto componentData{ component.second };
+			u32 offset = block->ComponentOffsets[cid] + component::GetComponentSize(cid) * entityData.row;
+			component::DeserializeLUT[cid](componentData, block->ComponentData + offset);
+		}
+
+		entities.emplace_back(entity);
+
+		if (mask.test(component::ID<component::RenderMesh>))
+		{
+			component::RenderMesh& mesh{ ecs::scene::GetComponent<component::RenderMesh>(entity) };
+			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
+			renderables.emplace_back(entity, mesh, material); //FIXME: doesn't work with submeshes
+		}
+	} // Entities
+
+	auto parentNodes{ entityHierarchyData["Parents"] };
+	{
+		//TODO: noly works if its the only thing adding entities at the moment and if all the entities are from the same generation
+		Entity firstParentID{ entities[0] };
+		//NOTE: assumes the first entity is never a child
+		for (u32 i{ 1 }; i < entities.size(); ++i)
+		{
+			Entity parentID{ id::Index(firstParentID) + parentNodes[i].as<u32>() };
+			ecs::scene::GetComponent<component::Child>(entities[i]).ParentEntity = parentID;
+		}
+	} // Parents
+
+	if (!renderables.empty())
+	{
+		content::AssetHandle parentGeometryHandle{ renderables[0].Mesh.MeshAsset };
+		id_t geometry{ content::assets::CreateResourceFromHandle(parentGeometryHandle) };
+		content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
+		assert(uploadedGeometryInfo.SubmeshCount == renderables.size()); //TODO: for now thats true
+		u32 i{ 0 };
+		for (auto& e : renderables)
+		{
+			e.Mesh.MeshID = uploadedGeometryInfo.SubmeshGpuIDs[i++];
+			e.Material.MaterialIDs = new id_t[1]; //TODO:
+			if (content::IsValid(e.Material.MaterialAsset))
+			{
+				e.Material.MaterialIDs[0] = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material);
+				if (!id::IsValid(e.Material.MaterialIDs[0]))
+				{
+					graphics::MaterialInitInfo mat{};
+					material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
+					e.Material.MaterialIDs[0] = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
+				}
+			}
+			else
+			{
+				e.Material.MaterialIDs[0] = content::GetDefaultMaterial();
+			}
+			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialIDs);
+		}
+	}
+}
+} // anonymous namespace
 
 void
 DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr */)
 {
-	id_t assetId{ LoadAsset(modelPath, content::AssetType::Mesh) }; //FIXME: this assumes 1 LOD
+	id_t assetId{ content::CreateResourceFromAsset(modelPath, content::AssetType::Mesh) }; //FIXME: this assumes 1 LOD
 	content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
 	u32 submeshCount{ uploadedGeometryInfo.SubmeshCount };
 
@@ -144,69 +300,45 @@ SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
 	prefabFilename += ".pre";
 	const std::filesystem::path resourcesPath{ mofu::editor::project::GetResourceDirectory() };
 	std::filesystem::path prefabPath{ resourcesPath / "Prefabs" / prefabFilename };
-	//TODO: can use sth better for sure
-	std::stack<std::pair<id_t, u32>> lastParent{}; // pairs parent id to his index for deserialization
-	lastParent.push({ parent, 0 });
-	Vec<u32> parents(entities.size());
-	u32 currentIndex{};
+	
+	YAML::Emitter out;
+
+	SerializeEntityHierarchy(out, entities);
+
+	std::ofstream outFile(prefabPath);
+	outFile << out.c_str();
+}
+
+void
+SerializeScene(const ecs::scene::Scene& scene, const Vec<Vec<ecs::Entity>>& hierarchies)
+{
+	//TODO: maybe it makes sense to serialize by blocks for performance
+
+	/*for(auto [entity, parent]
+		: ecs::scene::GetRW<ecs::component::Parent>())
+	{
+		SerializeEntityHierarchy()
+	}*/
+	char sceneFilename[16];
+	snprintf(sceneFilename, 16, "scene%u.sc", scene.GetSceneID());
+	const std::filesystem::path projectPath{ mofu::editor::project::GetProjectDirectory() };
+	std::filesystem::path prefabPath{ projectPath / "Scenes" / sceneFilename };
 
 	YAML::Emitter out;
+	out << YAML::BeginMap;
+	out << YAML::Key << "Scene" << YAML::Value << YAML::BeginMap;
+	out << YAML::Key << "Scene ID" << YAML::Value << scene.GetSceneID();
+
+	out << YAML::Key << "Hierarchies" << YAML::Value << YAML::BeginMap;
+	u32 idx{ 0 };
+	for (const Vec<ecs::Entity>& hierarchy : hierarchies)
 	{
-		out << YAML::BeginMap;
-		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginMap;
+		out << YAML::Key << idx << YAML::Value;
+		SerializeEntityHierarchy(out, hierarchy);
+		idx++;
+	}
 
-		for (Entity entity : entities)
-		{
-			const EntityData& entityData{ scene::GetEntityData(entity) };
-			const EntityBlock* const block{ scene::GetEntityData(entity).block };
-
-			out << YAML::Key << entity;
-			out << YAML::Value << YAML::BeginMap;
-
-			out << YAML::Key << "Component IDs" << YAML::BeginSeq;
-			for (auto c : block->GetComponentView())
-			{
-				out << c;
-			}
-			out << YAML::EndSeq;
-
-			if (block->Signature.test(component::ID<ecs::component::Parent>))
-			{
-				parents[currentIndex] = lastParent.top().second;
-				lastParent.push({ entity, currentIndex });
-			}
-			else
-			{
-				if (lastParent.top().first != scene::GetComponent<component::Child>(entity).ParentEntity)
-				{
-					lastParent.pop();
-				}
-				parents[currentIndex] = lastParent.top().second;
-			}
-
-			{
-				out << YAML::Key << "Components";
-				out << YAML::Value << YAML::BeginMap;
-
-				ForEachComponent(block, entityData.row, [&out](ComponentID cid, u8* data) {
-					out << YAML::Key << component::ComponentNames[cid];
-					component::SerializeLUT[cid](out, data);
-					});
-				out << YAML::EndMap;
-			} // Components
-
-			out << YAML::EndMap;
-			currentIndex++;
-		} // Entity
-
-		out << YAML::EndMap;
-	} // Entities
-
-	{
-		out << YAML::Key << "Parents" << YAML::Value << YAML::BeginSeq;
-		for (auto p : parents) out << p;
-		out << YAML::EndSeq;
-	} // Parents
+	out << YAML::EndMap;
 
 	out << YAML::EndMap;
 
@@ -215,102 +347,33 @@ SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
 }
 
 void
-DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::path& path)
+DeserializeScene(Vec<Vec<ecs::Entity>>& hierarchies, const std::filesystem::path& path)
 {
-	using namespace ecs;
-
-	//TODO: think of something better?
-	struct RenderableEntitySpawnContext
-	{
-		ecs::Entity	entity;
-		ecs::component::RenderMesh& Mesh;
-		ecs::component::RenderMaterial& Material;
-	};
-	Vec<RenderableEntitySpawnContext> renderables{};
-
 	YAML::Node data = YAML::LoadFile(path.string());
 
-	auto entityNodes{ data["Entities"] };
-	for (auto entityNode : entityNodes) 
+	const auto& sceneData{ data["Scene"] };
+	u32 sceneID{ sceneData["Scene ID"].as<u32>() };
+	const auto& hierarchiesData{ sceneData["Hierarchies"] };
+
+	u32 hierarchyCount{ (u32)hierarchiesData.size() };
+	u32 hierarchyIdx{ 0 };
+	for (const auto& hierarchyNode : hierarchiesData)
 	{
-		// get the Cet mask, find a block and initialize space for the components
-		// then go over all component IDs and fill their data
-		const YAML::Node& componentInfo = entityNode.second;
-		const YAML::Node& componentIDs{ componentInfo["Component IDs"]};
-		Vec<ComponentID> cids;
-		CetMask mask{};
-		for (auto a : componentIDs)
-		{
-			ComponentID cid{ a.as<ComponentID>() };
-			cids.emplace_back(cid);
-			mask.set((size_t)cid, 1);
-		}
+		hierarchies.emplace_back();
+		const YAML::Node& entityHierarchyData{ hierarchyNode.second };
 
-		const EntityData& entityData{ ecs::scene::SpawnEntity(mask) };
-		const EntityBlock* block{ entityData.block };
-		Entity entity{ entityData.id };
-
-		const YAML::Node& components{ componentInfo["Components"] };
-
-		u32 i{ 0 };
-		for (auto component : components)
-		{
-			ComponentID cid{ cids[i++] };
-			auto componentData{ component.second };
-			u32 offset = block->ComponentOffsets[cid] + component::GetComponentSize(cid) * entityData.row;
-			component::DeserializeLUT[cid](componentData, block->ComponentData + offset);
-		}
-
-		entities.emplace_back(entity);
-
-		if (mask.test(component::ID<component::RenderMesh>))
-		{
-			component::RenderMesh& mesh{ ecs::scene::GetComponent<component::RenderMesh>(entity) };
-			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
-			renderables.emplace_back(entity, mesh, material); //FIXME: doesn't work with submeshes
-		}
-	} // Entities
-
-	auto parentNodes{ data["Parents"] };
-	{
-		//TODO: noly works if its the only thing adding entities at the moment and if all the entities are from the same generation
-		Entity firstParentID{ entities[0] };
-		//NOTE: assumes the first entity is never a child
-		for (u32 i{ 1 }; i < entities.size(); ++i)
-		{
-			Entity parentID{ id::Index(firstParentID) + parentNodes[i].as<u32>() };
-			ecs::scene::GetComponent<component::Child>(entities[i]).ParentEntity = parentID;
-		}
-	} // Parents
-
-	if (!renderables.empty())
-	{
-		content::AssetHandle parentGeometryHandle{ renderables[0].Mesh.MeshAsset };
-		id_t geometry{ content::assets::CreateResourceFromHandle(parentGeometryHandle) };
-		content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
-		assert(uploadedGeometryInfo.SubmeshCount == renderables.size()); //TODO: for now thats true
-		u32 i{ 0 };
-		for (auto& e : renderables)
-		{
-			e.Mesh.MeshID = uploadedGeometryInfo.SubmeshGpuIDs[i++];
-			e.Material.MaterialIDs = new id_t[1]; //TODO:
-			if (content::IsValid(e.Material.MaterialAsset))
-			{
-				e.Material.MaterialIDs[0] = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material);
-				if (!id::IsValid(e.Material.MaterialIDs[0]))
-				{
-					graphics::MaterialInitInfo mat{};
-					material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
-					e.Material.MaterialIDs[0] = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
-				}
-			}
-			else
-			{
-				e.Material.MaterialIDs[0] = content::GetDefaultMaterial();
-			}
-			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialIDs);
-		}
+		DeserializeEntityHierarchy(entityHierarchyData, hierarchies[hierarchyIdx]);
+		hierarchyIdx++;
 	}
+}
+
+
+void
+DeserializeEntityHierarchy(Vec<ecs::Entity>& entities, const std::filesystem::path& path)
+{
+	YAML::Node data = YAML::LoadFile(path.string());
+
+	DeserializeEntityHierarchy(data, entities);
 }
 
 void 
