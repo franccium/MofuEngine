@@ -1,14 +1,18 @@
 #include "ShaderCompilation.h"
 #include <filesystem>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <wrl.h>
 #include <dxcapi.h> 
 #include <d3d12shader.h>
+#include <d3d11shader.h>
 #include <fstream>
 #include "Graphics/Renderer.h"
 #include "ContentManagement.h"
 #include "Content/ResourceCreation.h"
+#include "EngineShaders.h"
 
-using namespace mofu;
 using namespace Microsoft::WRL;
 
 #ifdef _DEBUG
@@ -33,6 +37,7 @@ if(FAILED(x)) {\
 #endif
 #endif
 
+namespace mofu::shaders {
 namespace {
 constexpr const char* SHADERS_SOURCE_PATH{ "../MofuEngine/Graphics/D3D12/Shaders/" };
 
@@ -42,34 +47,6 @@ c_to_wstring(const char* c)
     std::string str{ c };
     return{ str.begin(), str.end() };
 }
-
-struct EngineShader {
-    enum id : u32
-    {
-        FullscreenTriangleVS = 0,
-        //ColorFillPS,
-        PostProcessPS,
-        CalculateGridFrustumsCS,
-        LightCullingCS,
-        Count
-    };
-};
-
-struct EngineShaderInfo
-{
-    EngineShader::id id;
-    ShaderFileInfo info;
-};
-
-constexpr EngineShaderInfo ENGINE_SHADER_FILES[]
-{
-    {EngineShader::FullscreenTriangleVS, {"FullscreenTriangle.hlsl", "FullscreenTriangleVS", graphics::ShaderType::Vertex}},
-    //{EngineShader::ColorFillPS, {"ColorFill.hlsl", "ColorFillPS", graphics::ShaderType::Pixel}},
-    {EngineShader::PostProcessPS, {"PostProcess.hlsl", "PostProcessPS", graphics::ShaderType::Pixel}},
-    {EngineShader::CalculateGridFrustumsCS, {"CalculateGridFrustums.hlsl", "CalculateGridFrustumsCS", graphics::ShaderType::Compute}},
-    {EngineShader::LightCullingCS, {"LightCulling.hlsl", "LightCullingCS", graphics::ShaderType::Compute}},
-};
-static_assert(_countof(ENGINE_SHADER_FILES) == EngineShader::Count);
 
 struct DxcCompiledShader
 {
@@ -164,7 +141,7 @@ public:
         return result;
     }
 
-    DxcCompiledShader Compile(u8* data, u32 dataSize, graphics::ShaderType::type type,
+    DxcCompiledShader Compile(u8* data, u32 dataSize, graphics::ShaderType::Type type,
         const char* entryPoint, Vec<std::wstring>& extraArgs)
     {
         assert(data && dataSize && entryPoint);
@@ -178,11 +155,11 @@ public:
         assert(sourceBlob && sourceBlob->GetBufferSize());
 
         ShaderFileInfo info{};
-        info.entryPoint = entryPoint;
-        info.type = type;
+        info.EntryPoint = entryPoint;
+        info.Type = type;
 
         OutputDebugStringA("Compiling ");
-        OutputDebugStringA(info.entryPoint);
+        OutputDebugStringA(info.EntryPoint);
         OutputDebugStringA("\n");
 
         return Compile(sourceBlob.Get(), GetCompilerArgs(info, extraArgs));
@@ -199,12 +176,31 @@ public:
         assert(sourceBlob && sourceBlob->GetBufferSize());
 
         OutputDebugStringA("Compiling ");
-        OutputDebugStringA(info.file);
+        OutputDebugStringA(info.File);
         OutputDebugStringA(" : ");
-        OutputDebugStringA(info.entryPoint);
+        OutputDebugStringA(info.EntryPoint);
         OutputDebugStringA("\n");
 
         return Compile(sourceBlob.Get(), GetCompilerArgs(info, extraArgs));
+    }
+
+    DxcCompiledShader CompileD3D11(ShaderFileInfo info, std::filesystem::path fullPath, Vec<std::wstring>& extraArgs)
+    {
+        assert(_compiler && _utils && _includeHandler);
+        HRESULT hr{ S_OK };
+
+        ComPtr<IDxcBlobEncoding> sourceBlob{ nullptr };
+        DXCall(hr = _utils->LoadFile(fullPath.c_str(), nullptr, &sourceBlob));
+        if (FAILED(hr)) return {};
+        assert(sourceBlob && sourceBlob->GetBufferSize());
+
+        OutputDebugStringA("Compiling ");
+        OutputDebugStringA(info.File);
+        OutputDebugStringA(" : ");
+        OutputDebugStringA(info.EntryPoint);
+        OutputDebugStringA("\n");
+
+        return Compile(sourceBlob.Get(), GetContentProcessingCompilerArgs(info, extraArgs));
     }
 
 private:
@@ -212,14 +208,48 @@ private:
     Vec<std::wstring> GetCompilerArgs(const ShaderFileInfo& info, Vec<std::wstring>& extraArgs)
     {
         Vec<std::wstring> args((u64)DEFAULT_COMPILER_ARGS_COUNT + extraArgs.size());
-        if (info.file) args.emplace_back(c_to_wstring(info.file));
+        if (info.File) args.emplace_back(c_to_wstring(info.File));
         args.emplace_back(L"-E");
-        args.emplace_back(c_to_wstring(info.entryPoint));
+        args.emplace_back(c_to_wstring(info.EntryPoint));
         args.emplace_back(L"-T");
-        args.emplace_back(c_to_wstring(SHADER_PROFILES[(u32)info.type]));
+        args.emplace_back(c_to_wstring(SHADER_PROFILES[(u32)info.Type]));
         args.emplace_back(L"-I");
         args.emplace_back(c_to_wstring(SHADERS_SOURCE_PATH));
         args.emplace_back(L"-enable-16bit-types");
+        args.emplace_back(DXC_ARG_ALL_RESOURCES_BOUND);
+#if _DEBUG
+        args.emplace_back(DXC_ARG_DEBUG);
+        args.emplace_back(DXC_ARG_SKIP_OPTIMIZATIONS);
+#else
+        args.emplace_back(DXC_ARG_OPTIMIZATION_LEVEL3);
+#endif
+        args.emplace_back(DXC_ARG_WARNINGS_ARE_ERRORS);
+        args.emplace_back(L"-Qstrip_reflect");
+        args.emplace_back(L"-Qstrip_debug");
+
+        for (const auto& arg : extraArgs)
+        {
+            args.emplace_back(arg);
+        }
+        return args;
+    }
+
+    Vec<std::wstring> GetContentProcessingCompilerArgs(const ShaderFileInfo& info, Vec<std::wstring>& extraArgs)
+    {
+        Vec<std::wstring> args((u64)DEFAULT_COMPILER_ARGS_COUNT + extraArgs.size());
+        if (info.File) args.emplace_back(c_to_wstring(info.File));
+        args.emplace_back(L"-E");
+        args.emplace_back(c_to_wstring(info.EntryPoint));
+        args.emplace_back(L"-T");
+        args.emplace_back(c_to_wstring(SHADER_PROFILES[(u32)info.Type]));
+        args.emplace_back(L"-I");
+        args.emplace_back(c_to_wstring(content::CONTENT_SHADERS_SOURCE_PATH));
+
+        args.emplace_back(L"-flegacy-macro-expansion");
+        args.emplace_back(L"-flegacy-resource-reservation");
+        args.emplace_back(L"-HV");
+        args.emplace_back(L"2016");
+
         args.emplace_back(DXC_ARG_ALL_RESOURCES_BOUND);
 #if _DEBUG
         args.emplace_back(DXC_ARG_DEBUG);
@@ -287,12 +317,11 @@ GetEngineShadersPath()
 }
 
 bool
-SaveCompiledShaders(Vec<DxcCompiledShader>& shaders)
+SaveCompiledShaders(Vec<DxcCompiledShader>& shaders, const std::filesystem::path& savePath)
 {
-    const auto engineShadersPath{ GetEngineShadersPath() };
-    std::filesystem::create_directories(engineShadersPath.parent_path());
-    std::ofstream file(engineShadersPath, std::ios::out | std::ios::binary);
-    if (!std::filesystem::exists(engineShadersPath) || !file || !file.is_open())
+    std::filesystem::create_directories(savePath.parent_path());
+    std::ofstream file(savePath, std::ios::out | std::ios::binary);
+    if (!std::filesystem::exists(savePath) || !file || !file.is_open())
     {
         return false;
     }
@@ -329,18 +358,18 @@ bool CheckCompiledShadersUpToDate()
 std::unique_ptr<u8[]> 
 CompileShader(ShaderFileInfo info, u8* code, u32 codeSize, Vec<std::wstring>& extraArgs, bool includeErrorsAndDisassembly)
 {
-    assert(!info.file && info.entryPoint && code && codeSize);
+    assert(!info.File && info.EntryPoint && code && codeSize);
 
-    return PackShader(ShaderCompiler{}.Compile(code, codeSize, info.type, info.entryPoint, extraArgs), includeErrorsAndDisassembly);
+    return PackShader(ShaderCompiler{}.Compile(code, codeSize, info.Type, info.EntryPoint, extraArgs), includeErrorsAndDisassembly);
 }
 
 std::unique_ptr<u8[]> 
 CompileShader(ShaderFileInfo info, const char* path, Vec<std::wstring>& extraArgs, bool includeErrorsAndDisassembly)
 {
-    assert(info.entryPoint && info.file);
+    assert(info.EntryPoint && info.File);
 
 	std::filesystem::path fullPath{ path };
-	fullPath += info.file;
+	fullPath += info.File;
 	if (!std::filesystem::exists(fullPath)) return {};
 
     return PackShader(ShaderCompiler{}.Compile(info, fullPath, extraArgs), includeErrorsAndDisassembly);
@@ -359,17 +388,17 @@ CompileEngineShaders()
     {
         auto& file{ ENGINE_SHADER_FILES[i] };
         path = SHADERS_SOURCE_PATH;
-        path += file.info.file;
+        path += file.Info.File;
 
         Vec<std::wstring> extraArgs{};
-        if (file.id == EngineShader::CalculateGridFrustumsCS || file.id == EngineShader::LightCullingCS)
+        if (file.ID == EngineShader::CalculateGridFrustumsCS || file.ID == EngineShader::LightCullingCS)
         {
             // TODO: get TILE_SIZE value from d3d12
             extraArgs.emplace_back(L"-D");
             extraArgs.emplace_back(L"TILE_SIZE=32");
         }
 
-        DxcCompiledShader compiledShader{ compiler.Compile(file.info, path, extraArgs) };
+        DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs) };
         if (compiledShader.bytecode && compiledShader.bytecode->GetBufferPointer() && compiledShader.bytecode->GetBufferSize())
         {
             shaders.emplace_back(std::move(compiledShader));
@@ -380,5 +409,35 @@ CompileEngineShaders()
         }
     }
 
-    return SaveCompiledShaders(shaders);
+    return SaveCompiledShaders(shaders, GetEngineShadersPath());
+}
+
+bool
+CompileContentProcessingShaders()
+{
+    Vec<DxcCompiledShader> shaders;
+
+    std::filesystem::path path{ content::CONTENT_SHADERS_SOURCE_PATH };
+    ShaderCompiler compiler{};
+
+    for (u32 i{ 0 }; i < content::ContentShader::Count; ++i)
+    {
+        auto& file{ content::CONTENT_SHADER_FILES[i] };
+        path.replace_filename(file.Info.File);
+
+        Vec<std::wstring> extraArgs{};
+
+        DxcCompiledShader compiledShader{ compiler.CompileD3D11(file.Info, path, extraArgs) };
+        if (compiledShader.bytecode && compiledShader.bytecode->GetBufferPointer() && compiledShader.bytecode->GetBufferSize())
+        {
+            shaders.emplace_back(std::move(compiledShader));
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return SaveCompiledShaders(shaders, content::CONTENT_SHADERS_COMPILED_PATH);
+}
 }

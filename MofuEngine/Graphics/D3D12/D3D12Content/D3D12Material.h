@@ -13,7 +13,7 @@ struct MaterialsCache
 	MaterialSurface** const MaterialSurfaces;
 };
 
-id_t CreateRootSignature(MaterialType::type materialType, ShaderFlags::flags shaderFlags);
+id_t CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFlags);
 
 class D3D12MaterialStream
 {
@@ -42,7 +42,7 @@ public:
         const u32 bufferSize
         {
             sizeof(MaterialType::type) +
-            sizeof(ShaderFlags::flags) +
+            sizeof(ShaderFlags::Flags) +
             sizeof(id_t) + // root signature id
             sizeof(u32) + // texture count
             sizeof(MaterialSurface) +
@@ -55,8 +55,8 @@ public:
 
         u8* const buffer{ _buffer };
         *(MaterialType::type*)buffer = info.Type;
-        *(ShaderFlags::flags*)&buffer[SHADER_FLAGS_INDEX] = (ShaderFlags::flags)shaderFlags;
-        *(id_t*)&buffer[ROOT_SIGNATURE_INDEX] = CreateRootSignature(info.Type, (ShaderFlags::flags)shaderFlags);
+        *(ShaderFlags::Flags*)&buffer[SHADER_FLAGS_INDEX] = (ShaderFlags::Flags)shaderFlags;
+        *(id_t*)&buffer[ROOT_SIGNATURE_INDEX] = CreateRootSignature(info.Type, (ShaderFlags::Flags)shaderFlags);
         *(u32*)&buffer[TEXTURE_COUNT_INDEX] = info.TextureCount;
         *(MaterialSurface*)&buffer[MATERIAL_SURFACE_INDEX] = info.Surface;
 
@@ -88,10 +88,10 @@ public:
     [[nodiscard]] constexpr id_t* TextureIDs() const { return _textureIDs; }
     [[nodiscard]] constexpr u32* DescriptorIndices() const { return _descriptorIndices; }
     [[nodiscard]] constexpr MaterialType::type MaterialType() const { return _materialType; }
-    [[nodiscard]] constexpr ShaderFlags::flags ShaderFlags() const { return _shaderFlags; }
+    [[nodiscard]] constexpr ShaderFlags::Flags ShaderFlags() const { return _shaderFlags; }
 
     constexpr static u32 SHADER_FLAGS_INDEX{ sizeof(MaterialType::type) };
-    constexpr static u32 ROOT_SIGNATURE_INDEX{ SHADER_FLAGS_INDEX + sizeof(ShaderFlags::flags) };
+    constexpr static u32 ROOT_SIGNATURE_INDEX{ SHADER_FLAGS_INDEX + sizeof(ShaderFlags::Flags) };
     constexpr static u32 TEXTURE_COUNT_INDEX{ ROOT_SIGNATURE_INDEX + sizeof(id_t) };
     constexpr static u32 MATERIAL_SURFACE_INDEX{ TEXTURE_COUNT_INDEX + sizeof(u32) };
 
@@ -102,7 +102,7 @@ private:
         u8* const buffer{ _buffer };
 
         _materialType = *(MaterialType::type*)buffer;
-        _shaderFlags = *(ShaderFlags::flags*)&buffer[SHADER_FLAGS_INDEX];
+        _shaderFlags = *(ShaderFlags::Flags*)&buffer[SHADER_FLAGS_INDEX];
         _rootSignatureID = *(id_t*)&buffer[ROOT_SIGNATURE_INDEX];
         _textureCount = *(u32*)&buffer[TEXTURE_COUNT_INDEX];
         _materialSurface = (MaterialSurface*)&buffer[MATERIAL_SURFACE_INDEX];
@@ -114,7 +114,7 @@ private:
 
     u8* _buffer;
     MaterialType::type _materialType;
-    ShaderFlags::flags _shaderFlags;
+    ShaderFlags::Flags _shaderFlags;
     id_t _rootSignatureID;
     u32 _textureCount;
     MaterialSurface* _materialSurface;

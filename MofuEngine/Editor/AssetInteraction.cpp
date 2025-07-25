@@ -166,7 +166,7 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 			e.Material.MaterialIDs = new id_t[1]; //TODO:
 			if (content::IsValid(e.Material.MaterialAsset))
 			{
-				e.Material.MaterialIDs[0] = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material);
+				e.Material.MaterialIDs[0] = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material, false);
 				if (!id::IsValid(e.Material.MaterialIDs[0]))
 				{
 					graphics::MaterialInitInfo mat{};
@@ -392,7 +392,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		if (content::IsValid(_materialAssets[i]))
 		{
 			//materialIDs[i] = content::CreateMaterial(_materialInfos[i]);
-			id_t matId{ content::assets::GetResourceFromAsset(_materialAssets[i], content::AssetType::Material) };
+			id_t matId{ content::assets::GetResourceFromAsset(_materialAssets[i], content::AssetType::Material, false) };
 			if (id::IsValid(matId))
 			{
 				materialIDs[i] = matId;
@@ -436,8 +436,8 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 	};
 	Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
 
-	strcpy(name.Name, _name.c_str());
-
+	snprintf(name.Name, ecs::component::NAME_LENGTH, "%s", _name.c_str());
+	name.Name[15] = '\0';
 	// create root entity
 	ecs::component::Parent parentEntity{ {} };
 	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,

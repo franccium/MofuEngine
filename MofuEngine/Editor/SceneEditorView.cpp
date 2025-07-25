@@ -9,11 +9,11 @@
 
 namespace mofu::editor {
 namespace {
-
+constexpr u32 NODE_NAME_LENGTH{ ecs::component::NAME_LENGTH };
 // TODO: adjust this
 struct EntityTreeNode
 {
-    char Name[28] = "";
+    char Name[NODE_NAME_LENGTH];
     ecs::Entity ID;
     EntityTreeNode* Parent = NULL;
     ImVector<EntityTreeNode*> Children;
@@ -25,6 +25,7 @@ Vec<std::pair<ecs::Entity, EntityTreeNode*>> entityToPair{};
 
 Vec<std::string> prefabFiles{};
 Vec<std::string> meshFiles{};
+EntityTreeNode* selectedNode{ nullptr };
 
 constexpr EntityTreeNode*
 FindParentAsNode(ecs::Entity parentEntity)
@@ -34,8 +35,7 @@ FindParentAsNode(ecs::Entity parentEntity)
         if (e == parentEntity) return n;
     }
     assert(false);
-   //TODO: return std::find;
-    return nullptr;
+    return rootNode;
 }
 
 void
@@ -89,11 +89,11 @@ CreateEntityTreeNode(ecs::Entity entity, EntityTreeNode* parentNode)
     if (ecs::scene::HasComponent<ecs::component::NameComponent>(entity))
     {
         const char* name{ ecs::scene::GetComponent<ecs::component::NameComponent>(entity).Name };
-        strcpy(node->Name, name);
+        snprintf(node->Name, NODE_NAME_LENGTH, "%s", name);
     }
     else
     {
-       snprintf(node->Name, IM_ARRAYSIZE(node->Name), "E %u", (u32)entity);
+       snprintf(node->Name, NODE_NAME_LENGTH, "E %u", (u32)entity);
     }
     node->Parent = parentNode;
     node->IndexInParent = (u16)parentNode->Children.Size;
@@ -105,8 +105,8 @@ CreateEntityTreeNode(ecs::Entity entity, EntityTreeNode* parentNode)
 static void CreateSceneHierarchyTree(const Vec<ecs::EntityData>& entityData)
 {
     rootNode = new EntityTreeNode{};
-	char rootName[28]{ "Root" };
-    snprintf(rootNode->Name, IM_ARRAYSIZE(rootNode->Name), "%s", rootName);
+	char rootName[NODE_NAME_LENGTH]{ "Root" };
+    snprintf(rootNode->Name, NODE_NAME_LENGTH, "%s", rootName);
     rootNode->ID = ecs::Entity{ id::INVALID_ID };
 
     for (const ecs::EntityData& e : entityData)
@@ -117,15 +117,24 @@ static void CreateSceneHierarchyTree(const Vec<ecs::EntityData>& entityData)
 
 void DeleteEntity(EntityTreeNode* node)
 {
+    //if (!node) return;
+    //if (!selectedNode) return;
+    assert(node);
     if (!node) return;
     ecs::Entity selected{ node->ID };
+    //ecs::Entity selected{ selectedNode->ID };
+
     log::Error("Not Implemented");
 }
 
 void 
 CreateEntity(EntityTreeNode* node)
 {
-	ecs::Entity selected{ node ? node->ID : id::INVALID_ID };
+    //ecs::Entity selected{ node ? node->ID : id::INVALID_ID };
+    assert(node);
+    if (!node) return;
+    ecs::Entity selected{ node->ID };
+	//ecs::Entity selected{ selectedNode ? selectedNode->ID : id::INVALID_ID };
 
     ecs::component::LocalTransform lt{};
 
@@ -135,14 +144,23 @@ CreateEntity(EntityTreeNode* node)
             lt, ecs::component::Child{ {}, selected }, {})
         : ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Parent, ecs::component::WorldTransform>(lt, {}, {});
 
+    if (!ecs::scene::EntityHasComponent<ecs::component::Parent>(selected))
+    {
+        ecs::scene::AddComponent<ecs::component::Parent>(selected);
+    }
+
 	CreateEntityTreeNode(entityData.id, node);
 }
 
 void 
 DuplicateEntity(EntityTreeNode* node)
 {
+    //if (!selectedNode) return;
+    assert(node);
     if (!node) return;
     ecs::Entity selected{ node->ID };
+
+    //ecs::Entity selected{ selectedNode ? selectedNode->ID : id::INVALID_ID };
 
     const ecs::EntityData& duplicatedData{ ecs::scene::GetEntityData(selected) };
     const ecs::EntityBlock* const duplicatedBlock{ duplicatedData.block };
@@ -176,13 +194,12 @@ DuplicateEntity(EntityTreeNode* node)
         ecs::component::Child child{ ecs::scene::GetComponent<ecs::component::Child>(newEntity) };
         parentNode = FindParentAsNode(child.ParentEntity);
     }
-    CreateEntityTreeNode(newEntity, node);
+    CreateEntityTreeNode(newEntity, parentNode);
 }
 
 struct SceneHierarchy
 {
     ImGuiTextFilter Filter;
-    EntityTreeNode* VisibleNode{ nullptr };
 
     void Draw(EntityTreeNode* root_node)
     {
@@ -237,13 +254,6 @@ struct SceneHierarchy
                         DrawTreeNode(node);
                 ImGui::EndTable();
             }
-
-            if (ImGui::BeginPopupContextWindow("SceneHierarchyContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
-            {
-                if (ImGui::MenuItem("Create Entity"))
-                    CreateEntity(VisibleNode);
-                ImGui::EndPopup();
-            }
         }
         ImGui::EndChild();
 
@@ -251,7 +261,8 @@ struct SceneHierarchy
         ImGui::SameLine();
 
         ImGui::BeginGroup(); // Lock X position
-        if (EntityTreeNode* node = VisibleNode)
+        EntityTreeNode* node = selectedNode;
+        if (node)
         {
             ImGui::Text("%s", node->Name);
             ecs::Entity entity{ node->ID };
@@ -408,13 +419,13 @@ struct SceneHierarchy
         tree_flags |= ImGuiTreeNodeFlags_NavLeftJumpsBackHere; // Left arrow support
         tree_flags |= ImGuiTreeNodeFlags_SpanFullWidth; // Span full width for easier mouse reach
         tree_flags |= ImGuiTreeNodeFlags_DrawLinesToNodes; // Always draw hierarchy outlines
-        if (node == VisibleNode)
+        if (node == selectedNode)
             tree_flags |= ImGuiTreeNodeFlags_Selected;
         if (node->Children.Size == 0)
             tree_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
         bool node_open{ ImGui::TreeNodeEx("", tree_flags, "%s", node->Name) };
         if (ImGui::IsItemFocused())
-            VisibleNode = node;
+            selectedNode = node;
         if (node_open)
         {
             for (EntityTreeNode* child : node->Children)

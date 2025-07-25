@@ -237,6 +237,12 @@
     <ClCompile Include="Content\EnvironmentMapProcessing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Content\Shaders\ContentProcessingShaders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Content\D3D12EnvironmentMapProcessing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -546,6 +552,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ECS\UpdateManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Shaders\ContentProcessingShaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\EngineShaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\D3D12EnvironmentMapProcessing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -14,6 +14,7 @@ void RemoveSubmesh(id_t id);
 namespace texture {
 id_t AddTexture(const u8* const blob);
 void RemoveTexture(id_t id);
+void GetDescriptorIndices(const id_t* const textureIDs, u32 count, u32* const outIndices);
 }
 namespace material {
 id_t AddMaterial(const MaterialInitInfo& info);
@@ -47,7 +48,8 @@ SetupPlatformInterface(PlatformInterface& pi)
 	pi.resources.removeSubmesh = content::geometry::RemoveSubmesh;
 
 	pi.resources.addTexture = content::texture::AddTexture;
-	pi.resources.removeTexture = content::texture::RemoveTexture;	
+	pi.resources.removeTexture = content::texture::RemoveTexture;
+	pi.resources.getDescriptorIndices = content::texture::GetDescriptorIndices;
 
 	pi.resources.addMaterial = content::material::AddMaterial;	
 	pi.resources.removeMaterial = content::material::RemoveMaterial;

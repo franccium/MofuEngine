@@ -93,12 +93,12 @@ float4 Sample(uint index, SamplerState s, float2 uv, float mip)
     return Texture2D(ResourceDescriptorHeap[index]).SampleLevel(s, uv, mip);
 }
 
-float4 Sample(uint index, SamplerState s, float3 n)
+float4 SampleCube(uint index, SamplerState s, float3 n)
 {
     return TextureCube(ResourceDescriptorHeap[index]).Sample(s, n);
 }
 
-float4 Sample(uint index, SamplerState s, float3 n, float mip)
+float4 SampleCube(uint index, SamplerState s, float3 n, float mip)
 {
      return TextureCube(ResourceDescriptorHeap[index]).SampleLevel(s, n, mip);
 }
@@ -126,12 +126,12 @@ float3 CookTorranceBRDF(Surface S, float3 L)
 
     float3 specularBRDF = (D * G) * F;
     float3 rho = 1.f - F;
-    float3 diffuseBRDF = Diffuse_Lambert() * S.DiffuseColor * rho;
-    //float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
+    //float3 diffuseBRDF = Diffuse_Lambert() * S.DiffuseColor * rho;
+    float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, S.PerceptualRoughness * S.PerceptualRoughness) * S.DiffuseColor * rho;
 
-    //float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, float2(NoV, S.PerceptualRoughness), 0).rg;
-    //float3 energyLossCompensation = 1.f + S.SpecularColor * (rcp(brdfLut.x) - 1.f);
-    //specularBRDF *= energyLossCompensation;
+    float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, float2(NoV, S.PerceptualRoughness), 0).rg;
+    float3 energyLossCompensation = 1.f + S.SpecularColor * (rcp(brdfLut.x) - 1.f);
+    specularBRDF *= energyLossCompensation;
 
     return (diffuseBRDF + specularBRDF * S.SpecularStrength) * NoL;
 }
@@ -329,6 +329,28 @@ float3 CalculateSpotLight(Surface S, float3 worldPos, CullableLightParameters li
     return color;
 }
 
+float3 EvaluateIBL(Surface S)
+{
+    const float NoV = saturate(S.NoV);
+    const float3 F0 = S.SpecularColor;
+    const float3 F90 = max((1.f - S.PerceptualRoughness), F0);
+    const float3 F = F_Schlick(NoV, F0, F90);
+    
+    const float roughness = S.PerceptualRoughness * S.PerceptualRoughness;
+    AmbientLightParameters IBL = GlobalData.AmbientLight;
+    float3 diffN = S.Normal;
+    float3 diffuse = SampleCube(IBL.DiffuseSrvIndex, LinearSampler, diffN).rgb * S.DiffuseColor * (1.f - F);
+    float3 specN = GetSpecularDominantDir(S.Normal, reflect(-S.V, S.Normal), roughness);
+    float3 specularIBL = SampleCube(IBL.SpecularSrvIndex, LinearSampler, specN, S.PerceptualRoughness * 5.f).rgb; // mip level based on roughness
+    float2 brdfLut = Sample(IBL.BrdfLutSrvIndex, LinearSampler, float2(NoV, S.PerceptualRoughness), 0).rg;
+    float3 specular = specularIBL * (S.SpecularStrength * F0 * brdfLut.x + F90 * brdfLut.y);
+
+    float3 energyLossCompensation = 1.f + F0 * (rcp(brdfLut.x) - 1.f);
+    specular *= energyLossCompensation;
+
+    return (diffuse + specular) * IBL.Intensity;
+}
+
 uint GetGridIndex(float2 posXY, float viewWidth)
 {
     const uint2 pos = uint2(posXY);
@@ -430,6 +452,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     S.EmissiveColor = max(VoN4 * VoN4, 0.1f) * e * e;
 #endif
     
+    color += EvaluateIBL(S);
 
 #if 0 // Light Grid
     float4 Position = psIn.HomogenousPositon;

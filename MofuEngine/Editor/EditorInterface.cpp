@@ -7,6 +7,7 @@
 #include "ImporterView.h"
 #include "Content/EditorContentManager.h"
 #include "AssetInteraction.h"
+#include "Content/Shaders/ContentProcessingShaders.h"
 
 namespace mofu::editor {
 namespace {
@@ -19,7 +20,7 @@ namespace {
 bool
 InitializeEditorGUI()
 {
-    return InitializeSceneEditorView() && material::InitializeMaterialEditor();
+    return content::shaders::Initialize() && InitializeSceneEditorView() && material::InitializeMaterialEditor();
 }
 
 void 
@@ -49,6 +50,12 @@ InspectAsset(content::AssetHandle handle)
         material::OpenMaterialView(handle);
         break;
     }
+}
+
+void
+ShutdownEditorGUI()
+{
+    content::shaders::Shutdown();
 }
 
 }

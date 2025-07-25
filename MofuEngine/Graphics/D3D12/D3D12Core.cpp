@@ -363,7 +363,7 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
     data.ViewHeight = surface.Viewport()->Height;
     data.DeltaTime = deltaTime;
     data.DirectionalLightsCount = graphics::light::GetDirectionalLightsCount(info.LightSetIdx);
-    //data.AmbientLight = ;
+    data.AmbientLight = graphics::light::GetAmbientLight(info.LightSetIdx);
     
     hlsl::GlobalShaderData* const shaderData{ cbuffer.AllocateSpace<hlsl::GlobalShaderData>() };
     memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
@@ -582,6 +582,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     gpass::StartNewFrame(d3d12FrameInfo);
 
     gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
+    fx::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
 
     ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
 
@@ -723,10 +724,13 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         {
             ZoneScopedNC("Post Processing CPU", tracy::Color::Blue1);
             gpass::AddTransitionsForPostProcess(barriers);
+            fx::AddTransitionsPrePostProcess(barriers);
             barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
             barriers.ApplyBarriers(cmdListFXSetup);
 
             fx::DoPostProcessing(cmdListFXSetup, d3d12FrameInfo, surface.Rtv());
+            fx::AddTransitionsPostPostProcess(barriers);
+            barriers.ApplyBarriers(cmdListFXSetup);
         }
     }
 
@@ -737,7 +741,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         {
             ZoneScopedNC("Editor UI CPU", tracy::Color::LightSkyBlue2);
             ui::RenderGUI();
-            ui::RenderSceneIntoImage(gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+            ui::RenderSceneIntoImage(fx::GetSrvGPUDescriptorHandle(), d3d12FrameInfo);
 #if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
             //TODO: make it work with post processing

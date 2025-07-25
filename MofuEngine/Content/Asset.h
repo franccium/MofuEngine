@@ -48,6 +48,16 @@ const std::unordered_set<std::string_view> ENGINE_ASSET_EXTENSIONS {
 	".mesh", ".tex", ".mat", 
 };
 
+struct AssetFlag
+{
+	enum Flag : u32
+	{
+		IsBRDFLut,
+
+		Count
+	};
+};
+
 struct Asset
 {
 	AssetType::type Type;
@@ -58,7 +68,7 @@ struct Asset
 	union
 	{
 		u32 RelatedCount;
-		id_t AdditionalData2;
+		u32 AdditionalData2;
 	};
 
 	std::filesystem::path GetMetadataPath() const { std::filesystem::path p{ ImportedFilePath }; return p.replace_extension(".mt"); }

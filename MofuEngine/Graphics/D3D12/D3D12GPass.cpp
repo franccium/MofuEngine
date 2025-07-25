@@ -26,7 +26,7 @@ u32v2 dimensions{};
 D3D12FrameInfo currentD3D12FrameInfo{};
 
 #if _DEBUG
-constexpr f32 CLEAR_VALUE[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
+constexpr f32 CLEAR_VALUE[4]{ 0.15f, 0.15f, 0.15f, 1.f };
 #else
 constexpr f32 CLEAR_VALUE[4]{};
 #endif
@@ -242,7 +242,7 @@ CreateBuffers(u32v2 size)
 {
 	assert(size.x && size.y);
 
-	gpassDepthBuffer.Release();
+	gpassMainBuffer.Release();
 	gpassDepthBuffer.Release();
 	dimensions = size;
 

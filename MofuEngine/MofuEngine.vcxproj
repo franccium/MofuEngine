@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClCompile Include="Content\AssetImporter.cpp" />
     <ClCompile Include="Content\ContentManagement.cpp" />
+    <ClCompile Include="Content\D3D12EnvironmentMapProcessing.cpp" />
     <ClCompile Include="Content\EditorContentManager.cpp" />
     <ClCompile Include="Content\EnvironmentMapProcessing.cpp" />
     <ClCompile Include="Content\Guid.cpp" />
@@ -124,6 +125,7 @@
     <ClCompile Include="Content\PrimitiveMeshGeneration.cpp" />
     <ClCompile Include="Content\ResourceCreation.cpp" />
     <ClCompile Include="Content\ShaderCompilation.cpp" />
+    <ClCompile Include="Content\Shaders\ContentProcessingShaders.cpp" />
     <ClCompile Include="Content\TextureImport.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\Main.cpp" />
@@ -202,6 +204,9 @@
     <ClInclude Include="Content\Asset.h" />
     <ClInclude Include="Content\AssetImporter.h" />
     <ClInclude Include="Content\ContentManagement.h" />
+    <ClInclude Include="Content\D3D12EnvironmentMapProcessing.h" />
+    <ClInclude Include="Content\EngineShaders.h" />
+    <ClInclude Include="Content\Shaders\ContentProcessingShaders.h" />
     <ClInclude Include="Content\ContentUtils.h" />
     <ClInclude Include="Content\EditorContentManager.h" />
     <ClInclude Include="Content\EnvironmentMapProcessing.h" />

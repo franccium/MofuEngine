@@ -170,6 +170,12 @@ GetCullableLightsCount(u32 lightSetIdx)
 	return lightSets[lightSetIdx].FirstDisabledCullableIndex;
 }
 
+AmbientLightParameters
+GetAmbientLight(u32 lightSetIdx)
+{
+	return lightSets[lightSetIdx].AmbientLight;
+}
+
 void
 AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type type)
 {
@@ -258,6 +264,15 @@ AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type typ
 		break;
 	}
 	}
+}
+
+void 
+AddAmbientLight(u32 lightSetIdx, AmbientLightInitInfo ambientInfo)
+{
+	u32 textureIndices[3]{};
+	graphics::GetDescriptorIndices(&ambientInfo.DiffuseTextureID, 3, &textureIndices[0]);
+	LightSet& set{ lightSets[lightSetIdx] };
+	set.AmbientLight = { ambientInfo.Intensity, textureIndices[0], textureIndices[1], textureIndices[2] };
 }
 
 const LightSet&

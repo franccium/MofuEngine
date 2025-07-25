@@ -25,10 +25,10 @@ id_t defaultTexturedPSID{};
 void
 CreateDefaultShaders()
 {
-    ShaderFileInfo info{};
-    info.file = "TestShader.hlsl";
-    info.entryPoint = "TestShaderVS";
-    info.type = graphics::ShaderType::Vertex;
+    shaders::ShaderFileInfo info{};
+    info.File = "TestShader.hlsl";
+    info.EntryPoint = "TestShaderVS";
+    info.Type = graphics::ShaderType::Vertex;
     const char* shaderPath{ "..\\ExampleApp\\" };
 
     std::wstring defines[]{ L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
@@ -44,17 +44,17 @@ CreateDefaultShaders()
         extraArgs.clear();
         extraArgs.emplace_back(L"-D");
         extraArgs.emplace_back(defines[i]);
-        vertexShaders.emplace_back(std::move(CompileShader(info, shaderPath, extraArgs)));
+        vertexShaders.emplace_back(std::move(shaders::CompileShader(info, shaderPath, extraArgs)));
         assert(vertexShaders.back().get());
         vertexShaderPtrs.emplace_back(vertexShaders.back().get());
     }
 
-    info.entryPoint = "TestShaderPS";
-    info.type = graphics::ShaderType::Pixel;
+    info.EntryPoint = "TestShaderPS";
+    info.Type = graphics::ShaderType::Pixel;
     Vec<std::unique_ptr<u8[]>> pixelShaders{};
 
     extraArgs.clear();
-    pixelShaders.emplace_back(std::move((CompileShader(info, shaderPath, extraArgs))));
+    pixelShaders.emplace_back(std::move((shaders::CompileShader(info, shaderPath, extraArgs))));
     assert(pixelShaders.back().get());
     const u8* pixelShaderPtrs[]{ pixelShaders[0].get() };
 
@@ -62,7 +62,7 @@ CreateDefaultShaders()
     defines[0] = L"TEXTURED_MTL=1";
     extraArgs.emplace_back(L"-D");
     extraArgs.emplace_back(defines[0]);
-    pixelShaders.emplace_back(std::move(CompileShader(info, shaderPath, extraArgs)));
+    pixelShaders.emplace_back(std::move(shaders::CompileShader(info, shaderPath, extraArgs)));
     assert(pixelShaders.back().get());
 
     defaultVSID = content::AddShaderGroup(vertexShaderPtrs.data(), (u32)vertexShaderPtrs.size(), keys.data());
@@ -137,6 +137,12 @@ GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info)
     MeshGroupData data{};
 	GeneratePrimitiveMesh(info, data);
 	SaveGeometry(data, editor::project::GetResourceDirectory() / "cube.geom");
+}
+
+bool
+LoadBRDFLut(AssetHandle handle)
+{
+    return content::INVALID_HANDLE;
 }
 
 void

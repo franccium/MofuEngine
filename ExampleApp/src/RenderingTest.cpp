@@ -118,6 +118,11 @@ Vec<id_t> loadedMeshesIDs{};
 Vec<ecs::Entity> loadedEntities{};
 Vec<id_t> loadedMaterialIDs{};
 
+//TODO: get rid of this
+u64 diffuseIBLHandle{ 2947166161171442696 };
+u64 specularIBLHandle{ 15753239102389846408 };
+u64 brdfLutHandle{ 6591591707561885939 };
+
 constexpr f32 INV_RAND_MAX{ 1.f / RAND_MAX };
 f32 Random(f32 min = 0.f) { return std::max(min, rand() * INV_RAND_MAX); }
 
@@ -152,10 +157,10 @@ LoadTexture(const char* path)
 void
 LoadShaders()
 {
-	ShaderFileInfo info{};
-	info.file = "TestShader.hlsl";
-	info.entryPoint = "TestShaderVS";
-	info.type = graphics::ShaderType::Vertex;
+	shaders::ShaderFileInfo info{};
+	info.File = "TestShader.hlsl";
+	info.EntryPoint = "TestShaderVS";
+	info.Type = graphics::ShaderType::Vertex;
 	const char* shaderPath{ "..\\ExampleApp\\" };
 
 	std::wstring defines[]{L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3"};
@@ -176,8 +181,8 @@ LoadShaders()
 		vertexShaderPtrs.emplace_back(vertexShaders.back().get());
 	}
 
-	info.entryPoint = "TestShaderPS";
-	info.type = graphics::ShaderType::Pixel;
+	info.EntryPoint = "TestShaderPS";
+	info.Type = graphics::ShaderType::Pixel;
 	Vec<std::unique_ptr<u8[]>> pixelShaders{};
 
 	extraArgs.clear();
@@ -243,6 +248,12 @@ AddLights()
 {
 	u32 lightSetOne{ graphics::light::CreateLightSet() };
 
+	f32 ambientLightIntensity{ 1.f };
+	id_t diffuseIBL{ content::assets::CreateResourceFromHandle(diffuseIBLHandle) };
+	id_t specularIBL{ content::assets::CreateResourceFromHandle(specularIBLHandle) };
+	id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(brdfLutHandle) };
+	graphics::light::AddAmbientLight(lightSetOne, { ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL });
+
 	ecs::component::LocalTransform lt{};
 	ecs::component::WorldTransform wt{};
 
@@ -253,8 +264,9 @@ AddLights()
 	ecs::component::SpotLight spotLight{};
 
 	constexpr u32 DIR_LIGHT_COUNT{ 4 };
-	v3 directions[DIR_LIGHT_COUNT]{ {0.f, 0.f, 1.f }, { 0.f, 0.7f, 0.3f }, { 0.3f, 0.2f, 0.1f }, { 1.f, 0.2f, 0.5f } };
-	v3 colors[DIR_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.1f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f } };
+	v3 directions[DIR_LIGHT_COUNT]{ {-0.4f, 0.f, 1.f }, { -0.33f, -0.8f, -0.99f }, { 0.3f, 0.2f, 0.1f }, { 0.7f, 1.0f, 0.5f } };
+	//v3 colors[DIR_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.1f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f } };
+	v3 colors[DIR_LIGHT_COUNT]{ { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } };
 	f32 intensities[DIR_LIGHT_COUNT]{ 1.f, 1.f, 1.f, 1.f };
 	//f32 intensities[DIR_LIGHT_COUNT]{ 0.f, 0.f, 0.f, 0.f };
 	bool enabled[DIR_LIGHT_COUNT]{ true, true, true, true };

@@ -141,7 +141,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 bool MofuInitialize()
 {
 	mofu::InitializeEngineModules();
-	while (!CompileEngineShaders())
+	while (!shaders::CompileEngineShaders())
 	{
 		if (MessageBox(nullptr, L"Failed to compile engine shaders", L"Error", MB_RETRYCANCEL) != IDRETRY) return false;
 	}
@@ -247,6 +247,7 @@ void MofuShutdown()
 	if (!isRunning) return;
 
 	editor::project::UnloadProject();
+	editor::ShutdownEditorGUI();
 	//graphics::ui::Shutdown();
 	ShutdownRenderingTest();
 

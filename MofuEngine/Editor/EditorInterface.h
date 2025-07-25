@@ -8,6 +8,7 @@ namespace mofu::editor
 // TODO: figure out where these make sense
 bool InitializeSceneEditorView(); 
 bool InitializeEditorGUI();
+void ShutdownEditorGUI();
 void RenderEditorGUI();
 
 void InspectAsset(content::AssetHandle handle);

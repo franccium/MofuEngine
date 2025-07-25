@@ -93,7 +93,7 @@ FillOutTextureViewData(const std::filesystem::path& textureAssetPath)
 	texture.Flags = reader.Read<u32>();
 	texture.MipLevels = reader.Read<u32>();
 	texture.Format = (DXGI_FORMAT)reader.Read<u32>();
-	reader.Skip(sizeof(u32)); //TODO: IBLPairGUID
+	texture.IBLPairHandle = reader.Read<u64>();
 
 	u32 depthPerMipLevel[content::texture::TextureData::MAX_MIPS];
 	for (u32 i{ 0 }; i < content::texture::TextureData::MAX_MIPS; ++i)
@@ -152,8 +152,6 @@ ReimportTexture()
 	//data.ImportSettings = texture.ImportSettings;
 	data.ImportSettings = assets::GetTextureImportSettings();
 
-	content::ReimportTexture(data, textureAssetFilePath);
-	//OpenTextureView(textureAssetFilePath);
 }
 
 void 
@@ -162,10 +160,12 @@ RenderTextureWithConfig()
 	ImGui::Begin("Texture View", &isOpen, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 	ImGui::Text("Image:"); ImGui::SameLine();
+	bool indicesChanged{ false };
 	u32 array{ arrayIndex };
 	ImGui::SliderInt("##Image", (int*)&array, 0, maxArrayIndex);
 	if (array != arrayIndex)
 	{
+		indicesChanged = true;
 		imTextureID = graphics::ui::GetImTextureID(textureID, array, mipIndex, depthIndex, texture.Format, viewAsCubemap);
 		arrayIndex = array;
 	}
@@ -175,6 +175,7 @@ RenderTextureWithConfig()
 	ImGui::SliderInt("##Mip", (int*)&mip, 0, maxMipIndex);
 	if (mip != mipIndex)
 	{
+		indicesChanged = true;
 		imTextureID = graphics::ui::GetImTextureID(textureID, arrayIndex, mip, depthIndex, texture.Format, viewAsCubemap);
 		mipIndex = mip;
 	}
@@ -184,7 +185,16 @@ RenderTextureWithConfig()
 	ImGui::SliderInt("##Depth", (int*)&depth, 0, maxDepthIndex);
 	if (depth != depthIndex)
 	{
+		indicesChanged = true;
 		imTextureID = graphics::ui::GetImTextureID(textureID, arrayIndex, mipIndex, depth, texture.Format, viewAsCubemap);
+	}
+
+	if (content::IsValid(texture.IBLPairHandle))
+	{
+		if (ImGui::Button("Display IBL Pair"))
+		{
+			OpenTextureView(texture.IBLPairHandle);
+		}
 	}
 
 	assets::RenderTextureImportSettings();
@@ -208,6 +218,7 @@ RenderTextureWithConfig()
 	
 	if (viewAsCubemap)
 	{
+		if (indicesChanged) SetCubemap();
 		//TODO: cube array 
 		ImVec2 avail{ ImGui::GetContentRegionAvail() };
 		f32 cellWidth{ avail.x / 4 };
@@ -257,7 +268,14 @@ RenderTextureWithConfig()
 void
 OpenTextureView(content::AssetHandle handle)
 {
+	mipIndex = 0;
+	arrayIndex = 0;
+	depthIndex = 0;
+	viewAsCubemap = false;
+	cubemap.ArrayIndex = id::INVALID_ID;
+
 	content::AssetPtr asset{ content::assets::GetAsset(handle) };
+	assert(asset);
 	std::filesystem::path metadataPath{ asset->ImportedFilePath };
 	metadataPath.replace_extension(".mt");
 	FillOutTextureViewData(metadataPath);

@@ -77,11 +77,11 @@ RenderTextureImportSettings()
 		ImGui::EndCombo();
 	}
 
-	DisplaySliderUint("Mip Levels", &textureImportSettings.MipLevels, 0, 14);
+	DisplayEditableUintNT(&textureImportSettings.MipLevels, "Mip Levels", 0, 14);
 	ImGui::SliderFloat("Alpha Threshold", &textureImportSettings.AlphaThreshold, 0.f, 1.f);
 	ImGui::TextUnformatted("Format: "); ImGui::SameLine();
 	ImGui::TextUnformatted(texture::TEXTURE_FORMAT_STRING[textureImportSettings.OutputFormat]);
-	DisplaySliderUint("Cubemap Size", &textureImportSettings.CubemapSize, 16, 4096);
+	DisplayEditableUintNT(&textureImportSettings.CubemapSize, "Cubemap Size", 16, 4096);
 
 	ImGui::Checkbox("Prefer BC7", (bool*)&textureImportSettings.PreferBC7);
 	ImGui::Checkbox("Compress", (bool*)&textureImportSettings.Compress);
@@ -173,7 +173,8 @@ RenderImportSummary()
 		//TODO: display vec4s etc
 		ImGui::TextUnformatted(mat.Name.data());
 		ImGui::Text("Type: %u", mat.Type);
-		editor::material::DisplayMaterialSurfaceProperties(mat.Surface);
+		//TODO:editor::material::DisplayMaterialSurfaceProperties(mat.Surface);
+		editor::material::DisplayEditableMaterialSurfaceProperties(mat.Surface);
 	}
 
 	if (ImGui::Button("Add To Scene"))

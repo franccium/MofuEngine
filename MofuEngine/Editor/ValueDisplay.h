@@ -12,6 +12,7 @@ static constexpr f32 MIN_EDITABLE_FLOAT{ -1.f };
 static constexpr f32 MAX_EDITABLE_FLOAT{ 1.f };
 // NOTE: using numeric_limits as default for these make sliders unusable, keep the min/max values small
 bool DisplayEditableBool(bool* v, const char* label);
+bool DisplayEditableUintNT(u32* v, const char* label, u32 minVal = MIN_EDITABLE_U32, u32 maxVal = MAX_EDITABLE_U32);
 bool DisplayEditableUint(u32* v, const char* label, u32 minVal = MIN_EDITABLE_U32, u32 maxVal = MAX_EDITABLE_U32);
 bool DisplayEditableFloat(f32* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT, const char* format = "%.3f");
 bool DisplayEditableVector2(v2* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT);

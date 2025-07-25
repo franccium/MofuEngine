@@ -32,6 +32,43 @@ ImportUnknown([[maybe_unused]] std::filesystem::path path, [[maybe_unused]] Asse
 }
 
 void
+CreateBRDFLut(const texture::TextureData& data, std::filesystem::path targetPath)
+{
+	texture::TextureData lutData{};
+	lutData.ImportSettings = data.ImportSettings;
+	lutData.ImportSettings.Compress = false;
+	lutData.ImportSettings.MipLevels = 1;
+
+	texture::ComputeBRDFIntegrationLUT(&lutData);
+
+	if (lutData.Info.ImportError != texture::ImportError::Succeeded)
+	{
+		log::Error("BRDF LUT creation error: %s", texture::TEXTURE_IMPORT_ERROR_STRING[data.Info.ImportError]);
+		return;
+	}
+
+	PackTextureForEngine(lutData, targetPath);
+	Asset* asset = new Asset{ content::AssetType::Texture, targetPath, targetPath };
+	asset->AdditionalData2 = AssetFlag::Flag::IsBRDFLut;
+	std::filesystem::path metadataPath{ targetPath.replace_extension(".mt") };
+	PackTextureForEditor(lutData, metadataPath);
+
+	assets::RegisterAsset(asset);
+
+	std::unique_ptr<u8[]> iconBuffer{};
+	u64 iconSize{};
+	content::assets::GetTextureIconData(metadataPath, iconSize, iconBuffer);
+	if (iconSize != 0)
+	{
+		id_t iconId{ graphics::ui::AddIcon(iconBuffer.get()) };
+		asset->AdditionalData = iconId;
+	}
+
+	delete[] lutData.SubresourceData;
+	if (lutData.Icon) delete[] lutData.Icon;
+}
+
+void
 CreateTextureAssetIcon(AssetPtr asset)
 {
 	//TODO: a generic metadata file for this stuff?
@@ -57,12 +94,78 @@ ImportTexture(std::filesystem::path path, AssetPtr asset)
 
 	//data.ImportSettings.Files = path.string(); //TODO: char* 
 	//data.ImportSettings.FileCount = 1;
+	//TODO: handling missing textures this way could be problematic with remembering what asset it was supposed to actually import?
+	if (data.ImportSettings.Files.empty() || data.ImportSettings.FileCount == 0)
+	{
+		data.ImportSettings.Files.append(path.string());
+		data.ImportSettings.FileCount = 1;
+	}
 
 	texture::Import(&data);
 	if (data.Info.ImportError != texture::ImportError::Succeeded)
 	{
 		log::Error("Texture import error: %s", texture::TEXTURE_IMPORT_ERROR_STRING[data.Info.ImportError]);
 		return {};
+	}
+
+	//Texture diffuseIBLCubemap = null;
+	if (data.ImportSettings.PrefilterCubemap && data.Info.Flags & TextureFlags::IsCubeMap)
+	{
+		texture::TextureData diffuseData{};
+		diffuseData.SubresourceData = new u8[data.SubresourceSize];
+		memcpy(diffuseData.SubresourceData, data.SubresourceData, data.SubresourceSize);
+		diffuseData.SubresourceSize = data.SubresourceSize;
+		diffuseData.Icon = new u8[data.IconSize];
+		memcpy(diffuseData.Icon, data.Icon, data.IconSize);
+		diffuseData.IconSize = data.IconSize;
+		diffuseData.Info = data.Info;
+		diffuseData.ImportSettings = data.ImportSettings;
+			
+		texture::PrefilterDiffuseIBL(&diffuseData);
+		texture::PrefilterSpecularIBL(&data);
+
+		
+		std::filesystem::path texturePath{ editor::project::GetResourceDirectory() / "Cubemaps" };
+		std::filesystem::path diffPath{ texturePath };
+		diffPath.append(path.stem().string() + ".tex");
+		asset->ImportedFilePath = diffPath;
+		asset->RelatedCount = diffuseData.ImportSettings.FileCount;
+
+		std::filesystem::path specPath{ texturePath };
+		specPath.append(path.stem().string() + "spec.tex");
+		Asset* specularAsset = new Asset{ content::AssetType::Texture, path, {} };
+		specularAsset->ImportedFilePath = specPath;
+		specularAsset->RelatedCount = diffuseData.ImportSettings.FileCount;
+		content::AssetHandle specularHandle{ assets::RegisterAsset(specularAsset) };
+		diffuseData.Info.IBLPair = specularHandle;
+
+		//TODO: somehow get the iblpair saved for the specular metadata
+		PackTextureForEngine(diffuseData, diffPath);
+		std::filesystem::path metadataPath{ diffPath.replace_extension(".mt") };
+		PackTextureForEditor(diffuseData, metadataPath);
+
+		PackTextureForEngine(data, specPath);
+		std::filesystem::path specMetadataPath{ specPath.replace_extension(".mt") };
+		PackTextureForEditor(data, specMetadataPath);
+
+		std::filesystem::path brdfLutPath{ diffPath.replace_filename(diffPath.stem().string() + "brdf_lut.tex") };
+		CreateBRDFLut(diffuseData, brdfLutPath);
+
+		std::unique_ptr<u8[]> iconBuffer{};
+		u64 iconSize{};
+		content::assets::GetTextureIconData(metadataPath, iconSize, iconBuffer);
+		if (iconSize != 0)
+		{
+			id_t iconId{ graphics::ui::AddIcon(iconBuffer.get()) };
+			asset->AdditionalData = iconId;
+		}
+
+		delete[] diffuseData.SubresourceData;
+		delete[] data.SubresourceData;
+		delete[] diffuseData.Icon;
+		delete[] data.Icon;
+
+		return asset->ImportedFilePath;
 	}
 
 	std::filesystem::path texturePath{ editor::project::GetResourceDirectory() / "Textures" };
@@ -81,6 +184,9 @@ ImportTexture(std::filesystem::path path, AssetPtr asset)
 		id_t iconId{ graphics::ui::AddIcon(iconBuffer.get()) };
 		asset->AdditionalData = iconId;
 	}
+
+	delete[] data.SubresourceData;
+	delete[] data.Icon;
 
 	return asset->ImportedFilePath;
 }
@@ -598,25 +704,12 @@ ImportAsset(AssetHandle handle)
 		log::Info("Reimporting asset %ul", handle.id);
 		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath, asset);
 	}
+
 	if (!std::filesystem::exists(asset->ImportedFilePath))
 	{
 		std::string filePath{ asset->OriginalFilePath.string() };
 		log::Error("Error importing asset %u [%s]", handle.id, filePath.data());
 	}
-}
-
-void
-ReimportTexture(texture::TextureData& data, std::filesystem::path originalPath)
-{
-	texture::Import(&data);
-	if (data.Info.ImportError != texture::ImportError::Succeeded)
-	{
-		log::Error("Texture import error: ", data.Info.ImportError);
-	}
-
-	//TODO: paths
-	PackTextureForEngine(data, originalPath.filename().string());
-	PackTextureForEditor(data, originalPath.filename().string());
 }
 
 }

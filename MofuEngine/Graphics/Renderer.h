@@ -117,7 +117,7 @@ struct OrthographicCameraInitInfo : public CameraInitInfo
 
 struct ShaderFlags
 {
-	enum flags : u32
+	enum Flags : u32
 	{
 		None = 0x00,
 		Vertex = 0x01,
@@ -133,7 +133,7 @@ struct ShaderFlags
 
 struct ShaderType
 {
-	enum type : u32
+	enum Type : u32
 	{
 		Vertex = 0,
 		Pixel,
@@ -199,9 +199,13 @@ struct MaterialInitInfo
 	id_t ShaderIDs[ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
 };
 
-struct TextureHandle
+struct AmbientLightInitInfo
 {
-
+	f32 Intensity{ 1.f };
+	id_t DiffuseTextureID{ id::INVALID_ID };
+	id_t SpecularTextureID{ id::INVALID_ID };
+	id_t BRDFLutTextureID{ id::INVALID_ID };
+	u32 LightSetIdx{ id::INVALID_ID };
 };
 
 void SetCurrentFrameInfo(FrameInfo info);
@@ -225,6 +229,7 @@ void RemoveSubmesh(id_t id);
 
 id_t AddTexture(const u8* const data);
 void RemoveTexture(id_t id);
+void GetDescriptorIndices(const id_t* const textureIDs, u32 count, u32* const outIndices); //TODO: something more elegant
 
 Vec<ecs::Entity>& GetVisibleEntities();
 

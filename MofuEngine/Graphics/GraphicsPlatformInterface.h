@@ -38,6 +38,7 @@ struct PlatformInterface
 
 		id_t(*addTexture)(const u8* const);
 		void(*removeTexture)(id_t);
+		void(*getDescriptorIndices)(const id_t*const, u32, u32* const);
 
 		id_t(*addMaterial)(const MaterialInitInfo&);
 		void(*removeMaterial)(id_t);

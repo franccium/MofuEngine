@@ -69,7 +69,7 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 				ImGui::CloseCurrentPopup();
 			}
 			texFiles.clear();
-			content::ListFilesByExtension(".tex", project::GetResourceDirectory(), texFiles);
+			content::ListFilesByExtension(".tex", project::GetResourceDirectory() / "Textures", texFiles);
 			ImGui::OpenPopup("SelectTexturePopup");
 			isBrowserOpen = true;
 			textureBeingChanged = texUse;
@@ -85,7 +85,7 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 				ImGui::CloseCurrentPopup();
 			}
 			texFiles.clear();
-			content::ListFilesByExtension(".tex", project::GetResourceDirectory(), texFiles);
+			content::ListFilesByExtension(".tex", project::GetResourceDirectory() / "Textures", texFiles);
 			ImGui::OpenPopup("SelectTexturePopup");
 			isBrowserOpen = true;
 			textureBeingChanged = texUse;
@@ -136,7 +136,7 @@ RenderTextureBrowser()
 				content::AssetHandle assetHandle{ content::assets::GetHandleFromImportedPath(texPath) };
 				if (assetHandle != content::INVALID_HANDLE)
 				{
-					materialInitInfo.TextureIDs[textureBeingChanged] = content::assets::CreateResourceFromHandle(assetHandle);
+					editorMaterial.TextureIDs[textureBeingChanged] = content::assets::CreateResourceFromHandle(assetHandle);
 				}
 				else
 				{
@@ -236,6 +236,7 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 	}
 	editorMaterial.Surface = materialInitInfo.Surface;
 	editorMaterial.TextureCount = materialInitInfo.TextureCount;
+	currentMaterialAsset = mat.MaterialAsset;
 	isOpen = true;
 }
 
@@ -335,6 +336,7 @@ RenderMaterialEditor()
 	if (ImGui::Button("Update"))
 	{
 		//TODO: or edit the material texture data itself
+		UpdateMaterialInitInfo();
 		id_t newMaterialID{ content::CreateMaterial(materialInitInfo) };
 		//TODO: formal way
 		ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(materialOwner) };
@@ -346,9 +348,9 @@ RenderMaterialEditor()
 		content::AssetPtr asset{ content::assets::GetAsset(currentMaterialAsset) };
 		if (asset)
 		{
-			material::PackMaterialAsset(editorMaterial, asset->ImportedFilePath);
-			content::assets::PairAssetWithResource(currentMaterialAsset, newMaterialID, content::AssetType::Material);
-			mat.MaterialAsset = currentMaterialAsset;
+			//material::PackMaterialAsset(editorMaterial, asset->ImportedFilePath);
+			//content::assets::PairAssetWithResource(currentMaterialAsset, newMaterialID, content::AssetType::Material);
+			//mat.MaterialAsset = currentMaterialAsset;
 
 			//graphics::d3d12::core::RenderItemsUpdated();
 
@@ -365,7 +367,8 @@ RenderMaterialEditor()
 		else
 		{
 			log::Error("Load the material asset first (TODO)");
-			graphics::RemoveRenderItem(id::Index(materialOwner) - 1);
+			ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(materialOwner) };
+			graphics::RemoveRenderItem(mesh.RenderItemID);
 			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
 		}
 	}

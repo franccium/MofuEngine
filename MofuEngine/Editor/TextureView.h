@@ -23,7 +23,7 @@ struct ViewableTexture
 	u32 ArraySize{ 0 };
 	u32 MipLevels{ 0 };
 	u32 Flags{ 0 };
-	//TODO: IBLPairGUID
+    content::AssetHandle IBLPairHandle{ content::INVALID_HANDLE };
 	DXGI_FORMAT Format{};
 	//ImageSlice** Slices{ nullptr };
 	Vec<Vec<Vec<ImageSlice>>> Slices{};

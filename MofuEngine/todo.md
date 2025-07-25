@@ -3,8 +3,6 @@ not recreating resources, keeping an asset library
 
 import materials from fbx
 
-build a nice test scene
-
 optimise ecs
 
 culling
@@ -16,12 +14,10 @@ texture packing
 Project stuff
 Handling Asset deletion
 
-fix scene view entity selection 
-serialize a scene
+build a nice test scene
 lights
 then maybe ibl
 
-clean default material
 vertex color test shader
 resource reuse
 

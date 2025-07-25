@@ -304,6 +304,12 @@ RemoveTexture(id_t id)
 	gfxInterface.resources.removeTexture(id);
 }
 
+void 
+GetDescriptorIndices(const id_t* const textureIDs, u32 count, u32* const outIndices)
+{
+    gfxInterface.resources.getDescriptorIndices(textureIDs, count, outIndices);
+}
+
 id_t 
 AddMaterial(MaterialInitInfo info)
 {

@@ -88,6 +88,7 @@ struct TextureInfo
 	u32 ArraySize;
 	u32 MipLevels;
 	DXGI_FORMAT Format;
+	AssetHandle IBLPair{ content::INVALID_HANDLE };
 	ImportError::ErrorCode ImportError;
 	u32 Flags;
 };

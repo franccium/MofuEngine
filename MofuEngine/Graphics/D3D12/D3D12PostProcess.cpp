@@ -22,6 +22,10 @@ struct FXRootParameterIndices
 ID3D12RootSignature* fxRootSig{ nullptr };
 ID3D12PipelineState* fxPSO{ nullptr };
 
+u32v2 currentDimensions{ 0, 0 };
+D3D12RenderTexture renderTexture{};
+constexpr f32 CLEAR_VALUE[4]{ 0.25f, 0.25f, 0.25f, 1.f };
+
 bool
 CreatePSO()
 {
@@ -77,7 +81,47 @@ CreatePSO()
 	return fxRootSig && fxPSO;
 }
 
+void
+CreateImGuiPresentableSRV(u32v2 dimensions)
+{
+	renderTexture.Release();
+
+	D3D12_RESOURCE_DESC1 desc;
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	desc.Alignment = 0;
+	desc.Width = dimensions.x;
+	desc.Height = dimensions.y;
+	desc.DepthOrArraySize = 1;
+	desc.MipLevels = 0;
+	desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	desc.SampleDesc = { 1, 0 };
+	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	desc.SamplerFeedbackMipRegion = { 0, 0, 0 };
+	{
+		D3D12TextureInitInfo texInfo;
+		texInfo.desc = &desc;
+		texInfo.initialState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		texInfo.clearValue.Format = desc.Format;
+		memcpy(&texInfo.clearValue.Color, &CLEAR_VALUE[0], sizeof(CLEAR_VALUE));
+		renderTexture = D3D12RenderTexture{ texInfo };
+	}
+	NAME_D3D12_OBJECT(renderTexture.Resource(), L"Post Processing Buffer");
+}
+
 } // anonymous namespace
+
+void
+SetBufferSize(u32v2 size)
+{
+	u32v2& d{ currentDimensions };
+	if (size.x > d.x || size.y > d.y)
+	{
+		d = { std::max(size.x, d.x), std::max(size.y, d.y) };
+		CreateImGuiPresentableSRV(size);
+		assert(renderTexture.Resource());
+	}
+}
 
 bool 
 Initialize()
@@ -88,11 +132,28 @@ Initialize()
 void
 Shutdown()
 {
+	renderTexture.Release();
 	core::Release(fxRootSig);
 	core::Release(fxPSO);
 }
 
-void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, D3D12_CPU_DESCRIPTOR_HANDLE targetRtv)
+void
+AddTransitionsPrePostProcess(d3dx::D3D12ResourceBarrierList& barriers)
+{
+	barriers.AddTransitionBarrier(renderTexture.Resource(),
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATE_RENDER_TARGET);
+}
+
+void
+AddTransitionsPostPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
+{
+	barriers.AddTransitionBarrier(renderTexture.Resource(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+}
+
+void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, D3D12_CPU_DESCRIPTOR_HANDLE rtv)
 {
 	cmdList->SetGraphicsRootSignature(fxRootSig);
 	cmdList->SetPipelineState(fxPSO);
@@ -103,9 +164,18 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().Srv().index, 1);
 	//cmdList->SetGraphicsRootDescriptorTable(idx::DescriptorTable, core::SrvHeap().GpuStart());
 
+	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.Rtv(0) };
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	cmdList->OMSetRenderTargets(1, &targetRtv, 1, nullptr);
+	cmdList->OMSetRenderTargets(1, &imageSourceRTV, 1, nullptr);
 	cmdList->DrawInstanced(3, 1, 0, 0);
+	cmdList->OMSetRenderTargets(1, &rtv, 1, nullptr);
+	cmdList->DrawInstanced(3, 1, 0, 0);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE 
+GetSrvGPUDescriptorHandle()
+{
+	return renderTexture.Srv().gpu;
 }
 
 }

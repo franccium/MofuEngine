@@ -86,7 +86,7 @@ PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPat
 	writer.Write<u32>(info.Flags);
 	writer.Write<u32>(info.MipLevels);
 	writer.Write<u32>(info.Format);
-	writer.Write<u32>(id::INVALID_ID); //TODO: IBLPairGUID
+	writer.Write<u64>(info.IBLPair.id);
 
 	util::BlobStreamReader reader{ data.SubresourceData };
 	for (u32 i{ 0 }; i < info.ArraySize; ++i)

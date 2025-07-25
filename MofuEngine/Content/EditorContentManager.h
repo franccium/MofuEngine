@@ -16,7 +16,7 @@ AssetHandle RegisterAsset(AssetPtr asset, u64 id);
 
 void PairAssetWithResource(AssetHandle handle, id_t resourceID, AssetType::type type);
 [[nodiscard]] AssetHandle GetAssetFromResource(id_t resourceID, AssetType::type type);
-[[nodiscard]] id_t GetResourceFromAsset(AssetHandle handle, AssetType::type type);
+[[nodiscard]] id_t GetResourceFromAsset(AssetHandle handle, AssetType::type type, bool createIfNotFound = true);
 [[nodiscard]] Vec<id_t> GetResourcesFromAsset(AssetHandle handle, AssetType::type type);
 
 id_t CreateResourceFromHandle(AssetHandle handle);
@@ -40,5 +40,6 @@ void LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::Render
 
 const content::AssetHandle DEFAULT_MESH_HANDLE{ 10 };
 const content::AssetHandle DEFAULT_MATERIAL_UNTEXTURED_HANDLE{ 11 };
+const content::AssetHandle DEFAULT_BRDF_LUT_HANDLE{ 14 };
 
 }

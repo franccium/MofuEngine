@@ -24,6 +24,8 @@ Vec<D3D11Device> d3d11Devices;
 HMODULE dxgiModule{ nullptr };
 HMODULE d3d11Module{ nullptr };
 
+constexpr u32 SAMPLE_COUNT_RANDOM{ 1024 };
+
 constexpr u32
 GetMaxMipCount(u32 width, u32 height, u32 depth)
 {
@@ -61,7 +63,7 @@ CopySubresources(const ScratchImage& scratch, TextureData* const data)
 	}
 
 	data->SubresourceSize = (u32)subresourceSize;
-	data->SubresourceData = (u8* const)CoTaskMemRealloc(data->SubresourceData, subresourceSize);
+	data->SubresourceData = (u8* const)realloc(data->SubresourceData, subresourceSize);
 	assert(data->SubresourceData);
 
 	util::BlobStreamWriter blob{ data->SubresourceData, data->SubresourceSize };
@@ -434,12 +436,11 @@ PrefilterIbl(TextureData* const data, IblFilter::Type filterType)
 		memcpy(image.pixels, images[imgIdx].pixels, image.slicePitch);
 	}
 
-	constexpr u32 sampleCountRandom{ 1024 };
 	if (!RunOnGpu([&](ID3D11Device* device)
 		{
 			hr = filterType == IblFilter::Diffuse
-				? PrefilterDiffuse(device, cubemaps, sampleCountRandom, cubemaps)
-				: PrefilterSpecular(device, cubemaps, sampleCountRandom, cubemaps);
+				? PrefilterDiffuse(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps, device)
+				: PrefilterSpecular(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps, device);
 			return SUCCEEDED(hr);
 		}))
 	{
@@ -647,13 +648,13 @@ InitializeFromImages(TextureData* const data, const Vec<Image>& images)
 				// is an equirectangular image
 				if (!RunOnGpu([&](ID3D11Device* device)
 					{
-						hr = EquirectangularToCubemap(device, images.data(), arraySize, settings.CubemapSize,
-							settings.PrefilterCubemap, settings.MirrorCubemap, workingScratch);
+						hr = EquirectangularToCubemap(images.data(), arraySize, settings.CubemapSize,
+							settings.PrefilterCubemap, false, settings.MirrorCubemap, workingScratch, device);
 						return SUCCEEDED(hr);
 					}))
 				{
 					hr = EquirectangularToCubemap(images.data(), arraySize, settings.CubemapSize,
-						settings.PrefilterCubemap, settings.MirrorCubemap, workingScratch);
+						settings.PrefilterCubemap, false, settings.MirrorCubemap, workingScratch);
 				}
 			}
 			else if (arraySize % 6 != 0 || image.width != image.height)
@@ -889,7 +890,7 @@ ComputeBRDFIntegrationLUT(TextureData* const data)
 
 	if (!RunOnGpu([&](ID3D11Device* device)
 		{
-			hr = BrdfIntegrationLut(device, sampleCount, brdfLut);
+			hr = BrdfIntegrationLut(sampleCount, brdfLut, device);
 			return SUCCEEDED(hr);
 		}))
 	{

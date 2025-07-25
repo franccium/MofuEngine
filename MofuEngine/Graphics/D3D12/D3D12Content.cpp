@@ -41,7 +41,7 @@ std::unordered_map<u64, id_t> psoMap;
 std::mutex psoMutex{};
 
 constexpr D3D12_ROOT_SIGNATURE_FLAGS
-GetRootSignatureFlags(ShaderFlags::flags shaderFlags)
+GetRootSignatureFlags(ShaderFlags::Flags shaderFlags)
 {
 	D3D12_ROOT_SIGNATURE_FLAGS signature_flags{ d3dx::D3D12RootSignatureDesc::DEFAULT_FLAGS };
 	if (shaderFlags & ShaderFlags::Vertex) signature_flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
@@ -56,13 +56,13 @@ GetRootSignatureFlags(ShaderFlags::flags shaderFlags)
 
 // return index of the first set bit, going from LSB to MSB
 #pragma intrinsic(_BitScanForward)
-ShaderType::type
+ShaderFlags::Flags
 GetShaderType(u32 flag)
 {
 	assert(flag);
 	unsigned long index;
 	_BitScanForward(&index, flag);
-	return (ShaderType::type)index;
+	return (ShaderFlags::Flags)index;
 }
 
 id_t
@@ -127,7 +127,7 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 		stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
 		stream.blend = d3dx::BlendState.DISABLED;
 
-		const ShaderFlags::flags shaderFlags{ material.ShaderFlags() };
+		const ShaderFlags::Flags shaderFlags{ material.ShaderFlags() };
 		D3D12_SHADER_BYTECODE shaders[ShaderType::Count]{};
 		u32 shaderIndex{ 0 };
 		for (u32 i{ 0 }; i < ShaderType::Count; ++i)
@@ -172,7 +172,7 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 namespace material {
 
 id_t
-CreateRootSignature(MaterialType::type materialType, ShaderFlags::flags shaderFlags)
+CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFlags)
 {
 	static_assert(sizeof(materialType) == sizeof(u32) && sizeof(shaderFlags) == sizeof(u32));
 	const u64 key{ ((u64)materialType << 32) | shaderFlags };
@@ -258,7 +258,7 @@ GetMaterialReflection(id_t materialID)
 	assert(id::IsValid(materialID));
 	u8* const buffer{ materials[materialID].get() };
 	MaterialType::type materialType{ *(MaterialType::type*)buffer };
-	ShaderFlags::flags flags{ *(ShaderFlags::flags*)&buffer[D3D12MaterialStream::SHADER_FLAGS_INDEX] };
+	ShaderFlags::Flags flags{ *(ShaderFlags::Flags*)&buffer[D3D12MaterialStream::SHADER_FLAGS_INDEX] };
 	[[maybe_unused]] id_t rootSignatureID{ *(id_t*)&buffer[D3D12MaterialStream::ROOT_SIGNATURE_INDEX] };
 	u32 textureCount{ *(u32*)&buffer[D3D12MaterialStream::TEXTURE_COUNT_INDEX] };
 	MaterialSurface surface{ *(MaterialSurface*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX] };

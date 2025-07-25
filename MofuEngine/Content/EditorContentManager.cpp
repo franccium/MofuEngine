@@ -211,7 +211,7 @@ GetAssetFromResource(id_t resourceID, AssetType::type type)
 
 // finds an existing resource for that asset; if none, creates one
 id_t
-GetResourceFromAsset(AssetHandle handle, AssetType::type type)
+GetResourceFromAsset(AssetHandle handle, AssetType::type type, bool createIfNotFound)
 {
 	//TODO: this could have multiple results
 	auto set{ assetResourcePairs[type] };
@@ -225,7 +225,7 @@ GetResourceFromAsset(AssetHandle handle, AssetType::type type)
 		return id;
 	}
 	log::Warn("No existing resource for handle %u, creating one...", handle.id);
-	return CreateResourceFromHandle(handle);
+	return createIfNotFound ? CreateResourceFromHandle(handle) : id::INVALID_ID;
 }
 
 Vec<id_t>
@@ -305,6 +305,8 @@ LoadEditorAssets()
 	PairAssetWithResource(DEFAULT_MATERIAL_UNTEXTURED_HANDLE, content::GetDefaultMaterial(), content::AssetType::Material);
 	AssetPtr mesh{ GetAsset(DEFAULT_MESH_HANDLE) };
 	content::LoadEngineMeshes(mesh->ImportedFilePath);
+	//AssetPtr mesh{ GetAsset(DEFAULT_BRDF_LUT_HANDLE) };
+	//content::LoadBRDFLut(DEFAULT_BRDF_LUT_HANDLE);
 }
 
 void 
@@ -352,10 +354,10 @@ GetTextureIconData(const std::filesystem::path& path, u64& outIconSize, std::uni
 
 	u32 iconSize{};
 	file.read(reinterpret_cast<char*>(&iconSize), sizeof(iconSize));
-	assert(iconSize != 0);
 	if (iconSize == 0)
 	{
 		log::Warn("Can't find icon data for texture: %s", path.string().c_str());
+		return;
 	}
 	outIconSize = iconSize;
 	iconBuffer = std::make_unique<u8[]>(outIconSize);

@@ -8,6 +8,7 @@
 namespace mofu::editor::material {
 
 void DisplayMaterialSurfaceProperties(const graphics::MaterialSurface& mat);
+void DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& mat);
 
 bool InitializeMaterialEditor();
 void RenderMaterialEditor();
