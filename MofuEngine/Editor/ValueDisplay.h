@@ -16,7 +16,7 @@ bool DisplayEditableUintNT(u32* v, const char* label, u32 minVal = MIN_EDITABLE_
 bool DisplayEditableUint(u32* v, const char* label, u32 minVal = MIN_EDITABLE_U32, u32 maxVal = MAX_EDITABLE_U32);
 bool DisplayEditableFloat(f32* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT, const char* format = "%.3f");
 bool DisplayEditableVector2(v2* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT);
-bool DisplayEditableVector3(v3* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT);
+bool DisplayEditableVector3(v3* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT, const char* format = "%.3f");
 bool DisplayEditableVector4(v4* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT);
 bool DisplayEditableMatrix4x4(m4x4* m, const char* label);
 

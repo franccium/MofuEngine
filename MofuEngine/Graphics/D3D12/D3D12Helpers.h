@@ -22,6 +22,15 @@ constexpr struct
         0,
         0
     };
+
+    const D3D12_HEAP_PROPERTIES READBACK_HEAP
+    {
+        D3D12_HEAP_TYPE_READBACK,
+        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        D3D12_MEMORY_POOL_UNKNOWN,
+        0,
+        0
+    };
 } HeapProperties;
 
 constexpr struct

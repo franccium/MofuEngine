@@ -139,6 +139,8 @@ constexpr inline v3 ToDegrees(const v3& radians)
 	};
 }
 
+static v3 prevEuler = { 0,0,0 };
+
 // exposed to various systems as read-only or read-write
 struct LocalTransform : Component
 {
@@ -150,10 +152,10 @@ struct LocalTransform : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] LocalTransform& c)
 	{
-		constexpr f32 minPosVal{ -100.f };
-		constexpr f32 maxPosVal{ 100.f };
-		constexpr f32 minRotVal{ -1.f };
-		constexpr f32 maxRotVal{ 1.f };
+		constexpr f32 minPosVal{ -500.f };
+		constexpr f32 maxPosVal{ 500.f };
+		constexpr f32 minRotVal{ -400.f };
+		constexpr f32 maxRotVal{ 400.f };
 		constexpr f32 minScaleVal{ -25.f };
 		constexpr f32 maxScaleVal{ 100.f };
 
@@ -162,7 +164,13 @@ struct LocalTransform : Component
 		ImGui::TableNextRow();
 		editor::DisplayEditableVector3(&c.Position, "Position", minPosVal, maxPosVal);
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector4(&c.Rotation, "Rotation", minRotVal, maxRotVal);
+		editor::DisplayLabelT("Rotation");
+		// TODO: update the rotation the editor can use, maybe at the end of the frame after confirming all transforms
+		//v3 eulerRot{ math::QuatToEulerDeg(c.Rotation) }; 
+		if (editor::DisplayEditableVector3(&prevEuler, "Rotation", minRotVal, maxRotVal, "%.1f"))
+		{
+			c.Rotation = math::EulerDegToQuat(prevEuler);
+		}
 		ImGui::TableNextRow();
 		editor::DisplayEditableVector3(&c.Scale, "Scale", minScaleVal, maxScaleVal);
 

@@ -28,6 +28,15 @@ CalculateBoundingSphere(Sphere& sphere, const CullableLightParameters& params)
 	}
 }
 
+void
+UpdateCullingInfo(CullingInfo& cullingInfo, const CullableLightParameters& params, LightType::Type type)
+{
+	cullingInfo.Position = params.Position;
+	cullingInfo.Range = params.Range;
+	cullingInfo.Direction = params.Direction;
+	cullingInfo.CosPenumbra = type == LightType::Spot ? params.CosPenumbra : -1.f; // CosPenumbra == -1.f marks a point light
+}
+
 } // anonymous namespace
 
 void
@@ -82,12 +91,18 @@ UpdateDirectionalLight(ecs::component::DirectionalLight& l)
 	params.Direction = l.Direction;
 }
 
+
+
 void
 UpdateCullableLightTransform(const ecs::component::CullableLight& l, const ecs::component::WorldTransform& wt)
 {
 	LightSet& lightSet{ lightSets[currentLightSetKey] };
 	CullableLightParameters& params{ lightSet.CullableLights[l.LightDataIndex] };
 	params.Position = { wt.TRS._41, wt.TRS._42, wt.TRS._43 };
+	Sphere& sphere{ lightSet.BoundingSpheres[l.LightDataIndex] };
+	CalculateBoundingSphere(sphere, params);
+	CullingInfo& cullingInfo{ lightSet.CullingInfos[l.LightDataIndex] };
+	UpdateCullingInfo(cullingInfo, params, lightSet.CullableLightOwners[l.LightDataIndex].Type);
 }
 
 void 
@@ -105,6 +120,10 @@ UpdatePointLight(ecs::component::PointLight& l)
 	params.Range = l.Range;
 	params.Attenuation = l.Attenuation;
 	params.Position = { wt.TRS._41, wt.TRS._42, wt.TRS._43 };
+	Sphere& sphere{ lightSet.BoundingSpheres[l.LightDataIndex] };
+	CalculateBoundingSphere(sphere, params);
+	CullingInfo& cullingInfo{ lightSet.CullingInfos[l.LightDataIndex] };
+	UpdateCullingInfo(cullingInfo, params, lightSet.CullableLightOwners[l.LightDataIndex].Type);
 
 	lightSet.DirtyBits[l.LightDataIndex].set();
 }
@@ -134,6 +153,10 @@ UpdateSpotLight(ecs::component::SpotLight& l)
 	//params.Position = lt.Position;
 	params.Position = { wt.TRS._41, wt.TRS._42, wt.TRS._43 };
 	params.Direction = lt.Forward;
+	Sphere& sphere{ lightSet.BoundingSpheres[l.LightDataIndex] };
+	CalculateBoundingSphere(sphere, params);
+	CullingInfo& cullingInfo{ lightSet.CullingInfos[l.LightDataIndex] };
+	UpdateCullingInfo(cullingInfo, params, lightSet.CullableLightOwners[l.LightDataIndex].Type);
 
 	lightSet.DirtyBits[l.LightDataIndex].set();
 }
@@ -254,8 +277,7 @@ AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type typ
 		CalculateBoundingSphere(sphere, params);
 
 		CullingInfo& cullingInfo{ set.CullingInfos[dataIndex] };
-		cullingInfo.Range = params.Range;
-		cullingInfo.CosPenumbra = type == LightType::Spot ? params.CosPenumbra : -1.f;
+		UpdateCullingInfo(cullingInfo, params, type);
 
 		set.DirtyBits[dataIndex].set();
 		sLight.LightDataIndex = dataIndex;

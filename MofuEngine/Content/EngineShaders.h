@@ -52,10 +52,14 @@ struct ContentShaderInfo
 };
 
 constexpr ContentShaderInfo CONTENT_SHADER_FILES[] {
-    {ContentShader::EnvMapProcessing_EquirectangularToCubeMapCS, {"EnvMapProcessingCS.hlsl", "EquirectangularToCubeMapCS", graphics::ShaderType::Compute}},
+    /*{ContentShader::EnvMapProcessing_EquirectangularToCubeMapCS, {"EnvMapProcessingCS.hlsl", "EquirectangularToCubeMapCS", graphics::ShaderType::Compute}},
     {ContentShader::EnvMapProcessing_PrefilterDiffuseEnvMapCS, {"EnvMapProcessingCS.hlsl", "PrefilterDiffuseEnvMapCS", graphics::ShaderType::Compute}},
     {ContentShader::EnvMapProcessing_PrefilterSpecularEnvMapCS, {"EnvMapProcessingCS.hlsl", "PrefilterSpecularEnvMapCS", graphics::ShaderType::Compute}},
-    {ContentShader::EnvMapProcessing_ComputeBRDFIntegrationLUTCS, {"EnvMapProcessingCS.hlsl", "ComputeBRDFIntegrationLUTCS", graphics::ShaderType::Compute}},
+    {ContentShader::EnvMapProcessing_ComputeBRDFIntegrationLUTCS, {"EnvMapProcessingCS.hlsl", "ComputeBRDFIntegrationLUTCS", graphics::ShaderType::Compute}},*/
+    {ContentShader::EnvMapProcessing_EquirectangularToCubeMapCS, {"EnvironmentMapProcessingCS.hlsl", "EquirectangularToCubeMapCS", graphics::ShaderType::Compute}},
+    {ContentShader::EnvMapProcessing_PrefilterDiffuseEnvMapCS, {"EnvironmentMapProcessingCS.hlsl", "PrefilterDiffuseEnvMapCS", graphics::ShaderType::Compute}},
+    {ContentShader::EnvMapProcessing_PrefilterSpecularEnvMapCS, {"EnvironmentMapProcessingCS.hlsl", "PrefilterSpecularEnvMapCS", graphics::ShaderType::Compute}},
+    {ContentShader::EnvMapProcessing_ComputeBRDFIntegrationLUTCS, {"EnvironmentMapProcessingCS.hlsl", "ComputeBRDFIntegrationLUTCS", graphics::ShaderType::Compute}},
 };
 
 static_assert(_countof(CONTENT_SHADER_FILES) == ContentShader::Count);

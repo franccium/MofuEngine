@@ -187,7 +187,7 @@ public:
 	}
 
 	[[nodiscard]] constexpr DXResource* Buffer() const { return _buffer.Buffer(); }
-	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS GpuAdress() const { return _buffer.GpuAddress(); }
+	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS GpuAddress() const { return _buffer.GpuAddress(); }
 	[[nodiscard]] constexpr u32 Size() const { return _buffer.Size(); }
 	[[nodiscard]] constexpr DescriptorHandle UAV() const { return _uav; }
 	[[nodiscard]] constexpr DescriptorHandle UAVShaderVisible() const { return _uavShaderVisible; }

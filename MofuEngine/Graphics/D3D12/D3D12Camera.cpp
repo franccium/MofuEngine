@@ -213,12 +213,10 @@ D3D12Camera::Update()
 			XMMatrixPerspectiveFovRH(_fieldOfView * XM_PI, _aspectRatio, _farZ, _nearZ) :
 			XMMatrixOrthographicRH(_viewWidth, _viewHeight, _farZ, _nearZ);
         _inverseProjection = XMMatrixInverse(nullptr, _projection);
-        _inverseProjection.r[2] = { 0.f, 0.f, 0.f, 1.f };
         _isDirty = false;
     }
 	_viewProjection = XMMatrixMultiply(_view, _projection);
 	_inverseViewProjection = XMMatrixInverse(nullptr, _viewProjection);
-    _inverseViewProjection.r[3] = { 0.f, 0.f, -1.f, 1.f }; //FIXME: out of ideas how to fix 
     //_inverseViewProjection = XMMatrixMultiply(_inverseProjection, XMMatrixInverse(nullptr, _view));
 }
 

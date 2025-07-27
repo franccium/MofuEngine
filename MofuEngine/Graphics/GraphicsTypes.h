@@ -11,4 +11,8 @@ using uint3 = u32v3;
 using uint2 = u32v2;
 using uint = u32;
 #include "D3D12/Shaders/CommonTypes.hlsli"
+
+namespace content {
+#include "Content/Shaders/ContentTypes.hlsli"
+}
 }

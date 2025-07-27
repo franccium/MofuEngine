@@ -423,10 +423,10 @@ PixelOut TestShaderPS(in VertexOut psIn)
     //}
     
     const uint gridIndex = GetGridIndex(psIn.HomogenousPositon.xy, GlobalData.ViewWidth);
-    uint lightStartIndex = LightGrid[gridIndex].x;
+    const uint lightStartIndex = LightGrid[gridIndex].x;
     const uint lightCount = LightGrid[gridIndex].y;
     const uint maxPointLight = lightStartIndex + (lightCount >> 16);
-    const uint maxSpotLight = lightStartIndex + (lightCount & 0xFFFF);
+    const uint maxSpotLight = maxPointLight + (lightCount & 0xFFFF);
     for (i = lightStartIndex; i < maxPointLight; ++i)
     {
         const uint lightIndex = LightIndexList[i];
@@ -454,7 +454,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     color += EvaluateIBL(S);
 
-#if 0 // Light Grid
+#if 1 // Light Grid
     float4 Position = psIn.HomogenousPositon;
     color = Heatmap(LightGrid, Position.xy, 0.1f, color);
 #elif 1 // Scene

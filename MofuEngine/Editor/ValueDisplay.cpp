@@ -65,13 +65,13 @@ bool DisplayEditableVector2(v2* v, const char* label, f32 minVal, f32 maxVal)
 	return changed;
 }
 
-bool DisplayEditableVector3(v3* v, const char* label, f32 minVal, f32 maxVal)
+bool DisplayEditableVector3(v3* v, const char* label, f32 minVal, f32 maxVal, const char* format)
 {
 	DisplayLabelT(label);
 	ImGui::PushID(v);
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
-	bool changed{ ImGui::DragFloat3("##Editor", (f32*)v, dragSpeed, minVal, maxVal, "%.3f") };
+	bool changed{ ImGui::DragFloat3("##Editor", (f32*)v, dragSpeed, minVal, maxVal, format) };
 	ImGui::PopID();
 	return changed;
 }

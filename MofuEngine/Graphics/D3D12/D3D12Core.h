@@ -61,8 +61,10 @@ void SetHasDeferredReleases();
 
 [[nodiscard]] ConstantBuffer& CBuffer();
 
-[[nodiscard]] u32 CurrentFrameIndex();
+[[nodiscard]] DXGraphicsCommandList* const GraphicsCommandList();
 
+[[nodiscard]] u32 CurrentFrameIndex();
+void FlushCommandQueue();
 
 Surface CreateSurface(platform::Window window);
 void RemoveSurface(surface_id id);

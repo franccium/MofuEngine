@@ -4,6 +4,7 @@
 #include <DirectXTex.h>
 #include "NormalMapProcessing.h"
 #include "EnvironmentMapProcessing.h"
+#include "D3D12EnvironmentMapProcessing.h"
 
 using namespace DirectX;
 using namespace Microsoft::WRL;
@@ -646,6 +647,8 @@ InitializeFromImages(TextureData* const data, const Vec<Image>& images)
 			if (math::IsEqual((f32)image.width / (f32)image.height, 2.f))
 			{
 				// is an equirectangular image
+				//hr = EquirectangularToCubemapD3D12(images.data(), arraySize, settings.CubemapSize,
+					//settings.PrefilterCubemap, false, settings.MirrorCubemap, workingScratch);
 				if (!RunOnGpu([&](ID3D11Device* device)
 					{
 						hr = EquirectangularToCubemap(images.data(), arraySize, settings.CubemapSize,

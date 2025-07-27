@@ -117,7 +117,6 @@
   <ItemGroup>
     <ClCompile Include="Content\AssetImporter.cpp" />
     <ClCompile Include="Content\ContentManagement.cpp" />
-    <ClCompile Include="Content\D3D12EnvironmentMapProcessing.cpp" />
     <ClCompile Include="Content\EditorContentManager.cpp" />
     <ClCompile Include="Content\EnvironmentMapProcessing.cpp" />
     <ClCompile Include="Content\Guid.cpp" />
@@ -204,7 +203,6 @@
     <ClInclude Include="Content\Asset.h" />
     <ClInclude Include="Content\AssetImporter.h" />
     <ClInclude Include="Content\ContentManagement.h" />
-    <ClInclude Include="Content\D3D12EnvironmentMapProcessing.h" />
     <ClInclude Include="Content\EngineShaders.h" />
     <ClInclude Include="Content\Shaders\ContentProcessingShaders.h" />
     <ClInclude Include="Content\ContentUtils.h" />

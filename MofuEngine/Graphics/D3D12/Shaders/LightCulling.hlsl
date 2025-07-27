@@ -134,6 +134,8 @@ void LightCullingCS(ComputeShaderInput csIn)
             }
         }
         
+        //_workingLights_Opaque[i] = 2 - uint(1);
+        
         //const bool isPointLight = light.CosPenumbra < 0.0f;
         //if (isPointLight || light.CosPenumbra > 0.f)
         //{
@@ -172,7 +174,7 @@ void LightCullingCS(ComputeShaderInput csIn)
             InterlockedAdd(_opaqueLightIndex.x, 1, pointIndex);
             LightIndexList_Opaque[_lightIndexStartOffset + pointIndex] = _lightIndexList[i];
         }
-        else
+        else if (_workingLights_Opaque[i] == 2)
         {
             InterlockedAdd(_opaqueLightIndex.y, 1, spotIndex);
             LightIndexList_Opaque[_spotLightStartOffset + spotIndex] = _lightIndexList[i];

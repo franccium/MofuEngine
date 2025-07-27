@@ -142,4 +142,71 @@ IsEqual(f32 a, f32 b)
 {
 	return abs(a - b) < math::EPSILON;
 }
+
+using namespace DirectX;
+[[nodiscard]] inline v3 
+QuatToEulerDeg(const quat& quat)
+{
+	xmm q{ XMLoadFloat4(&quat) };
+	v3a euler{};
+
+	m4x4a rotMat{};
+	XMStoreFloat4x4A(&rotMat, XMMatrixRotationQuaternion(q));
+	euler.y = asinf(-rotMat._31); // Pitch
+	if (cosf(euler.y) > 0.0001f) 
+	{
+		euler.x = atan2f(rotMat._32, rotMat._33); // Yaw
+		euler.z = atan2f(rotMat._21, rotMat._11); // Roll
+	}
+	else 
+	{
+		euler.x = 0.0f;
+		euler.z = atan2f(-rotMat._12, rotMat._22);
+	}
+
+	euler.x = XMConvertToDegrees(euler.x);
+	euler.y = XMConvertToDegrees(euler.y);
+	euler.z = XMConvertToDegrees(euler.z);
+
+	return euler;
+}
+
+[[nodiscard]] inline v3
+QuatToEulerRad(const quat& quat)
+{
+	xmm q{ XMLoadFloat4(&quat) };
+	v3a euler{};
+
+	m4x4a rotMat{};
+	XMStoreFloat4x4A(&rotMat, XMMatrixRotationQuaternion(q));
+	euler.y = asinf(-rotMat._31); // Pitch
+	if (cosf(euler.y) > 0.0001f)
+	{
+		euler.x = atan2f(rotMat._32, rotMat._33); // Yaw
+		euler.z = atan2f(rotMat._21, rotMat._11); // Roll
+	}
+	else
+	{
+		euler.x = 0.0f;
+		euler.z = atan2f(-rotMat._12, rotMat._22);
+	}
+
+	return euler;
+}
+
+[[nodiscard]] inline quat 
+EulerDegToQuat(const v3& eulerDeg)
+{
+	v4a q{};
+	XMStoreFloat4A(&q, XMQuaternionRotationRollPitchYaw(XMConvertToRadians(eulerDeg.x), XMConvertToRadians(eulerDeg.y), XMConvertToRadians(eulerDeg.z)));
+	return q;
+}
+
+[[nodiscard]] 
+inline quat EulerRadToQuat(const v3& eulerRad)
+{
+	v4a q{};
+	XMStoreFloat4A(&q, XMQuaternionRotationRollPitchYaw(eulerRad.x, eulerRad.y, eulerRad.z));
+	return q;
+}
 }

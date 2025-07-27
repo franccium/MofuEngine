@@ -20,7 +20,7 @@ namespace {
 bool
 InitializeEditorGUI()
 {
-    return content::shaders::Initialize() && InitializeSceneEditorView() && material::InitializeMaterialEditor();
+    return InitializeSceneEditorView() && material::InitializeMaterialEditor();
 }
 
 void 
@@ -55,7 +55,6 @@ InspectAsset(content::AssetHandle handle)
 void
 ShutdownEditorGUI()
 {
-    content::shaders::Shutdown();
 }
 
 }

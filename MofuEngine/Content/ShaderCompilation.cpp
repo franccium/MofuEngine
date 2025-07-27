@@ -426,8 +426,10 @@ CompileContentProcessingShaders()
         path.replace_filename(file.Info.File);
 
         Vec<std::wstring> extraArgs{};
+        extraArgs.emplace_back(L"-I");
+        extraArgs.emplace_back(c_to_wstring(content::CONTENT_SHADERS_SOURCE_PATH));
 
-        DxcCompiledShader compiledShader{ compiler.CompileD3D11(file.Info, path, extraArgs) };
+        DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs) };
         if (compiledShader.bytecode && compiledShader.bytecode->GetBufferPointer() && compiledShader.bytecode->GetBufferSize())
         {
             shaders.emplace_back(std::move(compiledShader));

@@ -58,7 +58,7 @@ bool CheckCompiledShadersUpToDate()
 bool
 CompileContentShaders()
 {
-    if (CheckCompiledShadersUpToDate()) return true;
+    //TODO:if (CheckCompiledShadersUpToDate()) return true;
     return mofu::shaders::CompileContentProcessingShaders();
 }
 
@@ -80,7 +80,16 @@ Shutdown()
     contentShadersBlob.reset();
 }
 
-ShaderBytecode
+//ShaderBytecode
+//GetContentShader(ContentShader::ID id)
+//{
+//    assert(id < EngineShader::Count);
+//    const CompiledShaderPtr shader{ contentShaders[id] };
+//    assert(shader && shader->BytecodeSize());
+//    return { shader->Bytecode(), shader->BytecodeSize() };
+//}
+
+D3D12_SHADER_BYTECODE
 GetContentShader(ContentShader::ID id)
 {
     assert(id < EngineShader::Count);
@@ -88,6 +97,5 @@ GetContentShader(ContentShader::ID id)
     assert(shader && shader->BytecodeSize());
     return { shader->Bytecode(), shader->BytecodeSize() };
 }
-
 
 }

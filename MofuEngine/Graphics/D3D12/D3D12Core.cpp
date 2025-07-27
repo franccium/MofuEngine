@@ -533,6 +533,8 @@ DescriptorHeap& UavHeap() { return uavDescHeap; }
 
 ConstantBuffer& CBuffer() { return constantBuffers[CurrentFrameIndex()]; }
 
+DXGraphicsCommandList* const GraphicsCommandList() { return gfxCommand.CommandList(0); }
+
 u32 CurrentFrameIndex() { return gfxCommand.FrameIndex(); }
 
 void SetHasDeferredReleases()
@@ -785,6 +787,12 @@ ResizeSurface(surface_id id, u32 width, u32 height)
 {
     gfxCommand.Flush();
     surfaces[id].Resize(width, height);
+}
+
+void
+FlushCommandQueue()
+{
+    gfxCommand.Flush();
 }
 
 u32 

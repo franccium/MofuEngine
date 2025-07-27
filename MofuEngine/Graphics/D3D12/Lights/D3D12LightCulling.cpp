@@ -269,7 +269,7 @@ CullLights(DXGraphicsCommandList* const cmdList, const D3D12FrameInfo& frameInfo
 	using param = LightCullingRootParameter;
 	cmdList->SetComputeRootConstantBufferView(param::GlobalShaderData, frameInfo.GlobalShaderData);
 	cmdList->SetComputeRootConstantBufferView(param::Constants, cbuffer.GpuAddress(buffer));
-	cmdList->SetComputeRootUnorderedAccessView(param::FrustumsOutOrIndexCounter, culler.LightIndexCounter.GpuAdress());
+	cmdList->SetComputeRootUnorderedAccessView(param::FrustumsOutOrIndexCounter, culler.LightIndexCounter.GpuAddress());
 	cmdList->SetComputeRootShaderResourceView(param::FrustumsIn, culler.GridFrustums.GpuAddress());
 	cmdList->SetComputeRootShaderResourceView(param::CullingInfo, light::GetCullingInfoBuffer(frameInfo.FrameIndex));
 	cmdList->SetComputeRootShaderResourceView(param::BoundingSpheres, light::GetBoundingSpheresBuffer(frameInfo.FrameIndex));

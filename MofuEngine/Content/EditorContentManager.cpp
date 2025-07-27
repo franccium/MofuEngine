@@ -11,6 +11,8 @@
 #include "Editor/Material.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "Editor/SceneEditorView.h"
+#include "Shaders/ContentProcessingShaders.h"
+#include "D3D12EnvironmentMapProcessing.h"
 
 namespace mofu::content::assets {
 namespace {
@@ -319,6 +321,9 @@ SaveAssetRegistry()
 void
 InitializeAssetRegistry()
 {
+	content::shaders::Initialize();
+	texture::InitializeEnvironmentProcessing();
+
 	editor::InitializeAssetBrowserGUI();
 
 	DeserializeRegistry();
@@ -332,6 +337,9 @@ InitializeAssetRegistry()
 void
 ShutdownAssetRegistry()
 {
+	texture::ShutdownEnvironmentProcessing();
+	content::shaders::Shutdown();
+
 	SerializeRegistry();
 
 	for (auto& [handle, asset] : assetRegistry)

@@ -7,10 +7,13 @@
 #include <dxgi1_6.h>
 
 namespace mofu::content::texture {
-HRESULT EquirectangularToCubemap(const DirectX::Image* envMaps, u32 envMapCount, u32 cubemapSize,
-	bool usePrefilterSize, bool mirrorCubemap, DirectX::ScratchImage& cubeMaps);
+bool InitializeEnvironmentProcessing();
+void ShutdownEnvironmentProcessing();
 
-HRESULT PrefilterDiffuse(const DirectX::ScratchImage& cubemaps, u32 sampleCount, DirectX::ScratchImage& prefilteredDiffuse);
-HRESULT PrefilterSpecular(const DirectX::ScratchImage& cubemaps, u32 sampleCount, DirectX::ScratchImage& prefilteredSpecular);
-HRESULT BrdfIntegrationLut(u32 sampleCount, DirectX::ScratchImage& brdfLut);
+HRESULT EquirectangularToCubemapD3D12(const DirectX::Image* envMaps, u32 envMapCount, u32 cubemapSize,
+	bool usePrefilterSize, bool isSpecular, bool mirrorCubemap, DirectX::ScratchImage& cubeMaps);
+
+HRESULT PrefilterDiffuseD3D12(const DirectX::ScratchImage& cubemaps, u32 sampleCount, DirectX::ScratchImage& prefilteredDiffuse);
+HRESULT PrefilterSpecularD3D12(const DirectX::ScratchImage& cubemaps, u32 sampleCount, DirectX::ScratchImage& prefilteredSpecular);
+HRESULT BrdfIntegrationLutD3D12(u32 sampleCount, DirectX::ScratchImage& brdfLut);
 }
