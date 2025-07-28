@@ -139,6 +139,7 @@
     <ClCompile Include="ECS\Systems\PrepareFrameRenderSystem.cpp" />
     <ClCompile Include="ECS\Systems\PreparePerObjectDataRenderSystem.cpp" />
     <ClCompile Include="ECS\Systems\TestCullingSystem.cpp" />
+    <ClCompile Include="ECS\TransformHierarchy.cpp" />
     <ClCompile Include="Editor\ContentBrowser.cpp" />
     <ClCompile Include="Editor\AssetInteraction.cpp" />
     <ClCompile Include="Editor\AssetPacking.cpp" />
@@ -229,6 +230,7 @@
     <ClInclude Include="ECS\Systems\SubmitEntityRenderSystem.cpp" />
     <ClInclude Include="ECS\Systems\TransformSystem.cpp" />
     <ClInclude Include="ECS\Transform.h" />
+    <ClInclude Include="ECS\TransformHierarchy.h" />
     <ClInclude Include="ECS\UpdateManager.h" />
     <ClInclude Include="Editor\ContentBrowser.h" />
     <ClInclude Include="Editor\AssetInteraction.h" />

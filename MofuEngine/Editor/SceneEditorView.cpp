@@ -1,6 +1,7 @@
 #include "SceneEditorView.h"
 #include "imgui.h"
 #include "ECS/Component.h"
+#include "ECS/TransformHierarchy.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "MaterialEditor.h"
 #include "AssetInteraction.h"
@@ -149,7 +150,7 @@ CreateEntity(EntityTreeNode* node)
         ecs::scene::AddComponent<ecs::component::Parent>(selected);
     }
 
-	CreateEntityTreeNode(entityData.id, node);
+    AddEntityToSceneView(entityData.id);
 }
 
 void 
@@ -188,13 +189,7 @@ DuplicateEntity(EntityTreeNode* node)
         mesh.RenderItemID = graphics::AddRenderItem(newEntity, mesh.MeshID, material.MaterialCount, material.MaterialIDs);
     }
 
-    EntityTreeNode* parentNode{ rootNode };
-    if (ecs::scene::HasComponent<ecs::component::Child>(newEntity))
-    {
-        ecs::component::Child child{ ecs::scene::GetComponent<ecs::component::Child>(newEntity) };
-        parentNode = FindParentAsNode(child.ParentEntity);
-    }
-    CreateEntityTreeNode(newEntity, parentNode);
+    AddEntityToSceneView(newEntity);
 }
 
 struct SceneHierarchy
@@ -465,6 +460,10 @@ void AddEntityToSceneView(ecs::Entity entity)
     }
 
     CreateEntityTreeNode(entity, parentNode);
+
+
+    //TODO: move this somewhere, for now its the only palce where i know the components are all initialized
+    ecs::AddEntityToTransformHierarchy(entity);
 }
 
 bool 

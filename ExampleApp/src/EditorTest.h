@@ -181,8 +181,8 @@ bool MofuInitialize()
 		ecs::component::Camera cam{};
 		ecs::component::NameComponent name{};
 		snprintf(name.Name, ecs::component::NAME_LENGTH, "Camera %u", i);
-		ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::Camera, 
-			ecs::component::NameComponent, ecs::component::Parent>(lt, cam, name, {}) };
+		ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Camera, 
+			ecs::component::NameComponent, ecs::component::Parent>(lt, {}, cam, name, {}) };
 		cSurf.entity = entityData.id;
 		editor::AddEntityToSceneView(renderSurfaces[i].entity);
 

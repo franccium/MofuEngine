@@ -322,7 +322,7 @@ void
 InitializeAssetRegistry()
 {
 	content::shaders::Initialize();
-	texture::InitializeEnvironmentProcessing();
+	//texture::InitializeEnvironmentProcessing();
 
 	editor::InitializeAssetBrowserGUI();
 
@@ -337,7 +337,7 @@ InitializeAssetRegistry()
 void
 ShutdownAssetRegistry()
 {
-	texture::ShutdownEnvironmentProcessing();
+	//texture::ShutdownEnvironmentProcessing();
 	content::shaders::Shutdown();
 
 	SerializeRegistry();

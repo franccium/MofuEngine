@@ -10,6 +10,7 @@
 #include "Utilities/PoolAllocator.h"
 #include "Utilities/SlabAllocator.h"
 #include "ComponentRegistry.h"
+#include "TransformHierarchy.h"
 
 namespace mofu::ecs::scene {
 
@@ -162,6 +163,12 @@ MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlo
 	entityData.row = newRow;
 	newBlock->Entities[newRow] = entity;
 	newBlock->EntityCount++;
+
+	//TODO: to avoid updating all possible references, implement the generations finally
+	if (EntityHasComponent<component::WorldTransform>(entity))
+	{
+		UpdateEntityTransformComponents(entity);
+	}
 }
 
 } // anonymous namespace

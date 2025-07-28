@@ -188,6 +188,22 @@ public:
 		return item;
 	}
 
+	template <typename... params>
+	constexpr void insert(u32 index, params&&... p)
+	{
+		if (index <= _size || index == _capacity)
+		{
+			// reserve 50% more capacity
+			reserve(((_capacity + 1) * 3) >> 1);
+		}
+		assert(_capacity > _size);
+
+		const u32 toCopy{ ((u32)_size - index) * sizeof(T) };
+		_size++;
+		memcpy(&_data[index + 1], &_data[index], toCopy);
+		new(std::addressof(_data[index])) T(std::forward<params>(p)...);
+	}
+
 	constexpr void swap(Vector& o)
 	{
 		if (this != std::addressof(o))
