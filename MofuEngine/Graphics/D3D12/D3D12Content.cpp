@@ -110,11 +110,12 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 
 	new (streamPtr) d3dx::D3D12PipelineStateSubobjectStream{};
 	d3dx::D3D12PipelineStateSubobjectStream& stream{ *(d3dx::D3D12PipelineStateSubobjectStream* const)streamPtr };
-
+	MaterialFlags::Flags materialFlags;
 	{
 		std::lock_guard lock{ materialMutex };
 		const material::D3D12MaterialStream material{ materials[materialID].get() };
 
+		materialFlags = material.MaterialFlags();
 		D3D12_RT_FORMAT_ARRAY rtArray{};
 		rtArray.NumRenderTargets = 1;
 		rtArray.RTFormats[0] = gpass::MAIN_BUFFER_FORMAT;
@@ -122,10 +123,10 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 		stream.rootSignature = rootSignatures[material.RootSignatureID()];
 		stream.renderTargetFormats = rtArray;
 		stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPES[primitiveTopology];
-		stream.rasterizer = d3dx::RasterizerState.BACKFACE_CULLING;
-		stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
+		stream.rasterizer = !(materialFlags & MaterialFlags::NoFaceCulling) ? d3dx::RasterizerState.BACKFACE_CULLING : d3dx::RasterizerState.NO_CULLING;
+		stream.depthStencil = !(materialFlags & MaterialFlags::DepthBufferDisabled) ? d3dx::DepthState.REVERSED_READONLY : d3dx::DepthState.DISABLED;
 		stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
-		stream.blend = d3dx::BlendState.DISABLED;
+		stream.blend = d3dx::BlendStateFromFlags(materialFlags);
 
 		const ShaderFlags::Flags shaderFlags{ material.ShaderFlags() };
 		D3D12_SHADER_BYTECODE shaders[ShaderType::Count]{};
@@ -161,7 +162,7 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 
 	// disable the pixel shader for depth prepass
 	stream.ps = D3D12_SHADER_BYTECODE{};
-	stream.depthStencil = d3dx::DepthState.REVERSED;
+	stream.depthStencil = !(materialFlags & MaterialFlags::DepthBufferDisabled) ? d3dx::DepthState.REVERSED : d3dx::DepthState.DISABLED;
 	idPair.DepthPsoID = CreatePSOIfNeeded(streamPtr, alignedStreamSize, true);
 
 	return idPair;
@@ -172,9 +173,9 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 namespace material {
 
 id_t
-CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFlags)
+CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFlags, [[maybe_unused]] MaterialFlags::Flags materialFlags)
 {
-	static_assert(sizeof(materialType) == sizeof(u32) && sizeof(shaderFlags) == sizeof(u32));
+	static_assert(sizeof(materialType) == sizeof(u32) && sizeof(shaderFlags) == sizeof(u32) && sizeof(materialFlags) == sizeof(u32));
 	const u64 key{ ((u64)materialType << 32) | shaderFlags };
 	auto pair{ matRootSigMap.find(key) };
 	if (pair != matRootSigMap.end())

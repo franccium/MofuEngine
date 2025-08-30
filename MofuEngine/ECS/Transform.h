@@ -76,10 +76,30 @@ struct RenderMaterial : Component
 #endif
 };
 
+struct CullableObject : Component
+{
+	OBB obb;
+
+#if EDITOR_BUILD
+	static void RenderFields([[maybe_unused]] CullableObject& c)
+	{
+	}
+#endif
+};
+
 struct StaticObject : Component // NOTE: for static mesh render optimisation, not yet sure how to handle
 {
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] StaticObject& c)
+	{
+	}
+#endif
+};
+
+struct DynamicObject : Component
+{
+#if EDITOR_BUILD
+	static void RenderFields([[maybe_unused]] DynamicObject& c)
 	{
 	}
 #endif

@@ -12,6 +12,7 @@ namespace mofu::ecs::scene {
 
 namespace mofu::ecs::component {
 
+// FIXME: changing the order here would destroy the serialized components IDs
 using ComponentTypes = std::tuple<
     LocalTransform,
     WorldTransform,
@@ -26,7 +27,9 @@ using ComponentTypes = std::tuple<
     PointLight,
     SpotLight,
     NameComponent,
-    PotentiallyVisible
+    PotentiallyVisible,
+    CullableObject,
+    DynamicObject
     //NOTE: dont put a , after the last item
 >;
 constexpr u32 ComponentTypeCount{ std::tuple_size_v<ComponentTypes> };
@@ -60,6 +63,8 @@ constexpr std::array<u32, ComponentTypeCount> ComponentSizes {
     sizeof(SpotLight),
     sizeof(NameComponent),
     sizeof(PotentiallyVisible),
+    sizeof(CullableObject),
+    sizeof(DynamicObject),
 };
 
 template<ComponentID ID>
@@ -102,6 +107,8 @@ constexpr std::array<const char*, ComponentTypeCount> ComponentNames {
     "SpotLight",
     "NameComponent",
     "PotentiallyVisible",
+    "CullableObject",
+	"DynamicObject",
 };
 
 //TODO: passing component ids as arguments might be a better idea

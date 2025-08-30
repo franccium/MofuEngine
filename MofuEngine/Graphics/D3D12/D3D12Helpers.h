@@ -251,6 +251,14 @@ constexpr struct
     };
 } BlendState;
 
+inline D3D12_BLEND_DESC BlendStateFromFlags(MaterialFlags::Flags flags)
+{
+    return !(flags & (MaterialFlags::BlendAlpha | MaterialFlags::BlendAdditive | MaterialFlags::PremultipliedAlpha)) ? BlendState.DISABLED 
+        : (flags & MaterialFlags::PremultipliedAlpha) ? BlendState.PREMULTIPLIED
+        : (flags & MaterialFlags::BlendAlpha) ? BlendState.ALPHA_BLEND 
+        : BlendState.ADDITIVE;
+}
+
 constexpr struct
 {
     const D3D12_STATIC_SAMPLER_DESC STATIC_POINT

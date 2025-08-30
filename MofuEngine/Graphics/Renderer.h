@@ -119,15 +119,29 @@ struct ShaderFlags
 {
 	enum Flags : u32
 	{
-		None = 0x00,
-		Vertex = 0x01,
-		Pixel = 0x02,
-		Domain = 0x04,
-		Hull = 0x08,
-		Geometry = 0x10,
-		Compute = 0x20,
-		Amplification = 0x40,
-		Mesh = 0x80
+		None = 0u,
+		Vertex = (1u << 0),
+		Pixel = (1u << 1),
+		Domain = (1u << 2),
+		Hull = (1u << 3),
+		Geometry = (1u << 4),
+		Compute = (1u << 5),
+		Amplification = (1u << 6),
+		Mesh = (1u << 7)
+	};
+};
+
+struct MaterialFlags
+{
+	enum Flags : u32
+	{
+		None = 0u,
+		TextureRepeat = (1u << 0),
+		NoFaceCulling = (1u << 1),
+		BlendAlpha = (1u << 2),
+		BlendAdditive = (1u << 3),
+		PremultipliedAlpha = (1u << 4),
+		DepthBufferDisabled = (1u << 5),
 	};
 };
 
@@ -197,6 +211,7 @@ struct MaterialInitInfo
 	MaterialType::type Type;
 	u32 TextureCount; // NOTE: textures are optional, texture_count may be 0, and texture_ids null
 	id_t ShaderIDs[ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
+	MaterialFlags::Flags MaterialFlags{ MaterialFlags::None };
 };
 
 struct AmbientLightInitInfo

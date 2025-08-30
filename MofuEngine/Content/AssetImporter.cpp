@@ -377,7 +377,7 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 			bool wrap = (baseTexture->wrap_u | baseTexture->wrap_v) == UFBX_WRAP_REPEAT;
 
 			// TODO: alpha
-			if(wrap) material.Flags |= editor::material::EditorMaterial::Flags::TextureRepeat;
+			if(wrap) material.Flags |= graphics::MaterialFlags::Flags::TextureRepeat;
 			GetTextureForMaterial(TexUse::BaseColor, material, mat->pbr.base_color.texture->file_index, state);
 		}
 

@@ -132,6 +132,7 @@
     <ClCompile Include="ECS\Scene.cpp" />
     <ClCompile Include="ECS\SceneSerializer.cpp" />
     <ClCompile Include="ECS\Systems\CameraFreeLookSystem.cpp" />
+    <ClCompile Include="ECS\Systems\FrustumCullingSystem.cpp" />
     <ClCompile Include="ECS\Systems\InputTestSystem.cpp" />
     <ClCompile Include="ECS\Systems\LightPostFrameSystem.cpp" />
     <ClCompile Include="ECS\Systems\LightPrepareRenderSystem.cpp" />

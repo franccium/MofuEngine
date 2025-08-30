@@ -31,7 +31,6 @@ constexpr const char* MATERIAL_SURFACE_TYPE_TO_STRING[graphics::MaterialType::Co
 };
 id_t DEFAULT_TEXTURES[TextureUsage::Count];
 id_t DEFAULT_SHADERS[graphics::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
-id_t usedTextures[TextureUsage::Count];
 
 ecs::Entity materialOwner{};
 EditorMaterial editorMaterial{};
@@ -122,6 +121,7 @@ UpdateMaterialInitInfo()
 	memcpy(materialInitInfo.ShaderIDs, editorMaterial.ShaderIDs, graphics::ShaderType::Count * sizeof(id_t));
 	materialInitInfo.TextureIDs = new id_t[editorMaterial.TextureCount];
 	memcpy(materialInitInfo.TextureIDs, editorMaterial.TextureIDs, editorMaterial.TextureCount * sizeof(id_t));
+	materialInitInfo.MaterialFlags = (graphics::MaterialFlags::Flags)editorMaterial.Flags;
 }
 
 void
@@ -215,6 +215,21 @@ DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& surface)
 		DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
 		ImGui::EndTable();
 	}
+}
+
+void
+DisplayMaterialFlags()
+{
+	ImGui::TextUnformatted("Flags:");
+	ImGui::CheckboxFlags("Texture Repeat", &editorMaterial.Flags, graphics::MaterialFlags::TextureRepeat);
+	ImGui::CheckboxFlags("No Face Culling", &editorMaterial.Flags, graphics::MaterialFlags::NoFaceCulling);
+	ImGui::TextUnformatted("Blend State:");
+	ImGui::Indent();
+	ImGui::CheckboxFlags("Alpha", &editorMaterial.Flags, graphics::MaterialFlags::BlendAlpha);
+	ImGui::CheckboxFlags("Additive", &editorMaterial.Flags, graphics::MaterialFlags::BlendAdditive);
+	ImGui::CheckboxFlags("Premultiplied Alpha", &editorMaterial.Flags, graphics::MaterialFlags::PremultipliedAlpha);
+	ImGui::Unindent();
+	ImGui::CheckboxFlags("Depth Buffer Disabled", &editorMaterial.Flags, graphics::MaterialFlags::DepthBufferDisabled);
 }
 
 void
@@ -332,6 +347,7 @@ RenderMaterialEditor()
 	DisplayTexture(TextureUsage::AmbientOcclusion, "Ambient Occlusion:", "##AO");
 
 	DisplayEditableMaterialSurfaceProperties(editorMaterial.Surface);
+	DisplayMaterialFlags();
 
 	if (ImGui::Button("Update"))
 	{
@@ -472,6 +488,60 @@ RenderMaterialEditor()
 	if (isBrowserOpen) RenderTextureBrowser();
 
 	ImGui::End();
+}
+
+struct StandardMaterial
+{
+	enum Flags : u32
+	{
+		None,
+		DiffuseLambert = (1u << 0), // Burley is default
+		DisableAmbient = (1u << 1),
+		IBLAmbient = (1u << 2),
+		Count = 3
+	};
+	u32 Flags{ Flags::None };
+};
+
+constexpr StandardMaterial DEFAULT_STANDARD_MATERIAL{
+	StandardMaterial::IBLAmbient,
+};
+
+constexpr const wchar_t* STANDARD_MATERIAL_FLAGS_DEFINES[]{
+	L"NONE",
+	L"DIFFUSE_LAMBERT",
+	L"DISABLE_AMBIENT",
+	L"AMBIENT_IBL"
+};
+
+void
+GenerateStandardMaterial(const StandardMaterial& mat, Vec<const wchar_t*>& extraArgs)
+{
+	for (u32 i{ 0 }; i < StandardMaterial::Flags::Count; ++i)
+	{
+		if (mat.Flags & (1u << i))
+		{
+			extraArgs.emplace_back(L"-D");
+			extraArgs.emplace_back(STANDARD_MATERIAL_FLAGS_DEFINES[i]);
+		}
+	}
+}
+
+void 
+DisplayStandardMaterialEdit(StandardMaterial& mat)
+{
+	ImGui::TextUnformatted("Flags:");
+
+	constexpr const char* DIFFUSE_OPTIONS[]{ "Burley", "Lambert" };
+	static s32 diffOpt{ 0 };
+	ImGui::ListBox("Diffuse", &diffOpt, DIFFUSE_OPTIONS, _countof(DIFFUSE_OPTIONS));
+	if (diffOpt != 0) mat.Flags |= StandardMaterial::Flags::DiffuseLambert;
+
+	ImGui::CheckboxFlags("Disable Ambient", &mat.Flags, StandardMaterial::Flags::DisableAmbient);
+	ImGui::BeginDisabled(mat.Flags & StandardMaterial::Flags::DisableAmbient);
+	ImGui::CheckboxFlags("IBL Ambient", &mat.Flags, StandardMaterial::Flags::IBLAmbient);
+	ImGui::EndDisabled();
+
 }
 
 

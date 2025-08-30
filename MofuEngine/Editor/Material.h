@@ -27,12 +27,6 @@ struct EditorMaterial
 	graphics::MaterialType::type Type;
 	u32 TextureCount;
 	id_t ShaderIDs[graphics::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
-
-	enum Flags : u32
-	{
-		None = 0x0,
-		TextureRepeat = 0x01,
-	};
 	u32 Flags;
 };
 

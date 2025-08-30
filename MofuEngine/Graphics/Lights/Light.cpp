@@ -111,8 +111,6 @@ UpdatePointLight(ecs::component::PointLight& l)
 	LightSet& lightSet{ lightSets[currentLightSetKey] };
 
 	CullableLightParameters& params{ lightSet.CullableLights[l.LightDataIndex] };
-	const ecs::component::LocalTransform& lt{ 
-		ecs::scene::GetComponent<ecs::component::LocalTransform>(lightSet.CullableLightOwners[l.LightDataIndex].Entity) };
 	const ecs::component::WorldTransform& wt{
 		ecs::scene::GetComponent<ecs::component::WorldTransform>(lightSet.CullableLightOwners[l.LightDataIndex].Entity) };
 	params.Color = l.Color;

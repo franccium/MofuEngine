@@ -12,6 +12,7 @@ void DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& mat);
 
 bool InitializeMaterialEditor();
 void RenderMaterialEditor();
+void DisplayStandardMaterialEdit();
 
 void OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat);
 void OpenMaterialView(content::AssetHandle handle);
