@@ -12,6 +12,7 @@
 
 ExampleApp/Assets/*
 ExampleApp/Projects/*
+ExampleApp/External/tracy/
 
 bin/*
 bin-int/*
