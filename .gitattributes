@@ -49,6 +49,6 @@
 *.tga filter=lfs diff=lfs merge=lfs -text
 *.model filter=lfs diff=lfs merge=lfs -text
 *.etex filter=lfs diff=lfs merge=lfs -text
-ExampleApp/Assets/Generated/Sponza.model filter=lfs diff=lfs merge=lfs -text
 ExampleApp/Assets/Generated/BistroInterior.model filter=lfs diff=lfs merge=lfs -text
 ExampleApp/Assets/Generated/Body_Roug.tga.etex filter=lfs diff=lfs merge=lfs -text
+ExampleApp/Assets/Generated/Sponza.model filter=lfs diff=lfs merge=lfs -text
