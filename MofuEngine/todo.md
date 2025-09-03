@@ -14,6 +14,9 @@ texture packing
 Project stuff
 Handling Asset deletion
 
+Asset Reimporting
+(and reimport the geometry)
+
 build a nice test scene
 lights
 then maybe ibl

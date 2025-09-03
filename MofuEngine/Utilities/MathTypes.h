@@ -13,6 +13,10 @@ constexpr float PIDIV4 = 0.25f * PI;
 constexpr float INV_PI = 1.f / PI;
 constexpr float INV_TAU = 1.f / TAU;
 constexpr float EPSILON = 1e-5f;
+constexpr float SQRT2 = 1.41421356f;
+constexpr float SQRT3 = 1.73205080f;
+constexpr float SQRT12 = 0.70710678f;
+constexpr float SQRT13 = 0.57735026f;
 
 }
 

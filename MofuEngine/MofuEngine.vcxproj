@@ -239,6 +239,7 @@
     <ClInclude Include="Editor\AssetInteraction.h" />
     <ClInclude Include="Editor\AssetPacking.h" />
     <ClInclude Include="Editor\EditorInterface.h" />
+    <ClInclude Include="Editor\EditorStyle.h" />
     <ClInclude Include="Editor\ImporterView.h" />
     <ClInclude Include="Editor\Material.h" />
     <ClInclude Include="Editor\MaterialEditor.h" />

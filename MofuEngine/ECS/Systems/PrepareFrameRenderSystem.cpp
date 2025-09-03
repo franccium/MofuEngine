@@ -24,7 +24,7 @@ namespace mofu::graphics::d3d12 {
 	struct PrepareFrameRenderSystem : ecs::system::System<PrepareFrameRenderSystem>
 	{
 		void FillPerObjectData(hlsl::PerObjectData* data, ecs::component::WorldTransform& transform,
-			const MaterialSurface* const materialSurface, xmmat cameraVP)
+			const MaterialSurface* const materialSurface, id_t materialID, xmmat cameraVP)
 		{
 			using namespace DirectX;
 
@@ -39,6 +39,7 @@ namespace mofu::graphics::d3d12 {
 			XMStoreFloat4x4(&data->WorldViewProjection, wvp);
 
 			memcpy(&data->BaseColor, materialSurface, sizeof(MaterialSurface));
+			data->MaterialID = materialID;
 		}
 
 
@@ -98,7 +99,7 @@ namespace mofu::graphics::d3d12 {
 				{
 					currentDataPtr = cbuffer.AllocateSpace<hlsl::PerObjectData>();
 					//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);
-					FillPerObjectData(currentDataPtr, wt, materialsCache.MaterialSurfaces[renderItemIndex], frameInfo.Camera->ViewProjection());
+					FillPerObjectData(currentDataPtr, wt, materialsCache.MaterialSurfaces[renderItemIndex], frameCache.MaterialIDs[renderItemIndex], frameInfo.Camera->ViewProjection());
 					//}
 					assert(currentDataPtr);
 					frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);

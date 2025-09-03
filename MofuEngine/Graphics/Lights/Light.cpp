@@ -15,7 +15,7 @@ CalculateBoundingSphere(Sphere& sphere, const CullableLightParameters& params)
 	xmm tip{ XMLoadFloat3(&params.Position) };
 	xmm dir{ XMLoadFloat3(&params.Direction) };
 	const f32 coneCos{ params.CosPenumbra };
-	if (coneCos >= 0.707107f) // cos(pi/4)
+	if (coneCos >= math::SQRT12) // cos(pi/4)
 	{
 		sphere.Radius = params.Range / (2.f * coneCos);
 		XMStoreFloat3(&sphere.Center, tip + sphere.Radius * dir);

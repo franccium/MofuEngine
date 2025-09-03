@@ -457,9 +457,9 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     psOut.Color = float4(color, 1.f);
     
-    //psOut.Normal.rgb = S.Normal;
-    psOut.Normal.rgb = normal;
-    psOut.Normal.a = S.Metallic; // TODO: put something there maybe material ID
+    psOut.Normal.rgb = S.Normal;
+    // NOTE: now assuming we have max 2^16 materials
+    psOut.Normal.a = f16tof32(PerObjectBuffer.MaterialID);
     
     return psOut;
 }

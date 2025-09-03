@@ -17,8 +17,13 @@
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
 
+// NOTE: flip to turn the debug layer off
 #define ENABLE_DEBUG_LAYER 1
+#ifndef _DEBUG
+#define ENABLE_DEBUG_LAYER 0
+#endif
 #define ENABLE_GPU_BASED_VALIDATION 1
+
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }

@@ -44,3 +44,23 @@
 #endif
 
 #define EDITOR_BUILD 1
+
+#ifndef _ALWAYS_INLINE
+#if defined(__GNUC__)
+#define _ALWAYS_INLINE __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#define _ALWAYS_INLINE __forceinline
+#else
+#define _ALWAYS_INLINE inline
+#endif
+#endif
+
+#ifndef _NO_INLINE
+#if defined(__GNUC__)
+#define _NO_INLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define _NO_INLINE __declspec(noinline)
+#else
+#define _NO_INLINE
+#endif
+#endif

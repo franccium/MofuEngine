@@ -24,7 +24,7 @@ ID3D12PipelineState* fxPSO{ nullptr };
 
 u32v2 currentDimensions{ 0, 0 };
 D3D12RenderTexture renderTexture{};
-constexpr f32 CLEAR_VALUE[4]{ 0.25f, 0.25f, 0.25f, 1.f };
+constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
 
 bool
 CreatePSO()

@@ -612,8 +612,8 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                         {
                             char label[64];
                             snprintf(label, 64, "%s", item.second->Name.data());
-                            ImGui::BeginTooltip();
-                            ImGui::TextUnformatted(label);
+                            if(ImGui::BeginTooltip())
+                                ImGui::TextUnformatted(label);
                             ImGui::EndTooltip();
                         }
                     }

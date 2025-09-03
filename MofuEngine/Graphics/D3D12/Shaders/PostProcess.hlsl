@@ -15,7 +15,7 @@ SamplerState LinearSampler : register(s1, space0);
 
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
-    #if 0
+#if 0
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     float4 color = float4(gpassMain[Position.xy].xyz, 1.f);
     return color;
@@ -25,9 +25,8 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     if (depth > 0.f)
     {
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-        Texture2D color = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-        return float4(color[Position.xy].xyz, 1.f);
-        //return float4(gpassMain[Position.xy].xyz, 1.f);
+        Texture2D normal = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
+        return float4(normal[Position.xy].rgb, 1.f);
     }
     else
     {

@@ -1,5 +1,6 @@
 #include "ImporterView.h"
 #include "imgui.h"
+#include "EditorStyle.h"
 #include "MaterialEditor.h"
 #include "AssetInteraction.h"
 #include "Content/TextureImport.h"
@@ -18,6 +19,18 @@ content::AssetType::type activeAssetImportType{ content::AssetType::Unknown };
 
 content::GeometryImportSettings geometryImportSettings{};
 content::texture::TextureImportSettings textureImportSettings{};
+bool isAssetAlreadyImported{ false };
+std::string alreadyImportedFilePath{};
+
+constexpr const char* ErrorString[7]{
+	"None",
+	"InvalidTexturePath",
+	"MaterialTextureNotFound",
+	"Test1",
+	"Test2",
+	"Test3",
+	"Test4",
+};
 
 void
 RenderUnknownSettings()
@@ -51,6 +64,22 @@ constexpr std::array<SettingsRenderer, content::AssetType::Count> settingsRender
 	RenderUnknownSettings,
 	RenderUnknownSettings,
 };
+
+void 
+RecoverImportSettings(content::AssetPtr asset)
+{
+	switch (asset->Type)
+	{
+	case content::AssetType::Mesh:
+	{
+		// TODO: when i figure out whether i want .mt for metadata or sth else
+		log::Warn("RecoverImportSettings not implemented yet");
+		break;
+	}
+	default:
+		return;
+	}
+}
 
 } // anonymous namespace
 
@@ -98,18 +127,19 @@ ViewFBXImportSummary(content::FBXImportState state)
 	fbxState = state;
 }
 
-void 
-ViewImportSettings(content::AssetType::type assetType)
-{
-	activeAssetImportType = assetType;
-}
-
 void
 ViewImportSettings(content::AssetHandle handle)
 {
 	content::AssetPtr asset{ content::assets::GetAsset(handle) };
 	activeAssetHandle = handle;
 	activeAssetImportType = asset->Type;
+	const std::filesystem::path& importedPath{ content::assets::GetAsset(activeAssetHandle)->ImportedFilePath };
+	isAssetAlreadyImported = std::filesystem::exists(importedPath);
+	if (isAssetAlreadyImported)
+	{
+		alreadyImportedFilePath = importedPath.string();
+		RecoverImportSettings(asset);
+	}
 }
 
 void
@@ -124,22 +154,12 @@ RefreshFiles(const Vec<std::string>& files)
 {
 	textureImportSettings.Files.clear();
 
-	textureImportSettings.FileCount = files.size();
+	textureImportSettings.FileCount = (u32)files.size();
 	for (const auto& file : files)
 	{
 		textureImportSettings.Files += file + ";";
 	}
 }
-
-constexpr const char* ErrorString[7]{
-	"None",
-	"InvalidTexturePath",
-	"MaterialTextureNotFound",
-	"Test1",
-	"Test2",
-	"Test3",
-	"Test4",
-};
 
 void
 RenderImportSummary()
@@ -151,14 +171,16 @@ RenderImportSummary()
 	ImGui::Text("File: %s", fbxState.FbxFile.data());
 	if (fbxState.Errors)
 	{
-		ImGui::TextColored({ 0.8f, 0.1f, 0.1f, 1.f }, "Errors:");
+		ui::PushTextColor(ui::Color::RED);
+		ImGui::TextUnformatted("Errors:");
 		for (u32 i{ 1 }; i < 32; ++i)
 		{
 			if (fbxState.Errors & (1u << i))
 			{
-				ImGui::TextColored({ 0.8f, 0.1f, 0.1f, 1.f }, ErrorString[i]);
+				ImGui::TextUnformatted(ErrorString[i]);
 			}
 		}
+		ImGui::PopStyleColor();
 	}
 	
 	ImGui::Text("Image Files: [%u]", fbxState.ImageFiles.size());
@@ -192,10 +214,21 @@ RenderImportSummary()
 void 
 RenderImportSettings()
 {
+	if(!content::IsValid(activeAssetHandle)) return;
+	
 	ImGui::Begin("Import settings", nullptr);
-
 	settingsRenderers[activeAssetImportType]();
 
+	if (isAssetAlreadyImported)
+	{
+		ImGui::TextColored(ui::Color::RED, "Already Imported:\n%s", alreadyImportedFilePath.data());
+		if (ImGui::IsItemHovered())
+		{
+			if (ImGui::BeginTooltip())
+				ImGui::TextUnformatted(alreadyImportedFilePath.data());
+			ImGui::EndTooltip();
+		}
+	}
 	if (ImGui::Button("Import"))
 	{
 		content::ImportAsset(activeAssetHandle);

@@ -41,7 +41,7 @@ struct PerObjectData
     float Metallic;
     float Roughness;
     
-    uint _pad;
+    uint MaterialID;
 };
 
 struct Plane

@@ -441,6 +441,7 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 
 	ufbx_mesh* m{ node->mesh };
 	ufbx_matrix toWorld{node->geometry_to_world};
+	ufbx_matrix normalMat{ ufbx_matrix_for_normals(&toWorld) };
 	const char* name{ node->name.data };
 
 	log::Info("Importing UFBX mesh: %s", name);
@@ -476,8 +477,9 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 				u32 index{ triangleIndices[i] };
 
 				Vertex v{};
-				ufbx_vec3 pos{ m->vertex_position[index] }; // ufbx_transform_position(&toWorld, pos);
-				ufbx_vec3 normal{ m->vertex_normal[index] };
+				ufbx_vec3 pos{ ufbx_transform_position(&toWorld, m->vertex_position[index]) };
+				//ufbx_vec3 normal{ m->vertex_normal[index] };
+				ufbx_vec3 normal{ ufbx_vec3_normalize(ufbx_transform_direction(&normalMat, m->vertex_normal[index])) };
 				ufbx_vec2 uv{ m->vertex_uv[index] };
 				v.Position = { (f32)pos.x, (f32)pos.y, (f32)pos.z };
 				v.Normal = { (f32)normal.x, (f32)normal.y, (f32)normal.z };
@@ -694,16 +696,7 @@ ImportAsset(AssetHandle handle)
 {
 	AssetPtr asset{ assets::GetAsset(handle) };
 	assert(asset);
-	if (!std::filesystem::exists(asset->ImportedFilePath))
-	{
-		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath, asset);
-	}
-	else
-	{
-		//TODO: reimport, handle something?
-		log::Info("Reimporting asset %ul", handle.id);
-		asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath, asset);
-	}
+	asset->ImportedFilePath = assetImporters[asset->Type](asset->OriginalFilePath, asset);
 
 	if (!std::filesystem::exists(asset->ImportedFilePath))
 	{

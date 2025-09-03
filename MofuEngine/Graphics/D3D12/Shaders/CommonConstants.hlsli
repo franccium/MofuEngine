@@ -3,6 +3,7 @@
 
 static const float PI = 3.14159265f;
 static const float TAU = 6.28318548f;
+static const float E = 2.71828185f;
 static const float HALF_PI = 0.5f * PI;
 static const float PIDIV4 = 0.25f * PI;
 static const float INV_PI = 1.f / PI;
