@@ -40,7 +40,7 @@ CreatePSO()
 
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices::Count]{};
 	parameters[FXRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-	parameters[FXRootParameterIndices::RootConstants].AsConstants(2, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices::RootConstants].AsConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
 	struct D3D12_STATIC_SAMPLER_DESC samplers[]
@@ -162,6 +162,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().Srv().index, 0);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().Srv().index, 1);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().Srv().index, 2);
 	//cmdList->SetGraphicsRootDescriptorTable(idx::DescriptorTable, core::SrvHeap().GpuStart());
 
 	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.Rtv(0) };

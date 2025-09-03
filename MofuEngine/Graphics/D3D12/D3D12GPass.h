@@ -10,6 +10,7 @@ struct GPassCache;
 
 constexpr DXGI_FORMAT MAIN_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT };
 constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT{ DXGI_FORMAT_D32_FLOAT };
+constexpr DXGI_FORMAT NORMAL_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT };
 
 struct OpaqueRootParameters
 {
@@ -34,6 +35,7 @@ void Shutdown();
 
 [[nodiscard]] const D3D12RenderTexture& MainBuffer();
 [[nodiscard]] const D3D12DepthBuffer& DepthBuffer();
+[[nodiscard]] const D3D12RenderTexture& NormalBuffer();
 
 // needs to be called every frame to check whether the buffers should be resized in case of resizing the biggest window
 bool CreateBuffers(u32v2 size);

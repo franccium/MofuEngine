@@ -1,9 +1,11 @@
 #include "ValueDisplay.h"
+#include "ActionHistory.h"
 
 namespace mofu::editor {
 namespace {
 constexpr f32 DRAG_SPEED_FACTOR{ 1000.f };
 
+ImGuiID focusedItemID{ 0 };
 
 }
 
@@ -46,10 +48,32 @@ bool DisplayEditableUint(u32* v, const char* label, u32 minVal, u32 maxVal)
 
 bool DisplayEditableFloat(f32* v, const char* label, f32 minVal, f32 maxVal, const char* format)
 {
+	static f32 startValue;
+	static bool isEditing = false;
+
 	DisplayLabelT(label);
 	ImGui::PushID(v);
 	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
+	f32 val = *v;
 	bool changed{ ImGui::DragFloat("##Editor", (f32*)v, dragSpeed, minVal, maxVal, format) };
+	if (ImGui::IsItemHovered())
+	{
+		focusedItemID = ImGui::GetID(v);
+	}
+
+	if (ImGui::IsItemActivated())
+	{
+		startValue = *v;
+		isEditing = true;
+	}
+
+	if (ImGui::IsItemDeactivated())
+	{
+		if(ImGui::IsItemDeactivatedAfterEdit() && isEditing && startValue != *v)
+			RegisterStaticAction<f32>(startValue, v);
+		isEditing = false;
+	}
+
 	ImGui::PopID();
 	return changed;
 }
@@ -71,6 +95,7 @@ bool DisplayEditableVector3(v3* v, const char* label, f32 minVal, f32 maxVal, co
 	ImGui::PushID(v);
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
+	//StaticActionT action{ *v, v };
 	bool changed{ ImGui::DragFloat3("##Editor", (f32*)v, dragSpeed, minVal, maxVal, format) };
 	ImGui::PopID();
 	return changed;

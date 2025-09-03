@@ -21,6 +21,12 @@ WasKeyPressed(Keys::Key key)
 }
 
 bool
+WasKeyPressed(Keys::Key key, Keys::Key modifier)
+{
+    return _inputState.KeyDown[modifier] && _inputState.KeyPressed[key];
+}
+
+bool
 WasKeyReleased(Keys::Key key)
 {
     return _inputState.KeyReleased[key];

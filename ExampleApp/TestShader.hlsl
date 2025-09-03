@@ -12,7 +12,8 @@ struct VertexOut
 
 struct PixelOut
 {
-    float4 Color : SV_TARGET;
+    float4 Color : SV_Target0;
+    float4 Normal : SV_Target1;
 };
 
 struct Surface
@@ -453,14 +454,12 @@ PixelOut TestShaderPS(in VertexOut psIn)
 #endif
     
     color += EvaluateIBL(S);
-
-#if 1 // Light Grid
-    float4 Position = psIn.HomogenousPositon;
-    color = Heatmap(LightGrid, Position.xy, 0.1f, color);
-#elif 1 // Scene
-#endif
     
     psOut.Color = float4(color, 1.f);
+    
+    //psOut.Normal.rgb = S.Normal;
+    psOut.Normal.rgb = normal;
+    psOut.Normal.a = S.Metallic; // TODO: put something there maybe material ID
     
     return psOut;
 }

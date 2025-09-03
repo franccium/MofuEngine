@@ -5,6 +5,7 @@ struct PostProcessConstants
 {
     uint GPassMainBufferIndex;
     uint GPassDepthBufferIndex;
+    uint NormalBufferIndex;
 };
 
 ConstantBuffer<GlobalShaderData> GlobalData : register(b0, space0);
@@ -24,7 +25,9 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     if (depth > 0.f)
     {
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-        return float4(gpassMain[Position.xy].xyz, 1.f);
+        Texture2D color = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
+        return float4(color[Position.xy].xyz, 1.f);
+        //return float4(gpassMain[Position.xy].xyz, 1.f);
     }
     else
     {

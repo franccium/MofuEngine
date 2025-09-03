@@ -15,6 +15,31 @@
 namespace mofu::editor::material {
 namespace {
 
+struct StandardMaterial
+{
+	enum Flags : u32
+	{
+		None,
+		DiffuseLambert = (1u << 0), // Burley is default
+		DisableAmbient = (1u << 1),
+		IBLAmbient = (1u << 2),
+		Count = 3
+	};
+	u32 Flags{ Flags::None };
+};
+
+constexpr StandardMaterial DEFAULT_STANDARD_MATERIAL{
+	StandardMaterial::IBLAmbient,
+};
+
+constexpr const wchar_t* STANDARD_MATERIAL_FLAGS_DEFINES[]{
+	L"NONE",
+	L"DIFFUSE_LAMBERT",
+	L"DISABLE_AMBIENT",
+	L"AMBIENT_IBL"
+};
+
+
 constexpr const char* WHITE_TEXTURE{ "Projects/TestProject/Resources/Editor/white_placeholder_texture.tex" };
 constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Resources/Editor/gray_placeholder_texture.tex" };
 constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Resources/Editor/black_placeholder_texture.tex" };
@@ -46,6 +71,47 @@ Vec<std::string> matFiles{};
 
 constexpr u32 MAX_NAME_LENGTH{ 16 };
 char nameBuffer[MAX_NAME_LENGTH]{};
+
+StandardMaterial standardMaterial{};
+
+void
+GenerateStandardMaterial(const StandardMaterial& mat, Vec<const wchar_t*>& extraArgs)
+{
+	for (u32 i{ 0 }; i < StandardMaterial::Flags::Count; ++i)
+	{
+		if (mat.Flags & (1u << i))
+		{
+			extraArgs.emplace_back(L"-D");
+			extraArgs.emplace_back(STANDARD_MATERIAL_FLAGS_DEFINES[i]);
+		}
+	}
+}
+
+void
+DisplayStandardMaterialEdit(StandardMaterial& mat)
+{
+	//"Material Properties"
+	ImGui::BeginGroup();
+	{
+		ImGui::TextUnformatted("Flags:");
+
+		constexpr const char* DIFFUSE_OPTIONS[]{ "Burley", "Lambert" };
+		static s32 diffOpt{ 0 };
+		if (ImGui::ListBox("Diffuse", &diffOpt, DIFFUSE_OPTIONS, _countof(DIFFUSE_OPTIONS)))
+		{
+			mat.Flags |= (diffOpt & StandardMaterial::Flags::DiffuseLambert);
+		}
+
+		ImGui::CheckboxFlags("Disable Ambient", &mat.Flags, StandardMaterial::Flags::DisableAmbient);
+		bool ambientDisabled{ (bool)(mat.Flags & StandardMaterial::Flags::DisableAmbient) };
+		ImGui::BeginDisabled(ambientDisabled);
+		if(ambientDisabled)
+			mat.Flags &= ~(StandardMaterial::Flags::IBLAmbient);
+		ImGui::CheckboxFlags("IBL Ambient", &mat.Flags, StandardMaterial::Flags::IBLAmbient);
+		ImGui::EndDisabled();
+	}
+	ImGui::EndGroup();
+}
 
 [[nodiscard]] id_t
 LoadTexture(const char* path)
@@ -150,6 +216,7 @@ RenderTextureBrowser()
 	}
 }
 
+
 } // anonymous namespace
 
 bool 
@@ -215,6 +282,8 @@ DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& surface)
 		DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
 		ImGui::EndTable();
 	}
+	DisplayStandardMaterialEdit(standardMaterial);
+
 }
 
 void
@@ -224,12 +293,17 @@ DisplayMaterialFlags()
 	ImGui::CheckboxFlags("Texture Repeat", &editorMaterial.Flags, graphics::MaterialFlags::TextureRepeat);
 	ImGui::CheckboxFlags("No Face Culling", &editorMaterial.Flags, graphics::MaterialFlags::NoFaceCulling);
 	ImGui::TextUnformatted("Blend State:");
-	ImGui::Indent();
-	ImGui::CheckboxFlags("Alpha", &editorMaterial.Flags, graphics::MaterialFlags::BlendAlpha);
-	ImGui::CheckboxFlags("Additive", &editorMaterial.Flags, graphics::MaterialFlags::BlendAdditive);
-	ImGui::CheckboxFlags("Premultiplied Alpha", &editorMaterial.Flags, graphics::MaterialFlags::PremultipliedAlpha);
-	ImGui::Unindent();
+	//ImGui::Indent();
+	constexpr const char* BLEND_MODE_OPTIONS[]{ "Alpha", "Additive", "Premultiplied Alpha" };
+	static s32 blendOpt{ 0 };
+	if (ImGui::ListBox("Blend Mode", &blendOpt, BLEND_MODE_OPTIONS, _countof(BLEND_MODE_OPTIONS)))
+	{
+		editorMaterial.Flags &= !(graphics::MaterialFlags::BlendAlpha | graphics::MaterialFlags::BlendAdditive | graphics::MaterialFlags::PremultipliedAlpha);
+		editorMaterial.Flags |= (1u << (graphics::MaterialFlags::BlendAlpha + (u32)blendOpt));
+	}
+	//ImGui::Unindent();
 	ImGui::CheckboxFlags("Depth Buffer Disabled", &editorMaterial.Flags, graphics::MaterialFlags::DepthBufferDisabled);
+	ImGui::Text("value: %u", editorMaterial.Flags);
 }
 
 void
@@ -490,59 +564,7 @@ RenderMaterialEditor()
 	ImGui::End();
 }
 
-struct StandardMaterial
-{
-	enum Flags : u32
-	{
-		None,
-		DiffuseLambert = (1u << 0), // Burley is default
-		DisableAmbient = (1u << 1),
-		IBLAmbient = (1u << 2),
-		Count = 3
-	};
-	u32 Flags{ Flags::None };
-};
 
-constexpr StandardMaterial DEFAULT_STANDARD_MATERIAL{
-	StandardMaterial::IBLAmbient,
-};
-
-constexpr const wchar_t* STANDARD_MATERIAL_FLAGS_DEFINES[]{
-	L"NONE",
-	L"DIFFUSE_LAMBERT",
-	L"DISABLE_AMBIENT",
-	L"AMBIENT_IBL"
-};
-
-void
-GenerateStandardMaterial(const StandardMaterial& mat, Vec<const wchar_t*>& extraArgs)
-{
-	for (u32 i{ 0 }; i < StandardMaterial::Flags::Count; ++i)
-	{
-		if (mat.Flags & (1u << i))
-		{
-			extraArgs.emplace_back(L"-D");
-			extraArgs.emplace_back(STANDARD_MATERIAL_FLAGS_DEFINES[i]);
-		}
-	}
-}
-
-void 
-DisplayStandardMaterialEdit(StandardMaterial& mat)
-{
-	ImGui::TextUnformatted("Flags:");
-
-	constexpr const char* DIFFUSE_OPTIONS[]{ "Burley", "Lambert" };
-	static s32 diffOpt{ 0 };
-	ImGui::ListBox("Diffuse", &diffOpt, DIFFUSE_OPTIONS, _countof(DIFFUSE_OPTIONS));
-	if (diffOpt != 0) mat.Flags |= StandardMaterial::Flags::DiffuseLambert;
-
-	ImGui::CheckboxFlags("Disable Ambient", &mat.Flags, StandardMaterial::Flags::DisableAmbient);
-	ImGui::BeginDisabled(mat.Flags & StandardMaterial::Flags::DisableAmbient);
-	ImGui::CheckboxFlags("IBL Ambient", &mat.Flags, StandardMaterial::Flags::IBLAmbient);
-	ImGui::EndDisabled();
-
-}
 
 
 }
