@@ -15,8 +15,18 @@ struct EngineShader
 	};
 };
 
+struct EngineDebugShader
+{
+	enum id : u32
+	{
+		PostProcessPS,
+		Count
+	};
+};
+
 bool Initialize();
 void Shutdown();
 
 D3D12_SHADER_BYTECODE GetEngineShader(EngineShader::id id);
+D3D12_SHADER_BYTECODE GetDebugEngineShader(EngineDebugShader::id id);
 }

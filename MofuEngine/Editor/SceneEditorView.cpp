@@ -61,7 +61,7 @@ PrepareAddedComponent(ecs::ComponentID cid, ecs::Entity entity)
 
         const ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entity) };
 
-        mesh.RenderItemID = graphics::AddRenderItem(entity, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+        mesh.RenderItemID = graphics::AddRenderItem(entity, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 
         break;
     }
@@ -70,8 +70,7 @@ PrepareAddedComponent(ecs::ComponentID cid, ecs::Entity entity)
         ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entity) };
         ecs::component::RenderMaterial material{};
         material.MaterialCount = 1;
-        material.MaterialIDs = new id_t[1];
-        material.MaterialIDs[0] = content::GetDefaultMaterial();
+        material.MaterialID = content::GetDefaultMaterial();
         material.MaterialAsset = content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE;
         mat = material;
         break;
@@ -186,7 +185,7 @@ DuplicateEntity(EntityTreeNode* node)
     {
         ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(newEntity) };
         const ecs::component::RenderMaterial& material{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(newEntity) };
-        mesh.RenderItemID = graphics::AddRenderItem(newEntity, mesh.MeshID, material.MaterialCount, material.MaterialIDs);
+        mesh.RenderItemID = graphics::AddRenderItem(newEntity, mesh.MeshID, material.MaterialCount, material.MaterialID);
     }
 
     AddEntityToSceneView(newEntity);

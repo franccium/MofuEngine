@@ -346,134 +346,10 @@ UpdateRenderItemData(id_t oldRenderItemID, id_t newRenderItemID)
 * buffer[2 .. n] = D3D12RenderItemIDs
 */
 id_t 
-AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
+AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t materialID)
 {
-	//static u32 counter;
-
-	//assert(id::IsValid(entityID) && id::IsValid(geometryContentID));
-	//assert(materialCount && materialIDs);
-
-	//// we need to create one render item for each of the submeshes of a geometry
-	//// the number of material ids must be the same as the number of submesh gpu ids
-	//u32 renderItemCount{ mofu::content::GetSubmeshGpuIDCount(geometryContentID) };
-	//id_t* const gpuIDs{ (id_t* const)alloca(renderItemCount * sizeof(id_t)) };
-	//mofu::content::GetSubmeshGpuIDs(geometryContentID, renderItemCount, gpuIDs, counter);
-
-	//geometry::SubmeshViewsCache submeshViewsCache
-	//{
-	//	(D3D12_GPU_VIRTUAL_ADDRESS* const)alloca(renderItemCount * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
-	//	(D3D12_GPU_VIRTUAL_ADDRESS* const)alloca(renderItemCount * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
-	//	(D3D12_INDEX_BUFFER_VIEW* const)alloca(renderItemCount * sizeof(D3D12_INDEX_BUFFER_VIEW)),
-	//	(D3D_PRIMITIVE_TOPOLOGY* const)alloca(renderItemCount * sizeof(D3D_PRIMITIVE_TOPOLOGY)),
-	//	(u32* const)alloca(renderItemCount * sizeof(u32)),
-	//};
-
-	//id_t* const materialIDsTest{ (id_t* const)alloca(renderItemCount * sizeof(id_t)) };
-	//for (u32 i{ 0 }; i < renderItemCount; ++i)
-	//{
-	//	materialIDsTest[i] = materialIDs[0];
-	//}
-
-	//geometry::GetSubmeshViews(gpuIDs, renderItemCount, submeshViewsCache);
-	//// we need space for geometryContentID and renderItemCount
-	//std::unique_ptr<id_t[]> rItems{ std::make_unique<id_t[]>(sizeof(id_t) * (2 + (u64)renderItemCount)) };
-
-	//rItems[0] = geometryContentID;
-	//rItems[1] = renderItemCount;
-	//id_t* const rItemIDs{ &rItems[2] };
-	//D3D12RenderItem* const d3d12RenderItems{ (D3D12RenderItem*)alloca(renderItemCount * sizeof(D3D12RenderItem)) };
-
-	//for (u32 i{ 0 }; i < renderItemCount; ++i)
-	//{
-	//	D3D12RenderItem& item{ d3d12RenderItems[i] };
-	//	item.EntityID = entityID;
-	//	//TODO:
-	//	item.SubmeshGpuID = gpuIDs[i];
-	//	//item.MaterialID = materialIDs[i];
-	//	item.MaterialID = materialIDsTest[i];
-
-	//	PsoID idPair{ CreatePSO(item.MaterialID, submeshViewsCache.PrimitiveTopologies[i], submeshViewsCache.ElementTypes[i]) };
-	//	item.GPassPsoID = idPair.GPassPsoID;
-	//	item.DepthPsoID = idPair.DepthPsoID;
-
-	//	assert(id::IsValid(item.SubmeshGpuID) && id::IsValid(item.MaterialID));
-	//}
-
-	//std::lock_guard lock{ renderItemMutex };
-	//for (u32 i{ 0 }; i < renderItemCount; ++i)
-	//{
-	//	rItemIDs[i] = renderItems.add(d3d12RenderItems[i]);
-	//}
-
-	//counter++;
-
-	//return renderItemIDs.add(std::move(rItems));
-
-	//static u32 counter;
-
-	//assert(id::IsValid(entityID) && id::IsValid(geometryContentID));
-	//assert(materialCount && materialIDs);
-
-	//// we need to create one render item for each of the submeshes of a geometry
-	//// the number of material ids must be the same as the number of submesh gpu ids
-	//u32 renderItemCount{ mofu::content::GetSubmeshGpuIDCount(geometryContentID) };
-	//id_t* const gpuIDs{ (id_t* const)alloca(renderItemCount * sizeof(id_t)) };
-	//mofu::content::GetSubmeshGpuIDs(geometryContentID, renderItemCount, gpuIDs, counter);
-
-	//geometry::SubmeshViewsCache submeshViewsCache
-	//{
-	//	(D3D12_GPU_VIRTUAL_ADDRESS* const)alloca(renderItemCount * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
-	//	(D3D12_GPU_VIRTUAL_ADDRESS* const)alloca(renderItemCount * sizeof(D3D12_GPU_VIRTUAL_ADDRESS)),
-	//	(D3D12_INDEX_BUFFER_VIEW* const)alloca(renderItemCount * sizeof(D3D12_INDEX_BUFFER_VIEW)),
-	//	(D3D_PRIMITIVE_TOPOLOGY* const)alloca(renderItemCount * sizeof(D3D_PRIMITIVE_TOPOLOGY)),
-	//	(u32* const)alloca(renderItemCount * sizeof(u32)),
-	//};
-
-	//id_t* const materialIDsTest{ (id_t* const)alloca(renderItemCount * sizeof(id_t)) };
-	//for (u32 i{ 0 }; i < renderItemCount; ++i)
-	//{
-	//	materialIDsTest[i] = materialIDs[0];
-	//}
-
-	//geometry::GetSubmeshViews(gpuIDs, renderItemCount, submeshViewsCache);
-	//// we need space for geometryContentID and renderItemCount
-	//std::unique_ptr<id_t[]> rItems{ std::make_unique<id_t[]>(sizeof(id_t) * (2 + (u64)renderItemCount)) };
-
-	//rItems[0] = geometryContentID;
-	//rItems[1] = renderItemCount;
-	//id_t* const rItemIDs{ &rItems[2] };
-	//D3D12RenderItem* const d3d12RenderItems{ (D3D12RenderItem* const)alloca(renderItemCount * sizeof(D3D12RenderItem)) };
-
-	//for (u32 i{ 0 }; i < renderItemCount; ++i)
-	//{
-	//	D3D12RenderItem& item{ d3d12RenderItems[i] };
-	//	item.EntityID = entityID;
-	//	//TODO:
-	//	item.SubmeshGpuID = gpuIDs[i];
-	//	//item.MaterialID = materialIDs[i];
-	//	item.MaterialID = materialIDsTest[i];
-
-	//	PsoID idPair{ CreatePSO(item.MaterialID, submeshViewsCache.PrimitiveTopologies[i], submeshViewsCache.ElementTypes[i]) };
-	//	item.GPassPsoID = idPair.GPassPsoID;
-	//	item.DepthPsoID = idPair.DepthPsoID;
-
-	//	assert(id::IsValid(item.SubmeshGpuID) && id::IsValid(item.MaterialID));
-	//}
-
-	//std::lock_guard lock{ renderItemMutex };
-	//for (u32 i{ 0 }; i < renderItemCount; ++i)
-	//{
-	//	rItemIDs[i] = renderItems.add(d3d12RenderItems[i]);
-	//}
-
-	//counter++;
-
-	//return renderItemIDs.add(std::move(rItems));
-
-static u32 counter;
-
 	assert(id::IsValid(entityID) && id::IsValid(geometryContentID));
-	assert(materialCount && materialIDs);
+	assert(materialCount && id::IsValid(materialID));
 
 	// we need to create one render item for each of the submeshes of a geometry
 	// the number of material ids must be the same as the number of submesh gpu ids
@@ -497,7 +373,7 @@ static u32 counter;
 
 	d3d12RenderItem.EntityID = entityID;
 	d3d12RenderItem.SubmeshGpuID = geometryContentID;
-	d3d12RenderItem.MaterialID = materialIDs[0];
+	d3d12RenderItem.MaterialID = materialID;
 	PsoID idPair{ CreatePSO(d3d12RenderItem.MaterialID, submeshViewsCache.PrimitiveTopologies[0], submeshViewsCache.ElementTypes[0]) };
 	d3d12RenderItem.GPassPsoID = idPair.GPassPsoID;
 	d3d12RenderItem.DepthPsoID = idPair.DepthPsoID;
@@ -506,8 +382,6 @@ static u32 counter;
 
 	std::lock_guard lock{ renderItemMutex };
 	*rItem = renderItems.add(d3d12RenderItem);
-
-	counter++;
 
 	u32 renderItemID{ renderItemIDs.add(std::move(rItem)) };
 	core::RenderItemsUpdated();

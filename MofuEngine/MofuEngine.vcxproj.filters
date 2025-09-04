@@ -249,6 +249,12 @@
     <ClCompile Include="Editor\ActionHistory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\RenderingConsole.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\RenderingDebug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -573,6 +579,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\EditorStyle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\RenderingConsole.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\RenderingDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

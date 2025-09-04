@@ -10,6 +10,7 @@
 #include "Content/Shaders/ContentProcessingShaders.h"
 #include "ActionHistory.h"
 #include "Input/InputSystem.h"
+#include "RenderingConsole.h"
 
 namespace mofu::editor {
 namespace {
@@ -34,6 +35,7 @@ RenderEditorGUI()
     material::RenderMaterialEditor();
     assets::RenderImportSettings();
     assets::RenderImportSummary();
+    debug::DrawRenderingConsole();
 
     if (input::WasKeyPressed(input::Keys::Z, input::Keys::Control))
     {

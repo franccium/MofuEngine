@@ -447,11 +447,11 @@ LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh&
 	content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
 	u32 submeshCount{ uploadedGeometryInfo.SubmeshCount };
 
-	assert(material.MaterialIDs);
-	if (!id::IsValid(material.MaterialIDs[0]))
+	assert(id::IsValid(material.MaterialID));
+	if (!id::IsValid(material.MaterialID))
 	{
 		material.MaterialCount = 1;
-		material.MaterialIDs[0] = content::GetDefaultMaterial();
+		material.MaterialID = content::GetDefaultMaterial();
 		material.MaterialAsset = DEFAULT_MATERIAL_UNTEXTURED_HANDLE;
 	}
 	// root
@@ -481,8 +481,7 @@ LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh&
 		{
 			id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
 			mesh.MeshID = meshId;
-			mat.MaterialIDs = new id_t[1];
-			mat.MaterialIDs[0] = material.MaterialIDs[0];
+			mat.MaterialID = material.MaterialID;
 			mat.MaterialCount = 1;
 			//snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
 
@@ -495,7 +494,7 @@ LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh&
 		for (auto& c : spawnedEntities)
 		{
 			ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(c.entity) };
-			mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialIDs);
+			mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialID);
 			if(c.entity != entity) 
 				editor::AddEntityToSceneView(c.entity);
 		}
@@ -503,7 +502,7 @@ LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh&
 	else
 	{
 		id_t oldID{ mesh.RenderItemID };
-		mesh.RenderItemID = graphics::AddRenderItem(entity, mesh.MeshID, material.MaterialCount, material.MaterialIDs);
+		mesh.RenderItemID = graphics::AddRenderItem(entity, mesh.MeshID, material.MaterialCount, material.MaterialID);
 		//graphics::UpdateRenderItemData(oldID, mesh.RenderItemID);
 	}
 }

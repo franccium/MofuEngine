@@ -1,5 +1,4 @@
 #pragma once
-#include "CommonHeaders.h"
 
 #ifdef _WIN64
 #include <DirectXMath.h>

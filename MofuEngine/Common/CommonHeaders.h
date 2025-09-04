@@ -51,7 +51,7 @@
 #elif defined(_MSC_VER)
 #define _ALWAYS_INLINE __forceinline
 #else
-#define _ALWAYS_INLINE inline
+#define _ALWAYS_INLINE
 #endif
 #endif
 

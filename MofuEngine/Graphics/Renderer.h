@@ -191,7 +191,7 @@ struct RenderItemInfo
 	u32 AddedSubmeshCount{ 0 };
 	u32 AddedMaterialCount{ 0 };
 	id_t* AddedSubmeshIDs;
-	id_t* AddedMaterialIDs;
+	id_t AddedMaterialID;
 };
 
 struct MaterialSurface
@@ -206,10 +206,10 @@ struct MaterialSurface
 
 struct MaterialInitInfo
 {
-	id_t* TextureIDs;
-	MaterialSurface Surface; // TODO: wastes a lot of bytes, even though most models would use textures anyways
-	MaterialType::type Type;
-	u32 TextureCount; // NOTE: textures are optional, texture_count may be 0, and texture_ids null
+	id_t* TextureIDs{ nullptr };
+	MaterialSurface Surface{}; // TODO: wastes a lot of bytes, even though most models would use textures anyways
+	MaterialType::type Type{ MaterialType::Opaque };
+	u32 TextureCount{ 0 }; // NOTE: textures are optional, texture_count may be 0, and texture_ids null
 	id_t ShaderIDs[ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
 	MaterialFlags::Flags MaterialFlags{ MaterialFlags::None };
 };
@@ -238,6 +238,8 @@ const Camera& GetMainCamera();
 
 const char* GetEngineShadersPath();
 const char* GetEngineShadersPath(GraphicsPlatform platform);
+const char* GetDebugEngineShadersPath();
+const char* GetDebugEngineShadersPath(GraphicsPlatform platform);
 
 id_t AddSubmesh(const u8*& data);
 void RemoveSubmesh(id_t id);
@@ -252,8 +254,8 @@ id_t AddMaterial(MaterialInitInfo info);
 void RemoveMaterial(id_t id);
 MaterialInitInfo GetMaterialReflection(id_t id);
 
-id_t AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
-RenderItemInfo AddRenderItemRecoverInfo(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
+id_t AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t materialID);
+RenderItemInfo AddRenderItemRecoverInfo(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t materialID);
 void RemoveRenderItem(id_t id);
 void UpdateRenderItemData(id_t oldRenderItemID, id_t newRenderItemID);
 }

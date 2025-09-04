@@ -71,7 +71,7 @@ namespace mofu::graphics::d3d12 {
 				auto material{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(e) };
 				if (renderItemIndex < renderItemCount)
 				{
-					frameCache.MaterialIDs[renderItemIndex] = material.MaterialIDs[0];
+					frameCache.MaterialIDs[renderItemIndex] = material.MaterialID;
 					renderItemIndex++;
 				}
 			}
@@ -82,7 +82,7 @@ namespace mofu::graphics::d3d12 {
 				if (renderItemIndex < renderItemCount)
 				{
 					renderItemIndex = id::Index(entity) - 1;
-					frameCache.MaterialIDs[renderItemIndex] = material.MaterialIDs[0];
+					frameCache.MaterialIDs[renderItemIndex] = material.MaterialID;
 				}
 			}*/
 

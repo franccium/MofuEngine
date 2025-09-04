@@ -163,22 +163,23 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 		for (auto& e : renderables)
 		{
 			e.Mesh.MeshID = uploadedGeometryInfo.SubmeshGpuIDs[i++];
-			e.Material.MaterialIDs = new id_t[1]; //TODO:
+			
 			if (content::IsValid(e.Material.MaterialAsset))
 			{
-				e.Material.MaterialIDs[0] = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material, false);
-				if (!id::IsValid(e.Material.MaterialIDs[0]))
+				e.Material.MaterialID = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material, false);
+				if (!id::IsValid(e.Material.MaterialID))
 				{
 					graphics::MaterialInitInfo mat{};
 					material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
-					e.Material.MaterialIDs[0] = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
+					e.Material.MaterialID = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
 				}
 			}
 			else
 			{
-				e.Material.MaterialIDs[0] = content::GetDefaultMaterial();
+				e.Material.MaterialID = content::GetDefaultMaterial();
 			}
-			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialIDs);
+			e.Material.MaterialAsset = content::assets::GetAssetFromResource(e.Material.MaterialID, content::AssetType::Material);
+			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialID);
 		}
 	}
 }
@@ -191,16 +192,8 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
 	u32 submeshCount{ uploadedGeometryInfo.SubmeshCount };
 
-	if (!materials)
-	{
-		id_t mtlID{ content::GetDefaultMaterial() };
-		//u32 materialCount{ 1 };
-		materials = new u32[submeshCount];
-		for (u32 i{ 0 }; i < submeshCount; ++i)
-		{
-			materials[i] = mtlID;
-		}
-	}
+	bool hasMaterials{ materials != nullptr };
+	const id_t defaultMat{ content::GetDefaultMaterial() };
 
 	/*graphics::MaterialInitInfo materialInfo{};
 	content::AssetHandle matHandle{content::}
@@ -219,7 +212,8 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	// root
 	mesh.MeshID = uploadedGeometryInfo.GeometryContentID;
 	material.MaterialCount = 1;
-	material.MaterialIDs = &materials[0];
+	material.MaterialID = hasMaterials ? materials[0] : defaultMat;
+	material.MaterialAsset = content::assets::GetAssetFromResource(material.MaterialID, content::AssetType::Material);
 
 	struct RenderableEntitySpawnContext
 	{
@@ -249,8 +243,9 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	{
 		id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
 		mesh.MeshID = meshId;
-		material.MaterialIDs = &materials[i];
+		material.MaterialID = hasMaterials ? materials[i] : defaultMat;
 		material.MaterialCount = 1;
+		material.MaterialAsset = content::assets::GetAssetFromResource(material.MaterialID, content::AssetType::Material);
 		snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
 
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
@@ -268,7 +263,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 			assert(ecs::scene::GetComponent<ecs::component::Child>(c.entity).ParentEntity == child.ParentEntity);
 		}
 		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(c.entity) };
-		mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialIDs);
+		mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialID);
 		editor::AddEntityToSceneView(c.entity);
 	}
 }
@@ -423,7 +418,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 	mesh.MeshID = uploadedGeometryInfo.GeometryContentID;
 	mesh.MeshAsset = _meshAssets[0];
 	material.MaterialCount = 1;
-	material.MaterialIDs = &materialIDs[0];
+	material.MaterialID = materialIDs[0];
 	material.MaterialAsset = _materialAssets[0];
 
 	struct RenderableEntitySpawnContext
@@ -455,9 +450,9 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
 		mesh.MeshID = meshId;
 		mesh.MeshAsset = _meshAssets[0];
-		material.MaterialIDs = &materialIDs[i];
+		material.MaterialID = materialIDs[i];
 		material.MaterialCount = 1;
-		material.MaterialAsset = _materialAssets[1];
+		material.MaterialAsset = _materialAssets[i];
 
 		snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
 
@@ -476,7 +471,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 			assert(ecs::scene::GetComponent<ecs::component::Child>(c.entity).ParentEntity == child.ParentEntity);
 		}
 		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent< ecs::component::RenderMesh >(c.entity) };
-		mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialIDs);
+		mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialID);
 		editor::AddEntityToSceneView(c.entity);
 	}
 }

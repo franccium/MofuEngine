@@ -191,6 +191,24 @@ UpdateMaterialInitInfo()
 }
 
 void
+DuplicateCurrentMaterial()
+{
+	content::AssetPtr mat{ content::assets::GetAsset(currentMaterialAsset) };
+	if (mat)
+	{
+		std::filesystem::path duplicatePath{ content::CreateUniqueDuplicateName(mat->ImportedFilePath) };
+		PackMaterialAsset(editorMaterial, duplicatePath);
+		currentMaterialAsset = CreateMaterialAsset(duplicatePath);
+		LoadMaterialAsset(editorMaterial, mat->ImportedFilePath);
+		UpdateMaterialInitInfo();
+	}
+	else
+	{
+		log::Error("Save the current material first");
+	}
+}
+
+void
 RenderTextureBrowser()
 {
 	if (ImGui::BeginPopup("SelectTexturePopup"))
@@ -269,7 +287,9 @@ DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& surface)
 		ImGui::TableNextRow();
 		constexpr f32 min{ 0.f };
 		constexpr f32 max{ 1.f };
-		DisplayEditableVector4(&surface.BaseColor, "Base Color", min, max);
+		static bool colorEditOpen{ false };
+		DisplayLabelT("Base Color");
+		ImGui::ColorEdit4("", (float*)&surface.BaseColor, ImGuiColorEditFlags_PickerHueWheel);
 		ImGui::TableNextRow();
 		DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
 		ImGui::TableNextRow();
@@ -311,7 +331,9 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 {
 	materialOwner = entityID;
 	editorMaterial = {};
-	materialInitInfo = graphics::GetMaterialReflection(mat.MaterialIDs[0]);
+	
+	//TODO: could also just use mat.MaterialAsset and call UpdateMaterialInitInfo();
+	materialInitInfo = graphics::GetMaterialReflection(mat.MaterialID);
 	editorMaterial.TextureCount = materialInitInfo.TextureCount;
 	// TODO: figure out which texture is for what usage
 	memcpy(editorMaterial.TextureIDs, materialInitInfo.TextureIDs, sizeof(id_t) * materialInitInfo.TextureCount);
@@ -326,6 +348,7 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 	editorMaterial.Surface = materialInitInfo.Surface;
 	editorMaterial.TextureCount = materialInitInfo.TextureCount;
 	currentMaterialAsset = mat.MaterialAsset;
+
 	isOpen = true;
 }
 
@@ -389,20 +412,6 @@ GetDefaultEditorMaterialUntextured()
 	return mat;
 }
 
-graphics::MaterialInitInfo
-GetDefaultMaterialInitInfo()
-{
-	graphics::MaterialInitInfo info{};
-	info.Type = graphics::MaterialType::Opaque;
-	info.Surface = graphics::MaterialSurface{};
-	info.TextureCount = TextureUsage::Count;
-	info.TextureIDs = &DEFAULT_TEXTURES[0];
-	auto psvs{ content::GetDefaultPsVsShadersTextured() };
-	info.ShaderIDs[0] = psvs.first;
-	info.ShaderIDs[1] = psvs.second;
-	return info;
-}
-
 void
 RenderMaterialEditor()
 {
@@ -425,13 +434,18 @@ RenderMaterialEditor()
 
 	if (ImGui::Button("Update"))
 	{
+		if (currentMaterialAsset == content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE)
+		{
+			// avoid modyfying the standard material
+			DuplicateCurrentMaterial();
+		}
 		//TODO: or edit the material texture data itself
 		UpdateMaterialInitInfo();
 		id_t newMaterialID{ content::CreateMaterial(materialInitInfo) };
 		//TODO: formal way
 		ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(materialOwner) };
 		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(materialOwner) };
-		mat.MaterialIDs[0] = newMaterialID;
+		mat.MaterialID = newMaterialID;
 
 		// update the asset
 		// for now just reimport it to the same path
@@ -445,7 +459,7 @@ RenderMaterialEditor()
 			//graphics::d3d12::core::RenderItemsUpdated();
 
 			graphics::RemoveRenderItem(mesh.RenderItemID);
-			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 			//FIXME: doesnt update assets
 			/*mat.MaterialAsset = content::assets::GetAssetFromResource(newMaterialID, content::AssetType::Material);
 			if (!content::IsValid(mat.MaterialAsset))
@@ -456,10 +470,11 @@ RenderMaterialEditor()
 		}
 		else
 		{
+			assert(false);
 			log::Error("Load the material asset first (TODO)");
 			ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(materialOwner) };
 			graphics::RemoveRenderItem(mesh.RenderItemID);
-			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 		}
 	}
 	static bool saving{ false };
@@ -545,18 +560,7 @@ RenderMaterialEditor()
 	}
 	if (ImGui::Button("Duplicate Material"))
 	{
-		content::AssetPtr mat{ content::assets::GetAsset(currentMaterialAsset) };
-		if (mat)
-		{
-			std::filesystem::path duplicatePath{ content::CreateUniqueDuplicateName(mat->ImportedFilePath) };
-			PackMaterialAsset(editorMaterial, duplicatePath);
-			currentMaterialAsset = CreateMaterialAsset(duplicatePath);
-			UpdateMaterialInitInfo();
-		}
-		else
-		{
-			log::Error("Save the current material first");
-		}
+		DuplicateCurrentMaterial();
 	}
 
 	if (isBrowserOpen) RenderTextureBrowser();

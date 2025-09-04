@@ -51,6 +51,7 @@ struct RenderMesh : Component
 	id_t RenderItemID{ id::INVALID_ID };
 
 #if EDITOR_BUILD
+	//FIXME: should just have a map of entity and it's asset handles as this makes the size of components unpredictable, or also i do have GetAssetFromResource
 	content::AssetHandle MeshAsset;
 	static void RenderFields([[maybe_unused]] RenderMesh& c)
 	{
@@ -63,15 +64,15 @@ struct RenderMesh : Component
 struct RenderMaterial : Component
 {
 	u32 MaterialCount{ 1 };
-	id_t* MaterialIDs{ nullptr };
+	id_t MaterialID{ id::INVALID_ID };
 
 #if EDITOR_BUILD
 	content::AssetHandle MaterialAsset;
 	static void RenderFields([[maybe_unused]] RenderMaterial& c)
 	{
 		ImGui::TableNextRow();
-		if (c.MaterialIDs == nullptr) return;
-		editor::DisplayUint(c.MaterialIDs[0], "Material ID");
+		if (c.MaterialID == id::INVALID_ID) return;
+		editor::DisplayUint(c.MaterialID, "Material ID");
 	}
 #endif
 };

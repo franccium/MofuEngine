@@ -16,6 +16,15 @@ struct EngineShader
     };
 };
 
+struct EngineDebugShader
+{
+    enum id : u32
+    {
+        PostProcessPS,
+        Count
+    };
+};
+
 struct EngineShaderInfo
 {
     EngineShader::ID ID;
@@ -30,6 +39,11 @@ constexpr EngineShaderInfo ENGINE_SHADER_FILES[] {
     {EngineShader::LightCullingCS, {"LightCulling.hlsl", "LightCullingCS", graphics::ShaderType::Compute}},
 };
 static_assert(_countof(ENGINE_SHADER_FILES) == EngineShader::Count);
+
+constexpr EngineShaderInfo ENGINE_DEBUG_SHADER_FILES[]{
+    {EngineShader::PostProcessPS, {"PostProcess.hlsl", "PostProcessPS", graphics::ShaderType::Pixel}},
+};
+static_assert(_countof(ENGINE_DEBUG_SHADER_FILES) == EngineDebugShader::Count);
 
 namespace content {
 struct ContentShader

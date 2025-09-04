@@ -17,9 +17,10 @@
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
 
+#ifdef _DEBUG
 // NOTE: flip to turn the debug layer off
 #define ENABLE_DEBUG_LAYER 1
-#ifndef _DEBUG
+#else
 #define ENABLE_DEBUG_LAYER 0
 #endif
 #define ENABLE_GPU_BASED_VALIDATION 1

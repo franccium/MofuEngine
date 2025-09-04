@@ -192,4 +192,13 @@ void DisplaySliderUint(const char* label, u32* v, u32 minVal, u32 maxVal)
 	ImGui::SliderScalar(label, ImGuiDataType_U32, v, &minVal, &maxVal);
 }
 
+bool DisplayColorPicker(v4* v, const char* label)
+{
+	DisplayLabelT(label);
+	ImGui::PushID(v);
+	bool changed{ ImGui::ColorPicker3("", (float*)v, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs)};
+	ImGui::PopID();
+	return changed;
+}
+
 }

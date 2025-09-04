@@ -8,6 +8,9 @@ namespace {
 constexpr const char* ENGINE_SHADERS_PATHS[]{
     ".\\shaders\\d3d12\\shaders.bin"
 };
+constexpr const char* ENGINE_DEBUG_SHADERS_PATHS[]{
+    ".\\shaders\\d3d12\\shaders_d.bin"
+};
 
 PlatformInterface gfxInterface;
 FrameInfo frameInfo{};
@@ -96,10 +99,22 @@ GetEngineShadersPath()
     return ENGINE_SHADERS_PATHS[(u32)gfxInterface.platform];
 }
 
+const char* 
+GetDebugEngineShadersPath()
+{
+    return ENGINE_DEBUG_SHADERS_PATHS[(u32)gfxInterface.platform];
+}
+
 const char*
 GetEngineShadersPath(GraphicsPlatform platform)
 {
     return ENGINE_SHADERS_PATHS[(u32)platform];
+}
+
+const char*
+GetDebugEngineShadersPath(GraphicsPlatform platform)
+{
+    return ENGINE_DEBUG_SHADERS_PATHS[(u32)platform];
 }
 
 void 
@@ -328,9 +343,9 @@ MaterialInitInfo GetMaterialReflection(id_t id)
 }
 
 id_t 
-AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs)
+AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t materialID)
 {
-	return gfxInterface.resources.addRenderItem(entityID, geometryContentID, materialCount, materialIDs);
+	return gfxInterface.resources.addRenderItem(entityID, geometryContentID, materialCount, materialID);
 }
 
 void

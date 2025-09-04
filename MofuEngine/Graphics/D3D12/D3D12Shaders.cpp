@@ -6,10 +6,12 @@
 namespace mofu::graphics::d3d12::shaders {
 namespace {
 content::CompiledShaderPtr engineShaders[EngineShader::Count]{};
+content::CompiledShaderPtr engineShaders_Debug[EngineShader::Count]{};
 
 // a chunk of memory with all compiled engine shaders
 // an array of shader byte code consisting of a u64 size and an array of bytes
 std::unique_ptr<u8[]> engineShadersBlob{};
+std::unique_ptr<u8[]> engineShadersBlob_Debug{};
 
 bool 
 LoadEngineShaders()
@@ -36,6 +38,23 @@ LoadEngineShaders()
         ++index;
     }
     assert(index == EngineShader::Count && offset == totalSize);
+
+    // load debug shaders
+    totalSize = 0;
+    result = content::LoadDebugEngineShaders(engineShadersBlob_Debug, totalSize);
+    offset = 0;
+    index = 0;
+    if (!result) return false;
+    while (offset < totalSize)
+    {
+        content::CompiledShaderPtr& shader{ engineShaders_Debug[index] };
+        assert(!shader);
+
+        shader = reinterpret_cast<const content::CompiledShaderPtr>(&engineShadersBlob_Debug[offset]);
+        offset += shader->GetBufferSize();
+        ++index;
+    }
+    assert(index == EngineDebugShader::Count && offset == totalSize);
 
     return result;
 }
@@ -64,6 +83,15 @@ GetEngineShader(EngineShader::id id)
 {
     assert(id < EngineShader::Count);
     const content::CompiledShaderPtr shader{ engineShaders[id] };
+    assert(shader && shader->BytecodeSize());
+    return { shader->Bytecode(), shader->BytecodeSize() };
+}
+
+D3D12_SHADER_BYTECODE 
+GetDebugEngineShader(EngineDebugShader::id id)
+{
+    assert(id < EngineDebugShader::Count);
+    const content::CompiledShaderPtr shader{ engineShaders_Debug[id] };
     assert(shader && shader->BytecodeSize());
     return { shader->Bytecode(), shader->BytecodeSize() };
 }

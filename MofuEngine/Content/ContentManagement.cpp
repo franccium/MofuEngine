@@ -131,6 +131,13 @@ LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
     return readEngineShaders;
 }
 
+bool
+LoadDebugEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
+{
+    bool readShaders{ ReadFileToByteBuffer(std::filesystem::path{ graphics::GetDebugEngineShadersPath() }, shaders, size) };
+    return readShaders;
+}
+
 void 
 GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info)
 {

@@ -22,7 +22,7 @@ struct RenderItemsCache
 	ID3D12PipelineState** const DepthPso;	
 };
 
-id_t AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t* const materialIDs);
+id_t AddRenderItem(ecs::Entity entityID, id_t geometryContentID, u32 materialCount, const id_t materialID);
 void RemoveRenderItem(id_t id);
 void UpdateRenderItemData(id_t oldRenderItemID, id_t newRenderItemID);
 

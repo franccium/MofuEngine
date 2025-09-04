@@ -974,6 +974,10 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\Sponza.fbx
   ImportedFilePath: ""
+10077117710279414280:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aaa_copy3.mat
+  ImportedFilePath: Projects/TestProject\Resources\aaa_copy3.mat
 7963770563200570132:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\table\textures\wooden_picnic_table_bottom_diff_1k.png
@@ -986,6 +990,10 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest244.mat
   ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest244.mat
+14144520786927563476:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aaa_copy4.mat
+  ImportedFilePath: Projects/TestProject\Resources\aaa_copy4.mat
 17681281189368951945:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\table\textures\wooden_picnic_table_bottom_nor_gl_1k.png
@@ -1466,3 +1474,19 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\testsmallroomnotransform.fbx
   ImportedFilePath: Projects/TestProject\Resources\Meshes\testsmallroomnotransform.mesh
+6484332946506583864:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\Lakeside-Sunrise-2k.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Textures\Lakeside-Sunrise-2k.tex
+5991574118873980379:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\testing-room.fbx
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\testing-room.mesh
+3024042146681866107:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aaa_copy1.mat
+  ImportedFilePath: Projects/TestProject\Resources\aaa_copy1.mat
+1965148516988976638:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\aaa_copy2.mat
+  ImportedFilePath: Projects/TestProject\Resources\aaa_copy2.mat

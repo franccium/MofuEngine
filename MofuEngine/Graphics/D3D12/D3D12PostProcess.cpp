@@ -3,9 +3,12 @@
 #include "D3D12Core.h"
 #include "D3D12Surface.h"
 #include "D3D12GPass.h"
+#include "Graphics/RenderingDebug.h"
 
 namespace mofu::graphics::d3d12::fx {
 namespace {
+
+constexpr bool CREATE_DEBUG_PSO_AT_LAUNCH{ false };
 
 struct FXRootParameterIndices
 {
@@ -19,6 +22,23 @@ struct FXRootParameterIndices
 	};
 };
 
+struct FXRootParameterIndices_Debug
+{
+	enum : u32
+	{
+		GlobalShaderData = 0,
+		RootConstants,
+		DebugConstants,
+		//DescriptorTable,
+
+		Count
+	};
+};
+
+ID3D12RootSignature* fxRootSig_Default{ nullptr };
+ID3D12PipelineState* fxPSO_Default{ nullptr };
+ID3D12RootSignature* fxRootSig_Debug{ nullptr };
+ID3D12PipelineState* fxPSO_Debug{ nullptr };
 ID3D12RootSignature* fxRootSig{ nullptr };
 ID3D12PipelineState* fxPSO{ nullptr };
 
@@ -27,9 +47,65 @@ D3D12RenderTexture renderTexture{};
 constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
 
 bool
+CreateDebugPSO()
+{
+	assert(!fxRootSig_Debug && !fxPSO_Debug);
+
+	d3dx::D3D12DescriptorRange range
+	{
+		D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND, 0, 0,
+		D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE
+	};
+
+	d3dx::D3D12RootParameter parameters[FXRootParameterIndices_Debug::Count]{};
+	parameters[FXRootParameterIndices_Debug::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
+	parameters[FXRootParameterIndices_Debug::RootConstants].AsConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices_Debug::DebugConstants].AsConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 2);
+	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
+
+	struct D3D12_STATIC_SAMPLER_DESC samplers[]
+	{
+		d3dx::StaticSampler(d3dx::SamplerState.STATIC_POINT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+		d3dx::StaticSampler(d3dx::SamplerState.STATIC_LINEAR, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+	};
+
+	d3dx::D3D12RootSignatureDesc rootSigDesc
+	{
+		&parameters[0], _countof(parameters), d3dx::D3D12RootSignatureDesc::DEFAULT_FLAGS,
+		&samplers[0], _countof(samplers)
+	};
+
+	rootSigDesc.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+
+	fxRootSig_Debug = rootSigDesc.Create();
+	assert(fxRootSig_Debug);
+	NAME_D3D12_OBJECT(fxRootSig_Debug, L"Post-Process FX Root Signature (DEBUG)");
+
+	struct {
+		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Debug };
+		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(shaders::EngineShader::FullscreenTriangleVS) };
+		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetDebugEngineShader(shaders::EngineDebugShader::PostProcessPS) };
+		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
+		d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
+		d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };
+	} stream;
+
+	D3D12_RT_FORMAT_ARRAY rtfArray{};
+	rtfArray.NumRenderTargets = 1;
+	rtfArray.RTFormats[0] = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
+	stream.renderTargetFormats = rtfArray;
+
+	fxPSO_Debug = d3dx::CreatePipelineState(&stream, sizeof(stream));
+	NAME_D3D12_OBJECT(fxPSO_Debug, L"Post-Process FX PSO (DEBUG)");
+
+	return fxRootSig_Debug && fxPSO_Debug;
+}
+
+bool
 CreatePSO()
 {
-	assert(!fxRootSig && !fxPSO);
+	assert(!fxRootSig_Default && !fxPSO_Default);
 
 	d3dx::D3D12DescriptorRange range
 	{
@@ -57,12 +133,12 @@ CreatePSO()
 
 	rootSigDesc.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
-	fxRootSig = rootSigDesc.Create();
-	assert(fxRootSig);
-	NAME_D3D12_OBJECT(fxRootSig, L"Post-Process FX Root Signature");
+	fxRootSig_Default = rootSigDesc.Create();
+	assert(fxRootSig_Default);
+	NAME_D3D12_OBJECT(fxRootSig_Default, L"Post-Process FX Root Signature");
 
 	struct {
-		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig };
+		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Default };
 		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(shaders::EngineShader::FullscreenTriangleVS) };
 		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(shaders::EngineShader::PostProcessPS) };
 		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
@@ -75,10 +151,12 @@ CreatePSO()
 	rtfArray.RTFormats[0] = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
 	stream.renderTargetFormats = rtfArray;
 
-	fxPSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
-	NAME_D3D12_OBJECT(fxPSO, L"Post-Process FX PSO");
+	fxPSO_Default = d3dx::CreatePipelineState(&stream, sizeof(stream));
+	NAME_D3D12_OBJECT(fxPSO_Default, L"Post-Process FX PSO");
 
-	return fxRootSig && fxPSO;
+	fxRootSig = fxRootSig_Default;
+	fxPSO = fxPSO_Default;
+	return fxRootSig_Default && fxPSO_Default;
 }
 
 void
@@ -126,6 +204,7 @@ SetBufferSize(u32v2 size)
 bool 
 Initialize()
 {
+	if constexpr (CREATE_DEBUG_PSO_AT_LAUNCH) CreateDebugPSO();
     return CreatePSO();
 }
 
@@ -133,8 +212,26 @@ void
 Shutdown()
 {
 	renderTexture.Release();
-	core::Release(fxRootSig);
-	core::Release(fxPSO);
+	core::Release(fxRootSig_Default);
+	core::Release(fxPSO_Default);
+	core::Release(fxRootSig_Debug);
+	core::Release(fxPSO_Debug);
+}
+
+void 
+SetDebug(bool debugOn)
+{
+	if (debugOn)
+	{
+		if (!fxRootSig_Debug || !fxPSO_Debug) CreateDebugPSO();
+		fxRootSig = fxRootSig_Debug;
+		fxPSO = fxPSO_Debug;
+	}
+	else
+	{
+		fxRootSig = fxRootSig_Default;
+		fxPSO = fxPSO_Default;
+	}
 }
 
 void
@@ -163,6 +260,10 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().Srv().index, 0);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().Srv().index, 1);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().Srv().index, 2);
+	if (fxRootSig == fxRootSig_Debug)
+	{
+		cmdList->SetGraphicsRoot32BitConstant(FXRootParameterIndices_Debug::DebugConstants, debug::GetDebugMode(), 0);
+	}
 	//cmdList->SetGraphicsRootDescriptorTable(idx::DescriptorTable, core::SrvHeap().GpuStart());
 
 	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.Rtv(0) };

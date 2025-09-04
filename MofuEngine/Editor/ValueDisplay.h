@@ -5,7 +5,6 @@
 #include "imgui.h"
 
 namespace mofu::editor {
-
 static constexpr f32 MIN_EDITABLE_U32{ 0 };
 static constexpr f32 MAX_EDITABLE_U32{ 100 };
 static constexpr f32 MIN_EDITABLE_FLOAT{ -1.f };
@@ -29,6 +28,8 @@ void DisplayVector3(const v3& v, const char* label);
 void DisplayVector4(const v4& v, const char* label);
 
 void DisplaySliderUint(const char* label, u32* v, u32 minVal, u32 maxVal);
+
+bool DisplayColorPicker(v4* v, const char* label);
 
 void DisplayLabelT(const char* label);
 }

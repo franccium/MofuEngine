@@ -496,9 +496,8 @@ CreateTestRenderItems()
 	mesh.MeshID = content::GetDefaultMesh();
 	mesh.MeshAsset = meshAsset;
 	mat.MaterialAsset = materialAsset;
-	mat.MaterialIDs = new id_t[1];
 	mat.MaterialCount = 1;
-	mat.MaterialIDs[0] = content::GetDefaultMaterial();
+	mat.MaterialID = content::GetDefaultMaterial();
 
 	ecs::component::LocalTransform transform{};
 	ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform,
@@ -506,7 +505,7 @@ CreateTestRenderItems()
 			mesh, mat) };
 
 	ecs::component::RenderMesh& meshEd{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entityData.id) };
-	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialIDs);
+	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 	editor::AddEntityToSceneView(entityData.id);
 	
 
