@@ -4,7 +4,7 @@ ConstantBuffer<GlobalShaderData> GlobalData : register(b0, space0);
 ConstantBuffer<LightCullingDispatchParameters> DispatchParams : register(b1, space0);
 RWStructuredBuffer<ConeFrustum> GridFrustumsOut : register(u0, space0);
 
-[numthreads(TILE_SIZE, TILE_SIZE, 1)]
+[numthreads(TILE_SIZE, TILE_SIZE, 1)] //FIXME: why so many
 void CalculateGridFrustumsCS(uint3 DTid : SV_DispatchThreadID)
 {
     if (DTid.x >= DispatchParams.NumThreads.x || DTid.y >= DispatchParams.NumThreads.y) return;

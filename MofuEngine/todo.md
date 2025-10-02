@@ -32,6 +32,9 @@ smaller stuff:
 
 batching
 
+ExecuteIndirect
+try work graphs
+
 rewrite mesh stuff - LODs, 1 material per, inspired by anvil
 some spatial data structures for the scene
 maybe integrate a physics engine

@@ -31,7 +31,7 @@ GetEntityIndex(Entity entity, u32 level)
 EntityFinalTRS&
 FindEntityFinalTRS(Entity entity)
 {
-	Entity currentEntity{ entity };
+	Entity currentEntity{ entity };v
 	u32 parentCount{ 0 };
 	while (ecs::scene::EntityHasComponent<ecs::component::Child>(currentEntity))
 	{

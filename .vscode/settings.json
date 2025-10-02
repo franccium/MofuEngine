@@ -56,5 +56,11 @@
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
 "C_Cpp_Runner.msvcSecureNoWarnings": false,
-"cmake.sourceDirectory": "C:/mofuengine/MofuEngine/ExampleApp/External/tracy"
+"cmake.sourceDirectory": "C:/mofuengine/MofuEngine/ExampleApp/External/tracy",
+"files.associations": {
+    "*.glsl": "ShadeView",
+    "*.hlsl": "ShadeView",
+    "random": "cpp",
+    "bitset": "cpp"
+}
 }

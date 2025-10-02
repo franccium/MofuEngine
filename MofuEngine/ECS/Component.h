@@ -24,7 +24,7 @@ using CetMask = std::bitset<MAX_COMPONENT_TYPES>;
 
 namespace mofu::ecs::component {
 
-template<typename T>
+template<IsComponent T>
 void RenderComponentFields(T& component) {
     T::RenderFields(component);
 }

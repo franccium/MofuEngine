@@ -319,7 +319,7 @@ AddLights()
 		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Spot);
 	}
 
-	constexpr bool DO_RANDOM_LIGHTS{ false };
+	constexpr bool DO_RANDOM_LIGHTS{ true };
 	if (!DO_RANDOM_LIGHTS) return;
 
 	srand(17);

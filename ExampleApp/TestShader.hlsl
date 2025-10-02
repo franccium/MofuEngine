@@ -237,7 +237,6 @@ Surface GetSurface(VertexOut psIn, float3 V)
     const float3x3 TBN = float3x3(T, B, N);
     // transform from tangent-space to world-space
     S.Normal = normalize(mul(n, TBN));
-    
 #else
 /*
     S.BaseColor = 1.f;

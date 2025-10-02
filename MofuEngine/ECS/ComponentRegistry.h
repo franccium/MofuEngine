@@ -68,7 +68,7 @@ constexpr std::array<u32, ComponentTypeCount> ComponentSizes {
 };
 
 template<ComponentID ID>
-inline constexpr u32 GetComponentSize() { assert(ID < ComponentTypeCount); return ComponentSizes[ID]; }
+inline constexpr u32 GetComponentSize() { static_assert(ID < ComponentTypeCount); return ComponentSizes[ID]; }
 
 inline constexpr u32 GetComponentSize(ComponentID id) { assert(id < ComponentTypeCount); return ComponentSizes[id]; }
 

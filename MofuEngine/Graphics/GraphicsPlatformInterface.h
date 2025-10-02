@@ -61,7 +61,7 @@ struct PlatformInterface
 		id_t(*addIcon)(const u8* const);
 	} ui;
 
-	GraphicsPlatform platform = (GraphicsPlatform) - 1;
+	GraphicsPlatform platform = (GraphicsPlatform) -1;
 };
 
 }

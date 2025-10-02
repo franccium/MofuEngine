@@ -154,6 +154,8 @@ ResizeSurfaceCuller(CullingParameters& culler)
 
 	// CalculateGridFrustums dispatch parameters
 	{
+		// each group has LIGHT_CULLING_TILE_SIZExLIGHT_CULLING_TILE_SIZE threads, each thread corresponds 
+		// to one tile and computes one frustum, then used by all threads in that tile in the culling step
 		hlsl::LightCullingDispatchParameters& params{ culler.CalculateGridFrustumsDispatchParams };
 		params.NumThreads = tileCount;
 		params.NumThreadGroups.x = (u32)math::AlignUp<LIGHT_CULLING_TILE_SIZE>(tileCount.x) / LIGHT_CULLING_TILE_SIZE;
@@ -182,7 +184,7 @@ CalculateGridFrustumsDispatch(CullingParameters& culler, DXGraphicsCommandList* 
 	const hlsl::LightCullingDispatchParameters& params{ culler.CalculateGridFrustumsDispatchParams };
 	memcpy(buffer, &params, sizeof(hlsl::LightCullingDispatchParameters));
 
-	constexpr bool VISUALIZE_IN_SHADER{ true };
+	constexpr bool VISUALIZE_IN_SHADER{ false };
 	barriers.AddTransitionBarrier(culler.GridFrustums.Buffer(),
 		VISUALIZE_IN_SHADER ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE 
 		: D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,

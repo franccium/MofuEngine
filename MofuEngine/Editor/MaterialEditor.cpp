@@ -139,6 +139,10 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 			isBrowserOpen = true;
 			textureBeingChanged = texUse;
 		}
+		if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+		{
+			texture::OpenTextureView(editorMaterial.TextureIDs[texUse]);
+		}
 	}
 	else
 	{
@@ -156,11 +160,6 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 			textureBeingChanged = texUse;
 		}
 		ImGui::PopID();
-	}
-
-	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-	{
-		texture::OpenTextureView(editorMaterial.TextureIDs[texUse]);
 	}
 
 	content::AssetHandle handle{ content::assets::GetAssetFromResource(editorMaterial.TextureIDs[texUse], content::AssetType::Texture) };
