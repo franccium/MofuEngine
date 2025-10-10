@@ -15,9 +15,10 @@ public:
 	constexpr void AspectRatio(f32 aspectRatio);
 	constexpr void ViewWidth(f32 width);
 	constexpr void ViewHeight(f32 height);	
-	constexpr void NearZ(f32 nearZ);	
+	constexpr void NearZ(f32 nearZ);
 	constexpr void FarZ(f32 farZ);
 
+	[[nodiscard]] constexpr bool WasUpdated() const { return _isDirty; }
 	[[nodiscard]] constexpr DirectX::XMMATRIX View() const { return _view; }
 	[[nodiscard]] constexpr DirectX::XMMATRIX Projection() const { return _projection; }
 	[[nodiscard]] constexpr DirectX::XMMATRIX InverseProjection() const { return _inverseProjection; }

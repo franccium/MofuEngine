@@ -56,7 +56,7 @@ void LightCullingCS(ComputeShaderInput csIn)
     // initialize group data
     if(csIn.GroupIndex == 0)
     {
-        _minDepthVS = FLT_MAX;
+        _minDepthVS = F32_MAX;
         _maxDepthVS = 0;
         _lightCount = 0;
         _opaqueLightIndex = 0;

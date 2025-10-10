@@ -404,10 +404,13 @@ void TransitionResource(DXResource* resource, DXGraphicsCommandList* cmdList,
     D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
     u32 subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 
+void ApplyUAVBarrier(DXResource* resource, DXGraphicsCommandList* cmdList,
+    D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE);
+
 class D3D12ResourceBarrierList
 {
 public:
-    constexpr static u32 MAX_RESOURCE_BARRIERS{ 64 };
+    constexpr static u32 MAX_RESOURCE_BARRIERS{ 16 };
 
     constexpr void AddTransitionBarrier(DXResource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, 
         D3D12_RESOURCE_BARRIER_FLAGS flags = D3D12_RESOURCE_BARRIER_FLAG_NONE, u32 subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
@@ -433,7 +436,7 @@ public:
         assert(_barrierCount < MAX_RESOURCE_BARRIERS);
 
         D3D12_RESOURCE_BARRIER& barrier{ _barriers[_barrierCount] };
-        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
         barrier.Flags = flags;
         barrier.UAV.pResource = resource;
 

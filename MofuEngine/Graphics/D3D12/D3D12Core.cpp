@@ -8,11 +8,14 @@
 #include "D3D12GUI.h"
 #include "D3D12Upload.h"
 #include "D3D12Camera.h"
+#include "D3D12Content.h"
 #include "ECS/ECSCore.h"
 #include "EngineAPI/ECS/SystemAPI.h"
 #include "Graphics/Lights/Light.h"
 #include "Lights/D3D12Light.h"
 #include "Lights/D3D12LightCulling.h"
+#include "D3D12RayTracing.h"
+#include "Graphics/RTSettings.h"
 
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
@@ -20,6 +23,7 @@
 #ifdef _DEBUG
 // NOTE: flip to turn the debug layer off
 #define ENABLE_DEBUG_LAYER 1
+#define ENABLE_DRED 1
 #else
 #define ENABLE_DEBUG_LAYER 0
 #endif
@@ -27,7 +31,7 @@
 
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
-extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 615; }
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 618; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
 
 using namespace Microsoft::WRL;
@@ -37,6 +41,9 @@ namespace {
 
 //TODO: a list of new items/sth
 bool renderItemsUpdated{ true };
+u64 _currentCPUFrame{ 0 };
+u64 _currentGPUFrame{ 0 };
+bool _rtUpdateRequested{ false };
 
 class D3D12Command
 {
@@ -84,6 +91,7 @@ public:
             NAME_D3D12_OBJECT_INDEXED(_cmdLists[i], i, type == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"GFX Command List"
                 : type == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command List" : L"Command List");
         }
+#if RAYTRACING == 0
         for (u32 i{ 0 }; i < BUNDLE_COUNT; ++i)
         {
             DXCall(hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, _cmdFrames[0].cmdAllocatorsBundle[i], nullptr, IID_PPV_ARGS(&_cmdListsBundle[i])));
@@ -91,6 +99,7 @@ public:
             DXCall(_cmdListsBundle[i]->Close());
             NAME_D3D12_OBJECT_INDEXED(_cmdListsBundle[i], i, L"Bundle Command List");
         }
+#endif
 
         DXCall(hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence)));
         if (FAILED(hr)) goto _error;
@@ -103,7 +112,7 @@ public:
         return;
 
     _error:
-        Release();
+        FlushAndRelease();
     }
 
     ~D3D12Command() { assert(!_cmdQueue && !_fence && !_cmdLists); }
@@ -122,7 +131,7 @@ public:
             DXCall(frame.cmdAllocators[i]->Reset());
             DXCall(_cmdLists[i]->Reset(frame.cmdAllocators[i], nullptr));
         }
-
+#if RAYTRACING == 0
         if (renderItemsUpdated)
         {
             for (u32 i = 0; i < BUNDLE_COUNT; ++i)
@@ -131,8 +140,8 @@ public:
                 DXCall(_cmdListsBundle[i]->Reset(frame.cmdAllocatorsBundle[i], nullptr));
             }
         }
+#endif
     }
-
     // signal the fence with the new fence value
     void EndFrame(const D3D12Surface& surface)
     {
@@ -164,13 +173,24 @@ public:
 #endif
 
         surface.Present();
+        ++_currentCPUFrame;
 
-        ++_fenceValue;
         CommandFrame& frame{ _cmdFrames[_frameIndex] };
-        frame.fenceValue = _fenceValue;
+        frame.fenceValue = _currentCPUFrame;
         // if frame.fenceValue < signaled fence value, the GPU is done executing 
         // the commands for this frame and we can reuse the frame for new commands
-        DXCall(_cmdQueue->Signal(_fence, _fenceValue));
+        DXCall(_cmdQueue->Signal(_fence, _currentCPUFrame));
+
+        // wait for the GPU if it's lagging behind
+        const u64 gpuBehind{ _currentCPUFrame - _currentGPUFrame };
+        assert(gpuBehind <= FRAME_BUFFER_COUNT);
+        if (gpuBehind >= FRAME_BUFFER_COUNT)
+        {
+            frame.fenceValue = _currentGPUFrame + 1;
+            frame.Wait(_fenceEvent, _fence);
+            ++_currentGPUFrame;
+        }
+
         _frameIndex = (_frameIndex + 1) % FRAME_BUFFER_COUNT;
     }
 
@@ -181,7 +201,7 @@ public:
         _frameIndex = 0;
     }
 
-    void Release()
+    void FlushAndRelease()
     {
         Flush();
         core::Release(_fence);
@@ -192,8 +212,10 @@ public:
         core::Release(_cmdQueue);
         for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
             core::Release(_cmdLists[i]);
+#if RAYTRACING == 0
         for (u32 i{ 0 }; i < BUNDLE_COUNT; ++i)
             core::Release(_cmdListsBundle[i]);
+#endif
         for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
             _cmdFrames[i].Release();
     }
@@ -264,6 +286,8 @@ DescriptorHeap srvDescHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
 DescriptorHeap uavDescHeap{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV };
 constexpr u32 DESC_HEAP_CAPACITY{ 512 };
 constexpr u32 SRV_DESC_HEAP_CAPACITY{ 4096 };
+constexpr u32 MAX_BIND_COUNT{ 16 };
+constexpr u32 DESCRIPTOR_COPY_RANGES[MAX_BIND_COUNT]{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
 ConstantBuffer constantBuffers[FRAME_BUFFER_COUNT];
 constexpr u32 CONSTANT_BUFFER_SIZE{ 1024 * 1024 };
@@ -279,7 +303,7 @@ TracyD3D12Ctx tracyQueueContext{ nullptr };
 bool 
 InitializeModules()
 {
-    return upload::Initialize() && shaders::Initialize() && gpass::Initialize() && fx::Initialize() && light::InitializeLightCulling();
+    return upload::Initialize() && content::Initialize() && shaders::Initialize() && gpass::Initialize() && fx::Initialize() && light::InitializeLightCulling();
 }
 
 bool 
@@ -302,12 +326,17 @@ GetMaxSupportedFeatureLevel(DXAdapter* adapter)
     };
 
     D3D12_FEATURE_DATA_FEATURE_LEVELS featureLevelData{};
+	D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5{};
     featureLevelData.NumFeatureLevels = _countof(featureLevels);
     featureLevelData.pFeatureLevelsRequested = featureLevels;
     ComPtr<DXDevice> device;
     DXCall(D3D12CreateDevice(adapter, MINIMUM_FEATURE_LEVEL, IID_PPV_ARGS(&device)));
     DXCall(device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &featureLevelData, sizeof(featureLevelData)));
     assert(featureLevelData.MaxSupportedFeatureLevel >= MINIMUM_FEATURE_LEVEL);
+#if RAYTRACING
+    DXCall(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5)));
+    if (options5.RaytracingTier < D3D12_RAYTRACING_TIER_1_1) return D3D_FEATURE_LEVEL_10_0;
+#endif
     return featureLevelData.MaxSupportedFeatureLevel;
 }
 
@@ -315,10 +344,10 @@ bool
 InitializeDescriptorHeaps()
 {
     bool result{ true };
-    result &= rtvDescHeap.Initialize(DESC_HEAP_CAPACITY, false);
-    result &= dsvDescHeap.Initialize(DESC_HEAP_CAPACITY, false);
-    result &= srvDescHeap.Initialize(SRV_DESC_HEAP_CAPACITY, true);
-    result &= uavDescHeap.Initialize(DESC_HEAP_CAPACITY, false);
+    result &= rtvDescHeap.Initialize(DESC_HEAP_CAPACITY, 0, false);
+    result &= dsvDescHeap.Initialize(DESC_HEAP_CAPACITY, 0, false);
+    result &= srvDescHeap.Initialize(SRV_DESC_HEAP_CAPACITY, SRV_DESC_HEAP_CAPACITY, true);
+    result &= uavDescHeap.Initialize(DESC_HEAP_CAPACITY, 0, false);
     if (!result) return false;
     NAME_D3D12_OBJECT(rtvDescHeap.Heap(), L"RTV Descriptor Heap");
     NAME_D3D12_OBJECT(dsvDescHeap.Heap(), L"DSV Descriptor Heap");
@@ -330,7 +359,6 @@ InitializeDescriptorHeaps()
 void __declspec(noinline)
 ProcessDeferredReleases(u32 frameId)
 {
-    std::lock_guard lock{ deferredReleasesMutex };
     deferredReleasesFlag[frameId] = 0;
 
     rtvDescHeap.ProcessDeferredFree(frameId);
@@ -339,14 +367,20 @@ ProcessDeferredReleases(u32 frameId)
     uavDescHeap.ProcessDeferredFree(frameId);
 
     Vec<IUnknown*>& resourcesToFree{ deferredReleases[frameId] };
-    if (!resourcesToFree.empty())
+    /*if (!resourcesToFree.empty())
     {
         for (auto& resource : resourcesToFree)
         {
             Release(resource);
         }
         resourcesToFree.clear();
-    }
+    }*/
+    if (!resourcesToFree.empty())
+        for (u32 i{ 0 }; i < resourcesToFree.size() - 1; ++i)
+        {
+            if (i == 14) continue;
+            Release(resourcesToFree[i]);
+        }
 }
 
 D3D12FrameInfo  
@@ -414,7 +448,14 @@ Initialize()
             OutputDebugStringA("\nWARNING: D3D12 Debug Interface is not available\n");
 
         debugInterface->SetEnableGPUBasedValidation(ENABLE_GPU_BASED_VALIDATION);
-
+#if ENABLE_DRED
+        ComPtr<ID3D12DeviceRemovedExtendedDataSettings2> dredSettings;
+        if (!SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings))))
+            assert(false, "DRED failed to create");
+        dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        dredSettings->SetBreadcrumbContextEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+#endif
         dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
     }
 #endif
@@ -433,6 +474,9 @@ Initialize()
     if (!mainAdapter) return InitializeFailed();
 
     D3D_FEATURE_LEVEL maxSupportedFeatureLevel{ GetMaxSupportedFeatureLevel(mainAdapter.Get()) };
+#if RAYTRACING
+    if(maxSupportedFeatureLevel < MINIMUM_FEATURE_LEVEL) return InitializeFailed();
+#endif
     DXCall(hr = D3D12CreateDevice(mainAdapter.Get(), maxSupportedFeatureLevel, IID_PPV_ARGS(&mainDevice)));
     if (FAILED(hr)) return InitializeFailed();
     NAME_D3D12_OBJECT(mainDevice, L"Main D3D12 Device");
@@ -480,20 +524,25 @@ Initialize()
 void
 Shutdown()
 {
-    gfxCommand.Release();
-
-    for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
-        ProcessDeferredReleases(i);
+    gfxCommand.FlushAndRelease();
 
     gpass::Shutdown();
     fx::Shutdown();
     light::ShutdownLightCulling();
     shaders::Shutdown();
     upload::Shutdown();
+    content::Shutdown();
 
     for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
         constantBuffers[i].Release();
 
+    {
+        std::lock_guard lock{ deferredReleasesMutex };
+        for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+            ProcessDeferredReleases(i);
+    }
+
+    assert(CurrentFrameIndex() == 0);
     rtvDescHeap.ProcessDeferredFree(0);
     dsvDescHeap.ProcessDeferredFree(0);
     srvDescHeap.ProcessDeferredFree(0);
@@ -543,9 +592,69 @@ DXGraphicsCommandList* const GraphicsCommandList() { return gfxCommand.CommandLi
 
 u32 CurrentFrameIndex() { return gfxCommand.FrameIndex(); }
 
+u64 CurrentCPUFrame(){ return _currentCPUFrame; }
+
+u64 CurrentGPUFrame(){ return _currentGPUFrame; }
+
+void HandleDeviceRemoval()
+{
+    HRESULT reason{ mainDevice->GetDeviceRemovedReason() };
+
+    ComPtr<ID3D12DeviceRemovedExtendedData1> dred;
+    if (FAILED(mainDevice->QueryInterface(IID_PPV_ARGS(&dred))))
+    {
+        DEBUG_LOG("Dred QueryInterface failed\n");
+        return;
+    }
+    D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 breadcrumbsOutput{};
+    D3D12_DRED_PAGE_FAULT_OUTPUT pageFaultOutput{};
+
+    if (SUCCEEDED(dred->GetAutoBreadcrumbsOutput1(&breadcrumbsOutput)))
+    {
+        DEBUG_LOG("DRED: AutoBreadcrumbs:\n");
+        const D3D12_AUTO_BREADCRUMB_NODE1* node = breadcrumbsOutput.pHeadAutoBreadcrumbNode;
+        while (node)
+        {
+			char buffer[512]{};
+            snprintf(buffer, sizeof(buffer), "Breadcrumb: %08X, CommandList: %p, CommandQueue: %p, CommandListName: %s\n\
+                History: %u\n",
+                node->BreadcrumbCount, node->pCommandList, node->pCommandQueue, node->pCommandListDebugNameA, *node->pCommandHistory);
+            DEBUG_LOG(buffer);
+            node = node->pNext;
+        }
+    }
+
+    if (SUCCEEDED(dred->GetPageFaultAllocationOutput(&pageFaultOutput)))
+    {
+        printf("DRED: PageFaults:\n");
+        if (pageFaultOutput.pHeadExistingAllocationNode)
+        {
+            const auto* node = pageFaultOutput.pHeadExistingAllocationNode;
+            while (node)
+            {
+                char buffer[512]{};
+                snprintf(buffer, sizeof(buffer), "Existing Allocation: object: %s, type: %d\n", node->ObjectNameA, node->AllocationType);
+                DEBUG_LOG(buffer);
+                node = node->pNext;
+            }
+        }
+    }
+
+    assert(false, "Device Removed: %08X", reason);
+}
+
 void SetHasDeferredReleases()
 {
     deferredReleasesFlag[CurrentFrameIndex()] = 1;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE 
+CreateTemporaryDescriptorTable(const D3D12_CPU_DESCRIPTOR_HANDLE* descriptorHandles, u32 descriptorCount)
+{
+    assert(descriptorHandles && descriptorCount);
+    TempDescriptorAllocation temp{ srvDescHeap.AllocateTemporary(descriptorCount) };
+	mainDevice->CopyDescriptors(1, &temp.CPUStartHandle, &descriptorCount, descriptorCount, descriptorHandles, DESCRIPTOR_COPY_RANGES, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    return temp.GPUStartHandle;
 }
 
 namespace detail {
@@ -558,6 +667,137 @@ DeferredRelease(IUnknown* resource)
 }
 } // namespace detail
 
+#if RAYTRACING
+void
+RenderSurface(surface_id id, FrameInfo frameInfo)
+{
+    gfxCommand.BeginFrame();
+    TracyD3D12NewFrame(tracyQueueContext);
+
+	DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList(0) };
+    DXGraphicsCommandList* const cmdListDepthSetup{ gfxCommand.CommandList(DEPTH_SETUP_LIST) };
+    DXGraphicsCommandList* const cmdListGPassSetup{ gfxCommand.CommandList(MAIN_SETUP_LIST) };
+    DXGraphicsCommandList* const cmdListFXSetup{ gfxCommand.CommandList(CLOSING_LIST_INDEX) };
+    DXGraphicsCommandList* const* cmdLists{ gfxCommand.CommandLists() };
+
+    const u32 frameIndex{ CurrentFrameIndex() };
+
+    ConstantBuffer& cbuffer{ constantBuffers[frameIndex] };
+    cbuffer.Clear();
+
+    if (deferredReleasesFlag[frameIndex])
+    {
+        std::lock_guard lock{ deferredReleasesMutex };
+        ProcessDeferredReleases(frameIndex);
+    }
+
+    const D3D12Surface& surface{ surfaces[id] };
+    DXResource* const currentBackBuffer{ surface.BackBuffer() };
+
+    f32 deltaTime{ 16.7f };
+    const D3D12FrameInfo d3d12FrameInfo{ GetD3D12FrameInfo(frameInfo, cbuffer, surface, frameIndex, deltaTime) };
+
+    d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
+
+    gpass::StartNewFrame(d3d12FrameInfo);
+
+    gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
+    fx::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
+
+    const bool wasCameraUpdated{ camera::GetCamera(frameInfo.CameraID).WasUpdated() };
+    const bool shouldRestartPathTracing{ graphics::rt::settings::ALWAYS_RESTART_TRACING || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
+    rt::Update(shouldRestartPathTracing, renderItemsUpdated);
+    renderItemsUpdated = false;
+
+    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
+
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Render Surface Frame Start", tracy::Color::Violet);
+
+        for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
+        {
+            cmdList->SetDescriptorHeaps(1, &heaps[0]);
+
+            cmdList->RSSetViewports(1, surface.Viewport());
+            cmdList->RSSetScissorRects(1, surface.ScissorRect());
+        }
+
+        ui::SetupGUIFrame();
+
+        //TODO: for now just do that here, would need to rewrite everything
+        ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
+    }
+
+    rt::Render(d3d12FrameInfo, cmdList);
+
+
+    {
+        // Depth Prepass
+        gpass::AddTransitionsForDepthPrepass(barriers);
+        barriers.ApplyBarriers(cmdList);
+        gpass::ClearDepthStencilView(cmdList);
+        gpass::SetRenderTargetsForDepthPrepass(cmdList);
+        gpass::DoDepthPrepass(&cmdList, d3d12FrameInfo, 0);
+    }
+
+    barriers.AddTransitionBarrier(gpass::DepthBuffer().Resource(),
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    barriers.ApplyBarriers(cmdList);
+    {
+        // Lighting Pass
+        u32 lightSetIdx{ frameInfo.LightSetIdx };
+        const graphics::light::LightSet& set{ graphics::light::GetLightSet(lightSetIdx) };
+        light::UpdateLightBuffers(set, lightSetIdx, frameIndex);
+        light::CullLights(cmdList, d3d12FrameInfo, barriers);
+    }
+
+    // Main GPass
+    {
+        //TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Main GPass", tracy::Color::PaleVioletRed3);
+        gpass::AddTransitionsForGPass(barriers);
+        barriers.ApplyBarriers(cmdList);
+        gpass::ClearMainBufferView(cmdList);
+        gpass::SetRenderTargetsForGPass(cmdList);
+        gpass::RenderMT(&cmdList, d3d12FrameInfo);
+
+        renderItemsUpdated = false;
+    }
+
+    // Post Processing
+    {
+        ZoneScopedNC("Post Processing CPU", tracy::Color::Blue1);
+        gpass::AddTransitionsForPostProcess(barriers);
+        fx::AddTransitionsPrePostProcess(barriers);
+        barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        barriers.ApplyBarriers(cmdList);
+
+        fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.RTV());
+        fx::AddTransitionsPostPostProcess(barriers);
+        barriers.ApplyBarriers(cmdList);
+    }
+
+    // Editor UI
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Editor UI", tracy::Color::LightSkyBlue3);
+
+        {
+            ZoneScopedNC("Editor UI CPU", tracy::Color::LightSkyBlue2);
+            ui::RenderGUI();
+            ui::RenderSceneIntoImage(fx::GetSrvGPUDescriptorHandle(), d3d12FrameInfo);
+
+            ui::EndGUIFrame(cmdList);
+        }
+    }
+
+    d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+    gfxCommand.EndFrame(surface);
+	srvDescHeap.EndFrame(frameIndex);
+
+    TracyD3D12Collect(tracyQueueContext);
+}
+#else
 void
 RenderSurface(surface_id id, FrameInfo frameInfo)
 {
@@ -576,6 +816,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     if (deferredReleasesFlag[frameIndex])
     {
+        std::lock_guard lock{ deferredReleasesMutex };
         ProcessDeferredReleases(frameIndex);
     }
 
@@ -736,7 +977,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
             barriers.ApplyBarriers(cmdListFXSetup);
 
-            fx::DoPostProcessing(cmdListFXSetup, d3d12FrameInfo, surface.Rtv());
+            fx::DoPostProcessing(cmdListFXSetup, d3d12FrameInfo, surface.RTV());
             fx::AddTransitionsPostPostProcess(barriers);
             barriers.ApplyBarriers(cmdListFXSetup);
         }
@@ -753,7 +994,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 #if RENDER_2D_TEST
 #if RENDER_SCENE_ONTO_GUI_IMAGE
             //TODO: make it work with post processing
-            ui::RenderSceneIntoImage(cmdListFXSetup, gpass::MainBuffer().Srv().gpu, d3d12FrameInfo);
+            ui::RenderSceneIntoImage(cmdListFXSetup, gpass::MainBuffer().SRV().gpu, d3d12FrameInfo);
 #else
             // TODO:
 #endif // RENDER_SCENE_ONTO_GUI_IMAGE
@@ -772,6 +1013,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     TracyD3D12Collect(tracyQueueContext);
 
 }
+#endif
 
 Surface
 CreateSurface(platform::Window window)

@@ -2,6 +2,9 @@
 #include "ECS/Entity.h"
 #include "Graphics/GeometryData.h"
 #include "Graphics/Renderer.h"
+#if RAYTRACING
+#include "Graphics/D3D12/D3D12Content/D3D12Geometry.h"
+#endif
 #include "Content/ContentManagement.h"
 #include "Content/ResourceCreation.h"
 #include "Content/ShaderCompilation.h"
@@ -97,6 +100,9 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 		ecs::Entity	entity;
 		ecs::component::RenderMesh& Mesh;
 		ecs::component::RenderMaterial& Material;
+#if RAYTRACING
+		ecs::component::PathTraceable& PathTraceable;
+#endif
 	};
 	Vec<RenderableEntitySpawnContext> renderables{};
 
@@ -115,6 +121,9 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 			cids.emplace_back(cid);
 			mask.set((size_t)cid, 1);
 		}
+#if RAYTRACING && PATH_TRACE_ALL
+		mask.set(component::ID<component::PathTraceable>, 1);
+#endif
 
 		const EntityData& entityData{ ecs::scene::SpawnEntity(mask) };
 		const EntityBlock* block{ entityData.block };
@@ -137,7 +146,10 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 		{
 			component::RenderMesh& mesh{ ecs::scene::GetComponent<component::RenderMesh>(entity) };
 			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
-			renderables.emplace_back(entity, mesh, material); //FIXME: doesn't work with submeshes
+#if RAYTRACING && PATH_TRACE_ALL
+			component::PathTraceable& pt{ ecs::scene::GetComponent<component::PathTraceable>(entity) };
+#endif
+			renderables.emplace_back(entity, mesh, material, pt); //FIXME: doesn't work with submeshes
 		}
 	} // Entities
 
@@ -180,6 +192,9 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 			}
 			e.Material.MaterialAsset = content::assets::GetAssetFromResource(e.Material.MaterialID, content::AssetType::Material);
 			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialID);
+#if RAYTRACING && PATH_TRACE_ALL
+			e.PathTraceable.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(e.Mesh.MeshID);
+#endif
 		}
 	}
 }

@@ -128,6 +128,37 @@ struct DirectionalLightParameters
     float _pad;
 };
 
+struct GeometryInfo
+{
+    uint VertexOffset;
+    uint IndexOffset;
+    uint MaterialIndex;
+    uint _pad;
+};
+
+struct RayTracingConstants
+{
+    row_major float4x4 InvViewProjection;
+    
+    float3 SunDirection_WS;
+    float CosSunAngularRadius;
+    float3 SunIrradiance;
+    float SinSunAngularRadius;
+    float3 SunColor;
+    uint _pad;
+    
+    float3 CameraPos_WS;
+    uint CurrentSampleIndex;
+    uint TotalPixelCount;
+    
+    uint VertexBufferIndex;
+    uint IndexBufferIndex;
+    uint GeometryInfoBufferIndex;
+    uint MaterialBufferIndex;
+    uint SkyCubemapIndex;
+    uint LightCount;
+};
+
 #ifdef __cplusplus
 static_assert((sizeof(PerObjectData) % 16) == 0, "The PerObjectData struct has to be formatted in 16-byte chunks without any implicit padding.");
 static_assert((sizeof(CullableLightParameters) % 16) == 0, "The CullableLightParameters struct has to be formatted in 16-byte chunks without any implicit padding.");

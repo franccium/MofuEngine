@@ -58,12 +58,17 @@ constexpr void DeferredRelease(T*& resource)
 [[nodiscard]] DescriptorHeap& SrvHeap();
 [[nodiscard]] DescriptorHeap& UavHeap();
 void SetHasDeferredReleases();
+D3D12_GPU_DESCRIPTOR_HANDLE CreateTemporaryDescriptorTable(const D3D12_CPU_DESCRIPTOR_HANDLE* descriptorHandles, u32 descriptorCount);
 
 [[nodiscard]] ConstantBuffer& CBuffer();
 
 [[nodiscard]] DXGraphicsCommandList* const GraphicsCommandList();
 
 [[nodiscard]] u32 CurrentFrameIndex();
+[[nodiscard]] u64 CurrentCPUFrame();
+[[nodiscard]] u64 CurrentGPUFrame();
+void HandleDeviceRemoval();
+
 void FlushCommandQueue();
 
 Surface CreateSurface(platform::Window window);

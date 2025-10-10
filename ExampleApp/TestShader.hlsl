@@ -1,6 +1,8 @@
 #include "../MofuEngine/Graphics/D3D12/Shaders/Common.hlsli"
 #include "BRDF.hlsli"
 
+#define RAYTRACING 1
+
 struct VertexOut
 {
     float4 HomogenousPositon : SV_POSITION;
@@ -390,6 +392,16 @@ float3 Heatmap(StructuredBuffer<uint2> buffer, float2 posXY, float blend, float3
 [earlydepthstencil]
 PixelOut TestShaderPS(in VertexOut psIn)
 {
+#if RAYTRACING
+    PixelOut psOut;
+    float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
+    Surface S = GetSurface(psIn, viewDir);
+    float4 color = float4(1.f, 1.f, 1.f, 1.f);
+    psOut.Color = color;
+    psOut.Normal.rgb = S.Normal;
+    psOut.Normal.a = f16tof32(PerObjectBuffer.MaterialID);
+    return psOut;
+#else
     PixelOut psOut;
     float3 normal = normalize(psIn.WorldNormal);
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
@@ -461,4 +473,5 @@ PixelOut TestShaderPS(in VertexOut psIn)
     psOut.Normal.a = f16tof32(PerObjectBuffer.MaterialID);
     
     return psOut;
+#endif
 }

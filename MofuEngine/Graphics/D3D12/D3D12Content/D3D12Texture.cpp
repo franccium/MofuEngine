@@ -317,6 +317,19 @@ CreateSRVForMipLevel(DXResource* texture, u32 mipLevel, DXGI_FORMAT format)
 
 } // anonymous namespace
 
+void Shutdown()
+{
+    // NOTE: this would be automatically called by the destructors, but testing for leaks now
+    for (u32 i{0}; i < textures.size(); ++i)
+    {
+		textures[i].Release();
+    }
+    for (u32 i{ 0 }; i < icons.size(); ++i)
+    {
+        icons[i].Release();
+	}
+}
+
 // NOTE: expects data to contain:
 // struct {
 //     u32 width, height, arraySize (or depth), flags, mipLevels, format,
@@ -332,7 +345,7 @@ AddTexture(const u8* const blob)
     D3D12Texture texture{ CreateTextureFromResourceData(blob) };
     std::lock_guard lock{ textureMutex };
     const id_t id{ textures.add(std::move(texture)) };
-    descriptorIndices.add(textures[id].Srv().index);
+    descriptorIndices.add(textures[id].SRV().index);
     return id;
 }
 
@@ -344,7 +357,7 @@ AddIcon(const u8* const blob)
     //TODO: a seperate thing?
     std::lock_guard lock{ textureMutex };
     const id_t id{ textures.add(std::move(iconTexture)) };
-    descriptorIndices.add(textures[id].Srv().index);
+    descriptorIndices.add(textures[id].SRV().index);
     return id;
 }
 
@@ -373,7 +386,7 @@ GetDescriptorHandle(id_t textureID, u32 mipLevel, DXGI_FORMAT format)
 {
     assert(id::IsValid(textureID));
     std::lock_guard lock{ textureMutex };
-    return mipLevel == 0 ? textures[textureID].Srv() : CreateSRVForMipLevel(textures[textureID].Resource(), mipLevel, format);
+    return mipLevel == 0 ? textures[textureID].SRV() : CreateSRVForMipLevel(textures[textureID].Resource(), mipLevel, format);
 }
 
 DescriptorHandle

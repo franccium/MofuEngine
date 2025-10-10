@@ -248,7 +248,7 @@ CullLights(DXGraphicsCommandList* const cmdList, const D3D12FrameInfo& frameInfo
 
 	hlsl::LightCullingDispatchParameters& params{ culler.LightCullingDispatchParams };
 	params.NumLights = graphics::light::GetCullableLightsCount(frameInfo.Info->LightSetIdx);
-	params.DepthBufferSrvIndex = gpass::DepthBuffer().Srv().index;
+	params.DepthBufferSrvIndex = gpass::DepthBuffer().SRV().index;
 
 	if (params.NumLights == 0 && !culler.HasLights) return;
 

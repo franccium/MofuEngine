@@ -240,6 +240,8 @@ public:
 	[[nodiscard]] constexpr u64 size() const { return _size; }
 	[[nodiscard]] constexpr u64 capacity() const { return _capacity; }
 
+	void SetEnd(u64 newSize) { assert(newSize < _capacity); _size = newSize; }
+
 	[[nodiscard]] constexpr T& operator[](u64 index)
 	{
 		assert(_data && index < _size && "Vector indexed out of bounds");

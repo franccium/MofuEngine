@@ -4,6 +4,8 @@
 #include "ECS/Entity.h"
 
 namespace mofu::graphics::d3d12::content {
+bool Initialize();
+void Shutdown();
 
 namespace material {
 void GetMaterials(const id_t* const materialIds, u32 materialCount, const MaterialsCache& cache, u32& outDescriptorIndexCount);

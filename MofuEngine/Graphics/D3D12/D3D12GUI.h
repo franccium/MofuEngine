@@ -17,6 +17,7 @@ void RenderSceneIntoImage(D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle, D3D12FrameIn
 void EndGUIFrame(DXGraphicsCommandList* cmdList);
 
 void ViewTextureAsImage(id_t textureID);
+// free a texture resource used in editor
 void DestroyViewTexture(id_t textureID);
 [[nodiscard]] u64 GetImTextureIDIcon(id_t textureID, u32 mipLevel, u32 format);
 [[nodiscard]] u64 GetImTextureID(id_t textureID, u32 arrayIndex, u32 mipLevel, u32 depthIndex, u32 format, bool isCubemap = false);

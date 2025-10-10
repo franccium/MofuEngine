@@ -61,7 +61,11 @@ void
 D3D12Surface::Present() const
 {
     assert(_swapChain);
-    DXCall(_swapChain->Present(0, _presentFlags));
+    HRESULT hr{ _swapChain->Present(0, _presentFlags) };
+    if (FAILED(hr) && hr == DXGI_ERROR_DEVICE_REMOVED)
+    {
+        core::HandleDeviceRemoval();
+    }
     _currentBackBufferIndex = _swapChain->GetCurrentBackBufferIndex();
 }
 

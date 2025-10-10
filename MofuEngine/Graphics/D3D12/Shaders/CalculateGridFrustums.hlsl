@@ -20,5 +20,5 @@ void CalculateGridFrustumsCS(uint3 DTid : SV_DispatchThreadID)
     const float farClipRcp = -GlobalData.InvProjection._m33; // the inverse of cone length, used to calculate the cone's UnitRadius
     ConeFrustum frustum = { normalize(centerVS), coneBaseRadius * farClipRcp };
     
-    GridFrustumsOut[DTid.x + (DTid.y * DispatchParams.NumThreads.x)] = frustum;
+    GridFrustumsOut[(DTid.y * DispatchParams.NumThreads.x) + DTid.x] = frustum;
 }

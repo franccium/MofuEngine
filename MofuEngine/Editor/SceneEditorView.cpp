@@ -210,12 +210,7 @@ struct SceneHierarchy
             {
                 if (ImGui::Selectable(path.data()))
                 {
-                    Vec<ecs::Entity> entities{};
-                    assets::DeserializeEntityHierarchy(entities, path);
-                    for (const ecs::Entity e : entities)
-                    {
-                        AddEntityToSceneView(e);
-                    }
+                    ImportScene(path);
                     ImGui::CloseCurrentPopup();
                 }
             }
@@ -487,4 +482,15 @@ void RenderSceneEditorView()
 
     ImGui::End();
 }
+
+void ImportScene(const std::filesystem::path& path)
+{
+    Vec<ecs::Entity> entities{};
+    assets::DeserializeEntityHierarchy(entities, path);
+    for (const ecs::Entity e : entities)
+    {
+        AddEntityToSceneView(e);
+    }
+}
+
 }

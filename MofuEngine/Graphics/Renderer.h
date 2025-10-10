@@ -157,8 +157,10 @@ struct ShaderType
 		Compute,
 		Amplification,
 		Mesh,
+		Library,
 
-		Count
+		Count = Library,
+		CountWithLibrary = Count + 1
 	};
 };
 

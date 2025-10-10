@@ -1,6 +1,7 @@
 #include "ECSCore.h"
 #include "SystemRegistry.h"
 #include "Scene.h"
+#include "SystemMessages.h"
 
 namespace mofu::graphics::d3d12 {
 struct D3D12FrameInfo;
@@ -38,6 +39,8 @@ Shutdown()
 void 
 Update(system::SystemUpdateData data)
 {
+	messages::RestartFrameMessages();
+
 	system::SystemRegistry& systemRegistry{ system::SystemRegistry::Instance() };
 	systemRegistry.UpdateSystems(system::SystemGroup::Initial, data);
 	systemRegistry.UpdateSystems(system::SystemGroup::PreUpdate, data);

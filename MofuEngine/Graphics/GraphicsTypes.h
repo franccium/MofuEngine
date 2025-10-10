@@ -10,8 +10,9 @@ using uint4 = u32v4;
 using uint3 = u32v3;
 using uint2 = u32v2;
 using uint = u32;
+#define row_major 
 #include "D3D12/Shaders/CommonTypes.hlsli"
-
+#undef row_major
 namespace content {
 #include "Content/Shaders/ContentTypes.hlsli"
 }

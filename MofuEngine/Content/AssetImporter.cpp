@@ -540,7 +540,7 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 		}
 		else
 		{
-			// assing invalid id which indicates the mesh should use the default material
+			// assign invalid id which indicates the mesh should use the default material
 			mesh.MaterialIndices.emplace_back(id::INVALID_ID);
 		}
 

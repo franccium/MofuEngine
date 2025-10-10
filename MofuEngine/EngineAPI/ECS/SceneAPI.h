@@ -20,7 +20,7 @@ template<typename... Component>
 QueryView<false, Component...> GetRO()
 {
 	auto blocks = GetBlocksFromCet(GetCetMask<Component...>());
-	return QueryView<true, Component...>(blocks);
+	return QueryView<false, Component...>(blocks);
 }
 
 template<IsComponent C>

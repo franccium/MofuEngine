@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props')" />
-  <Import Project="..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.props')" />
+  <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props')" />
+  <Import Project="..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -131,6 +131,7 @@
     <ClCompile Include="ECS\ECSCore.cpp" />
     <ClCompile Include="ECS\Scene.cpp" />
     <ClCompile Include="ECS\SceneSerializer.cpp" />
+    <ClCompile Include="ECS\SystemMessages.cpp" />
     <ClCompile Include="ECS\Systems\CameraFreeLookSystem.cpp" />
     <ClCompile Include="ECS\Systems\FrustumCullingSystem.cpp" />
     <ClCompile Include="ECS\Systems\InputTestSystem.cpp" />
@@ -180,16 +181,19 @@
     <ClCompile Include="Graphics\D3D12\D3D12Helpers.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Interface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12PostProcess.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12RayTracing.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Resources.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
+    <ClCompile Include="Graphics\D3D12\DXRHelpers.cpp" />
     <ClCompile Include="Graphics\D3D12\Lights\D3D12Light.cpp" />
     <ClCompile Include="Graphics\D3D12\Lights\D3D12LightCulling.cpp" />
     <ClCompile Include="Graphics\GeometryData.cpp" />
     <ClCompile Include="Graphics\Lights\Light.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
     <ClCompile Include="Graphics\RenderingDebug.cpp" />
+    <ClCompile Include="Graphics\RTSettings.cpp" />
     <ClCompile Include="Graphics\UIRenderer.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Input\Win32Input.cpp" />
@@ -230,6 +234,7 @@
     <ClInclude Include="ECS\EntityManager.h" />
     <ClInclude Include="ECS\Scene.h" />
     <ClInclude Include="ECS\SceneSerializer.h" />
+    <ClInclude Include="ECS\SystemMessages.h" />
     <ClInclude Include="ECS\SystemRegistry.h" />
     <ClInclude Include="ECS\Systems\SubmitEntityRenderSystem.cpp" />
     <ClInclude Include="ECS\Systems\TransformSystem.cpp" />
@@ -279,10 +284,12 @@
     <ClInclude Include="Graphics\D3D12\D3D12Helpers.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Interface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12PostProcess.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12RayTracing.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Resources.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
+    <ClInclude Include="Graphics\D3D12\DXRHelpers.h" />
     <ClInclude Include="Graphics\D3D12\GPassCache.h" />
     <ClInclude Include="Graphics\D3D12\Lights\D3D12Light.h" />
     <ClInclude Include="Graphics\D3D12\Lights\D3D12LightCulling.h" />
@@ -294,6 +301,7 @@
     <ClInclude Include="Graphics\Lights\LightsCommon.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Graphics\RenderingDebug.h" />
+    <ClInclude Include="Graphics\RTSettings.h" />
     <ClInclude Include="Graphics\UIRenderer.h" />
     <ClInclude Include="Input\InputState.h" />
     <ClInclude Include="Input\InputSystem.h" />
@@ -301,6 +309,7 @@
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\PlatformWin32.h" />
     <ClInclude Include="Platform\Window.h" />
+    <ClInclude Include="Utilities\DataStructures\Array.h" />
     <ClInclude Include="Utilities\DataStructures\DataStructures.h" />
     <ClInclude Include="Utilities\DataStructures\FreeList.h" />
     <ClInclude Include="Utilities\IOStream.h" />
@@ -317,18 +326,18 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets')" />
-    <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets')" />
-    <Import Project="..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets" Condition="Exists('..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets')" />
+    <Import Project="..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.targets')" />
+    <Import Project="..\packages\directxtex_desktop_win10.2025.7.10.1\build\native\directxtex_desktop_win10.targets" Condition="Exists('..\packages\directxtex_desktop_win10.2025.7.10.1\build\native\directxtex_desktop_win10.targets')" />
+    <Import Project="..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.D3D12.1.615.1\build\native\Microsoft.Direct3D.D3D12.targets'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2502.8\build\native\Microsoft.Direct3D.DXC.targets'))" />
-    <Error Condition="!Exists('..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtex_desktop_win10.2025.3.25.2\build\native\directxtex_desktop_win10.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.D3D12.1.618.1\build\native\Microsoft.Direct3D.D3D12.targets'))" />
+    <Error Condition="!Exists('..\packages\directxtex_desktop_win10.2025.7.10.1\build\native\directxtex_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtex_desktop_win10.2025.7.10.1\build\native\directxtex_desktop_win10.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.8.2505.32\build\native\Microsoft.Direct3D.DXC.targets'))" />
   </Target>
 </Project>

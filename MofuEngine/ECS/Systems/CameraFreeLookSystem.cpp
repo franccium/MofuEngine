@@ -22,7 +22,7 @@ namespace mofu::ecs::system {
 			{
 				//graphics::Camera& cam{}
 				using namespace DirectX;
-
+#if 1
 				v3 direction{ lt.Forward };
 				f32 theta{ XMScalarACos(direction.y) };
 				f32 phi{ std::atan2(-direction.z, direction.x) };
@@ -134,6 +134,7 @@ namespace mofu::ecs::system {
 
 					XMStoreFloat3(&lt.Position, posV);
 				}
+		#endif
 			}
 		}
 	};

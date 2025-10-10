@@ -6,4 +6,10 @@
 
 namespace mofu::editor::debug {
 void DrawRenderingConsole();
+
+#if RAYTRACING
+void DrawRayTracingInfo();
+void UpdateAccelerationStructureData(u64 vertexCount, u64 indexCount, u64 lastBuildFrame);
+void UpdatePathTraceSampleData(u32 currentSampleIndex);
+#endif
 }

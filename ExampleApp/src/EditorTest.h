@@ -20,6 +20,8 @@
 #include "Editor/EditorInterface.h"
 #include "Graphics/Lights/Light.h"
 #include "Editor/SceneEditorView.h"
+#include "Input/InputSystem.h"
+#include "Graphics/D3D12/D3D12RayTracing.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -174,7 +176,7 @@ bool MofuInitialize()
 		cSurf.surface.window = platform::ConcoctWindow(&info[i]);
 		cSurf.surface.surface = graphics::CreateSurface(cSurf.surface.window);
 
-		v3 pos{ 0.f, 0.f, 15.f };
+		v3 pos{ 2.4f, -4.46f, -24.f };
 		quat rot{ quatIndentity };
 		v3 scale{ 1.f, 1.f, 1.f };
 		ecs::component::LocalTransform lt{ {}, pos, rot, scale };
@@ -210,6 +212,10 @@ void MofuUpdate()
 	ZoneScoped;
 
 	timer.Start();
+#if RAYTRACING
+	if (input::IsKeyDown(input::Keys::R)) graphics::d3d12::rt::RequestRTUpdate();
+	if (input::IsKeyDown(input::Keys::T)) graphics::d3d12::rt::RequestRTAccStructureRebuild();
+#endif
 
 	{
 		ZoneScopedN("ECS update");
@@ -217,6 +223,7 @@ void MofuUpdate()
 		ecsUpdateData.DeltaTime = 16.7f;
 		ecs::Update(ecsUpdateData);
 	}
+	
 
 	graphics::ui::StartNewFrame();
 

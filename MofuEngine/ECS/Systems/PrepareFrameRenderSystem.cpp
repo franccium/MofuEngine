@@ -3,6 +3,8 @@
 #include "EngineAPI/ECS/SystemAPI.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "ECS/QueryView.h"
+#include "ECS/SystemMessages.h"
+#include "Input/InputSystem.h"
 
 #include "Graphics/GraphicsTypes.h"
 #include "Graphics/D3D12/D3D12Core.h"
@@ -14,6 +16,7 @@
 #include "Graphics/D3D12/D3D12Content/D3D12Material.h"
 #include "Graphics/D3D12/D3D12Content/D3D12Texture.h"
 #include "Graphics/D3D12/GPassCache.h"
+#include "Graphics/D3D12/D3D12RayTracing.h"
 
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
@@ -156,6 +159,11 @@ namespace mofu::graphics::d3d12 {
 					}
 				}
 			}
+
+#if RAYTRACING
+			if (ecs::messages::GetBoolMessage(ecs::messages::SystemBoolMessage::TransformChanged) || input::WasKeyPressed(input::Keys::B))
+				graphics::d3d12::rt::UpdateAccelerationStructure();
+#endif
 
 			//TODO: issue commands
 

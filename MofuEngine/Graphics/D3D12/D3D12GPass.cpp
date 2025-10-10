@@ -13,6 +13,7 @@
 #include "Lights/D3D12LightCulling.h"
 
 #include "tracy/Tracy.hpp"
+#include "D3D12RayTracing.h"
 
 namespace mofu::graphics::d3d12::gpass {
 namespace {
@@ -252,7 +253,12 @@ CreateAdditionalDataBuffers(u32v2 size)
 bool
 Initialize()
 {
-	return CreateBuffers(INITIAL_DIMENSIONS);
+	bool success{ CreateBuffers(INITIAL_DIMENSIONS) };
+#if RAYTRACING
+	success &= rt::CreateBuffers(INITIAL_DIMENSIONS);
+	success &= rt::InitializeRT();
+#endif
+	return success;
 }
 
 void 
@@ -261,6 +267,9 @@ Shutdown()
 	gpassMainBuffer.Release();
 	gpassDepthBuffer.Release();
 	normalBuffer.Release();
+#if RAYTRACING
+	rt::Shutdown();
+#endif
 	dimensions = INITIAL_DIMENSIONS;
 }
 
@@ -323,6 +332,9 @@ SetBufferSize(u32v2 size)
 	{
 		d = { std::max(size.x, d.x), std::max(size.y, d.y) };
 		CreateBuffers(size);
+#if RAYTRACING
+		rt::CreateBuffers(size);
+#endif
 		assert(gpassMainBuffer.Resource() && gpassDepthBuffer.Resource() && normalBuffer.Resource());
 	}
 }
@@ -372,7 +384,11 @@ DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& fra
 	constexpr u32 WORKER_COUNT{ DEPTH_WORKERS };
 	const GPassCache& cache{ frameCache };
 	const u32 renderItemCount = cache.Size();
-	
+
+#if RAYTRACING
+	//TODO: why does it leak otherwise
+	DepthPrepassWorker(cmdLists[0], frameInfo, 0, renderItemCount);
+#else
 	const u32 itemsPerThread = (renderItemCount + WORKER_COUNT - 1) / WORKER_COUNT;
 	std::thread threads[WORKER_COUNT];
 
@@ -381,7 +397,7 @@ DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& fra
 		const u32 workStart = i * itemsPerThread;
 		const u32 workEnd = std::min(workStart + itemsPerThread, renderItemCount);
 
-		if (workStart <= workEnd)
+		if (workStart < workEnd)
 		{
 			threads[i] = std::thread(DepthPrepassWorker, cmdLists[i], frameInfo, workStart, workEnd);
 		}
@@ -391,40 +407,7 @@ DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& fra
 	{
 		threads[i].join();
 	}
-	/*for (auto& t : threads)
-	{
-		t.join();
-	}*/
-
-	/*const GPassCache& cache{ frameCache };
-	const u32 renderItemCount{ cache.Size() };
-
-	ID3D12RootSignature* currentRootSignature{ nullptr };
-	ID3D12PipelineState* currentPipelineState{ nullptr };
-
-	for (u32 i{ 0 }; i < renderItemCount; ++i)
-	{
-		if (currentRootSignature != cache.RootSignatures[i])
-		{
-			currentRootSignature = cache.RootSignatures[i];
-			cmdList->SetGraphicsRootSignature(currentRootSignature);
-			cmdList->SetGraphicsRootConstantBufferView(OpaqueRootParameters::GlobalShaderData, frameInfo.GlobalShaderData);
-		}
-
-		if (currentPipelineState != cache.DepthPipelineStates[i])
-		{
-			currentPipelineState = cache.DepthPipelineStates[i];
-			cmdList->SetPipelineState(currentPipelineState);
-		}
-
-		SetRootParameters(cmdList, i);
-
-		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
-		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
-		cmdList->IASetIndexBuffer(&ibv);
-		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
-		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
-	}*/
+#endif
 }
 
 void 
@@ -553,6 +536,10 @@ RenderMT(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& info)
 	const GPassCache& cache{ frameCache };
 	const u32 renderItemCount = cache.Size();
 
+#if RAYTRACING
+	//TODO: why does it leak otherwise
+	MainGPassWorker(cmdLists[0], info, 0, renderItemCount);
+#else
 	const u32 itemsPerThread = (renderItemCount + WORKER_COUNT - 1) / WORKER_COUNT;
 	std::thread threads[WORKER_COUNT];
 
@@ -571,6 +558,7 @@ RenderMT(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& info)
 	{
 		threads[i].join();
 	}
+#endif
 }
 
 void 
@@ -640,15 +628,15 @@ SetRenderTargetsForDepthPrepass(DXGraphicsCommandList* cmdList)
 void
 ClearMainBufferView(DXGraphicsCommandList* cmdList)
 {
-	cmdList->ClearRenderTargetView(gpassMainBuffer.Rtv(0), CLEAR_VALUE, 0, nullptr);
-	cmdList->ClearRenderTargetView(normalBuffer.Rtv(0), CLEAR_VALUE, 0, nullptr);
+	cmdList->ClearRenderTargetView(gpassMainBuffer.RTV(0), CLEAR_VALUE, 0, nullptr);
+	cmdList->ClearRenderTargetView(normalBuffer.RTV(0), CLEAR_VALUE, 0, nullptr);
 }
 
 void 
 SetRenderTargetsForGPass(DXGraphicsCommandList* cmdList)
 {
 	const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gpassDepthBuffer.Dsv() };
-	const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[]{ gpassMainBuffer.Rtv(0), normalBuffer.Rtv(0) };
+	const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[]{ gpassMainBuffer.RTV(0), normalBuffer.RTV(0) };
 	cmdList->OMSetRenderTargets(_countof(renderTargets), renderTargets, 0, &dsv);
 }
 

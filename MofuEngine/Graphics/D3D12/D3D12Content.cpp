@@ -171,6 +171,16 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 
 } // anonymous namespace
 
+bool Initialize()
+{
+	return geometry::Initialize();
+}
+
+void Shutdown()
+{
+	texture::Shutdown();
+}
+
 namespace material {
 
 id_t
@@ -394,6 +404,7 @@ RemoveRenderItem(id_t id)
 {
 	std::lock_guard lock{ renderItemMutex };
 	renderItemIDs.remove(id);
+	core::RenderItemsUpdated();
 }
 
 //NOTE: called at least once each frame

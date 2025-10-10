@@ -16,4 +16,5 @@ DebugMode GetDebugMode();
 void SetDebugMode(DebugMode mode);
 void ToggleDebugPostProcessing();
 bool IsUsingDebugPostProcessing();
+
 }

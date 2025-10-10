@@ -4,6 +4,7 @@
 #include "D3D12Surface.h"
 #include "D3D12GPass.h"
 #include "Graphics/RenderingDebug.h"
+#include "D3D12RayTracing.h"
 
 namespace mofu::graphics::d3d12::fx {
 namespace {
@@ -60,7 +61,7 @@ CreateDebugPSO()
 
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices_Debug::Count]{};
 	parameters[FXRootParameterIndices_Debug::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-	parameters[FXRootParameterIndices_Debug::RootConstants].AsConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices_Debug::RootConstants].AsConstants(4, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	parameters[FXRootParameterIndices_Debug::DebugConstants].AsConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
@@ -116,7 +117,7 @@ CreatePSO()
 
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices::Count]{};
 	parameters[FXRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-	parameters[FXRootParameterIndices::RootConstants].AsConstants(3, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices::RootConstants].AsConstants(4, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
 	struct D3D12_STATIC_SAMPLER_DESC samplers[]
@@ -257,16 +258,24 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 
 	using idx = FXRootParameterIndices;
 	cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().Srv().index, 0);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().Srv().index, 1);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().Srv().index, 2);
+#if RAYTRACING
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, 0);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, 1);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, 2);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, rt::MainBufferSRV().index, 3);
+#else
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, 0);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, 1);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, 2);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, 3);
+#endif
 	if (fxRootSig == fxRootSig_Debug)
 	{
 		cmdList->SetGraphicsRoot32BitConstant(FXRootParameterIndices_Debug::DebugConstants, debug::GetDebugMode(), 0);
 	}
 	//cmdList->SetGraphicsRootDescriptorTable(idx::DescriptorTable, core::SrvHeap().GpuStart());
 
-	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.Rtv(0) };
+	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.RTV(0) };
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	cmdList->OMSetRenderTargets(1, &imageSourceRTV, 1, nullptr);
 	cmdList->DrawInstanced(3, 1, 0, 0);
@@ -277,7 +286,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 D3D12_GPU_DESCRIPTOR_HANDLE 
 GetSrvGPUDescriptorHandle()
 {
-	return renderTexture.Srv().gpu;
+	return renderTexture.SRV().gpu;
 }
 
 }

@@ -16,6 +16,7 @@
 #include "TestTimer.h"
 #include "EngineAPI/ECS/SystemAPI.h"
 #include "EngineAPI/ECS/SceneAPI.h"
+#include "Input/InputSystem.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -201,6 +202,7 @@ void MofuUpdate()
 	}
 
 	graphics::ui::StartNewFrame();
+
 
 	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)
 	{

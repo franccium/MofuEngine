@@ -266,8 +266,18 @@ RenderTextureWithConfig()
 } // anonymous namespace
 
 void
+ReleaseResources()
+{
+	//TODO: do i need to, they are deleted automatically by the creator
+	if(id::IsValid(textureID))
+		graphics::ui::DestroyViewTexture(textureID);
+}
+
+void
 OpenTextureView(content::AssetHandle handle)
 {
+	ReleaseResources();
+
 	mipIndex = 0;
 	arrayIndex = 0;
 	depthIndex = 0;

@@ -326,6 +326,12 @@ DisplayMaterialFlags()
 }
 
 void
+ReleaseResources()
+{
+	//TODO: do i need to, they are deleted automatically by the creator
+}
+
+void
 OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 {
 	materialOwner = entityID;

@@ -44,6 +44,8 @@
 #endif
 
 #define EDITOR_BUILD 1
+#define RAYTRACING 1
+#define PATH_TRACE_ALL 1
 
 #ifndef _ALWAYS_INLINE
 #if defined(__GNUC__)

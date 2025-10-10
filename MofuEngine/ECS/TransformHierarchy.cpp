@@ -1,5 +1,6 @@
 #include "TransformHierarchy.h"
 #include "Scene.h"
+#include "SystemMessages.h"
 
 namespace mofu::ecs {
 namespace {
@@ -31,7 +32,7 @@ GetEntityIndex(Entity entity, u32 level)
 EntityFinalTRS&
 FindEntityFinalTRS(Entity entity)
 {
-	Entity currentEntity{ entity };v
+	Entity currentEntity{ entity };
 	u32 parentCount{ 0 };
 	while (ecs::scene::EntityHasComponent<ecs::component::Child>(currentEntity))
 	{
@@ -116,6 +117,7 @@ UpdateTransformHierarchy()
 {
 	using namespace DirectX;
 	if (finalTransforms.empty()) return;
+	bool transformChanged{ false };
 
 	for (auto& rootEntities : finalTransforms[0])
 	{
@@ -156,6 +158,8 @@ UpdateTransformHierarchy()
 			XMStoreFloat4x4(&wt->TRS, trs);
 		}
 	}
+
+	messages::SetMessage(messages::SystemBoolMessage::TransformChanged, transformChanged);
 }
 
 }

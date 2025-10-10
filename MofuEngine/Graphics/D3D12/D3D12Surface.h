@@ -18,7 +18,7 @@ public:
 	[[nodiscard]] constexpr u32 Width() const { return (u32)_viewport.Width; }
 	[[nodiscard]] constexpr u32 Height() const { return (u32)_viewport.Height; }
 	[[nodiscard]] constexpr DXResource* const BackBuffer() const { return _renderTargetData[_currentBackBufferIndex].backBuffer; }
-	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE Rtv() const { return _renderTargetData[_currentBackBufferIndex].rtv.cpu; }
+	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE RTV() const { return _renderTargetData[_currentBackBufferIndex].rtv.cpu; }
 	[[nodiscard]] constexpr const D3D12_VIEWPORT* Viewport() const { return &_viewport; }
 	[[nodiscard]] constexpr const D3D12_RECT* ScissorRect() const { return &_scissorRect; }
 	[[nodiscard]] constexpr const id_t LightCullingID() const { return _lightCullingID; }

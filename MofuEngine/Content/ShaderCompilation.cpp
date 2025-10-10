@@ -145,9 +145,9 @@ public:
     DxcCompiledShader Compile(u8* data, u32 dataSize, graphics::ShaderType::Type type,
         const char* entryPoint, Vec<std::wstring>& extraArgs, bool debug)
     {
-        assert(data && dataSize && entryPoint);
+        assert(data && dataSize && !(type != graphics::ShaderType::Library && !entryPoint));
         assert(_compiler && _utils && _includeHandler);
-        assert(type < graphics::ShaderType::Count);
+        assert(type < graphics::ShaderType::CountWithLibrary);
 
         HRESULT hr{ S_OK };
         ComPtr<IDxcBlobEncoding> sourceBlob{ nullptr };
@@ -179,7 +179,7 @@ public:
         OutputDebugStringA("Compiling ");
         OutputDebugStringA(info.File);
         OutputDebugStringA(" : ");
-        OutputDebugStringA(info.EntryPoint);
+        OutputDebugStringA(info.Type != graphics::ShaderType::Library ? info.EntryPoint : "[Libary]");
         OutputDebugStringA("\n");
 
         return Compile(sourceBlob.Get(), GetCompilerArgs(info, extraArgs, debug), debug);
@@ -210,8 +210,11 @@ private:
     {
         Vec<std::wstring> args((u64)DEFAULT_COMPILER_ARGS_COUNT + extraArgs.size());
         if (info.File) args.emplace_back(c_to_wstring(info.File));
-        args.emplace_back(L"-E");
-        args.emplace_back(c_to_wstring(info.EntryPoint));
+        if (info.Type != graphics::ShaderType::Library)
+        {
+            args.emplace_back(L"-E");
+            args.emplace_back(c_to_wstring(info.EntryPoint));
+        }
         args.emplace_back(L"-T");
         args.emplace_back(c_to_wstring(SHADER_PROFILES[(u32)info.Type]));
         args.emplace_back(L"-I");
@@ -274,8 +277,8 @@ private:
         return args;
     }
 
-	constexpr static const char* SHADER_PROFILES[]{ "vs_6_6", "ps_6_6", "ds_6_6", "hs_6_6", "gs_6_6", "cs_6_6", "as_6_6", "ms_6_6" };
-	static_assert(_countof(SHADER_PROFILES) == graphics::ShaderType::Count);
+	constexpr static const char* SHADER_PROFILES[]{ "vs_6_6", "ps_6_6", "ds_6_6", "hs_6_6", "gs_6_6", "cs_6_6", "as_6_6", "ms_6_6", "lib_6_6"};
+	static_assert(_countof(SHADER_PROFILES) == graphics::ShaderType::CountWithLibrary);
 
 	ComPtr<IDxcCompiler3> _compiler{ nullptr };
 	ComPtr<IDxcUtils> _utils{ nullptr };

@@ -12,6 +12,7 @@
 #include "Graphics/Renderer.h"
 #include "Content/SerializationUtils.h"
 #include "Graphics/Lights/Light.h"
+#include "Graphics/D3D12/D3D12Content/D3D12Geometry.h"
 #endif
 
 /*
@@ -450,6 +451,28 @@ struct NameComponent : Component
 		{
 			memcpy(c.Name, nameBuffer, MAX_NAME_LENGTH);
 		}
+	}
+#endif
+};
+
+struct PathTraceable : Component
+{
+	graphics::d3d12::content::geometry::MeshInfo MeshInfo{};
+	u64 BLASGpuAddress{ 0 };
+
+#if EDITOR_BUILD
+	static void RenderFields([[maybe_unused]] PathTraceable& c)
+	{
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("PathTraceable");
+		ImGui::TableNextRow();
+		editor::DisplayUint(c.MeshInfo.VertexCount, "Vertex Count");
+		ImGui::TableNextRow();
+		editor::DisplayUint(c.MeshInfo.VertexGlobalOffset, "Vertex Global Offset");
+		ImGui::TableNextRow();
+		editor::DisplayUint(c.MeshInfo.IndexCount, "Index Count");
+		ImGui::TableNextRow();
+		editor::DisplayUint(c.MeshInfo.IndexGlobalOffset, "Index Global Offset");
 	}
 #endif
 };

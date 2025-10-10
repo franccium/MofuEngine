@@ -1,12 +1,18 @@
 #include "RenderingConsole.h"
 #include "Input/InputSystem.h"
 #include "Graphics/RenderingDebug.h"
+#include "Graphics/RTSettings.h"
 
 namespace mofu::editor::debug {
 namespace {
-bool _isOpen{ false };
-bool _postProcessingOpen{ false };
-bool _drawNormals{ false };
+bool _isOpen{ true };
+
+#if RAYTRACING
+u32 _currentSampleIndex{ 0 };
+u64 _vertexCount{ 0 };
+u64 _indexCount{ 0 };
+u64 _lastAccelerationStructureBuildFrame{ 0 };
+#endif
 
 void
 DrawPostProcessingOptions()
@@ -43,6 +49,12 @@ DrawRenderingConsole()
 		isInDebugPostProcessing = !isInDebugPostProcessing;
 	}
 
+#if RAYTRACING
+	if (ImGui::CollapsingHeader("Path Tracing"), ImGuiTreeNodeFlags_DefaultOpen)
+	{
+		DrawRayTracingInfo();
+	}
+#endif
 
 	if (ImGui::CollapsingHeader("Post Processing"))
 	{
@@ -73,5 +85,32 @@ DrawRenderingConsole()
 	
 	ImGui::End();
 }
+
+#if RAYTRACING
+void 
+DrawRayTracingInfo()
+{
+	ImGui::TextUnformatted("Path Trace Info:");
+	ImGui::Text(" Current Sample: %u/%u", _currentSampleIndex, graphics::rt::settings::PP_SAMPLE_COUNT);
+	ImGui::TextUnformatted("Acceleration Structure:");
+	ImGui::Text(" Last Built: %llu", _lastAccelerationStructureBuildFrame);
+	ImGui::Text(" Vertex Count: %llu", _vertexCount);
+	ImGui::Text(" Index Count: %llu", _indexCount);
+}
+
+void
+UpdateAccelerationStructureData(u64 vertexCount, u64 indexCount, u64 lastBuildFrame)
+{
+	_vertexCount = vertexCount;
+	_indexCount = indexCount;
+	_lastAccelerationStructureBuildFrame = lastBuildFrame;
+}
+
+void
+UpdatePathTraceSampleData(u32 currentSampleIndex)
+{
+	_currentSampleIndex = currentSampleIndex;
+}
+#endif
 
 }

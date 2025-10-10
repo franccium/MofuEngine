@@ -11,6 +11,7 @@ struct EngineShader
 		PostProcessPS,
 		CalculateGridFrustumsCS,
 		LightCullingCS,
+		RayTracingLib,
 		Count
 	};
 };

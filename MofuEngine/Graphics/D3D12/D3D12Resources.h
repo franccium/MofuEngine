@@ -24,6 +24,13 @@ private:
 #endif
 };
 
+struct TempDescriptorAllocation
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE CPUStartHandle{};
+	D3D12_GPU_DESCRIPTOR_HANDLE GPUStartHandle{};
+	u32 StartIndex{ U32_INVALID_ID };
+};
+
 struct D3D12BufferInitInfo
 {
 	DXHeap* heap{ nullptr };
@@ -42,7 +49,7 @@ public:
 	D3D12Buffer() = default;
 	explicit D3D12Buffer(const D3D12BufferInitInfo& info, bool isCpuAccessible);
 	DISABLE_COPY(D3D12Buffer);
-	constexpr D3D12Buffer(D3D12Buffer&& o) : _buffer{ o._buffer }, _gpuAddress{ o._gpuAddress }, _size{ o._size }
+	constexpr D3D12Buffer(D3D12Buffer&& o) : _buffer{ o._buffer }, _gpuAddress{ o._gpuAddress }, _size{ o._size }, _isDynamic{ o._isDynamic }
 	{
 		o.Reset();
 	}
@@ -63,6 +70,7 @@ public:
 
 	[[nodiscard]] constexpr DXResource* const Buffer() const { return _buffer; }
 	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS GpuAddress() const { return _gpuAddress; }
+	[[nodiscard]] constexpr bool IsDynamic() const { return _isDynamic; }
 	[[nodiscard]] constexpr u32 Size() const { return _size; }
 
 private:
@@ -84,6 +92,7 @@ private:
 	DXResource* _buffer{ nullptr };
 	D3D12_GPU_VIRTUAL_ADDRESS _gpuAddress{ 0 };
 	u32 _size{ 0 };
+	bool _isDynamic{ false };
 };
 
 // A class for managing a cpu-accessible buffer
@@ -114,7 +123,6 @@ public:
 	}
 
 	[[nodiscard]] constexpr DXResource* const Buffer() const { return _buffer.Buffer(); }
-	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS const GpuAddress() const { return _buffer.GpuAddress(); }
 	[[nodiscard]] constexpr u32 Size() const { return _buffer.Size(); }
 	[[nodiscard]] constexpr u8* CpuAddress() const { return _cpuAddress; }
 
@@ -222,6 +230,265 @@ private:
 	DescriptorHandle _uavShaderVisible;
 };
 
+struct StructuredBufferInitInfo
+{
+	u32 ElementCount{ 0 };
+	u32 Stride{ 0 };
+	bool IsCPUAccessible{ false };
+	bool CreateUAV{ false };
+	bool UseCounter{ false }; // for UAVs with counters
+	bool IsDynamic{ false };
+	bool IsShaderTable{ false };
+	DXHeap* Heap{ nullptr };
+	u64 HeapOffset{ 0 };
+	D3D12_RESOURCE_STATES InitialState{ D3D12_RESOURCE_STATE_GENERIC_READ };
+	const wchar_t* Name{ nullptr };
+	const void* InitialData{ nullptr };
+};
+
+class StructuredBuffer
+{
+public:
+	DISABLE_COPY(StructuredBuffer);
+	StructuredBuffer() = default;
+	~StructuredBuffer() { assert(_elementCount == 0); Release(); }
+	StructuredBuffer(const StructuredBufferInitInfo& info);
+
+	constexpr StructuredBuffer(StructuredBuffer&& o) noexcept : _buffer{ std::move(o._buffer) }, _stride{ o._stride }, _elementCount{ o._elementCount },
+		_isShaderTable{ o._isShaderTable }, _counterResource{ o._counterResource }, _counterUAV{ o._counterUAV }
+	{
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = o._srv[i];
+		_uav = o._uav;
+		o.Reset(); 
+	}
+	constexpr StructuredBuffer& operator=(StructuredBuffer&& o) noexcept
+	{
+		assert(this != &o);
+		if (this != &o)
+		{
+			Release();
+			Move(o);
+		}
+		return *this;
+	}
+
+	void Release();
+	void Initialize(const StructuredBufferInitInfo& info);
+
+	void* Map();
+	template<typename T>
+	T* Map() { return reinterpret_cast<T*>(Map()); }
+	void MapAndSetData(const void* data, u32 elementCount);
+
+	[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE ShaderTable(u32 startElement = 0u, u32 elementCount = U32_INVALID_ID) const;
+	[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS_RANGE ShaderRecord(u32 elementIdx) const;
+	[[nodiscard]] constexpr DXResource* Buffer() const { return _buffer.Buffer(); }
+	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS GpuAddress() const { return _buffer.GpuAddress(); }
+	[[nodiscard]] constexpr u32 Size() const { return _buffer.Size(); }
+	[[nodiscard]] constexpr u32 Stride() const { return _stride; }
+	[[nodiscard]] constexpr DescriptorHandle SRV(u32 idx) const { return _srv[idx]; }
+	[[nodiscard]] constexpr DescriptorHandle UAV() const { return _uav; }
+
+private:
+	constexpr void Move(StructuredBuffer& o)
+	{
+		_buffer = std::move(o._buffer);
+		_stride = o._stride;
+		_elementCount = o._elementCount;
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = o._srv[i];
+		_uav = o._uav;
+		_isShaderTable = o._isShaderTable;
+		_counterResource = o._counterResource;
+		_counterUAV = o._counterUAV;
+		o.Reset();
+	}
+
+	constexpr void Reset()
+	{
+		_stride = 0;
+		_elementCount = 0;
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = {};
+		_uav = {};
+		_counterResource = nullptr;
+		_counterUAV = {};
+	}
+
+	void UpdateDynamicSRV() const;
+	[[nodiscard]] D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc(u32 bufferIdx) const;
+
+	D3D12Buffer _buffer;
+	u32 _stride{ 0 };
+	u32 _elementCount{ 0 };
+	DescriptorHandle _srv[FRAME_BUFFER_COUNT]{};
+	DescriptorHandle _uav{};
+	bool _isShaderTable{ false };
+	DXResource* _counterResource{ nullptr }; // for UAVs with counters
+	DescriptorHandle _counterUAV{};
+};
+
+struct FormattedBufferInitInfo
+{
+	DXGI_FORMAT Format{ DXGI_FORMAT_UNKNOWN };
+	u32 ElementCount{ 0 };
+	bool IsCPUAccessible{ false };
+	bool CreateUAV{ false };
+	bool IsDynamic{ false };
+	DXHeap* Heap{ nullptr };
+	u64 HeapOffset{ 0 };
+	D3D12_RESOURCE_STATES InitialState{ D3D12_RESOURCE_STATE_GENERIC_READ };
+	const wchar_t* Name{ nullptr };
+	const void* InitialData{ nullptr };
+};
+
+class FormattedBuffer
+{
+public:
+	FormattedBuffer() = default;
+	FormattedBuffer(const FormattedBufferInitInfo& info);
+	DISABLE_COPY(FormattedBuffer);
+	~FormattedBuffer() { assert(_elementCount == 0); Release(); }
+
+	constexpr FormattedBuffer(FormattedBuffer&& o) noexcept : _buffer{ std::move(o._buffer) }, _format{ o._format }, _stride { o._stride }, _elementCount{ o._elementCount } 
+	{
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = o._srv[i];
+		_uav = o._uav;
+		o.Reset();
+	}
+	constexpr FormattedBuffer& operator=(FormattedBuffer&& o) noexcept
+	{
+		assert(this != &o);
+		if (this != &o)
+		{
+			Release();
+			Move(o);
+		}
+		return *this;
+	}
+
+	void Initialize(const FormattedBufferInitInfo& info);
+	void Release();
+
+	void* Map();
+	template<typename T>
+	T* Map() { return reinterpret_cast<T*>(Map()); }
+	void MapAndSetData(const void* data, u32 elementCount);
+
+	[[nodiscard]] D3D12_INDEX_BUFFER_VIEW IndexBufferView() const;
+	[[nodiscard]] constexpr DXResource* Buffer() const { return _buffer.Buffer(); }
+	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS GpuAddress() const { return _buffer.GpuAddress(); }
+	[[nodiscard]] constexpr u32 Size() const { return _buffer.Size(); }
+	[[nodiscard]] constexpr DescriptorHandle SRV(u32 idx) const { return _srv[idx]; }
+	[[nodiscard]] constexpr DescriptorHandle UAV() const { return _uav; }
+
+private:
+	constexpr void Move(FormattedBuffer& o)
+	{
+		_buffer = std::move(o._buffer);
+		_stride = o._stride;
+		_elementCount = o._elementCount;
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = o._srv[i];
+		_uav = o._uav;
+		o.Reset();
+	}
+
+	constexpr void Reset()
+	{
+		_stride = 0;
+		_elementCount = 0;
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = {};
+		_uav = {};
+	}
+
+	void UpdateDynamicSRV() const;
+	[[nodiscard]] D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc(u32 bufferIdx) const;
+
+	D3D12Buffer _buffer;
+	u32 _stride{ 0 };
+	u32 _elementCount{ 0 };
+	DXGI_FORMAT _format{ DXGI_FORMAT_UNKNOWN };
+	DescriptorHandle _srv[FRAME_BUFFER_COUNT]{};
+	DescriptorHandle _uav{};
+};
+
+struct RawBufferInitInfo
+{
+	u32 ElementCount{ 0 };
+	bool IsCPUAccessible{ false };
+	bool CreateUAV{ false };
+	bool IsDynamic{ false };
+	DXHeap* Heap{ nullptr };
+	u64 HeapOffset{ 0 };
+	D3D12_RESOURCE_STATES InitialState{ D3D12_RESOURCE_STATE_GENERIC_READ };
+	const wchar_t* Name{ nullptr };
+	const void* InitialData{ nullptr };
+};
+
+class RawBuffer
+{
+public:
+	static constexpr u32 Stride{ 4 };
+
+	RawBuffer() = default;
+	RawBuffer(const RawBufferInitInfo& info);
+	DISABLE_COPY(RawBuffer);
+	~RawBuffer() { assert(_elementCount == 0); Release(); }
+
+	constexpr RawBuffer(RawBuffer&& o) noexcept : _buffer{ std::move(o._buffer) }, _elementCount{ o._elementCount } 
+	{
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = o._srv[i];
+		_uav = o._uav; 
+		o.Reset(); 
+	}
+	constexpr RawBuffer& operator=(RawBuffer&& o) noexcept
+	{
+		assert(this != &o);
+		if (this != &o)
+		{
+			Release();
+			Move(o);
+		}
+		return *this;
+	}
+
+	void Initialize(const RawBufferInitInfo& info);
+	void Release();
+
+	void* Map();
+	template<typename T>
+	T* Map() { return reinterpret_cast<T*>(Map()); }
+	void MapAndSetData(const void* data, u32 elementCount);
+
+	[[nodiscard]] constexpr DXResource* Buffer() const { return _buffer.Buffer(); }
+	[[nodiscard]] constexpr D3D12_GPU_VIRTUAL_ADDRESS GpuAddress() const { return _buffer.GpuAddress(); }
+	[[nodiscard]] constexpr u32 Size() const { return _buffer.Size(); }
+	[[nodiscard]] constexpr DescriptorHandle UAV() const { return _uav; }
+
+private:
+	constexpr void Move(RawBuffer& o)
+	{
+		_buffer = std::move(o._buffer);
+		_elementCount = o._elementCount;
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = o._srv[i];
+		_uav = o._uav;
+		o.Reset();
+	}
+
+	constexpr void Reset()
+	{
+		_elementCount = 0;
+		for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i) _srv[i] = {};
+		_uav = {};
+	}
+
+	void UpdateDynamicSRV() const;
+	[[nodiscard]] D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc(u32 bufferIdx) const;
+
+	D3D12Buffer _buffer;
+	u32 _elementCount{ 0 };
+	DescriptorHandle _srv[FRAME_BUFFER_COUNT]{};
+	DescriptorHandle _uav{};
+};
+
 struct D3D12TextureInitInfo
 {
 	DXResource* resource{ nullptr };
@@ -231,6 +498,7 @@ struct D3D12TextureInitInfo
 	D3D12_RESOURCE_ALLOCATION_INFO1* allocationInfo{ nullptr };
 	D3D12_RESOURCE_STATES initialState{};
 	D3D12_CLEAR_VALUE clearValue{};
+	bool CreateUAV{ false };
 };
 
 class D3D12Texture
@@ -260,7 +528,7 @@ public:
 		DXGI_FORMAT format, bool isCubemap = false);
 
 	[[nodiscard]] constexpr DXResource* const Resource() const { return _resource; }
-	[[nodiscard]] constexpr DescriptorHandle Srv() const { return _srv; }
+	[[nodiscard]] constexpr DescriptorHandle SRV() const { return _srv; }
 
 private:
 	constexpr void Reset()
@@ -290,6 +558,7 @@ public:
 	constexpr D3D12RenderTexture(D3D12RenderTexture&& o) : _texture{ std::move(o._texture) }, _mipCount{ o._mipCount }
 	{
 		for (u32 i{ 0 }; i < _mipCount; ++i) _rtv[i] = o._rtv[i];
+		_uav = o._uav;
 		o.Reset();
 	}
 
@@ -309,14 +578,16 @@ public:
 	void Release();
 
 	[[nodiscard]] constexpr u32 MipCount() const { return _mipCount; }
-	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE Rtv(u32 mipIndex) const { assert(mipIndex < _mipCount);  return _rtv[mipIndex].cpu; }
-	[[nodiscard]] constexpr DescriptorHandle Srv() const { return _texture.Srv(); }
+	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE RTV(u32 mipIndex) const { assert(mipIndex < _mipCount);  return _rtv[mipIndex].cpu; }
+	[[nodiscard]] constexpr DescriptorHandle SRV() const { return _texture.SRV(); }
+	[[nodiscard]] const D3D12_CPU_DESCRIPTOR_HANDLE* UAV() const { return &_uav.cpu; }
 	[[nodiscard]] constexpr DXResource* const Resource() const { return _texture.Resource(); }
 
 private:
 	constexpr void Reset()
 	{
 		for (u32 i{ 0 }; i < _mipCount; ++i) _rtv[i] = {};
+		_uav = {};
 		_mipCount = 0;
 	}
 
@@ -325,11 +596,13 @@ private:
 		_texture = std::move(o._texture);
 		_mipCount = o._mipCount;
 		for (u32 i{ 0 }; i < _mipCount; ++i) _rtv[i] = o._rtv[i];
+		_uav = o._uav;
 		o.Reset();
 	}
 
 	D3D12Texture _texture;
 	DescriptorHandle _rtv[D3D12Texture::MAX_MIPS]{};
+	DescriptorHandle _uav{};
 	u32 _mipCount{ 0 };
 };
 
@@ -362,7 +635,7 @@ public:
 	void Release();
 
 	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE Dsv() const { return _dsv.cpu; }
-	[[nodiscard]] constexpr DescriptorHandle Srv() const { return _texture.Srv(); }
+	[[nodiscard]] constexpr DescriptorHandle SRV() const { return _texture.SRV(); }
 	[[nodiscard]] constexpr DXResource* const Resource() const { return _texture.Resource(); }
 
 private:

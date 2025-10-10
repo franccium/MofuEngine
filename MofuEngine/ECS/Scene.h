@@ -107,6 +107,19 @@ EntityData& CreateEntity()
 	return CreateEntity(cetMask);
 }
 
+// returns the total count of entities where Cet includes all specified components
+template<IsComponent... C>
+u32 GetEntityCount()
+{
+	const CetMask cetMask{ GetCetMask<C...>() };
+	u32 count{ 0 };
+	for (EntityBlock* block : GetBlocksFromCet(cetMask))
+	{
+		count += block->EntityCount;
+	}
+	return count;
+}
+
 void RemoveEntity(Entity entity);
 void UnloadScene();
 

@@ -12,6 +12,7 @@ struct EngineShader
         PostProcessPS,
         CalculateGridFrustumsCS,
         LightCullingCS,
+        RayTracingLib,
         Count
     };
 };
@@ -37,6 +38,7 @@ constexpr EngineShaderInfo ENGINE_SHADER_FILES[] {
     {EngineShader::PostProcessPS, {"PostProcess.hlsl", "PostProcessPS", graphics::ShaderType::Pixel}},
     {EngineShader::CalculateGridFrustumsCS, {"CalculateGridFrustums.hlsl", "CalculateGridFrustumsCS", graphics::ShaderType::Compute}},
     {EngineShader::LightCullingCS, {"LightCulling.hlsl", "LightCullingCS", graphics::ShaderType::Compute}},
+    {EngineShader::RayTracingLib, {"RayTracing.hlsl", nullptr, graphics::ShaderType::Library}},
 };
 static_assert(_countof(ENGINE_SHADER_FILES) == EngineShader::Count);
 

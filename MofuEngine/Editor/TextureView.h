@@ -183,4 +183,5 @@ constexpr const char* BC_FORMAT_STRING[7] {
 
 void OpenTextureView(content::AssetHandle handle);
 void RenderTextureView();
+void ReleaseResources();
 }

@@ -29,7 +29,8 @@ CreateResourceBuffer(const void* data, u32 bufferSize, bool isCpuAccessible /* f
 	assert(desc.Flags == D3D12_RESOURCE_FLAG_NONE || D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
 	DXResource* resource{ nullptr };
-	const D3D12_RESOURCE_STATES resourceState{ isCpuAccessible ? D3D12_RESOURCE_STATE_GENERIC_READ : state };
+	const D3D12_RESOURCE_STATES resourceState{ isCpuAccessible ? D3D12_RESOURCE_STATE_GENERIC_READ 
+		: data ? D3D12_RESOURCE_STATE_COMMON : state };
 
 	if (heap)
 	{
@@ -80,6 +81,17 @@ TransitionResource(DXResource* resource, DXGraphicsCommandList* cmdList,
 	barrier.Transition.StateAfter = after;
 	barrier.Transition.Subresource = subresource;
 
+	cmdList->ResourceBarrier(1, &barrier);
+}
+
+void
+ApplyUAVBarrier(DXResource* resource, DXGraphicsCommandList* cmdList, D3D12_RESOURCE_BARRIER_FLAGS flags)
+{
+	assert(resource);
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	barrier.Flags = flags;
+	barrier.UAV.pResource = resource;
 	cmdList->ResourceBarrier(1, &barrier);
 }
 

@@ -12,6 +12,9 @@
 #include "Editor/SceneEditorView.h"
 #include "Graphics/Lights/Light.h"
 #include "Content/EditorContentManager.h"
+#if RAYTRACING
+#include "Graphics/D3D12/D3D12Content/D3D12Geometry.h"
+#endif
 
 #include "../External/tracy/public/tracy/Tracy.hpp"
 
@@ -488,6 +491,8 @@ AddRenderItem()
 u32
 CreateTestRenderItems()
 {
+
+
 	content::AssetHandle meshAsset{ content::assets::DEFAULT_MESH_HANDLE };
 	content::AssetHandle materialAsset{ content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE };
 
@@ -500,23 +505,29 @@ CreateTestRenderItems()
 	mat.MaterialID = content::GetDefaultMaterial();
 
 	ecs::component::LocalTransform transform{};
+	transform.Position = { 0.f, -1.f, 21 };
+#if RAYTRACING
+	ecs::component::PathTraceable pt{};
+	pt.MeshInfo = graphics::d3d12::content::geometry::MeshInfo{ graphics::d3d12::content::geometry::GetMeshInfo(mesh.MeshID) };
+
+	ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform,
+		ecs::component::Parent, ecs::component::WorldTransform, ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::PathTraceable>(transform, {}, {},
+			mesh, mat, pt)};
+#else
 	ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform,
 		ecs::component::Parent, ecs::component::WorldTransform, ecs::component::RenderMesh, ecs::component::RenderMaterial>(transform, {}, {},
 			mesh, mat) };
+#endif
 
 	ecs::component::RenderMesh& meshEd{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entityData.id) };
 	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 	editor::AddEntityToSceneView(entityData.id);
-	
-
-	//ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entityData.id) };
-	//content::assets::LoadMeshAsset(meshAsset, entityData.id, mesh, mat);
-
-	//AddRenderItem();
-	//AddRenderItem();
-	//AddRenderItem();
 
 	AddLights();
+
+	const content::AssetHandle RT_CUBES{ 15519544575226091575 };
+	editor::ImportScene("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
+
 
 	return loadedModelsCount;
 }

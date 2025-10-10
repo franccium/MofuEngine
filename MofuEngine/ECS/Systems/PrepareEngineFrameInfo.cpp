@@ -49,6 +49,6 @@ namespace mofu::graphics::d3d12 {
 			graphics::SetCurrentFrameInfo(frameInfo);
 		}
 	};
-	REGISTER_SYSTEM(PrepareEngineFrameInfo, ecs::system::SystemGroup::PreUpdate, 0);
+	REGISTER_SYSTEM(PrepareEngineFrameInfo, ecs::system::SystemGroup::PreUpdate, 1);
 
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "Vector.h"
 #include "FreeList.h"
+#include "Array.h"
 #include <deque>
 
 namespace mofu::util {
