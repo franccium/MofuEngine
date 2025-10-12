@@ -54,7 +54,7 @@ public:
 
 	constexpr void Initialize(u64 elementCount)
 	{
-		static_assert(std::is_default_constructible<T>::value, "Type must be default-contructible");
+		//static_assert(std::is_default_constructible<T>::value, "Type must be default-contructible");
 		Destroy();
 		_size = elementCount;
 		if(elementCount)
