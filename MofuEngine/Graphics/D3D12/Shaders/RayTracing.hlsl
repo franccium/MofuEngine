@@ -336,12 +336,15 @@ HitSurface GetHitSurfaceFromRTVertex(in RTVertex vtx, in uint geometryIdx)
     float3 tangent = float3(tXY, sqrt(saturate(1.f - dot(tXY, tXY))) * tSign);
     tangent = tangent - normal * dot(normal, tangent); // use Gram-Schmidt orthogonalization to restore orthogonality
     
-    float3 normal_s = normalize(mul(normal, (float3x3)objectData.InvWorld)).xyz;
-    float4 tangent_s = float4(normalize(mul(tangent, (float3x3)objectData.InvWorld)), handSign);
+    //float3 normal_ws = normalize(mul(normal, (float3x3)objectData.World)).xyz;
+    //float4 tangent_ws = float4(normalize(mul(tangent, (float3x3)objectData.World)), handSign);
     
-    hitSurface.Normal = normal_s;
-    hitSurface.Tangent = tangent_s.xyz;
-    hitSurface.Bitangent = cross(normal_s, tangent_s.xyz) * handSign;
+    //hitSurface.Normal = normal_ws;
+    hitSurface.Normal = normal;
+    //hitSurface.Tangent = tangent_ws.xyz;
+    hitSurface.Tangent = tangent;
+    //hitSurface.Bitangent = cross(normal_s, tangent_s.xyz) * handSign;
+    hitSurface.Bitangent = cross(normal, tangent) * handSign;
     return hitSurface;
 }
 
@@ -717,7 +720,7 @@ void ClosestHit(inout RaygenPayload payload, in BuiltInTriangleIntersectionAttri
         float3(0.5f, 0.f, 0.f), float3(0.f, 0.5f, 0.f), float3(0.f, 0.f, 0.5f), float3(0.7f, 0.5f, 0.2f)
     };
     //payload.Radiance = colors[GeometryIndex()];
-    if(1)
+    if(0)
     {
         //payload.Radiance = hitSurface.Normal * 0.5f + 0.5f;
         payload.Radiance = hitSurface.Normal;

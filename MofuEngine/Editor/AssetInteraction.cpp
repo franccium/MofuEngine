@@ -225,6 +225,9 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	ecs::component::RenderMaterial material{};
 	ecs::component::RenderMesh mesh{};
 	ecs::component::NameComponent name{};
+#if RAYTRACING && PATH_TRACE_ALL
+	ecs::component::PathTraceable pt{};
+#endif
 
 	// root
 	mesh.MeshID = uploadedGeometryInfo.GeometryContentID;
@@ -239,6 +242,9 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		ecs::component::RenderMaterial Material;
 		bool isChild{ true };
 		ecs::component::Child child;
+#if RAYTRACING && PATH_TRACE_ALL
+		ecs::component::PathTraceable pt{};
+#endif
 	};
 	Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
 	std::string filename{ modelPath.stem().string() };
@@ -246,10 +252,18 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 
 	// create root entity
 	ecs::component::Parent parentEntity{ {} };
+#if RAYTRACING && PATH_TRACE_ALL
+	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent, ecs::component::NameComponent,
+	ecs::component::PathTraceable>(
+			lt, wt, mesh, material, parentEntity, name, pt) };
+	spawnedEntities[0] = { rootEntityData.id, mesh, material, false, pt};
+#else
 	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent, ecs::component::NameComponent>(
 			lt, wt, mesh, material, parentEntity, name) };
 	spawnedEntities[0] = { rootEntityData.id, mesh, material, false };
+#endif
 
 	ecs::component::Child child{ {}, rootEntityData.id };
 	pos = {};
@@ -265,11 +279,22 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		material.MaterialAsset = content::assets::GetAssetFromResource(material.MaterialID, content::AssetType::Material);
 		snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
 
+#if RAYTRACING && PATH_TRACE_ALL
+		pt.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(mesh.MeshID);
+		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
+			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child, ecs::component::NameComponent,
+		ecs::component::PathTraceable>(
+				lt, wt, mesh, material, child, name, pt) };
+		assert(ecs::scene::GetComponent<ecs::component::Child>(e.id).ParentEntity == child.ParentEntity);
+		spawnedEntities[i] = { e.id, mesh, material, true, child, pt };
+#else
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child, ecs::component::NameComponent>(
 				lt, wt, mesh, material, child, name) };
 		assert(ecs::scene::GetComponent<ecs::component::Child>(e.id).ParentEntity == child.ParentEntity);
+		pt.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(mesh.MeshID);
 		spawnedEntities[i] = { e.id, mesh, material, true, child };
+#endif
 	}
 
 	for (auto& c : spawnedEntities)

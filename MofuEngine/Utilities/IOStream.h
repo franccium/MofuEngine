@@ -48,6 +48,12 @@ public:
 		_position += offset;
 	}
 
+	constexpr void JumpTo(const u8* position)
+	{
+		assert(position >= _buffer);
+		_position = position;
+	}
+
 	[[nodiscard]] constexpr const u8* const BufferStart() const { return _buffer; }
 	[[nodiscard]] constexpr const u8* const Position() const { return _position; }
 	[[nodiscard]] constexpr const u64 Offset() const { return _position - _buffer; }

@@ -31,7 +31,7 @@ std::mutex submeshMutex{};
 
 //TODO: optimize
 Vec<RTVertex> _globalVertexData;
-Vec<u8> _globalIndexDataBlob{};
+Vec<u16> _globalIndexDataBlob;
 StructuredBuffer _globalVertexBuffer{};
 FormattedBuffer _globalIndexBuffer{};
 util::FreeList<MeshInfo> _meshInfos{};
@@ -44,7 +44,7 @@ Initialize()
 #if RAYTRACING
 	_globalVertexData = Vec<RTVertex>{};
 	//_globalVertexData.reserve(10000);
-	_globalIndexDataBlob = Vec<u8>{};
+	_globalIndexDataBlob = Vec<u16>{};
 	//_globalIndexDataBlob.reserve(256 * 1024 * 1024);
 #endif
 	return true;
@@ -57,12 +57,14 @@ CreateGlobalBuffers()
 	info.Stride = sizeof(RTVertex);
 	info.ElementCount = _globalVertexData.size();
 	info.InitialData = _globalVertexData.data();
+	info.InitialState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 	info.Name = L"Global RT Vertex Buffer";
 	_globalVertexBuffer.Initialize(info);
 	FormattedBufferInitInfo indexInfo{};
 	indexInfo.Format = DXGI_FORMAT_R16_UINT; // TODO: R32_UINT
-	indexInfo.ElementCount = _globalIndexDataBlob.size() / sizeof(u16); //TODO: indexSize
+	indexInfo.ElementCount = _globalIndexDataBlob.size(); //TODO: indexSize
 	indexInfo.InitialData = _globalIndexDataBlob.data();
+	indexInfo.InitialState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 	indexInfo.Name = L"Global RT Index Buffer";
 	_globalIndexBuffer.Initialize(indexInfo);
 }
@@ -156,19 +158,42 @@ AddSubmesh(const u8*& blob)
 	const u32 lastVt{ (u32)_globalVertexData.size() };
 	_globalVertexData.resize(_globalVertexData.size() + vertexCount);
 	meshInfo.VertexGlobalOffset = lastVt;
+
+	auto readerPosition = reader.Position();
+	assert(positionBufferSize == alignedPositionBufferSize);
+	assert(elementBufferSize == alignedElementBufferSize);
+	//Array<v3> posData{ vertexCount };
+	v3* posData = (v3*)malloc(vertexCount * sizeof(v3));
+	//memcpy(posData.data(), reader.Position(), positionBufferSize);
+	reader.ReadBytes((u8*)posData, positionBufferSize);
+	//Array<mofu::content::StaticNormalTexture> sntData{ vertexCount };
+	mofu::content::StaticNormalTexture* sntDataPtr = new mofu::content::StaticNormalTexture[vertexCount];
+	//memcpy(sntData.data(), reader.Position() + alignedPositionBufferSize, elementBufferSize);
+	reader.ReadBytes((u8*)sntDataPtr, elementBufferSize);
+
 	for (u32 i{ 0 }; i < vertexCount; ++i)
+	{
+		_globalVertexData[lastVt + i] = RTVertex{ posData[i], sntDataPtr[i].TNSign, sntDataPtr[i].UV, sntDataPtr[i].Normal[0], sntDataPtr[i].Normal[1], sntDataPtr[i].tangent[0], sntDataPtr[i].tangent[1] };
+	}
+	free(posData);
+	delete[] sntDataPtr;
+
+	/*for (u32 i{ 0 }; i < vertexCount; ++i)
 	{
 		v3 pos{ ((v3*)reader.Position())[i] };
 		const mofu::content::StaticNormalTexture& snt{ ((mofu::content::StaticNormalTexture*)(reader.Position() + alignedPositionBufferSize))[i] };
 		new (&_globalVertexData[lastVt + i]) RTVertex{ pos, snt.TNSign, snt.UV, snt.Normal[0], snt.Normal[1], snt.tangent[0], snt.tangent[1]};
-	}
+	}*/
 
 	const u32 lastIdx{ (u32)_globalIndexDataBlob.size() };
-	_globalIndexDataBlob.resize(_globalIndexDataBlob.size() + indexBufferSize);
+	_globalIndexDataBlob.resize(_globalIndexDataBlob.size() + indexCount);
 	meshInfo.IndexGlobalOffset = lastIdx;
-	memcpy(_globalIndexDataBlob.data() + lastIdx, reader.Position() + alignedPositionBufferSize + alignedElementBufferSize, indexBufferSize);
+	//memcpy(&_globalIndexDataBlob[lastIdx], reader.Position() + alignedPositionBufferSize + alignedElementBufferSize, indexBufferSize);
+	memcpy(&_globalIndexDataBlob[lastIdx], reader.Position(), indexBufferSize);
 
 	_meshInfos.add(meshInfo);
+
+	reader.JumpTo(readerPosition);
 
 	//if(_globalVertexData.capacity() - _globalVertexData.size() < alignedElementBufferSize / elementSize)
 	//	_globalVertexData.reserve(_globalVertexData.size() + alignedElementBufferSize / elementSize + 1000);

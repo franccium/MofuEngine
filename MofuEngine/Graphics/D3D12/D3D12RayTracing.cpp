@@ -108,7 +108,7 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 	const StructuredBuffer& vertexBuffer{ content::geometry::GlobalVertexBuffer() };
 	const FormattedBuffer& indexBuffer{ content::geometry::GlobalIndexBuffer() };
 	_accStructVertexCount = vertexBuffer.Size();
-	_accStructIndexCount = indexBuffer.Size() / sizeof(u16);
+	_accStructIndexCount = indexBuffer.Size();
 
 	const u32 meshCount{ ecs::scene::GetEntityCount<ecs::component::PathTraceable>() };
 	assert(meshCount);
@@ -178,7 +178,7 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 		const u32 indexOffset{ m.MeshInfo.IndexGlobalOffset };
 		geom.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 		geom.Flags = isOpaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
-		geom.Triangles.IndexBuffer = indexBuffer.GpuAddress() + indexOffset;
+		geom.Triangles.IndexBuffer = indexBuffer.GpuAddress() + indexOffset * indexBuffer.Stride();
 		geom.Triangles.IndexCount = m.MeshInfo.IndexCount;
 		geom.Triangles.IndexFormat = DXGI_FORMAT_R16_UINT; //TODO: R32
 		geom.Triangles.VertexBuffer.StartAddress = vertexBuffer.GpuAddress() + vertexOffset * vertexBuffer.Stride();

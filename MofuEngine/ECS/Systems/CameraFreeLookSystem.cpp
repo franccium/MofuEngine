@@ -66,7 +66,7 @@ namespace mofu::ecs::system {
 				{
 					move.y = 1.f;
 				}
-				if (input::IsKeyDown(input::Keys::Control))
+				if (input::IsKeyDown(input::Keys::Z))
 				{
 					move.y = -1.f;
 				}
