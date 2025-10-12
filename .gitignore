@@ -370,6 +370,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/ExampleApp/shaders
 /ExampleApp/Assets/characters/cyborg_tex
 /ExampleApp/Assets/characters
 /ExampleApp/Assets/furtniture

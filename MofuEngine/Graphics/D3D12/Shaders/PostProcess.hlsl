@@ -29,14 +29,14 @@ ConstantBuffer<DebugConstants> DebugOptions : register(b2, space0);
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
 
-#if RAYTRACING
+#if 1
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     Texture2D rtMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
     float4 gpassColor = float4(gpassMain[Position.xy].rgb, 1.f);
     float4 rtColor = float4(rtMain[Position.xy].rgb, 1.f);
-    float4 fin = lerp(gpassColor, rtColor, 0.5f);
+    float4 fin = lerp(gpassColor, rtColor, 0.9f);
     return fin;
 }
 #else
@@ -62,7 +62,7 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         else if (DebugOptions.DebugMode == DEBUG_NORMALS)
         {
             texture = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-            color = texture[Position.xy].rgb;
+            color = texture[Position.xy].rgb * 0.5f + 0.5f;
         }
         else if (DebugOptions.DebugMode == DEBUG_MATERIAL_IDS)
         {

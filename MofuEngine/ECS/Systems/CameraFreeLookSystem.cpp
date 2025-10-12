@@ -13,6 +13,7 @@
 
 namespace mofu::ecs::system {
 	bool isInputEnabled{ true };
+	bool isMouseEnabled{ true };
 	
 	struct CameraFreeLookSystem : ecs::system::System<CameraFreeLookSystem>
 	{
@@ -22,6 +23,16 @@ namespace mofu::ecs::system {
 			{
 				//graphics::Camera& cam{}
 				using namespace DirectX;
+
+				if (input::WasKeyPressed(input::Keys::Alt))
+				{
+					isMouseEnabled = !isMouseEnabled;
+					if(isMouseEnabled)
+						ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+					else
+						ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+				}
+
 #if 1
 				v3 direction{ lt.Forward };
 				f32 theta{ XMScalarACos(direction.y) };
@@ -51,11 +62,11 @@ namespace mofu::ecs::system {
 				{
 					move.x = -1.f;
 				}
-				if (input::IsKeyDown(input::Keys::Q))
+				if (input::IsKeyDown(input::Keys::Space))
 				{
 					move.y = 1.f;
 				}
-				if (input::IsKeyDown(input::Keys::E))
+				if (input::IsKeyDown(input::Keys::Control))
 				{
 					move.y = -1.f;
 				}

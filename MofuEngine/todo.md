@@ -3,11 +3,29 @@ not recreating resources, keeping an asset library
 
 import materials from fbx
 
-optimise ecs
-
 culling
 
 lights
+
+ECS:
+optimize
+add filtering by components - not always data needed, just whether it has the component or not; etc
+
+Scene space partitioning
+	then can do culling
+	and merging for acceleration structures?
+merging different nearby meshes for one BLAS
+
+(for now, just make different BLAS for everyone?)
+
+AND SUPPORT FOR INSTANCING TOO SINCE IT REQUIRES THAT ANYWAYS:
+in AssetInteraction - when spawning renderables - make a midpoint that checks if the AssetHandle already has a resource, then, 
+give a bool to geometry backend so it just assigns the id it already has for that model
+
+default to not-updateable --> make a DynamicObject and a StaticObject component, 
+make an ASUpdateable component and build only these with allow_update flag
+try compaction for static objects
+
 
 texture packing
 

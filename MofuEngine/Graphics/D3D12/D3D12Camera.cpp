@@ -206,18 +206,15 @@ D3D12Camera::Update()
     _direction = XMLoadFloat3(&lt.Forward);
 
 	_view = XMMatrixLookToRH(_position, _direction, _up);
-    if (_isDirty)
-    {
+    _inverseView = XMMatrixInverse(nullptr, _view);
         // NOTE: here _far_z and _near_z are swapped, because we are using reversed depth
 		_projection = (_projectionType == graphics::Camera::Type::Perspective) ?
 			XMMatrixPerspectiveFovRH(_fieldOfView * XM_PI, _aspectRatio, _farZ, _nearZ) :
 			XMMatrixOrthographicRH(_viewWidth, _viewHeight, _farZ, _nearZ);
         _inverseProjection = XMMatrixInverse(nullptr, _projection);
         _isDirty = false;
-    }
 	_viewProjection = XMMatrixMultiply(_view, _projection);
 	_inverseViewProjection = XMMatrixInverse(nullptr, _viewProjection);
-    //_inverseViewProjection = XMMatrixMultiply(_inverseProjection, XMMatrixInverse(nullptr, _view));
 }
 
 void 

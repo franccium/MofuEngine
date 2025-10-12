@@ -22,6 +22,7 @@ public:
 	[[nodiscard]] constexpr DirectX::XMMATRIX View() const { return _view; }
 	[[nodiscard]] constexpr DirectX::XMMATRIX Projection() const { return _projection; }
 	[[nodiscard]] constexpr DirectX::XMMATRIX InverseProjection() const { return _inverseProjection; }
+	[[nodiscard]] constexpr DirectX::XMMATRIX InverseView() const { return _inverseView; }
 	[[nodiscard]] constexpr DirectX::XMMATRIX ViewProjection() const { return _viewProjection; }
 	[[nodiscard]] constexpr DirectX::XMMATRIX InverseViewProjection() const { return _inverseViewProjection; }
 	[[nodiscard]] constexpr DirectX::XMVECTOR Up() const { return _up; }
@@ -38,6 +39,7 @@ public:
 
 private:
 	DirectX::XMMATRIX _view;
+	DirectX::XMMATRIX _inverseView;
 	DirectX::XMMATRIX _projection;
 	DirectX::XMMATRIX _inverseProjection;
 	DirectX::XMMATRIX _viewProjection;

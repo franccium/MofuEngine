@@ -44,6 +44,12 @@ struct PerObjectData
     uint MaterialID;
 };
 
+struct RTObjectMatrices
+{
+    float4x4 World;
+    float4x4 InvWorld;
+};
+
 struct Plane
 {
     float3 Normal;
@@ -139,6 +145,8 @@ struct GeometryInfo
 struct RayTracingConstants
 {
     row_major float4x4 InvViewProjection;
+    row_major float4x4 InvView;
+    row_major float4x4 InvProj;
     
     float3 SunDirection_WS;
     float CosSunAngularRadius;
@@ -155,8 +163,21 @@ struct RayTracingConstants
     uint IndexBufferIndex;
     uint GeometryInfoBufferIndex;
     uint MaterialBufferIndex;
+    uint RTObjectMatricesBufferIndex;
     uint SkyCubemapIndex;
     uint LightCount;
+};
+
+struct RTSettings
+{
+    uint SampleCountSqrt;
+    uint MaxPathLength;
+    uint MaxAnyHitPathLength;
+    bool IndirectEnabled;
+    bool SunFromDirectionalLight;
+    bool RenderSkybox;
+    bool ShowNormals;
+    bool ShowRayDirs;
 };
 
 #ifdef __cplusplus

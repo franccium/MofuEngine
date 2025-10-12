@@ -5,6 +5,4 @@
 #include "CommonTypes.hlsli"
 #include "CommonFunctions.hlsli"
 
-#define RAYTRACING 1
-
 #endif

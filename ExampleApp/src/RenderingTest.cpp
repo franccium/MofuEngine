@@ -129,6 +129,8 @@ u64 brdfLutHandle{ 6591591707561885939 };
 constexpr f32 INV_RAND_MAX{ 1.f / RAND_MAX };
 f32 Random(f32 min = 0.f) { return std::max(min, rand() * INV_RAND_MAX); }
 
+#define DO_RANDOM_LIGHTS 0
+
 [[nodiscard]] id_t 
 LoadAsset(const char* path, content::AssetType::type type)
 {
@@ -266,13 +268,18 @@ AddLights()
 	ecs::component::PointLight pointLight{};
 	ecs::component::SpotLight spotLight{};
 
-	constexpr u32 DIR_LIGHT_COUNT{ 4 };
-	v3 directions[DIR_LIGHT_COUNT]{ {-0.4f, 0.f, 1.f }, { -0.33f, -0.8f, -0.99f }, { 0.3f, 0.2f, 0.1f }, { 0.7f, 1.0f, 0.5f } };
-	//v3 colors[DIR_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.1f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f } };
-	v3 colors[DIR_LIGHT_COUNT]{ { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } };
-	f32 intensities[DIR_LIGHT_COUNT]{ 1.f, 1.f, 1.f, 1.f };
+	constexpr u32 DIR_LIGHT_COUNT{ 1 };
+	v3 directions[DIR_LIGHT_COUNT]{ { 0.3f, -0.92f, 0.1f } };
+	v3 colors[DIR_LIGHT_COUNT]{ { 1.f, 1.f, 1.f } };
+	f32 intensities[DIR_LIGHT_COUNT]{ 1.f };
+	bool enabled[DIR_LIGHT_COUNT]{ true };
+	//constexpr u32 DIR_LIGHT_COUNT{ 4 };
+	//v3 directions[DIR_LIGHT_COUNT]{ {-0.4f, 0.f, 1.f }, { -0.33f, -0.8f, -0.99f }, { 0.3f, 0.2f, 0.1f }, { 0.7f, 1.0f, 0.5f } };
+	////v3 colors[DIR_LIGHT_COUNT]{ { 0.9f, 0.3f, 0.2f }, { 0.2f, 0.8f, 0.2f }, { 0.1f, 0.6f, 0.6f }, { 0.6f, 0.8f, 0.2f } };
+	//v3 colors[DIR_LIGHT_COUNT]{ { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } };
+	//f32 intensities[DIR_LIGHT_COUNT]{ 1.f, 1.f, 1.f, 1.f };
 	//f32 intensities[DIR_LIGHT_COUNT]{ 0.f, 0.f, 0.f, 0.f };
-	bool enabled[DIR_LIGHT_COUNT]{ true, true, true, true };
+	//bool enabled[DIR_LIGHT_COUNT]{ true, true, true, true };
 
 	for (u32 i{ 0 }; i < DIR_LIGHT_COUNT; ++i)
 	{
@@ -322,8 +329,7 @@ AddLights()
 		graphics::light::AddLightToLightSet(lightSetOne, entityData.id, graphics::light::LightType::Spot);
 	}
 
-	constexpr bool DO_RANDOM_LIGHTS{ true };
-	if (!DO_RANDOM_LIGHTS) return;
+#if DO_RANDOM_LIGHTS
 
 	srand(17);
 
@@ -357,6 +363,7 @@ AddLights()
 			}
 		}
 	}
+#endif
 }
 
 void
@@ -523,11 +530,12 @@ CreateTestRenderItems()
 	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 	editor::AddEntityToSceneView(entityData.id);
 
+	editor::ImportScene("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
 	AddLights();
 
 	const content::AssetHandle RT_CUBES{ 15519544575226091575 };
-	editor::ImportScene("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
-
+	const content::AssetHandle SUN_TEMPLE{ 13905473850964664605 };
+	//editor::ImportScene("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
 
 	return loadedModelsCount;
 }

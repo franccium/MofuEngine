@@ -26,6 +26,7 @@ struct RTRootParameters
 		SceneAC_SRV = 0,
 		MainOutput_UAV,
 		RayTracingConstants,
+		RayTracingSettings,
 		Count
 	};
 };
@@ -43,25 +44,65 @@ D3D12RenderTexture _rtMainBuffer{};
 ID3D12RootSignature* _rtRootSig{ nullptr };
 ID3D12StateObject* _rtPSO{ nullptr };
 
+void* _rayGenID{ nullptr };
+void* _hitGroupID{ nullptr };
+void* _alphaTestHitGroupID{ nullptr };
+void* _shadowHitGroupID{ nullptr };
+void* _shadowAlphaTestHitGroupID{ nullptr };
+void* _missID{ nullptr };
+void* _shadowMissID{ nullptr };
+
 StructuredBuffer _rayGenShaderTable{};
 StructuredBuffer _missShaderTable{};
 StructuredBuffer _hitShaderTable{};
 
+#define SINGLE_MERGED_MODEL 1
+#if SINGLE_MERGED_MODEL
 RawBuffer _topLevelAccStructure;
 RawBuffer _bottomLevelAccStructure;
 RawBuffer _accScratchBuffer;
+#else
 util::FreeList<RawBuffer> _scratchBuffers;
+util::FreeList<RawBuffer> _tlasBuffers;
 util::FreeList<RawBuffer> _blasBuffers;
+#endif
 
 DXResource* _instanceBufferResource{ nullptr };
 StructuredBuffer _geometryInfoBuffer;
+Vec<hlsl::RTObjectMatrices> _objectMatricesData;
+StructuredBuffer _objectMatricesBuffer;
 
 constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
 
+
+void
+CreateHitGroups()
+{
+	const u32 meshCount{ ecs::scene::GetEntityCount<ecs::component::PathTraceable>() };
+	Array<ShaderIdentifier> hitGroupRecords{ meshCount * 2 };
+	const bool isOpaque{ true };
+	// TODO: use alpha test hit groyps after i add opacity maps
+	for (u32 i{ 0 }; i < meshCount; ++i)
+	{
+		hitGroupRecords[i * 2] = isOpaque ? ShaderIdentifier{ _hitGroupID } : ShaderIdentifier{ _alphaTestHitGroupID };
+		hitGroupRecords[i * 2 + 1] = isOpaque ? ShaderIdentifier{ _shadowHitGroupID } : ShaderIdentifier{ _shadowAlphaTestHitGroupID };
+	}
+	StructuredBufferInitInfo info{};
+	info.IsShaderTable = true;
+	info.Stride = sizeof(ShaderIdentifier);
+	info.ElementCount = hitGroupRecords.size();
+	info.InitialData = hitGroupRecords.data();
+	info.Name = L"Hit Shader Table";
+	_hitShaderTable.Initialize(info);
+}
+
+
+#if SINGLE_MERGED_MODEL
 void
 BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 {
 	core::Release(_instanceBufferResource);
+	_objectMatricesData.clear();
 	content::geometry::CreateGlobalBuffers();
 	//TODO:
 	const StructuredBuffer& vertexBuffer{ content::geometry::GlobalVertexBuffer() };
@@ -88,6 +129,44 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 	u32 descriptorIndexCount{ 0 };
 	content::material::GetMaterials(frameCache.MaterialIDs, meshCount, materialsCache, descriptorIndexCount);
 
+
+	Vec<m4x4> transforms{ meshCount }; // NOTE: m4x4 for 64-byte alignment
+	u32 transformIdx{ 0 };
+	for (auto [entity, pt, wt] : ecs::scene::GetRO<ecs::component::PathTraceable, ecs::component::WorldTransform>())
+	{
+		auto matricesData{ _objectMatricesData.emplace_back() };
+
+		xmmat mat{ DirectX::XMLoadFloat4x4(&wt.TRS) };
+		DirectX::XMStoreFloat3x4((m3x4*)&transforms[transformIdx], mat);
+
+		DirectX::XMStoreFloat4x4(&matricesData->World, mat);
+		mat = DirectX::XMMatrixInverse(nullptr, mat);
+		DirectX::XMStoreFloat4x4(&matricesData->InvWorld, mat);
+		transformIdx++;
+	}
+
+	//TODO: for now, just selecting the first entity as the parent (later, do something with scene partitioning and then relative to the bounding box's transform?)
+	// parentTransform is the origin of the BLAS and the only TLAS instance (other geometry has to be relative)
+	xmmat parentTransform{ DirectX::XMLoadFloat4x4(&transforms[0]) };
+	//xmmat parentWTInverse{ DirectX::XMMatrixInverse(nullptr, parentTransform) };
+	//m4x4 parentWorldTransform{ transforms[0] };
+	//for (u32 i{ 1 }; i < meshCount; ++i)
+	//{
+	//	/*xmmat mat{ DirectX::XMLoadFloat3x4((m3x4*)&transforms[i]) };
+	//	DirectX::XMStoreFloat3x4((m3x4*)&transforms[i], );*/
+	//}
+	// set parent back to identity
+	//parentTransform = DirectX::XMMatrixIdentity();
+	//DirectX::XMStoreFloat3x4((m3x4*)&transforms[0], parentTransform);
+
+	TempStructuredBuffer transformBuffer{ meshCount, sizeof(m4x4), false };
+	transformBuffer.WriteMemory(meshCount * sizeof(m4x4), transforms.data());
+
+	xmmat instanceTransform{ DirectX::XMMatrixIdentity() }; // set the instance as the world origin
+	m3x4 instanceTransform3x4{};
+	DirectX::XMStoreFloat3x4(&instanceTransform3x4, instanceTransform);
+
+
 	//const Vec<content::geometry::MeshInfo>& meshInfos{ content::geometry::GlobalMeshInfos() };
 	u32 meshIdx{ 0 };
 	for (auto [entity, m, wt, ritem] : ecs::scene::GetRO<ecs::component::PathTraceable, ecs::component::WorldTransform, ecs::component::RenderMesh>())
@@ -106,7 +185,8 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 		geom.Triangles.VertexBuffer.StrideInBytes = vertexBuffer.Stride();
 		geom.Triangles.VertexCount = m.MeshInfo.VertexCount;
 		geom.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-		geom.Triangles.Transform3x4 = 0;
+		//geom.Triangles.Transform3x4 = 0;
+		geom.Triangles.Transform3x4 = transformBuffer.GPUAddress + meshIdx * sizeof(m4x4);
 
 		hlsl::GeometryInfo& info{ geometryInfoBufferData[meshIdx] };
 		info.VertexOffset = vertexOffset;
@@ -115,24 +195,19 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 		//info.MaterialIndex = *materialsCache.DescriptorIndices[ritem.RenderItemID]; 
 		info.MaterialIndex = 0;
 
-		instances.emplace_back();
-		D3D12_RAYTRACING_INSTANCE_DESC& instance{ instances.back() };
-		instance.InstanceID = entity & 0x00FFFFFF;
-		instance.InstanceMask = 1;
-		instance.InstanceContributionToHitGroupIndex = 0;
-		assert(m.BLASGpuAddress);
-		instance.AccelerationStructure = m.BLASGpuAddress;
-		instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
-
-		xmmat mat{ DirectX::XMLoadFloat4x4(&wt.TRS) };
-		DirectX::XMFLOAT3X4 mat3x4{};
-		DirectX::XMStoreFloat3x4(&mat3x4, mat);
-		memcpy(&instance.Transform, &mat3x4, sizeof(instance.Transform));
-
 		meshIdx++;
 	}
 
-	assert(false && "ADD SUPPORT FOR BLAS PER EACH UNIQUE MESH (the blas free list, same idea as textures and meshes), AND SUPPORT FOR INSTANCING TOO SINCE IT REQUIRES THAT ANYWAYS");
+	const u32 instanceCount{ 1 };
+
+	/*
+		FAST_BUILD non-updateable - fully dynamic geometry reuiring per-frame rebuild (particles, destruction, explosions), 
+		FAST_BUILD updateable - lower LOD dynamic objects, unlikely to be hit by many rays
+		FAST_TRACE non-updateable - default for static geometry
+		FAST_TRACE updateable - high LOD dynamic objects, likely to be hit by many rays (player character etc)
+		ALLOW_COMPACTION - saves memory for static geometry or long-lifetime dynamic geometry
+		MINIMIZE_MEMORY - only when under general mem pressure
+	*/
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags{ 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE 
 		| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE };
@@ -142,7 +217,7 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS prebuildInfoDesc{};
 		prebuildInfoDesc.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 		prebuildInfoDesc.Flags = buildFlags;
-		prebuildInfoDesc.NumDescs = 1;
+		prebuildInfoDesc.NumDescs = instanceCount;
 		prebuildInfoDesc.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		// InstanceDescs not accessed by prebuild
 		core::Device()->GetRaytracingAccelerationStructurePrebuildInfo(&prebuildInfoDesc, &topPrebuildInfo);
@@ -186,8 +261,37 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 		_bottomLevelAccStructure.Initialize(info);
 	}
 
+	/*for (auto [entity, m, wt, ritem] : ecs::scene::GetRO<ecs::component::PathTraceable, ecs::component::WorldTransform, ecs::component::RenderMesh>())
+	{
+		instances.emplace_back();
+		D3D12_RAYTRACING_INSTANCE_DESC& instance{ instances.back() };
+		instance.InstanceID = entity & 0x00FFFFFF;
+		instance.InstanceMask = 1;
+		instance.InstanceContributionToHitGroupIndex = 0;
+		instance.AccelerationStructure = _bottomLevelAccStructure.GpuAddress();
+		instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+
+		xmmat mat{ DirectX::XMLoadFloat4x4(&wt.TRS) };
+		DirectX::XMFLOAT3X4 mat3x4{};
+		DirectX::XMStoreFloat3x4(&mat3x4, mat);
+		memcpy(&instance.Transform, &mat3x4, sizeof(instance.Transform));
+		assert(false, "changed instance count to 1 for now");
+	}*/
+	instances.emplace_back();
+	D3D12_RAYTRACING_INSTANCE_DESC& instance{ instances.back() };
+	instance.InstanceID = 0 & 0x00FFFFFF;
+	instance.InstanceMask = 1;
+	instance.InstanceContributionToHitGroupIndex = 0;
+	instance.AccelerationStructure = _bottomLevelAccStructure.GpuAddress();
+	instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+	//instance.Transform = 0;
+	//memcpy(&instance.Transform, &parentWorldTransform, sizeof(instance.Transform));
+	memcpy(&instance.Transform, &instanceTransform3x4, sizeof(instance.Transform));
+
 	assert(!_instanceBufferResource);
-	_instanceBufferResource = d3dx::CreateResourceBuffer(instances.data(), instances.size() * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
+	//_instanceBufferResource = d3dx::CreateResourceBuffer(instances.data(), instances.size() * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
+	TempStructuredBuffer instanceBuffer{ instanceCount, sizeof(D3D12_RAYTRACING_INSTANCE_DESC), false };
+	instanceBuffer.WriteMemory(instanceCount * sizeof(D3D12_RAYTRACING_INSTANCE_DESC), instances.data());
 	
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottomBuildDesc{};
 	{
@@ -206,10 +310,11 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 		topBuildDesc.DestAccelerationStructureData = _topLevelAccStructure.GpuAddress();
 		topBuildDesc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 		topBuildDesc.Inputs.Flags = buildFlags;
-		topBuildDesc.Inputs.NumDescs = instances.size();
+		topBuildDesc.Inputs.NumDescs = instanceCount;
 		topBuildDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		topBuildDesc.Inputs.pGeometryDescs = nullptr;
-		topBuildDesc.Inputs.InstanceDescs = _instanceBufferResource->GetGPUVirtualAddress();
+		//topBuildDesc.Inputs.InstanceDescs = _instanceBufferResource->GetGPUVirtualAddress();
+		topBuildDesc.Inputs.InstanceDescs = instanceBuffer.GPUAddress;
 	}
 
 	cmdList->BuildRaytracingAccelerationStructure(&bottomBuildDesc, 0, nullptr);
@@ -228,8 +333,208 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 	geometryInfoBufferInfo.InitialData = geometryInfoBufferData.data();
 	_geometryInfoBuffer.Initialize(geometryInfoBufferInfo);
 
+	StructuredBufferInitInfo objectMatricesBufferInfo{};
+	objectMatricesBufferInfo.ElementCount = (u32)_objectMatricesData.size();
+	objectMatricesBufferInfo.Stride = sizeof(hlsl::RTObjectMatrices);
+	objectMatricesBufferInfo.Name = L"RT Object Matrices Buffer";
+	objectMatricesBufferInfo.InitialData = _objectMatricesData.data();
+	_objectMatricesBuffer.Initialize(objectMatricesBufferInfo);
+
+	CreateHitGroups();
+
 	editor::debug::UpdateAccelerationStructureData(_accStructVertexCount, _accStructIndexCount, _lastAccelerationStructureBuildFrame);
 }
+#else
+void
+BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
+{
+	core::Release(_instanceBufferResource);
+	content::geometry::CreateGlobalBuffers();
+	//TODO:
+	const StructuredBuffer& vertexBuffer{ content::geometry::GlobalVertexBuffer() };
+	const FormattedBuffer& indexBuffer{ content::geometry::GlobalIndexBuffer() };
+	_accStructVertexCount = vertexBuffer.Size();
+	_accStructIndexCount = indexBuffer.Size() / sizeof(u16);
+
+	const u32 meshCount{ ecs::scene::GetEntityCount<ecs::component::PathTraceable>() };
+	assert(meshCount);
+
+	const gpass::GPassCache& frameCache{ gpass::GetGPassFrameCache() };
+	D3D12FrameInfo& frameInfo{ gpass::GetCurrentD3D12FrameInfo() };
+
+
+	const content::render_item::RenderItemsCache renderItemCache{ frameCache.GetRenderItemsCache() };
+	content::render_item::GetRenderItems(frameCache.D3D12RenderItemIDs.data(), meshCount, renderItemCache);
+	const content::geometry::SubmeshViewsCache submeshViewCache{ frameCache.GetSubmeshViewsCache() };
+	content::geometry::GetSubmeshViews(frameCache.SubmeshGpuIDs, meshCount, submeshViewCache);
+	const content::material::MaterialsCache materialsCache{ frameCache.GetMaterialsCache() };
+	u32 descriptorIndexCount{ 0 };
+	content::material::GetMaterials(frameCache.MaterialIDs, meshCount, materialsCache, descriptorIndexCount);
+
+	//const Vec<content::geometry::MeshInfo>& meshInfos{ content::geometry::GlobalMeshInfos() };
+	u32 meshIdx{ 0 };
+	for (auto [entity, m, wt, ritem] : ecs::scene::GetRW<ecs::component::PathTraceable, ecs::component::WorldTransform, ecs::component::RenderMesh>())
+	{
+		const bool isOpaque{ true }; // TODO: opacity
+
+		D3D12_RAYTRACING_GEOMETRY_DESC geom{};
+		const u32 vertexOffset{ m.MeshInfo.VertexGlobalOffset };
+		const u32 indexOffset{ m.MeshInfo.IndexGlobalOffset };
+		geom.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+		geom.Flags = isOpaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
+		geom.Triangles.IndexBuffer = indexBuffer.GpuAddress() + indexOffset;
+		geom.Triangles.IndexCount = m.MeshInfo.IndexCount;
+		geom.Triangles.IndexFormat = DXGI_FORMAT_R16_UINT; //TODO: R32
+		geom.Triangles.VertexBuffer.StartAddress = vertexBuffer.GpuAddress() + vertexOffset * vertexBuffer.Stride();
+		geom.Triangles.VertexBuffer.StrideInBytes = vertexBuffer.Stride();
+		geom.Triangles.VertexCount = m.MeshInfo.VertexCount;
+		geom.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+		geom.Triangles.Transform3x4 = 0;
+
+		hlsl::GeometryInfo geometryInfo{};
+		geometryInfo.VertexOffset = vertexOffset;
+		geometryInfo.IndexOffset = indexOffset;
+		//TODO: these are not setup yet when building for the first time
+		//geometryInfo.MaterialIndex = *materialsCache.DescriptorIndices[ritem.RenderItemID]; 
+		geometryInfo.MaterialIndex = 0;
+
+		const u32 geometryCount{ 1 }; //TODO:
+
+		/*
+			FAST_BUILD non-updateable - fully dynamic geometry reuiring per-frame rebuild (particles, destruction, explosions),
+			FAST_BUILD updateable - lower LOD dynamic objects, unlikely to be hit by many rays
+			FAST_TRACE non-updateable - default for static geometry
+			FAST_TRACE updateable - high LOD dynamic objects, likely to be hit by many rays (player character etc)
+			ALLOW_COMPACTION - saves memory for static geometry or long-lifetime dynamic geometry
+			MINIMIZE_MEMORY - only when under general mem pressure
+		*/
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags{
+			D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE
+			| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE };
+
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO topPrebuildInfo{};
+		{
+			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS prebuildInfoDesc{};
+			prebuildInfoDesc.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+			prebuildInfoDesc.Flags = buildFlags;
+			prebuildInfoDesc.NumDescs = 1;
+			prebuildInfoDesc.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+			// InstanceDescs not accessed by prebuild
+			core::Device()->GetRaytracingAccelerationStructurePrebuildInfo(&prebuildInfoDesc, &topPrebuildInfo);
+			assert(topPrebuildInfo.ResultDataMaxSizeInBytes);
+		}
+
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO bottomPrebuildInfo{};
+		{
+			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS prebuildInfoDesc{};
+			prebuildInfoDesc.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+			prebuildInfoDesc.Flags = buildFlags;
+			prebuildInfoDesc.NumDescs = geometryCount;
+			prebuildInfoDesc.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+			prebuildInfoDesc.pGeometryDescs = &geom;
+			core::Device()->GetRaytracingAccelerationStructurePrebuildInfo(&prebuildInfoDesc, &bottomPrebuildInfo);
+			assert(bottomPrebuildInfo.ResultDataMaxSizeInBytes);
+		}
+
+		const u32 scratchBufferIdx{ _scratchBuffers.add() };
+		const u32 tlasBufferIdx{ _tlasBuffers.add() };
+		const u32 blasBufferIdx{ _blasBuffers.add() };
+		m.BlasIdx = blasBufferIdx;
+		m.TlasIdx = tlasBufferIdx;
+		RawBuffer& scratchBuffer{ _scratchBuffers[scratchBufferIdx] };
+		RawBuffer& tlasBuffer{ _tlasBuffers[tlasBufferIdx] };
+		RawBuffer& blasBuffer{ _blasBuffers[blasBufferIdx] };
+
+		{
+			RawBufferInitInfo info{};
+			info.ElementCount = std::max(topPrebuildInfo.ScratchDataSizeInBytes, bottomPrebuildInfo.ScratchDataSizeInBytes) / RawBuffer::Stride;
+			info.CreateUAV = true;
+			info.InitialState = D3D12_RESOURCE_STATE_COMMON;
+			info.Name = L"RT Scratch Buffer";
+			scratchBuffer.Initialize(info);
+		}
+		{
+			RawBufferInitInfo info{};
+			info.ElementCount = topPrebuildInfo.ResultDataMaxSizeInBytes / RawBuffer::Stride;
+			info.CreateUAV = true;
+			info.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			info.Name = L"RT Top Level AccStructure Buffer";
+			tlasBuffer.Initialize(info);
+		}
+		{
+			RawBufferInitInfo info{};
+			info.ElementCount = bottomPrebuildInfo.ResultDataMaxSizeInBytes / RawBuffer::Stride;
+			info.CreateUAV = true;
+			info.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			info.Name = L"RT Bottom Level AccStructure Buffer";
+			blasBuffer.Initialize(info);
+		}
+
+		//TODO: instances
+		//Vec<D3D12_RAYTRACING_INSTANCE_DESC> instances{};
+		D3D12_RAYTRACING_INSTANCE_DESC instance{};
+		const u32 instanceCount{ 1 };
+		instance.InstanceID = entity & 0x00FFFFFF;
+		instance.InstanceMask = 1;
+		instance.InstanceContributionToHitGroupIndex = 0;
+		instance.AccelerationStructure = m.BlasGPUAddress;
+		instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+
+		xmmat mat{ DirectX::XMLoadFloat4x4(&wt.TRS) };
+		DirectX::XMFLOAT3X4 mat3x4{};
+		DirectX::XMStoreFloat3x4(&mat3x4, mat);
+		memcpy(&instance.Transform, &mat3x4, sizeof(instance.Transform));
+
+		meshIdx++;
+
+		assert(!_instanceBufferResource);
+		_instanceBufferResource = d3dx::CreateResourceBuffer(&instance, instanceCount * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
+
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottomBuildDesc{};
+		{
+			bottomBuildDesc.ScratchAccelerationStructureData = scratchBuffer.GpuAddress();
+			bottomBuildDesc.DestAccelerationStructureData = blasBuffer.GpuAddress();
+			bottomBuildDesc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+			bottomBuildDesc.Inputs.Flags = buildFlags;
+			bottomBuildDesc.Inputs.NumDescs = geometryCount;
+			bottomBuildDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+			bottomBuildDesc.Inputs.pGeometryDescs = &geom;
+		}
+
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC topBuildDesc{};
+		{
+			topBuildDesc.ScratchAccelerationStructureData = scratchBuffer.GpuAddress();
+			topBuildDesc.DestAccelerationStructureData = tlasBuffer.GpuAddress();
+			topBuildDesc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+			topBuildDesc.Inputs.Flags = buildFlags;
+			topBuildDesc.Inputs.NumDescs = instanceCount;
+			topBuildDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+			topBuildDesc.Inputs.pGeometryDescs = nullptr;
+			topBuildDesc.Inputs.InstanceDescs = _instanceBufferResource->GetGPUVirtualAddress();
+		}
+
+		cmdList->BuildRaytracingAccelerationStructure(&bottomBuildDesc, 0, nullptr);
+		d3dx::ApplyUAVBarrier(blasBuffer.Buffer(), cmdList); // need to apply before TL build
+
+		cmdList->BuildRaytracingAccelerationStructure(&topBuildDesc, 0, nullptr);
+		d3dx::ApplyUAVBarrier(tlasBuffer.Buffer(), cmdList);
+
+		_shouldBuildAccelerationStructure = false;
+		_lastAccelerationStructureBuildFrame = core::CurrentCPUFrame();
+
+		StructuredBufferInitInfo geometryInfoBufferInfo{};
+		geometryInfoBufferInfo.ElementCount = geometryCount;
+		geometryInfoBufferInfo.Stride = sizeof(hlsl::GeometryInfo);
+		geometryInfoBufferInfo.Name = L"RT Geometry Info Buffer";
+		geometryInfoBufferInfo.InitialData = &geometryInfo;
+		_geometryInfoBuffer.Initialize(geometryInfoBufferInfo);
+	}
+
+
+
+	editor::debug::UpdateAccelerationStructureData(_accStructVertexCount, _accStructIndexCount, _lastAccelerationStructureBuildFrame);
+}
+#endif
 
 } // anonymous namespace
 
@@ -251,35 +556,62 @@ DescriptorHandle MainBufferSRV()
 void
 Render(const D3D12FrameInfo& frameInfo, DXGraphicsCommandList* const cmdList)
 {
-	if (_currentSampleIndex >= graphics::rt::settings::PP_SAMPLE_COUNT) return;
+	if (_currentSampleIndex >= graphics::rt::settings::PPSampleCount) return;
 	if (_shouldBuildAccelerationStructure)
 	{
 		BuildAccelerationStructure(cmdList);
 	}
 	
 	cmdList->SetComputeRootSignature(_rtRootSig);
+#if SINGLE_MERGED_MODEL
 	cmdList->SetComputeRootShaderResourceView(RTRootParameters::SceneAC_SRV, _topLevelAccStructure.GpuAddress());
+#else
+
+#endif
 	cmdList->SetComputeRootDescriptorTable(RTRootParameters::MainOutput_UAV, core::CreateTemporaryDescriptorTable(_rtMainBuffer.UAV(), 1));
 
 	hlsl::RayTracingConstants* rtc{ core::CBuffer().AllocateSpace<hlsl::RayTracingConstants>() };
 	//FIXME: rowmajor
-	DirectX::XMStoreFloat4x4(&rtc->InvViewProjection, frameInfo.Camera->InverseViewProjection());
+	DirectX::XMStoreFloat4x4A(&rtc->InvViewProjection, frameInfo.Camera->InverseViewProjection());
+	DirectX::XMStoreFloat4x4A(&rtc->InvView, frameInfo.Camera->InverseView());
+	DirectX::XMStoreFloat4x4A(&rtc->InvProj, frameInfo.Camera->InverseProjection());
 	DirectX::XMStoreFloat3(&rtc->CameraPos_WS, frameInfo.Camera->Position());
-	rtc->SunDirection_WS = graphics::rt::settings::SunDirection;
-	memcpy(&rtc->SunIrradiance, &graphics::rt::settings::SunIrradiance, sizeof(v3));
-	rtc->SunColor = graphics::rt::settings::SunColor;
-	rtc->CosSunAngularRadius = cosf(graphics::rt::settings::SunAngularRadius);
-	rtc->SinSunAngularRadius = sinf(graphics::rt::settings::SunAngularRadius);
+	if (graphics::rt::settings::RTGlobalSettings.SunFromDirectionalLight)
+	{
+		for(auto [entity, dirLight] : ecs::scene::GetRO<ecs::component::DirectionalLight>())
+		{
+			rtc->SunDirection_WS = dirLight.Direction;
+			memcpy(&rtc->SunIrradiance, &graphics::rt::settings::SunIrradiance, sizeof(v3));
+			rtc->SunColor = dirLight.Color;
+			break; // only the first directional light
+		}
+		rtc->CosSunAngularRadius = cosf(graphics::rt::settings::SunAngularRadius);
+		rtc->SinSunAngularRadius = sinf(graphics::rt::settings::SunAngularRadius);
+	}
+	else
+	{
+		rtc->SunDirection_WS = graphics::rt::settings::SunDirection;
+		memcpy(&rtc->SunIrradiance, &graphics::rt::settings::SunIrradiance, sizeof(v3));
+		rtc->SunColor = graphics::rt::settings::SunColor;
+		rtc->CosSunAngularRadius = cosf(graphics::rt::settings::SunAngularRadius);
+		rtc->SinSunAngularRadius = sinf(graphics::rt::settings::SunAngularRadius);
+	}
 	rtc->CurrentSampleIndex = _currentSampleIndex;
 	rtc->TotalPixelCount = frameInfo.SurfaceWidth * frameInfo.SurfaceHeight;
 	rtc->VertexBufferIndex = content::geometry::GlobalVertexBuffer().SRV(0).index;
 	rtc->IndexBufferIndex = content::geometry::GlobalIndexBuffer().SRV(0).index;
 	rtc->MaterialBufferIndex = 0; // TODO: global surfaces
 	rtc->GeometryInfoBufferIndex = _geometryInfoBuffer.SRV(0).index;
+	rtc->RTObjectMatricesBufferIndex = _objectMatricesBuffer.SRV(0).index; // TODO: global surfaces
 	rtc->SkyCubemapIndex = light::GetAmbientLight(0).DiffuseSrvIndex;
 	rtc->LightCount = light::GetCullableLightsCount(0);
 	//TODO: lights
 	cmdList->SetComputeRootConstantBufferView(RTRootParameters::RayTracingConstants, core::CBuffer().GpuAddress(rtc));
+
+	hlsl::RTSettings* settings{ core::CBuffer().AllocateSpace<hlsl::RTSettings>() };
+	static_assert(sizeof(hlsl::RTSettings) == sizeof(graphics::rt::settings::Settings));
+	memcpy(settings, &graphics::rt::settings::RTGlobalSettings, sizeof(hlsl::RTSettings));
+	cmdList->SetComputeRootConstantBufferView(RTRootParameters::RayTracingSettings, core::CBuffer().GpuAddress(settings));
 
 	d3dx::D3D12ResourceBarrierList barriers{};
 	barriers.AddTransitionBarrier(_rtMainBuffer.Resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -358,8 +690,12 @@ Shutdown()
 	_rayGenShaderTable.Release();
 	_missShaderTable.Release();
 	_hitShaderTable.Release();
+#if SINGLE_MERGED_MODEL
 	_bottomLevelAccStructure.Release();
 	_topLevelAccStructure.Release();
+#else
+
+#endif
 	_geometryInfoBuffer.Release();
 }
 
@@ -374,10 +710,14 @@ bool CreateRootSignature()
 	};
 
 	d3dx::D3D12RootParameter parameters[RTRootParameters::Count]{};
-	D3D12_ROOT_DESCRIPTOR_FLAGS idk{ D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE }; // TODO: check
-	parameters[RTRootParameters::SceneAC_SRV].AsSRV(D3D12_SHADER_VISIBILITY_ALL, 0, 121, idk);
+#if SINGLE_MERGED_MODEL
+	parameters[RTRootParameters::SceneAC_SRV].AsSRV(D3D12_SHADER_VISIBILITY_ALL, 0, 121);
+#else
+
+#endif
 	parameters[RTRootParameters::MainOutput_UAV].AsDescriptorTable(D3D12_SHADER_VISIBILITY_ALL, &uavRange, 1);
 	parameters[RTRootParameters::RayTracingConstants].AsCBV(D3D12_SHADER_VISIBILITY_ALL, 0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC);
+	parameters[RTRootParameters::RayTracingSettings].AsCBV(D3D12_SHADER_VISIBILITY_ALL, 1, 0);
 
 	struct D3D12_STATIC_SAMPLER_DESC samplers[]
 	{
@@ -456,6 +796,7 @@ bool CreatePSO()
 	{
 		D3D12_RAYTRACING_PIPELINE_CONFIG1 pipelineConfig{};
 		pipelineConfig.MaxTraceRecursionDepth = graphics::rt::settings::MAX_TRACE_RECURSION_DEPTH;
+		assert(pipelineConfig.MaxTraceRecursionDepth > 0 && pipelineConfig.MaxTraceRecursionDepth < 5);
 		pipelineConfig.Flags = D3D12_RAYTRACING_PIPELINE_FLAG_NONE;
 		stream.AddSubobject(pipelineConfig);
 	}
@@ -465,16 +806,16 @@ bool CreatePSO()
 	// get shader identifiers and create shader tables
 	ID3D12StateObjectProperties* properties{ nullptr };
 	_rtPSO->QueryInterface(IID_PPV_ARGS(&properties));
-	const void* rayGenID{ properties->GetShaderIdentifier(L"RayGen") };
-	const void* hitGroupID{ properties->GetShaderIdentifier(L"HitGroup") };
-	const void* alphaTestHitGroupID{ properties->GetShaderIdentifier(L"AlphaTestHitGroup") };
-	const void* shadowHitGroupID{ properties->GetShaderIdentifier(L"ShadowHitGroup") };
-	const void* shadowAlphaTestHitGroupID{ properties->GetShaderIdentifier(L"ShadowAlphaTestHitGroup") };
-	const void* missID{ properties->GetShaderIdentifier(L"Miss") };
-	const void* shadowMissID{ properties->GetShaderIdentifier(L"Shadow_Miss") };
+	_rayGenID = properties->GetShaderIdentifier(L"RayGen");
+	_hitGroupID = properties->GetShaderIdentifier(L"HitGroup");
+	_alphaTestHitGroupID = properties->GetShaderIdentifier(L"AlphaTestHitGroup");
+	_shadowHitGroupID = properties->GetShaderIdentifier(L"ShadowHitGroup");
+	_shadowAlphaTestHitGroupID = properties->GetShaderIdentifier(L"ShadowAlphaTestHitGroup");
+	_missID = properties->GetShaderIdentifier(L"Miss");
+	_shadowMissID = properties->GetShaderIdentifier(L"Shadow_Miss");
 
 	{
-		ShaderIdentifier rayGenRecords[1]{ ShaderIdentifier{rayGenID} };
+		ShaderIdentifier rayGenRecords[1]{ ShaderIdentifier{_rayGenID} };
 		StructuredBufferInitInfo info{};
 		info.IsShaderTable = true;
 		info.Stride = sizeof(ShaderIdentifier);
@@ -484,7 +825,7 @@ bool CreatePSO()
 		_rayGenShaderTable.Initialize(info);
 	}
 	{
-		ShaderIdentifier missRecords[2]{ ShaderIdentifier{missID}, ShaderIdentifier{shadowMissID} };
+		ShaderIdentifier missRecords[2]{ ShaderIdentifier{_missID}, ShaderIdentifier{_shadowMissID} };
 		StructuredBufferInitInfo info{};
 		info.IsShaderTable = true;
 		info.Stride = sizeof(ShaderIdentifier);
@@ -492,23 +833,6 @@ bool CreatePSO()
 		info.InitialData = missRecords;
 		info.Name = L"Miss Shader Table";
 		_missShaderTable.Initialize(info);
-	}
-	{
-		const u32 meshCount{ graphics::rt::settings::GetSceneMeshCount() };
-		Array<ShaderIdentifier> hitGroupRecords{ meshCount * 2 };
-		// TODO: use alpha test hit groyps after i add opacity maps
-		for (u32 i{ 0 }; i < meshCount; ++i)
-		{
-			hitGroupRecords[i] = ShaderIdentifier{ hitGroupID };
-			hitGroupRecords[i + 1] = ShaderIdentifier{ shadowHitGroupID };
-		}
-		StructuredBufferInitInfo info{};
-		info.IsShaderTable = true;
-		info.Stride = sizeof(ShaderIdentifier);
-		info.ElementCount = hitGroupRecords.size();
-		info.InitialData = hitGroupRecords.data();
-		info.Name = L"Hit Shader Table";
-		_hitShaderTable.Initialize(info);
 	}
 
 	core::Release(properties);
@@ -550,7 +874,7 @@ UpdateAccelerationStructure()
 		D3D12_RAYTRACING_INSTANCE_DESC& instance{ instances.back() };
 		instance.InstanceID = entity & 0x00FFFFFF;
 		instance.InstanceMask = 1;
-		instance.AccelerationStructure = _bottomLevelAccStructure.GpuAddress();
+		instance.AccelerationStructure = m.BlasGPUAddress;
 		instance.InstanceContributionToHitGroupIndex = 0;
 		instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 

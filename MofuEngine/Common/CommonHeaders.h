@@ -44,6 +44,7 @@
 #endif
 
 #define EDITOR_BUILD 1
+#define RENDER_GUI 1
 #define RAYTRACING 1
 #define PATH_TRACE_ALL 1
 
@@ -65,4 +66,7 @@
 #else
 #define _NO_INLINE
 #endif
+
+#define TODO_(x) assert(false && x)
+
 #endif

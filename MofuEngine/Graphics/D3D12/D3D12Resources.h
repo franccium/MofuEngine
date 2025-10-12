@@ -642,4 +642,17 @@ private:
 	D3D12Texture _texture;
 	DescriptorHandle _dsv{};
 };
+
+// for resources that are only needed for a single frame
+struct TempStructuredBuffer
+{
+	DISABLE_COPY_AND_MOVE(TempStructuredBuffer);
+	TempStructuredBuffer(u32 elementCount, u32 stride, bool makeDescriptor);
+
+	void WriteMemory(u32 size, void* data);
+
+	void* CPUAddress{ nullptr };
+	D3D12_GPU_VIRTUAL_ADDRESS GPUAddress{ 0 };
+	u32 DescriptorIndex{ id::INVALID_ID };
+};
 }

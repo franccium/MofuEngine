@@ -275,10 +275,12 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	}
 	//cmdList->SetGraphicsRootDescriptorTable(idx::DescriptorTable, core::SrvHeap().GpuStart());
 
-	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.RTV(0) };
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+#if RENDER_GUI
+	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.RTV(0) };
 	cmdList->OMSetRenderTargets(1, &imageSourceRTV, 1, nullptr);
 	cmdList->DrawInstanced(3, 1, 0, 0);
+#endif
 	cmdList->OMSetRenderTargets(1, &rtv, 1, nullptr);
 	cmdList->DrawInstanced(3, 1, 0, 0);
 }

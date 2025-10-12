@@ -458,7 +458,9 @@ struct NameComponent : Component
 struct PathTraceable : Component
 {
 	graphics::d3d12::content::geometry::MeshInfo MeshInfo{};
-	u64 BLASGpuAddress{ 0 };
+	u64 BlasGPUAddress{ 0 };
+	u32 BlasIdx{ id::INVALID_ID };
+	u32 TlasIdx{ id::INVALID_ID };
 
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] PathTraceable& c)

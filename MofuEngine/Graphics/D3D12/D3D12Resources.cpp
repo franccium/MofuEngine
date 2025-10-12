@@ -1,5 +1,6 @@
 #include "D3D12Resources.h"
 #include "DirectXTex.h"
+#include "D3D12Upload.h"
 
 namespace mofu::graphics::d3d12 {
 
@@ -635,6 +636,37 @@ RawBuffer::SRVDesc(u32 bufferIdx) const
 	srvDesc.Buffer.NumElements = _elementCount;
 	srvDesc.Buffer.StructureByteStride = 0;
 	return srvDesc;
+}
+
+TempStructuredBuffer::TempStructuredBuffer(u32 elementCount, u32 stride, bool makeDescriptor)
+{
+	assert(elementCount && stride);
+
+	upload::TempWritableBufferMemory mem{ upload::GetTempWritableBuffer(elementCount * stride, stride) };
+	assert(mem.ResourceOffset % stride == 0);
+
+	CPUAddress = mem.CPUAddress;
+	GPUAddress = mem.GPUAddress;
+
+	if (makeDescriptor)
+	{
+		TempDescriptorAllocation alloc = core::SrvHeap().AllocateTemporary(1);
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Buffer.FirstElement = mem.ResourceOffset / stride;
+		srvDesc.Buffer.NumElements = elementCount;
+		srvDesc.Buffer.StructureByteStride = stride;
+		srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+		core::Device()->CreateShaderResourceView(mem.Resource, &srvDesc, alloc.CPUStartHandle);
+		DescriptorIndex = alloc.StartIndex;
+	}
+}
+
+void TempStructuredBuffer::WriteMemory(u32 size, void* data)
+{
+	memcpy(CPUAddress, data, size);
 }
 
 }

@@ -413,6 +413,11 @@ CompileEngineShaders()
             extraArgs.emplace_back(L"-D");
             extraArgs.emplace_back(L"TILE_SIZE=32");
         }
+		//TODO: get all the engine defines from a common place
+#if RAYTRACING
+		extraArgs.emplace_back(L"-D");
+		extraArgs.emplace_back(L"RAYTRACING=1");
+#endif
 
         DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs, false) };
         if (compiledShader.bytecode && compiledShader.bytecode->GetBufferPointer() && compiledShader.bytecode->GetBufferSize())

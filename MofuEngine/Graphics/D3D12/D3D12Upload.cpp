@@ -1,10 +1,17 @@
 #include "D3D12Upload.h"
+#include <atomic>
 
 namespace mofu::graphics::d3d12::upload {
 namespace {
 ID3D12Fence1* uploadFence{ nullptr };
 u64 uploadFenceValue{ 0 };
 HANDLE fenceEvent{};
+
+constexpr u32 TEMPORARY_BUFFER_SIZE{ 2 * 1024 * 1024 }; // 2 MB
+std::atomic<u32> _usedTemporaryFrameMemory{ 0 };
+DXResource* _temporaryFrameBuffers[FRAME_BUFFER_COUNT]{ nullptr };
+u8* _temporaryFrameCPUMemory[FRAME_BUFFER_COUNT]{ nullptr };
+D3D12_GPU_VIRTUAL_ADDRESS _temporaryFrameGPUMemory[FRAME_BUFFER_COUNT]{};
 
 struct UploadFrame
 {
@@ -197,6 +204,30 @@ Initialize()
 	fenceEvent = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
 	assert(fenceEvent);
 
+	// initialize temporary frame buffers
+	D3D12_RESOURCE_DESC bufferDesc{};
+	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferDesc.Alignment = 0;
+	bufferDesc.Width = TEMPORARY_BUFFER_SIZE;
+	bufferDesc.Height = 1;
+	bufferDesc.DepthOrArraySize = 1;
+	bufferDesc.MipLevels = 1;	
+	bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+	bufferDesc.SampleDesc.Count = 1;
+	bufferDesc.SampleDesc.Quality = 0;
+	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	for(u32 i{0}; i < FRAME_BUFFER_COUNT; ++i)
+	{
+		DXCall(core::Device()->CreateCommittedResource(&d3dx::HeapProperties.UPLOAD_HEAP, D3D12_HEAP_FLAG_NONE,
+			&bufferDesc, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, nullptr, IID_PPV_ARGS(&_temporaryFrameBuffers[i])))
+		NAME_D3D12_OBJECT_INDEXED(_temporaryFrameBuffers[i], i, L"Temporary Frame Buffer");
+		D3D12_RANGE readRange{};
+		DXCall(_temporaryFrameBuffers[i]->Map(0, &readRange, reinterpret_cast<void**>(&_temporaryFrameCPUMemory[i])));
+		assert(_temporaryFrameCPUMemory[i]);
+		_temporaryFrameGPUMemory[i] = _temporaryFrameBuffers[i]->GetGPUVirtualAddress();
+	}
+
 	return true;
 }
 
@@ -214,9 +245,38 @@ Shutdown()
 		fenceEvent = nullptr;
 	}
 
+	for(u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
+	{
+		core::Release(_temporaryFrameBuffers[i]);
+	}
+
 	core::Release(uploadFence);
 	core::Release(uploadCmdQueue);
 	uploadFenceValue = 0;
+}
+
+void EndFrame()
+{
+	_usedTemporaryFrameMemory.store(0, std::memory_order_relaxed);
+}
+
+TempWritableBufferMemory 
+GetTempWritableBuffer(u32 size, u32 alignment)
+{
+	assert(size);
+	const u32 allocationSize{ size + alignment };
+	u32 offset{ _usedTemporaryFrameMemory.fetch_add(allocationSize, std::memory_order_relaxed) };
+	if (alignment) offset = math::AlignUp(offset, alignment);
+	assert(size + offset <= TEMPORARY_BUFFER_SIZE);
+
+	const u32 frameIndex{ core::CurrentFrameIndex() };
+	TempWritableBufferMemory memory{};
+	memory.CPUAddress = _temporaryFrameCPUMemory[frameIndex] + offset;
+	memory.GPUAddress = _temporaryFrameGPUMemory[frameIndex] + offset;
+	memory.ResourceOffset = offset;
+	memory.Resource = _temporaryFrameBuffers[frameIndex];
+
+	return memory;
 }
 
 }

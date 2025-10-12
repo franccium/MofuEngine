@@ -23,7 +23,7 @@
 #ifdef _DEBUG
 // NOTE: flip to turn the debug layer off
 #define ENABLE_DEBUG_LAYER 1
-#define ENABLE_DRED 1
+#define ENABLE_DRED 0
 #else
 #define ENABLE_DEBUG_LAYER 0
 #endif
@@ -303,6 +303,7 @@ TracyD3D12Ctx tracyQueueContext{ nullptr };
 bool 
 InitializeModules()
 {
+    graphics::rt::settings::Initialize();
     return upload::Initialize() && content::Initialize() && shaders::Initialize() && gpass::Initialize() && fx::Initialize() && light::InitializeLightCulling();
 }
 
@@ -705,7 +706,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     fx::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
 
     const bool wasCameraUpdated{ camera::GetCamera(frameInfo.CameraID).WasUpdated() };
-    const bool shouldRestartPathTracing{ graphics::rt::settings::ALWAYS_RESTART_TRACING || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
+    const bool shouldRestartPathTracing{ graphics::rt::settings::AlwaysRestartPathTracing || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
     rt::Update(shouldRestartPathTracing, renderItemsUpdated);
     renderItemsUpdated = false;
 
@@ -721,9 +722,9 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             cmdList->RSSetViewports(1, surface.Viewport());
             cmdList->RSSetScissorRects(1, surface.ScissorRect());
         }
-
+#if RENDER_GUI
         ui::SetupGUIFrame();
-
+#endif
         //TODO: for now just do that here, would need to rewrite everything
         ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
     }
@@ -777,6 +778,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         barriers.ApplyBarriers(cmdList);
     }
 
+#if RENDER_GUI
     // Editor UI
     {
         TracyD3D12ZoneC(tracyQueueContext, cmdList, "Editor UI", tracy::Color::LightSkyBlue3);
@@ -789,11 +791,13 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             ui::EndGUIFrame(cmdList);
         }
     }
+#endif
 
     d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
     gfxCommand.EndFrame(surface);
 	srvDescHeap.EndFrame(frameIndex);
+	upload::EndFrame();
 
     TracyD3D12Collect(tracyQueueContext);
 }
@@ -1009,6 +1013,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     d3dx::TransitionResource(currentBackBuffer, cmdListFXSetup, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
     gfxCommand.EndFrame(surface);
+	srvDescHeap.EndFrame(frameIndex);
+	upload::EndFrame();
 
     TracyD3D12Collect(tracyQueueContext);
 

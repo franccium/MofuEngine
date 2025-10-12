@@ -2,6 +2,14 @@
 #include "D3D12CommonHeaders.h"
 
 namespace mofu::graphics::d3d12::upload {
+struct TempWritableBufferMemory
+{
+	void* CPUAddress{ nullptr };
+	D3D12_GPU_VIRTUAL_ADDRESS GPUAddress{ 0 };
+	u64 ResourceOffset{ 0 };
+	DXResource* Resource{ nullptr };
+};
+
 class D3D12UploadContext
 {
 public:
@@ -26,4 +34,8 @@ private:
 
 bool Initialize();
 void Shutdown();
+void EndFrame();
+
+// creates a temporaty cpu-writable buffer
+TempWritableBufferMemory GetTempWritableBuffer(u32 size, u32 alignment);
 }

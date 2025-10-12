@@ -38,6 +38,10 @@ using i32v3 = DirectX::XMINT3;
 using i32v4 = DirectX::XMINT4;
 
 using m3x3 = DirectX::XMFLOAT3X3;
+using m3x4 = DirectX::XMFLOAT3X4;
+using m3x4a = DirectX::XMFLOAT3X4A;
+using m4x3 = DirectX::XMFLOAT4X3;
+using m4x3a = DirectX::XMFLOAT4X3A;
 using m4x4 = DirectX::XMFLOAT4X4;
 using m4x4a = DirectX::XMFLOAT4X4A;
 

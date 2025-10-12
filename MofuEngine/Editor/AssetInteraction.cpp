@@ -148,8 +148,10 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
 #if RAYTRACING && PATH_TRACE_ALL
 			component::PathTraceable& pt{ ecs::scene::GetComponent<component::PathTraceable>(entity) };
-#endif
 			renderables.emplace_back(entity, mesh, material, pt); //FIXME: doesn't work with submeshes
+#else
+			renderables.emplace_back(entity, mesh, material); //FIXME: doesn't work with submeshes
+#endif
 		}
 	} // Entities
 

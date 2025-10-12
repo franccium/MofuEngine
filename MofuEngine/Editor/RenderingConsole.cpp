@@ -7,12 +7,10 @@ namespace mofu::editor::debug {
 namespace {
 bool _isOpen{ true };
 
-#if RAYTRACING
 u32 _currentSampleIndex{ 0 };
 u64 _vertexCount{ 0 };
 u64 _indexCount{ 0 };
 u64 _lastAccelerationStructureBuildFrame{ 0 };
-#endif
 
 void
 DrawPostProcessingOptions()
@@ -20,6 +18,31 @@ DrawPostProcessingOptions()
 	
 
 
+}
+
+void
+DrawRayTracingInfo()
+{
+	ImGui::TextUnformatted("Path Trace Info:");
+	ImGui::Text(" Current Sample: %u/%u", _currentSampleIndex, graphics::rt::settings::PPSampleCount);
+	ImGui::TextUnformatted("Acceleration Structure:");
+	ImGui::Text(" Last Built: %llu", _lastAccelerationStructureBuildFrame);
+	ImGui::Text(" Vertex Count: %llu", _vertexCount);
+	ImGui::Text(" Index Count: %llu", _indexCount);
+}
+
+void
+DrawRayTracingSettings()
+{
+	using namespace graphics::rt::settings;
+	Settings& settings{ RTGlobalSettings };
+	ImGui::Checkbox("Always Restart Tracing", &AlwaysRestartPathTracing);
+	ImGui::Checkbox("Always New Sample", &AlwaysNewSample);
+	ImGui::Checkbox("Sun From DirLight", &settings.SunFromDirectionalLight);
+	ImGui::Checkbox("Indirect Enabled", &settings.IndirectEnabled);
+	ImGui::Checkbox("Show Normals", &settings.ShowNormals);
+	ImGui::Checkbox("Show Ray Directions", &settings.ShowRayDirs);
+	ImGui::Checkbox("Render Skybox", &settings.RenderSkybox);
 }
 
 } // anonymous namespace
@@ -52,6 +75,7 @@ DrawRenderingConsole()
 #if RAYTRACING
 	if (ImGui::CollapsingHeader("Path Tracing"), ImGuiTreeNodeFlags_DefaultOpen)
 	{
+		DrawRayTracingSettings();
 		DrawRayTracingInfo();
 	}
 #endif
@@ -86,18 +110,6 @@ DrawRenderingConsole()
 	ImGui::End();
 }
 
-#if RAYTRACING
-void 
-DrawRayTracingInfo()
-{
-	ImGui::TextUnformatted("Path Trace Info:");
-	ImGui::Text(" Current Sample: %u/%u", _currentSampleIndex, graphics::rt::settings::PP_SAMPLE_COUNT);
-	ImGui::TextUnformatted("Acceleration Structure:");
-	ImGui::Text(" Last Built: %llu", _lastAccelerationStructureBuildFrame);
-	ImGui::Text(" Vertex Count: %llu", _vertexCount);
-	ImGui::Text(" Index Count: %llu", _indexCount);
-}
-
 void
 UpdateAccelerationStructureData(u64 vertexCount, u64 indexCount, u64 lastBuildFrame)
 {
@@ -111,6 +123,5 @@ UpdatePathTraceSampleData(u32 currentSampleIndex)
 {
 	_currentSampleIndex = currentSampleIndex;
 }
-#endif
 
 }

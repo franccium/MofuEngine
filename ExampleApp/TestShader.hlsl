@@ -1,8 +1,6 @@
 #include "../MofuEngine/Graphics/D3D12/Shaders/Common.hlsli"
 #include "BRDF.hlsli"
 
-#define RAYTRACING 1
-
 struct VertexOut
 {
     float4 HomogenousPositon : SV_POSITION;

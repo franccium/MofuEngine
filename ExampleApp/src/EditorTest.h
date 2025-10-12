@@ -176,7 +176,8 @@ bool MofuInitialize()
 		cSurf.surface.window = platform::ConcoctWindow(&info[i]);
 		cSurf.surface.surface = graphics::CreateSurface(cSurf.surface.window);
 
-		v3 pos{ 2.4f, -4.46f, -24.f };
+		//v3 pos{ 2.4f, -4.46f, -24.f };
+		v3 pos{ 0.f, 0.f, 0.f };
 		quat rot{ quatIndentity };
 		v3 scale{ 1.f, 1.f, 1.f };
 		ecs::component::LocalTransform lt{ {}, pos, rot, scale };
@@ -213,8 +214,8 @@ void MofuUpdate()
 
 	timer.Start();
 #if RAYTRACING
-	if (input::IsKeyDown(input::Keys::R)) graphics::d3d12::rt::RequestRTUpdate();
-	if (input::IsKeyDown(input::Keys::T)) graphics::d3d12::rt::RequestRTAccStructureRebuild();
+	if (input::WasKeyPressed(input::Keys::E)) graphics::d3d12::rt::RequestRTUpdate();
+	if (input::WasKeyPressed(input::Keys::T)) graphics::d3d12::rt::RequestRTAccStructureRebuild();
 #endif
 
 	{
@@ -224,8 +225,9 @@ void MofuUpdate()
 		ecs::Update(ecsUpdateData);
 	}
 	
-
+#if RENDER_GUI
 	graphics::ui::StartNewFrame();
+#endif
 
 	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)
 	{
