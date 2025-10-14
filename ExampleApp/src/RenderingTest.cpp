@@ -538,6 +538,7 @@ CreateTestRenderItems()
 
 	const content::AssetHandle RT_CUBES{ 15519544575226091575 };
 	editor::ImportScene("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
+	editor::ImportScene("Projects/TestProject/Resources/Prefabs/boxestest.pre");
 	const content::AssetHandle SUN_TEMPLE{ 13905473850964664605 };
 	editor::ImportScene("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
 

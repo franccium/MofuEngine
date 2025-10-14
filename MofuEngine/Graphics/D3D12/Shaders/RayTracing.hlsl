@@ -503,29 +503,38 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
     const float Ess = GGXEnvironmentBRDFScaleBias(saturate(dot(normal_WS, -incomingRayDirection_WS)), sqrtRoughness).x;
     float3 msEnergyCompensation = 1.0.xxx + specularAlbedo * (1.0f / Ess - 1.0f);
     
-    float3 sunDirection_WS = RTConstants.SunDirection_WS;
-    
-    RayDesc sunOcclusionRay;
-    sunOcclusionRay.Origin = position_WS;
-    sunOcclusionRay.TMin = 0.00001f;
-    sunOcclusionRay.Direction = -sunDirection_WS;
-    sunOcclusionRay.TMax = F32_MAX;
-    
-    uint rayTraceFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
-    if(inPayload.PathLength > Settings.MaxAnyHitPathLength)
-        rayTraceFlags = RAY_FLAG_FORCE_OPAQUE;
-    
-    ShadowPayload shadowPayload;
-    shadowPayload.Visibility = 1.f;
-    
-    const uint hitGroupOffset = RayType_Shadow;
-    const uint hitGroupGeometryContMultiplier = RayType_Count;
-    const uint missShaderIndex = RayType_Shadow;
-    TraceRay(Scene, rayTraceFlags, 0xFFFFFFFF, hitGroupOffset, hitGroupGeometryContMultiplier, missShaderIndex, sunOcclusionRay, shadowPayload);
-    
+    float3 sunDirection_WS = -RTConstants.SunDirection_WS;
     float3 radiance = 0.0.xxx;
-    radiance = shadowPayload.Visibility * CalculateLighting(position_WS, normal_WS, -RTConstants.SunDirection_WS, 
-       RTConstants.SunIrradiance, diffuseAlbedo, specularAlbedo, roughness, incomingRayDirection_WS, msEnergyCompensation);
+    
+    if(Settings.SunEnabled)
+    {
+        RayDesc sunOcclusionRay;
+        sunOcclusionRay.Origin = position_WS;
+        sunOcclusionRay.TMin = 0.00001f;
+        sunOcclusionRay.Direction = sunDirection_WS;
+        sunOcclusionRay.TMax = F32_MAX;
+    
+        uint rayTraceFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+        if (inPayload.PathLength > Settings.MaxAnyHitPathLength)
+            rayTraceFlags = RAY_FLAG_FORCE_OPAQUE;
+    
+        ShadowPayload shadowPayload;
+        shadowPayload.Visibility = 1.f;
+    
+        const uint hitGroupOffset = RayType_Shadow;
+        const uint hitGroupGeometryContMultiplier = RayType_Count;
+        const uint missShaderIndex = RayType_Shadow;
+        TraceRay(Scene, rayTraceFlags, 0xFFFFFFFF, hitGroupOffset, hitGroupGeometryContMultiplier, missShaderIndex, sunOcclusionRay, shadowPayload);
+    
+        radiance = shadowPayload.Visibility * CalculateLighting(position_WS, normal_WS, RTConstants.SunDirection_WS,
+            RTConstants.SunIrradiance, diffuseAlbedo, specularAlbedo, roughness, incomingRayDirection_WS, msEnergyCompensation);
+        
+        if (Settings.ShadowsOnly)
+        {
+            radiance = lerp(radiance, shadowPayload.Visibility, 0.85f);
+            return radiance;
+        }
+    }
     
     // choose the next path with BRDF importance sampling
     float2 brdfSample = SamplePoint(inPayload.PixelIdx, inPayload.SampleSetIdx);
@@ -540,8 +549,8 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
     }
     else
     {
-        inPayload.Radiance = float3(0.1f, 1.0f, 0.5f); // visualize specular
-        /*
+        //inPayload.Radiance = float3(0.1f, 1.0f, 0.5f); // visualize specular
+        
         brdfSample.x = (brdfSample.x - 0.5f) * 2.0f;
         float3 incomingRayDirTS = normalize(mul(incomingRayDirection_WS, transpose(tangentToWorld)));
         float3 microfacetNormalTS = SampleGGXVisibleNormal(-incomingRayDirTS, roughness, roughness, brdfSample.x, brdfSample.y);
@@ -555,7 +564,7 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
 
         throughput = (F * (G2 / G1));
         rayDirection_TS = sampleDirTS;
-        */
+        
         
         //float Ess = GGXEnvironmentBRDFScaleBias(saturate(dot(normalTS, -incomingRayDirection_WS)), sqrtRoughness).x;
         //throughput *= 1.0.xxx + specularAlbedo * (1.0f / Ess - 1.0f);
@@ -595,10 +604,10 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
     }
     else
     {
-        ShadowPayload payload;
-        payload.Visibility = 1.0f;
+        ShadowPayload shadowPayload;
+        shadowPayload.Visibility = 1.0f;
 
-        uint traceRayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+        uint rayTraceFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
         
         if (inPayload.PathLength + 1 > Settings.MaxAnyHitPathLength)
             rayTraceFlags = RAY_FLAG_FORCE_OPAQUE;
@@ -606,10 +615,17 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
         const uint hitGroupOffset = RayType_Shadow;
         const uint hitGroupGeometryContMultiplier = RayType_Count;
         const uint missShaderIndex = RayType_Shadow;
-        TraceRay(Scene, rayTraceFlags, 0xFFFFFFFF, hitGroupOffset, hitGroupGeometryContMultiplier, missShaderIndex, ray, payload);
+        TraceRay(Scene, rayTraceFlags, 0xFFFFFFFF, hitGroupOffset, hitGroupGeometryContMultiplier, missShaderIndex, ray, shadowPayload);
         
-        float3 skyRadiance = RTConstants.SunColor;
-        radiance += payload.Visibility * skyRadiance * throughput;
+        TextureCube skyCubemap = ResourceDescriptorHeap[RTConstants.SkyCubemapIndex];
+        float3 skyRadiance = skyCubemap.SampleLevel(LinearSampler, rayDirection_WS, 0.0f).xyz;
+        radiance += shadowPayload.Visibility * skyRadiance * throughput;
+        
+        if (Settings.ShadowsOnly)
+        {
+            radiance = lerp(radiance, shadowPayload.Visibility, 0.85f);
+            return radiance;
+        }
     }
     
     return radiance;
@@ -656,15 +672,17 @@ void Miss(inout RaygenPayload payload)
     
     const float3 rayDirection = WorldRayDirection();
     
+    if(Settings.RenderSkybox)
+    {
         TextureCube skyCubemap = ResourceDescriptorHeap[RTConstants.SkyCubemapIndex];
         payload.Radiance = skyCubemap.SampleLevel(LinearSampler, rayDirection, 0.0f).xyz;
-        
-        //if (payload.PathLength == 1)
-        //{
-        //    float cosSunAngle = dot(rayDirection, RTConstants.SunDirection_WS);
-        //    if (cosSunAngle >= RTConstants.CosSunAngularRadius)
-        //        payload.Radiance = RTConstants.SunColor;
-        //}
+        if (payload.PathLength == 1)
+        {
+            float cosSunAngle = dot(rayDirection, -RTConstants.SunDirection_WS);
+            if (cosSunAngle >= RTConstants.CosSunAngularRadius)
+                payload.Radiance = RTConstants.SunColor;
+        }
+    }
 }
 
 [shader("miss")]
@@ -720,10 +738,10 @@ void ClosestHit(inout RaygenPayload payload, in BuiltInTriangleIntersectionAttri
         float3(0.5f, 0.f, 0.f), float3(0.f, 0.5f, 0.f), float3(0.f, 0.f, 0.5f), float3(0.7f, 0.5f, 0.2f)
     };
     //payload.Radiance = colors[GeometryIndex()];
-    if(0)
+    if(Settings.ShowNormals)
     {
-        //payload.Radiance = hitSurface.Normal * 0.5f + 0.5f;
-        payload.Radiance = hitSurface.Normal;
+        payload.Radiance = hitSurface.Normal * 0.5f + 0.5f;
+        //payload.Radiance = hitSurface.Normal;
         //payload.Radiance = hitSurface.Tangent;
         //payload.Radiance = hitSurface.Bitangent;
     }
@@ -731,6 +749,8 @@ void ClosestHit(inout RaygenPayload payload, in BuiltInTriangleIntersectionAttri
     {
         payload.Radiance = DoPathTracing(hitSurface, surface, payload);
     }
+    
+    //payload.Radiance = Settings.MaxPathLength / 5.f;
 }
 
 [shader("closesthit")]

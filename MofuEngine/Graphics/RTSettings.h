@@ -9,11 +9,14 @@ struct Settings
 	u32 PPSampleCountSqrt{ 9 };
 	u32 MaxPathLength{ 3 };
 	u32 MaxAnyHitPathLength{ 1 };
-	bool IndirectEnabled{ false };
-	bool SunFromDirectionalLight{ true };
-	bool RenderSkybox{ false };
-	bool ShowNormals{ true };
-	bool ShowRayDirs{ false };
+
+	u32 IndirectEnabled{ false };
+	u32 SunFromDirectionalLight{ true };
+	u32 RenderSkybox{ true };
+	u32 ShowNormals{ false };
+	u32 ShowRayDirs{ false };
+	u32 SunEnabled{ true };
+	u32 ShadowsOnly{ true };
 };
 extern Settings RTGlobalSettings;
 

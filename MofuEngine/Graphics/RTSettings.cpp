@@ -15,7 +15,7 @@ Settings RTGlobalSettings;
 void 
 Initialize()
 {
-    SunAngularRadius = 1.f;
+    SunAngularRadius = 0.5f;
     SunIrradiance = v3{ 1.f, 1.f, 1.f };
     SunDirection = v3{ 0.3f, 0.92f, 0.1f };
 	SunColor = v3{ 1.f, 0.956f, 0.84f };

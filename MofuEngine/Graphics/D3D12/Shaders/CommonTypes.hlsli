@@ -173,11 +173,14 @@ struct RTSettings
     uint SampleCountSqrt;
     uint MaxPathLength;
     uint MaxAnyHitPathLength;
-    bool IndirectEnabled;
-    bool SunFromDirectionalLight;
-    bool RenderSkybox;
-    bool ShowNormals;
-    bool ShowRayDirs;
+    
+    uint IndirectEnabled;
+    uint SunFromDirectionalLight;
+    uint RenderSkybox;
+    uint ShowNormals;
+    uint ShowRayDirs;
+    uint SunEnabled;
+    uint ShadowsOnly;
 };
 
 #ifdef __cplusplus

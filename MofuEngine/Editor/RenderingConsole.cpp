@@ -2,6 +2,7 @@
 #include "Input/InputSystem.h"
 #include "Graphics/RenderingDebug.h"
 #include "Graphics/RTSettings.h"
+#include "ValueDisplay.h"
 
 namespace mofu::editor::debug {
 namespace {
@@ -38,11 +39,19 @@ DrawRayTracingSettings()
 	Settings& settings{ RTGlobalSettings };
 	ImGui::Checkbox("Always Restart Tracing", &AlwaysRestartPathTracing);
 	ImGui::Checkbox("Always New Sample", &AlwaysNewSample);
-	ImGui::Checkbox("Sun From DirLight", &settings.SunFromDirectionalLight);
-	ImGui::Checkbox("Indirect Enabled", &settings.IndirectEnabled);
-	ImGui::Checkbox("Show Normals", &settings.ShowNormals);
-	ImGui::Checkbox("Show Ray Directions", &settings.ShowRayDirs);
-	ImGui::Checkbox("Render Skybox", &settings.RenderSkybox);
+
+	ImGui::Checkbox("Sun From DirLight", (bool*)&settings.SunFromDirectionalLight);
+	ImGui::Checkbox("Indirect Enabled", (bool*)&settings.IndirectEnabled);
+	ImGui::Checkbox("Show Normals", (bool*)&settings.ShowNormals);
+	ImGui::Checkbox("Show Ray Directions", (bool*)&settings.ShowRayDirs);
+	ImGui::Checkbox("Render Skybox", (bool*)&settings.RenderSkybox);
+	ImGui::Checkbox("Enabled Sun", (bool*)&settings.SunEnabled);
+	ImGui::Checkbox("Shadows Only", (bool*)&settings.ShadowsOnly);
+
+	DisplayEditableUintNT(&settings.PPSampleCountSqrt, "Sample Count (Sqrt)", 1, 16);
+	PPSampleCount = settings.PPSampleCountSqrt * settings.PPSampleCountSqrt;
+	DisplayEditableUintNT(&settings.MaxPathLength, "Max Path Length", 1, 6);
+	DisplayEditableUintNT(&settings.MaxAnyHitPathLength, "Max Any-Hit Path Length", 0, 6);
 }
 
 } // anonymous namespace

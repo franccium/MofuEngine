@@ -29,6 +29,8 @@ bool DisplayEditableBool(bool* v, const char* label)
 
 bool DisplayEditableUintNT(u32* v, const char* label, u32 minVal, u32 maxVal)
 {
+	ImGui::TextUnformatted(label);
+	ImGui::SameLine();
 	ImGui::PushID(v);
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	bool changed{ ImGui::DragScalar("##Editor", ImGuiDataType_U32, v, 1.0f, &minVal, &maxVal) };
