@@ -165,7 +165,7 @@ LoadShaders()
 	shaders::ShaderFileInfo info{};
 	info.File = "TestShader.hlsl";
 	info.EntryPoint = "TestShaderVS";
-	info.Type = graphics::ShaderType::Vertex;
+	info.Type = shaders::ShaderType::Vertex;
 	const char* shaderPath{ "..\\ExampleApp\\" };
 
 	std::wstring defines[]{L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3"};
@@ -187,7 +187,7 @@ LoadShaders()
 	}
 
 	info.EntryPoint = "TestShaderPS";
-	info.Type = graphics::ShaderType::Pixel;
+	info.Type = shaders::ShaderType::Pixel;
 	Vec<std::unique_ptr<u8[]>> pixelShaders{};
 
 	extraArgs.clear();
@@ -215,8 +215,8 @@ CreateMaterials()
 	assert(id::IsValid(vsID) && id::IsValid(psID) && id::IsValid(texturedPsID));
 
 	graphics::MaterialInitInfo info{};
-	info.ShaderIDs[graphics::ShaderType::Vertex] = vsID;
-	info.ShaderIDs[graphics::ShaderType::Pixel] = psID;
+	info.ShaderIDs[shaders::ShaderType::Vertex] = vsID;
+	info.ShaderIDs[shaders::ShaderType::Pixel] = psID;
 	info.Type = graphics::MaterialType::Opaque;
 	mtlID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
 
@@ -237,7 +237,7 @@ CreateMaterials()
 	//	pbrMaterialIDs[i] = content::CreateResourceFromBlob(&info, content::AssetType::Material);
 	//}
 
-	info.ShaderIDs[graphics::ShaderType::Pixel] = texturedPsID;
+	info.ShaderIDs[shaders::ShaderType::Pixel] = texturedPsID;
 	if (loadedTexturesCount != 0)
 	{
 		info.TextureCount = TextureUsage::Count; // NOTE: assuming one of every texture usage exists
@@ -540,7 +540,7 @@ CreateTestRenderItems()
 	editor::ImportScene("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
 	editor::ImportScene("Projects/TestProject/Resources/Prefabs/boxestest.pre");
 	const content::AssetHandle SUN_TEMPLE{ 13905473850964664605 };
-	editor::ImportScene("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
+	//editor::ImportScene("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
 
 	return loadedModelsCount;
 }

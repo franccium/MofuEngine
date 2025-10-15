@@ -2,25 +2,9 @@
 #include "CommonHeaders.h"
 #include "Content/ContentUtils.h"
 #include "ContentManagement.h"
+#include "Content/Shaders/ShaderData.h"
 
 namespace mofu::content {
-
-struct CompiledShader
-{
-	static constexpr u32 HASH_LENGTH{ 16 };
-
-	constexpr u64 BytecodeSize() const { return _bytecodeSize; }
-	constexpr const u8* const Hash() const { return &_hash[0]; }
-	constexpr const u8* const Bytecode() const { return &_bytecode; }
-	constexpr const u64 GetBufferSize() const { return sizeof(_bytecodeSize) + HASH_LENGTH + _bytecodeSize; }
-	constexpr static u64 GetRequiredBufferSize(u64 size) { return sizeof(_bytecodeSize) + HASH_LENGTH + size; }
-
-private:
-	u64 _bytecodeSize;
-	u8 _hash[HASH_LENGTH];
-	u8 _bytecode;
-};
-using CompiledShaderPtr = const CompiledShader*;
 
 struct LodOffset
 {
@@ -57,7 +41,7 @@ void GetLODOffsets(const id_t* const geometryIDs, const f32* const thresholds, u
 
 id_t AddShaderGroup(const u8* const* shaders, u32 shaderCount, const u32* const keys);
 void RemoveShaderGroup(id_t id);
-CompiledShaderPtr GetShader(id_t groupID, u32 shaderKey);
+shaders::CompiledShaderPtr GetShader(id_t groupID, u32 shaderKey);
 
 //TODO: bad idea 
 UploadedGeometryInfo GetLastUploadedGeometryInfo();

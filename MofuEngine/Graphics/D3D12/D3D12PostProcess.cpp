@@ -85,8 +85,8 @@ CreateDebugPSO()
 
 	struct {
 		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Debug };
-		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(shaders::EngineShader::FullscreenTriangleVS) };
-		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetDebugEngineShader(shaders::EngineDebugShader::PostProcessPS) };
+		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(EngineShader::FullscreenTriangleVS) };
+		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetDebugEngineShader(EngineDebugShader::PostProcessPS) };
 		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
 		d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
 		d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };
@@ -140,8 +140,8 @@ CreatePSO()
 
 	struct {
 		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Default };
-		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(shaders::EngineShader::FullscreenTriangleVS) };
-		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(shaders::EngineShader::PostProcessPS) };
+		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(EngineShader::FullscreenTriangleVS) };
+		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(EngineShader::PostProcessPS) };
 		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
 		d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
 		d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };

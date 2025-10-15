@@ -1,5 +1,6 @@
 #pragma once
 #include "D3D12CommonHeaders.h"
+#include "Content/EngineShaders.h"
 
 namespace mofu::graphics::d3d12 {
 class DescriptorHeap;
@@ -77,4 +78,6 @@ void RenderSurface(surface_id id, FrameInfo frameInfo);
 void ResizeSurface(surface_id id, u32 width, u32 height);
 u32 SurfaceWidth(surface_id id);
 u32 SurfaceHeight(surface_id id);
+
+void OnShadersRecompiled(EngineShader::ID shaderID);
 }

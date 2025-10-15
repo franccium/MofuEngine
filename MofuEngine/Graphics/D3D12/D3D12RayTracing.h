@@ -14,4 +14,5 @@ DescriptorHandle MainBufferSRV();
 void RequestRTUpdate();
 void RequestRTAccStructureRebuild();
 void UpdateAccelerationStructure();
+void ResetShaders();
 }

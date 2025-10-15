@@ -46,8 +46,8 @@ GPassCache frameCache;
 //
 //	struct {
 //		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ gpassRootSig };
-//		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(shaders::EngineShader::FullscreenTriangleVS) };
-//		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(shaders::EngineShader::ColorFillPS) };
+//		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(EngineShader::FullscreenTriangleVS) };
+//		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(EngineShader::ColorFillPS) };
 //		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
 //		d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
 //		d3dx::D3D12PipelineStateSubobjectDepthStencilFormat depthStencilFormat{ DEPTH_BUFFER_FORMAT };

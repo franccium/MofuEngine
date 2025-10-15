@@ -118,10 +118,8 @@ ReadFileToByteBuffer(std::filesystem::path path, std::unique_ptr<u8[]>& outData,
 	std::ifstream file{ path, std::ios::in | std::ios::binary };
 	if (!file || !file.read((char*)outData.get(), outFileSize))
 	{
-		file.close();
 		return false;
 	}
-	file.close();
 	return true;
 }
 

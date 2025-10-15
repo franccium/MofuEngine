@@ -4,7 +4,7 @@
 
 #include "imgui.h"
 
-namespace mofu::editor {
+namespace mofu::editor::ui {
 static constexpr f32 MIN_EDITABLE_U32{ 0 };
 static constexpr f32 MAX_EDITABLE_U32{ 100 };
 static constexpr f32 MIN_EDITABLE_FLOAT{ -1.f };
@@ -14,6 +14,7 @@ bool DisplayEditableBool(bool* v, const char* label);
 bool DisplayEditableUintNT(u32* v, const char* label, u32 minVal = MIN_EDITABLE_U32, u32 maxVal = MAX_EDITABLE_U32);
 bool DisplayEditableUint(u32* v, const char* label, u32 minVal = MIN_EDITABLE_U32, u32 maxVal = MAX_EDITABLE_U32);
 bool DisplayEditableFloat(f32* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT, const char* format = "%.3f");
+bool DisplayEditableFloatNT(f32* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT, const char* format = "%.3f");
 bool DisplayEditableVector2(v2* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT);
 bool DisplayEditableVector3(v3* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT, const char* format = "%.3f");
 bool DisplayEditableVector4(v4* v, const char* label, f32 minVal = MIN_EDITABLE_FLOAT, f32 maxVal = MAX_EDITABLE_FLOAT);
@@ -30,6 +31,7 @@ void DisplayVector4(const v4& v, const char* label);
 void DisplaySliderUint(const char* label, u32* v, u32 minVal, u32 maxVal);
 
 bool DisplayColorPicker(v4* v, const char* label);
+bool DisplayColorPicker(v3* v, const char* label);
 
 void DisplayLabelT(const char* label);
 }

@@ -5,6 +5,7 @@
 #include "D3D12Light.h"
 #include "Graphics/Lights/Light.h"
 #include "Graphics/D3D12/D3D12GPass.h"
+#include "Content/EngineShaders.h"
 
 namespace mofu::graphics::d3d12::light {
 namespace {
@@ -85,7 +86,7 @@ CreateCullingPSOs()
 		struct
 		{
 			d3dx::D3D12PipelineStateSubobjectRootSignature rootSig{ lightCullingRootSignature };
-			d3dx::D3D12PipelineStateSubobjectCS cs{ shaders::GetEngineShader(shaders::EngineShader::CalculateGridFrustumsCS) };
+			d3dx::D3D12PipelineStateSubobjectCS cs{ shaders::GetEngineShader(EngineShader::CalculateGridFrustumsCS) };
 		} stream;
 
 		gridFrustumsPSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
@@ -97,7 +98,7 @@ CreateCullingPSOs()
 		struct
 		{
 			d3dx::D3D12PipelineStateSubobjectRootSignature rootSig{ lightCullingRootSignature };
-			d3dx::D3D12PipelineStateSubobjectCS cs{ shaders::GetEngineShader(shaders::EngineShader::LightCullingCS) };
+			d3dx::D3D12PipelineStateSubobjectCS cs{ shaders::GetEngineShader(EngineShader::LightCullingCS) };
 		} stream;
 
 		lightCullingPSO = d3dx::CreatePipelineState(&stream, sizeof(stream));

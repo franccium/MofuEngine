@@ -614,6 +614,9 @@
     <ClInclude Include="ECS\SystemMessages.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Content\Shaders\ShaderData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ECS\implementationnotes.txt" />

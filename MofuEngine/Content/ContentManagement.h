@@ -37,6 +37,9 @@ std::pair<id_t, id_t> GetDefaultPsVsShadersTextured();
 bool LoadEngineMeshes(std::filesystem::path defaultGeometryPath);
 bool LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size);
 bool LoadDebugEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size);
+bool LoadEngineShaders(Array<std::unique_ptr<u8[]>>& shaders, u64& size);
+bool LoadEngineShader(std::unique_ptr<u8[]>& shader, EngineShader::ID shaderID);
+bool LoadDebugEngineShaders(Array<std::unique_ptr<u8[]>>& shaders, u64& size);
 
 void ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type);
 void ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& sizeOut, AssetType::type type);

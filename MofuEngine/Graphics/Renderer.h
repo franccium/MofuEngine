@@ -1,5 +1,7 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "Content/Shaders/ShaderData.h"
+#include "Content/EngineShaders.h"
 #include "GraphicsPlatform.h"
 #include "Platform/Window.h"
 #include "EngineAPI/Camera.h"
@@ -145,24 +147,6 @@ struct MaterialFlags
 	};
 };
 
-struct ShaderType
-{
-	enum Type : u32
-	{
-		Vertex = 0,
-		Pixel,
-		Domain,
-		Hull,
-		Geometry,
-		Compute,
-		Amplification,
-		Mesh,
-		Library,
-
-		Count = Library,
-		CountWithLibrary = Count + 1
-	};
-};
 
 struct PrimitiveTopology
 {
@@ -212,7 +196,7 @@ struct MaterialInitInfo
 	MaterialSurface Surface{}; // TODO: wastes a lot of bytes, even though most models would use textures anyways
 	MaterialType::type Type{ MaterialType::Opaque };
 	u32 TextureCount{ 0 }; // NOTE: textures are optional, texture_count may be 0, and texture_ids null
-	id_t ShaderIDs[ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
+	id_t ShaderIDs[shaders::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
 	MaterialFlags::Flags MaterialFlags{ MaterialFlags::None };
 };
 
@@ -238,10 +222,13 @@ Camera CreateCamera(CameraInitInfo info);
 void RemoveCamera(camera_id id);
 const Camera& GetMainCamera();
 
-const char* GetEngineShadersPath();
-const char* GetEngineShadersPath(GraphicsPlatform platform);
-const char* GetDebugEngineShadersPath();
-const char* GetDebugEngineShadersPath(GraphicsPlatform platform);
+const char* const GetEngineShadersPath();
+const char* const GetEngineShaderPath(EngineShader::ID shaderID);
+const char* const GetDebugEngineShaderPath(EngineDebugShader::ID shaderID);
+const char* const GetEngineShadersPath(GraphicsPlatform platform);
+const char* const GetDebugEngineShadersPath();
+const char* const GetDebugEngineShadersPath(GraphicsPlatform platform);
+void OnShadersRecompiled(EngineShader::ID shaderID);
 
 id_t AddSubmesh(const u8*& data);
 void RemoveSubmesh(id_t id);

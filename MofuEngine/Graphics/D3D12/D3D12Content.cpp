@@ -130,16 +130,16 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 		stream.blend = d3dx::BlendStateFromFlags(materialFlags);
 
 		const ShaderFlags::Flags shaderFlags{ material.ShaderFlags() };
-		D3D12_SHADER_BYTECODE shaders[ShaderType::Count]{};
+		D3D12_SHADER_BYTECODE shaders[shaders::ShaderType::Count]{};
 		u32 shaderIndex{ 0 };
-		for (u32 i{ 0 }; i < ShaderType::Count; ++i)
+		for (u32 i{ 0 }; i < shaders::ShaderType::Count; ++i)
 		{
 			if (shaderFlags & (1u << i))
 			{
 				// NOTE: each type of shader may have keys that are generated from submesh
 				// or material properties, for now, only vertex shaders have different variations, depending on the elementType
-				const u32 key{ GetShaderType(shaderFlags & (1u << i)) == ShaderType::Vertex ? elementType : U32_INVALID_ID };
-				mofu::content::CompiledShaderPtr shader{ mofu::content::GetShader(material.ShaderIDs()[shaderIndex], key) };
+				const u32 key{ GetShaderType(shaderFlags & (1u << i)) == shaders::ShaderType::Vertex ? elementType : U32_INVALID_ID };
+				shaders::CompiledShaderPtr shader{ mofu::content::GetShader(material.ShaderIDs()[shaderIndex], key) };
 				assert(shader);
 				shaders[i].pShaderBytecode = shader->Bytecode();
 				shaders[i].BytecodeLength = shader->BytecodeSize();
@@ -148,14 +148,14 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 			}
 		}
 
-		stream.vs = shaders[ShaderType::Vertex];
-		stream.ps = shaders[ShaderType::Pixel];
-		stream.ds = shaders[ShaderType::Domain];
-		stream.hs = shaders[ShaderType::Hull];
-		stream.gs = shaders[ShaderType::Geometry];
-		stream.cs = shaders[ShaderType::Compute];
-		stream.as = shaders[ShaderType::Amplification];
-		stream.ms = shaders[ShaderType::Mesh];
+		stream.vs = shaders[shaders::ShaderType::Vertex];
+		stream.ps = shaders[shaders::ShaderType::Pixel];
+		stream.ds = shaders[shaders::ShaderType::Domain];
+		stream.hs = shaders[shaders::ShaderType::Hull];
+		stream.gs = shaders[shaders::ShaderType::Geometry];
+		stream.cs = shaders[shaders::ShaderType::Compute];
+		stream.as = shaders[shaders::ShaderType::Amplification];
+		stream.ms = shaders[shaders::ShaderType::Mesh];
 	}
 
 	PsoID idPair{};

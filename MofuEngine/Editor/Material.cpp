@@ -15,7 +15,7 @@ GetMaterialEnginePackedSize(const EditorMaterial& material)
 
 	size += su32 + TextureUsage::Count * sizeof(content::AssetHandle); // texture handles
 	size += su32; // type
-	size += graphics::ShaderType::Count * sizeof(content::AssetHandle); // shader handles
+	size += shaders::ShaderType::Count * sizeof(content::AssetHandle); // shader handles
 	size += su32; // flags
 
 	return size;
@@ -55,7 +55,7 @@ PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& t
 		assert(content::IsValid(handle));
 		writer.Write<u64>(handle.id);
 	}
-	for (u32 i{ 0 }; i < graphics::ShaderType::Count; ++i)
+	for (u32 i{ 0 }; i < shaders::ShaderType::Count; ++i)
 	{
 		//TODO:
 		content::AssetHandle handle{ content::INVALID_HANDLE };
@@ -69,7 +69,6 @@ PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& t
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
-	file.close();
 }
 
 void
@@ -113,10 +112,10 @@ LoadMaterialAsset(EditorMaterial& outMaterial, const std::filesystem::path& path
 	log::Warn("Shader serialization is TODO");
 	bool textured{ outMaterial.TextureCount != 0 };
 	std::pair<id_t, id_t> vsps{ textured ? content::GetDefaultPsVsShadersTextured() : content::GetDefaultPsVsShaders() };
-	outMaterial.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
-	outMaterial.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
+	outMaterial.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
+	outMaterial.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
 
-	for (u32 i{ 0 }; i < graphics::ShaderType::Count; ++i)
+	for (u32 i{ 0 }; i < shaders::ShaderType::Count; ++i)
 	{
 		/*content::AssetHandle handle{ reader.Read<u64>() };
 
@@ -144,7 +143,7 @@ LoadMaterialDataFromAsset(graphics::MaterialInitInfo& outMaterial, content::Asse
 	outMaterial.Type = mat.Type;
 	outMaterial.Surface = mat.Surface;
 	outMaterial.TextureCount = mat.TextureCount;
-	memcpy(outMaterial.ShaderIDs, mat.ShaderIDs, graphics::ShaderType::Count * sizeof(id_t));
+	memcpy(outMaterial.ShaderIDs, mat.ShaderIDs, shaders::ShaderType::Count * sizeof(id_t));
 	outMaterial.TextureIDs = new id_t[mat.TextureCount];
 	memcpy(outMaterial.TextureIDs, mat.TextureIDs, mat.TextureCount * sizeof(id_t));
 }

@@ -45,6 +45,7 @@
 
 #define EDITOR_BUILD 1
 #define RENDER_GUI 1
+#define SHADER_HOT_RELOAD_ENABLED 1
 #define RAYTRACING 1
 #define PATH_TRACE_ALL 1
 

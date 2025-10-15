@@ -44,19 +44,20 @@ ConstantBuffer<RTSettings> Settings : register(b1, space0);
 SamplerState AnisotropicSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
 
-struct RaygenPayload
+// : read([]) : write([]) : read+write([])
+struct [raypayload] RaygenPayload
 {
-    float3 Radiance;
-    float Roughness;
-    uint PathLength;
-    uint PixelIdx;
-    uint SampleSetIdx;
-    bool IsDiffuse;
+    float3 Radiance : read(caller) : write(closesthit, miss, caller);
+float Roughness : read(caller) : write(caller);
+uint PathLength : read(caller, miss, closesthit) : write(caller);
+uint PixelIdx : read(caller) : write(caller);
+uint SampleSetIdx : read(caller) : write(caller);
+bool IsDiffuse : read(caller) : write(caller);
 };
 
-struct ShadowPayload
+struct [raypayload] ShadowPayload
 {
-    float Visibility;
+    float Visibility : read(caller) : write(closesthit, miss);
 };
 
 struct Surface
@@ -365,43 +366,25 @@ float3 CalculateLighting(in float3 positionWS, in float3 normal, in float3 light
                     in float3 diffuseAlbedo, in float3 specularAlbedo, in float roughness,
                     in float3 cameraPosWS, in float3 msEnergyCompensation)
 {
-    const float3 V = normalize(cameraPosWS - positionWS);
-    const float3 H = normalize(V + lightDir); // halfway vector of view and light dir, microsurface normal
-    const float NoV = abs(dot(normal, V)) + 1e-5f; // make sure its not 0 for divisions
-    const float NoL = saturate(dot(normal, lightDir));
-    const float NoH = saturate(dot(normal, H));
-    const float VoH = saturate(dot(V, H));
-    const float a2 = roughness * roughness;
-    const float perceptualRoughness = min(roughness, 0.045f);
-    const float specularStrength = 1.f;
-    
-    const float D = D_GGX(NoH, a2);
-    const float G = V_SmithGGXCorrelated(NoV, NoL, a2);
-    const float3 F = F_Schlick(specularAlbedo, VoH);
-
-    float3 specularBRDF = (D * G) * F;
-    float3 rho = 1.f - F;
-    //float3 diffuseBRDF = Diffuse_Lambert() * diffuseAlbedo * rho;
-    float3 diffuseBRDF = Diffuse_Burley(NoV, NoL, VoH, perceptualRoughness * perceptualRoughness) * diffuseAlbedo * rho;
-
-    return ((diffuseBRDF + specularBRDF * specularStrength) * NoL) * PI;
-    
-    
-    //float3 lighting = diffuseAlbedo * (1.0f / 3.14159f);
-    //const float nDotL = saturate(dot(normal, lightDir));
-    //const float3 view = normalize(cameraPosWS - positionWS);
-    //if (nDotL > 0.0f)
+    //if (Settings.BRDFType == 0)
     //{
-    //    const float nDotV = saturate(dot(normal, view));
-    //    float3 h = normalize(view + lightDir);
+        float3 lighting = diffuseAlbedo * (1.0f / 3.14159f);
+        const float nDotL = saturate(dot(normal, lightDir));
+        const float3 view = normalize(cameraPosWS - positionWS);
+        if (nDotL > 0.0f)
+        {
+            const float nDotV = saturate(dot(normal, view));
+            float3 h = normalize(view + lightDir);
 
-    //    float3 fresnel = Fresnel(specularAlbedo, h, lightDir);
+            float3 fresnel = Fresnel(specularAlbedo, h, lightDir);
 
-    //    float specular = GGXSpecular(roughness, normal, h, view, lightDir);
-    //    lighting += specular * fresnel * msEnergyCompensation;
+            float specular = GGXSpecular(roughness, normal, h, view, lightDir);
+            lighting += specular * fresnel * msEnergyCompensation;
+        }
+
+    return lighting * nDotL * peakIrradiance;
     //}
-
-    //return lighting * nDotL * peakIrradiance;
+    //return 0.0.xxx;
 }
 
 static float2 SamplePoint(in uint pixelIdx, inout uint setIdx)
@@ -457,6 +440,12 @@ void RayGen()
     TraceRay(Scene, rayTraceFlags, 0xFFFFFFFF, hitGroupOffset, hitGroupGeometryContMultiplier, missShaderIndex, ray, payload);
     
     payload.Radiance = clamp(payload.Radiance, 0.0f, F16_MAX);
+    // satisfying qualifiers for payload members so it compiles
+    bool r = payload.Roughness;
+    bool d = payload.IsDiffuse;
+    uint p = payload.PathLength;
+    uint s = payload.SampleSetIdx;
+    uint p2 = payload.PixelIdx;
     
     // accumulate radiance
     const float t = RTConstants.CurrentSampleIndex / (RTConstants.CurrentSampleIndex + 1.f);
@@ -464,11 +453,7 @@ void RayGen()
     float3 current = MainOutput[pxCoord].xyz;
     float3 accum = lerp(sample, current, t);
     
-    if(Settings.ShowNormals)
-    {
-        MainOutput[pxCoord] = float4(accum, 1.f);
-    }
-    else if(Settings.ShowRayDirs)
+    if(Settings.ShowRayDirs)
     {
         //MainOutput[pxCoord] = float4(rayPixelPos.xy / DispatchRaysDimensions().xy, 0.f, 1.f);
         MainOutput[pxCoord] = float4(rayDir * 0.5f + 0.5f, 1.f);
@@ -499,9 +484,20 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
     const float3 diffuseAlbedo = float3(1.f, 1.f, 1.f);
     const float3 specularAlbedo = float3(1.f, 1.f, 1.f);
     
-    // apply energy compensation
-    const float Ess = GGXEnvironmentBRDFScaleBias(saturate(dot(normal_WS, -incomingRayDirection_WS)), sqrtRoughness).x;
-    float3 msEnergyCompensation = 1.0.xxx + specularAlbedo * (1.0f / Ess - 1.0f);
+    inPayload.Roughness = roughness;
+    inPayload.IsDiffuse = false;
+    inPayload.PathLength = inPayload.PathLength;
+    inPayload.SampleSetIdx = inPayload.SampleSetIdx;
+    inPayload.PixelIdx = inPayload.PixelIdx;
+    
+    float3 msEnergyCompensation = 1.0.xxx;
+    if (Settings.ApplyEnergyConservation)
+    {
+        // apply energy conservation
+        // Practical multiple scattering compensation for microfacet models
+        const float Ess = GGXEnvironmentBRDFScaleBias(saturate(dot(normal_WS, -incomingRayDirection_WS)), sqrtRoughness).x;
+        msEnergyCompensation = 1.0.xxx + specularAlbedo * (1.0f / Ess - 1.0f);
+    }
     
     float3 sunDirection_WS = -RTConstants.SunDirection_WS;
     float3 radiance = 0.0.xxx;
@@ -519,7 +515,6 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
             rayTraceFlags = RAY_FLAG_FORCE_OPAQUE;
     
         ShadowPayload shadowPayload;
-        shadowPayload.Visibility = 1.f;
     
         const uint hitGroupOffset = RayType_Shadow;
         const uint hitGroupGeometryContMultiplier = RayType_Count;
@@ -540,18 +535,26 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
     float2 brdfSample = SamplePoint(inPayload.PixelIdx, inPayload.SampleSetIdx);
     float3 throughput = 0.f;
     float3 rayDirection_TS = 0.f;
-    const bool isDiffuse = (brdfSample.x < 0.5);
+    bool isDiffuse = (brdfSample.x < Settings.DiffuseSpecularSelector);
+    if (!Settings.SpecularEnabled)
+        isDiffuse = true;
+    else if (!Settings.DiffuseEnabled)
+        isDiffuse = false;
     if (isDiffuse)
     {
-        brdfSample.x *= 2.f;
+        // sample diffuse - cosine-weighted hemisphere
+        if(Settings.SpecularEnabled)
+            brdfSample.x *= 2.f;
         rayDirection_TS = SampleDirectionCosineHemisphere(brdfSample.x, brdfSample.y);
+        // PDF = NoL / PI, so the terms are canceled out with the diffuse BRDF and irradiance integral
         throughput = diffuseAlbedo;
     }
     else
     {
-        //inPayload.Radiance = float3(0.1f, 1.0f, 0.5f); // visualize specular
-        
-        brdfSample.x = (brdfSample.x - 0.5f) * 2.0f;
+        // sample specular - GGX BRDF, sampling the distribution of visible normals
+        // https://schuttejoe.github.io/post/ggximportancesamplingpart2/
+        if(Settings.DiffuseEnabled)
+            brdfSample.x = (brdfSample.x - 0.5f) * 2.0f;
         float3 incomingRayDirTS = normalize(mul(incomingRayDirection_WS, transpose(tangentToWorld)));
         float3 microfacetNormalTS = SampleGGXVisibleNormal(-incomingRayDirTS, roughness, roughness, brdfSample.x, brdfSample.y);
         float3 sampleDirTS = reflect(incomingRayDirTS, microfacetNormalTS);
@@ -565,9 +568,13 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
         throughput = (F * (G2 / G1));
         rayDirection_TS = sampleDirTS;
         
-        
-        //float Ess = GGXEnvironmentBRDFScaleBias(saturate(dot(normalTS, -incomingRayDirection_WS)), sqrtRoughness).x;
-        //throughput *= 1.0.xxx + specularAlbedo * (1.0f / Ess - 1.0f);
+        if(Settings.ApplyEnergyConservation)
+        {
+            // apply energy conservation
+            // Practical multiple scattering compensation for microfacet models
+            float Ess = GGXEnvironmentBRDFScaleBias(saturate(dot(normalTS, -incomingRayDirection_WS)), sqrtRoughness).x;
+            throughput *= 1.0.xxx + specularAlbedo * (1.0f / Ess - 1.0f);
+        }
     }
     
     const float3 rayDirection_WS = normalize(mul(rayDirection_TS, tangentToWorld));
@@ -599,13 +606,19 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
         const uint hitGroupGeometryContMultiplier = RayType_Count;
         const uint missShaderIndex = RayType_Radiance;
         TraceRay(Scene, rayTraceFlags, 0xFFFFFFFF, hitGroupOffset, hitGroupGeometryContMultiplier, missShaderIndex, ray, payload);
+        
+        // satisfying qualifiers for payload members so it compiles
+        float3 r = payload.Roughness;
+        bool d = payload.IsDiffuse;
+        uint p = payload.PathLength;
+        uint s = payload.SampleSetIdx;
+        uint p2 = payload.PixelIdx;
 
-        radiance += payload.Radiance * throughput;
+        radiance += payload.Radiance * throughput + (0.1f * payload.IsDiffuse);
     }
     else
     {
         ShadowPayload shadowPayload;
-        shadowPayload.Visibility = 1.0f;
 
         uint rayTraceFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
         
@@ -627,6 +640,8 @@ static float3 DoPathTracing(in HitSurface hitSurface, in Surface surface, in Ray
             return radiance;
         }
     }
+    
+
     
     return radiance;
 }
@@ -694,7 +709,7 @@ void Shadow_Miss(inout ShadowPayload payload)
 [shader("anyhit")]
 void AnyHit(inout RaygenPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    payload.Radiance = float3(0.0f, 1.0f, 0.0f);
+    //payload.Radiance = float3(0.0f, 1.0f, 0.0f);
     
     //const HitSurface hitSurface = GetHitSurface(attr, GeometryIndex());
     //const Surface surface = GetGeometryMaterial(GeometryIndex());
@@ -738,16 +753,13 @@ void ClosestHit(inout RaygenPayload payload, in BuiltInTriangleIntersectionAttri
         float3(0.5f, 0.f, 0.f), float3(0.f, 0.5f, 0.f), float3(0.f, 0.f, 0.5f), float3(0.7f, 0.5f, 0.2f)
     };
     //payload.Radiance = colors[GeometryIndex()];
+    payload.Radiance = DoPathTracing(hitSurface, surface, payload);
     if(Settings.ShowNormals)
     {
         payload.Radiance = hitSurface.Normal * 0.5f + 0.5f;
         //payload.Radiance = hitSurface.Normal;
         //payload.Radiance = hitSurface.Tangent;
         //payload.Radiance = hitSurface.Bitangent;
-    }
-    else if(!Settings.ShowRayDirs)
-    {
-        payload.Radiance = DoPathTracing(hitSurface, surface, payload);
     }
     
     //payload.Radiance = Settings.MaxPathLength / 5.f;

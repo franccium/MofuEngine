@@ -30,7 +30,7 @@ public:
         u32 shaderCount{ 0 };
         u32 shaderFlags{ 0 };
         u32 materialFlags{ 0 };
-        for (u32 i{ 0 }; i < ShaderType::Count; ++i)
+        for (u32 i{ 0 }; i < mofu::shaders::ShaderType::Count; ++i)
         {
             if (id::IsValid(info.ShaderIDs[i]))
             {
@@ -73,7 +73,7 @@ public:
         }
 
         u32 shaderIndex{ 0 };
-        for (u32 i{ 0 }; i < ShaderType::Count; ++i)
+        for (u32 i{ 0 }; i < mofu::shaders::ShaderType::Count; ++i)
         {
             if (id::IsValid(info.ShaderIDs[i]))
             {

@@ -175,12 +175,19 @@ struct RTSettings
     uint MaxAnyHitPathLength;
     
     uint IndirectEnabled;
+    uint SpecularEnabled;
+    uint DiffuseEnabled;
     uint SunFromDirectionalLight;
     uint RenderSkybox;
     uint ShowNormals;
     uint ShowRayDirs;
     uint SunEnabled;
     uint ShadowsOnly;
+    float DiffuseSpecularSelector;
+    
+    uint BRDFType;
+    uint ApplyEnergyConservation;
+    uint UseRussianRoulette;
 };
 
 #ifdef __cplusplus

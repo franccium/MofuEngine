@@ -8,10 +8,10 @@
 #include <d3d12shader.h>
 #include <d3d11shader.h>
 #include <fstream>
+#include "EngineShaders.h"
 #include "Graphics/Renderer.h"
 #include "ContentManagement.h"
 #include "Content/ResourceCreation.h"
-#include "EngineShaders.h"
 
 using namespace Microsoft::WRL;
 
@@ -142,12 +142,12 @@ public:
         return result;
     }
 
-    DxcCompiledShader Compile(u8* data, u32 dataSize, graphics::ShaderType::Type type,
+    DxcCompiledShader Compile(u8* data, u32 dataSize, ShaderType::Type type,
         const char* entryPoint, Vec<std::wstring>& extraArgs, bool debug)
     {
-        assert(data && dataSize && !(type != graphics::ShaderType::Library && !entryPoint));
+        assert(data && dataSize && !(type != ShaderType::Library && !entryPoint));
         assert(_compiler && _utils && _includeHandler);
-        assert(type < graphics::ShaderType::CountWithLibrary);
+        assert(type < ShaderType::CountWithLibrary);
 
         HRESULT hr{ S_OK };
         ComPtr<IDxcBlobEncoding> sourceBlob{ nullptr };
@@ -179,7 +179,7 @@ public:
         OutputDebugStringA("Compiling ");
         OutputDebugStringA(info.File);
         OutputDebugStringA(" : ");
-        OutputDebugStringA(info.Type != graphics::ShaderType::Library ? info.EntryPoint : "[Libary]");
+        OutputDebugStringA(info.Type != ShaderType::Library ? info.EntryPoint : "[Libary]");
         OutputDebugStringA("\n");
 
         return Compile(sourceBlob.Get(), GetCompilerArgs(info, extraArgs, debug), debug);
@@ -210,7 +210,7 @@ private:
     {
         Vec<std::wstring> args((u64)DEFAULT_COMPILER_ARGS_COUNT + extraArgs.size());
         if (info.File) args.emplace_back(c_to_wstring(info.File));
-        if (info.Type != graphics::ShaderType::Library)
+        if (info.Type != ShaderType::Library)
         {
             args.emplace_back(L"-E");
             args.emplace_back(c_to_wstring(info.EntryPoint));
@@ -277,8 +277,8 @@ private:
         return args;
     }
 
-	constexpr static const char* SHADER_PROFILES[]{ "vs_6_6", "ps_6_6", "ds_6_6", "hs_6_6", "gs_6_6", "cs_6_6", "as_6_6", "ms_6_6", "lib_6_6"};
-	static_assert(_countof(SHADER_PROFILES) == graphics::ShaderType::CountWithLibrary);
+	constexpr static const char* SHADER_PROFILES[]{ "vs_6_7", "ps_6_7", "ds_6_7", "hs_6_7", "gs_6_7", "cs_6_7", "as_6_7", "ms_6_7", "lib_6_7"};
+	static_assert(_countof(SHADER_PROFILES) == ShaderType::CountWithLibrary);
 
 	ComPtr<IDxcCompiler3> _compiler{ nullptr };
 	ComPtr<IDxcUtils> _utils{ nullptr };
@@ -290,17 +290,17 @@ PackShader(DxcCompiledShader shader, bool includeErrorsAndDissasembly)
 {
     if (shader.bytecode && shader.bytecode->GetBufferPointer() && shader.bytecode->GetBufferSize())
     {
-        static_assert(content::CompiledShader::HASH_LENGTH == _countof(DxcShaderHash::HashDigest));
+        static_assert(CompiledShader::HASH_LENGTH == _countof(DxcShaderHash::HashDigest));
         const u64 extraSize{ includeErrorsAndDissasembly
             ? sizeof(u64) + sizeof(u64) + shader.errors->GetStringLength() + shader.assembly->GetStringLength()
             : 0 };
-        const u64 bufferSize{ sizeof(u64) + content::CompiledShader::HASH_LENGTH + shader.bytecode->GetBufferSize() + extraSize };
+        const u64 bufferSize{ sizeof(u64) + CompiledShader::HASH_LENGTH + shader.bytecode->GetBufferSize() + extraSize };
 
         std::unique_ptr<u8[]> buffer{ std::make_unique<u8[]>(bufferSize) };
         util::BlobStreamWriter blob{ buffer.get(), bufferSize };
 
         blob.Write(shader.bytecode->GetBufferSize());
-        blob.WriteBytes(shader.hash.HashDigest, content::CompiledShader::HASH_LENGTH);
+        blob.WriteBytes(shader.hash.HashDigest, CompiledShader::HASH_LENGTH);
         blob.WriteBytes((u8*)shader.bytecode->GetBufferPointer(), shader.bytecode->GetBufferSize());
 
         if (includeErrorsAndDissasembly)
@@ -331,8 +331,75 @@ GetDebugEngineShadersPath()
     return graphics::GetDebugEngineShadersPath(graphics::GraphicsPlatform::Direct3D12);
 }
 
+// TODO: figure out how not to repeat this code so much
 bool
-SaveCompiledShaders(Vec<DxcCompiledShader>& shaders, const std::filesystem::path& savePath)
+SaveCompiledEngineShaders(const Vec<DxcCompiledShader>& shaders)
+{
+    assert(shaders.size() == EngineShader::Count);
+    std::filesystem::create_directories(std::filesystem::path{ GetEngineShadersPath() }.parent_path());
+    for(u32 i{0}; i < EngineShader::Count; ++i)
+    {
+		std::filesystem::path savePath{ graphics::GetEngineShaderPath((EngineShader::ID)i) };
+        std::ofstream file(savePath, std::ios::out | std::ios::binary);
+        /*if (!std::filesystem::exists(savePath) || !file || !file.is_open())
+        {
+            return false;
+        }*/
+		const DxcCompiledShader& shader{ shaders[i] };
+
+        void* const bytecode{ shader.bytecode->GetBufferPointer() };
+        const u64 bytecodeLength{ shader.bytecode->GetBufferSize() };
+        file.write(reinterpret_cast<const char*>(&bytecodeLength), sizeof(bytecodeLength));
+        file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
+        file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
+	}
+
+    return true;
+}
+bool
+SaveCompiledEngineShader(const DxcCompiledShader& shader, const std::filesystem::path& savePath)
+{
+    std::ofstream file(savePath, std::ios::out | std::ios::binary);
+    if (!std::filesystem::exists(savePath) || !file || !file.is_open())
+    {
+        return false;
+    }
+
+    void* const bytecode{ shader.bytecode->GetBufferPointer() };
+    const u64 bytecodeLength{ shader.bytecode->GetBufferSize() };
+    file.write(reinterpret_cast<const char*>(&bytecodeLength), sizeof(bytecodeLength));
+    file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
+    file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
+
+    return true;
+}
+bool
+SaveCompiledEngineDebugShaders(const Vec<DxcCompiledShader>& shaders)
+{
+    assert(shaders.size() == EngineDebugShader::Count);
+    std::filesystem::create_directories(std::filesystem::path{ GetDebugEngineShadersPath() }.parent_path());
+    for (u32 i{ 0 }; i < EngineDebugShader::Count; ++i)
+    {
+        std::filesystem::path savePath{ graphics::GetDebugEngineShaderPath((EngineDebugShader::ID)i) };
+        std::ofstream file(savePath, std::ios::out | std::ios::binary);
+        if (!std::filesystem::exists(savePath) || !file || !file.is_open())
+        {
+            return false;
+        }
+        const DxcCompiledShader& shader{ shaders[i] };
+
+        void* const bytecode{ shader.bytecode->GetBufferPointer() };
+        const u64 bytecodeLength{ shader.bytecode->GetBufferSize() };
+        file.write(reinterpret_cast<const char*>(&bytecodeLength), sizeof(bytecodeLength));
+        file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
+        file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
+    }
+
+    return true;
+}
+
+bool
+SaveCompiledShaders(const Array<DxcCompiledShader>& shaders, const std::filesystem::path& savePath)
 {
     std::filesystem::create_directories(savePath.parent_path());
     std::ofstream file(savePath, std::ios::out | std::ios::binary);
@@ -349,7 +416,6 @@ SaveCompiledShaders(Vec<DxcCompiledShader>& shaders, const std::filesystem::path
         file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
         file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
     }
-    file.close();
 
     return true;
 }
@@ -390,6 +456,77 @@ CompileShader(ShaderFileInfo info, const char* path, Vec<std::wstring>& extraArg
     return PackShader(ShaderCompiler{}.Compile(info, fullPath, extraArgs, debug), includeErrorsAndDisassembly);
 }
 
+DxcCompiledShader
+CompileEngineShader(EngineShader::ID shaderID, ShaderCompiler& compiler)
+{
+    auto& file{ ENGINE_SHADER_FILES[shaderID] };
+    std::filesystem::path path{ SHADERS_SOURCE_PATH };
+    path += file.Info.File;
+
+    Vec<std::wstring> extraArgs{};
+    if (file.ID == EngineShader::CalculateGridFrustumsCS || file.ID == EngineShader::LightCullingCS)
+    {
+        // TODO: get TILE_SIZE value from d3d12
+        extraArgs.emplace_back(L"-D");
+        extraArgs.emplace_back(L"TILE_SIZE=32");
+    }
+    //TODO: get all the engine defines from a common place
+#if RAYTRACING
+    extraArgs.emplace_back(L"-D");
+    extraArgs.emplace_back(L"RAYTRACING=1");
+#endif
+
+    DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs, false) };
+    return compiledShader;
+}
+
+DxcCompiledShader
+CompileEngineShaderDebug(EngineDebugShader::ID shaderID, ShaderCompiler& compiler)
+{
+    auto& file{ ENGINE_DEBUG_SHADER_FILES[shaderID] };
+    std::filesystem::path path{ SHADERS_DEBUG_SOURCE_PATH };
+    path += file.Info.File;
+
+    Vec<std::wstring> extraArgs{};
+    //TODO: get all the engine defines from a common place
+#if RAYTRACING
+    extraArgs.emplace_back(L"-D");
+    extraArgs.emplace_back(L"RAYTRACING=1");
+#endif
+
+    DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs, true) };
+    return compiledShader;
+}
+
+#if SHADER_HOT_RELOAD_ENABLED
+bool
+CompileEngineShaders()
+{
+    //if (CheckCompiledShadersUpToDate()) return true;
+    /*Array<DxcCompiledShader> shaders{};
+    Array<DxcCompiledShader> debugShaders{};*/
+
+    std::filesystem::path path{};
+    ShaderCompiler compiler{};
+
+    for (u32 i{ 0 }; i < EngineShader::Count; ++i)
+    {
+		DxcCompiledShader shader{ CompileEngineShader((EngineShader::ID)i, compiler) };
+        if(!shader.bytecode || !shader.bytecode->GetBufferPointer() || !shader.bytecode->GetBufferSize()) return false;
+        SaveCompiledEngineShader(shader, graphics::GetEngineShaderPath((EngineShader::ID)i));
+        //if (!shaders[i].bytecode || !shaders[i].bytecode->GetBufferPointer() || !shaders[i].bytecode->GetBufferSize()) return false;
+    }
+
+    for (u32 i{ 0 }; i < EngineDebugShader::Count; ++i)
+    {
+        DxcCompiledShader shader{ CompileEngineShaderDebug((EngineDebugShader::ID)i, compiler) };
+        if (!shader.bytecode || !shader.bytecode->GetBufferPointer() || !shader.bytecode->GetBufferSize()) return false;
+        SaveCompiledEngineShader(shader, graphics::GetDebugEngineShaderPath((EngineDebugShader::ID)i));
+    }
+
+    return true;
+}
+#else
 bool 
 CompileEngineShaders()
 {
@@ -451,11 +588,12 @@ CompileEngineShaders()
 
     return SaveCompiledShaders(shaders, GetEngineShadersPath()) && SaveCompiledShaders(debugShaders, GetDebugEngineShadersPath());
 }
+#endif
 
 bool
 CompileContentProcessingShaders()
 {
-    Vec<DxcCompiledShader> shaders;
+    Array<DxcCompiledShader> shaders{ content::ContentShader::Count };
 
     std::filesystem::path path{ content::CONTENT_SHADERS_SOURCE_PATH };
     ShaderCompiler compiler{};
@@ -472,7 +610,7 @@ CompileContentProcessingShaders()
         DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs, false) };
         if (compiledShader.bytecode && compiledShader.bytecode->GetBufferPointer() && compiledShader.bytecode->GetBufferSize())
         {
-            shaders.emplace_back(std::move(compiledShader));
+            shaders[i] = compiledShader;
         }
         else
         {
@@ -481,5 +619,36 @@ CompileContentProcessingShaders()
     }
 
     return SaveCompiledShaders(shaders, content::CONTENT_SHADERS_COMPILED_PATH);
+}
+
+void 
+UpdateHotReload()
+{
+    EngineShader::ID shaderID{};
+    if (!std::filesystem::exists(SHADERS_SOURCE_PATH)) return;
+    ShaderCompiler compiler{};
+
+    /*for (const auto& entry : std::filesystem::directory_iterator{ SHADERS_SOURCE_PATH })
+    {
+        if (entry.last_write_time() > lastCompileTime) return false;
+    }*/
+    std::filesystem::path shadersSourcePath{ SHADERS_SOURCE_PATH };
+    std::filesystem::path shadersCompiledPath{ GetEngineShadersPath() };
+    shadersCompiledPath.remove_filename();
+
+    std::filesystem::path shaderPath{ shadersSourcePath / ENGINE_SHADER_FILES[EngineShader::RayTracingLib].Info.File };
+    //std::filesystem::path compiledShaderPath{ shadersCompiledPath / graphics::GetEngineShaderPath(EngineShader::RayTracingLib) };
+    std::filesystem::path compiledShaderPath{ graphics::GetEngineShaderPath(EngineShader::RayTracingLib) };
+	std::filesystem::directory_entry entry{ shaderPath };
+    const auto lastSourceUpdateTime{ std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(shaderPath))};
+    const auto lastCompileTime{ std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(compiledShaderPath))};
+
+    if (lastSourceUpdateTime > lastCompileTime + std::chrono::seconds(1)
+    {
+        //TODO: maybe dont write to a file, just use the blob? - that could be a problem for the next engine run though
+        DxcCompiledShader shader{ CompileEngineShader(EngineShader::RayTracingLib, compiler) };
+		SaveCompiledEngineShader(shader, graphics::GetEngineShaderPath(EngineShader::RayTracingLib));
+        graphics::OnShadersRecompiled(EngineShader::ID::RayTracingLib);
+    }
 }
 }

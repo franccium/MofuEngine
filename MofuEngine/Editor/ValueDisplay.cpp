@@ -1,7 +1,7 @@
 #include "ValueDisplay.h"
 #include "ActionHistory.h"
 
-namespace mofu::editor {
+namespace mofu::editor::ui {
 namespace {
 constexpr f32 DRAG_SPEED_FACTOR{ 1000.f };
 
@@ -44,6 +44,38 @@ bool DisplayEditableUint(u32* v, const char* label, u32 minVal, u32 maxVal)
 	ImGui::PushID(v);
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	bool changed{ ImGui::DragScalar("##Editor", ImGuiDataType_U32, v, 1.0f, &minVal, &maxVal) };
+	ImGui::PopID();
+	return changed;
+}
+
+bool DisplayEditableFloatNT(f32* v, const char* label, f32 minVal, f32 maxVal, const char* format)
+{
+	static f32 startValue;
+	static bool isEditing = false;
+
+	ImGui::TextUnformatted(label);
+	ImGui::PushID(v);
+	f32 dragSpeed = (maxVal - minVal) / DRAG_SPEED_FACTOR;
+	f32 val = *v;
+	bool changed{ ImGui::DragFloat("##Editor", (f32*)v, dragSpeed, minVal, maxVal, format) };
+	if (ImGui::IsItemHovered())
+	{
+		focusedItemID = ImGui::GetID(v);
+	}
+
+	if (ImGui::IsItemActivated())
+	{
+		startValue = *v;
+		isEditing = true;
+	}
+
+	if (ImGui::IsItemDeactivated())
+	{
+		if (ImGui::IsItemDeactivatedAfterEdit() && isEditing && startValue != *v)
+			RegisterStaticAction<f32>(startValue, v);
+		isEditing = false;
+	}
+
 	ImGui::PopID();
 	return changed;
 }
@@ -198,7 +230,16 @@ bool DisplayColorPicker(v4* v, const char* label)
 {
 	DisplayLabelT(label);
 	ImGui::PushID(v);
-	bool changed{ ImGui::ColorPicker3("", (float*)v, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs)};
+	bool changed{ ImGui::ColorPicker4("", (float*)v, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs)};
+	ImGui::PopID();
+	return changed;
+}
+
+bool DisplayColorPicker(v3* v, const char* label)
+{
+	ImGui::TextUnformatted(label);
+	ImGui::PushID(v);
+	bool changed{ ImGui::ColorPicker3("", (float*)v, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs) };
 	ImGui::PopID();
 	return changed;
 }

@@ -572,10 +572,10 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 			info.Surface = mat.Surface;
 			info.Type = mat.Type;
 			std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
-			info.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
-			info.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
-			mat.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
-			mat.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
+			info.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
+			info.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
+			mat.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
+			mat.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
 		}
 	}
 	else

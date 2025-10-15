@@ -308,7 +308,7 @@ AddShaderGroup(const u8* const* shaders, u32 shaderCount, const u32* const keys)
 	for (u32 i{ 0 }; i < shaderCount; ++i)
 	{
 		assert(shaders[i]);
-		const CompiledShaderPtr shaderPtr{ (const CompiledShaderPtr)shaders[i] };
+		const shaders::CompiledShaderPtr shaderPtr{ (const shaders::CompiledShaderPtr)shaders[i] };
 		const u64 size{ shaderPtr->GetBufferSize() };
 		std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
 		memcpy(shader.get(), shaderPtr, size);
@@ -327,14 +327,14 @@ RemoveShaderGroup(id_t groupID)
 	shaderGroups.remove(groupID);
 }
 
-CompiledShaderPtr
+shaders::CompiledShaderPtr
 GetShader(id_t groupID, u32 shaderKey)
 {
 	assert(id::IsValid(groupID));
 	std::lock_guard lock{ shaderMutex };
 	for (const auto& [key, value] : shaderGroups[groupID])
 	{
-		if (key == shaderKey) return (const CompiledShaderPtr)value.get();
+		if (key == shaderKey) return (const shaders::CompiledShaderPtr)value.get();
 	}
 
 	assert(false);
@@ -722,7 +722,7 @@ GetLastUploadedGeometryInfo()
 //	for (u32 i{ 0 }; i < shaderCount; ++i)
 //	{
 //		assert(shaders[i]);
-//		const CompiledShaderPtr shaderPtr{ (const CompiledShaderPtr)shaders[i] };
+//		const shaders::CompiledShaderPtr shaderPtr{ (const shaders::CompiledShaderPtr)shaders[i] };
 //		const u64 size{ shaderPtr->GetBufferSize() };
 //		std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
 //		memcpy(shader.get(), shaderPtr, size);
@@ -741,14 +741,14 @@ GetLastUploadedGeometryInfo()
 //	shaderGroups.remove(groupID);
 //}
 //
-//CompiledShaderPtr 
+//shaders::CompiledShaderPtr 
 //GetShader(id_t groupID, u32 shaderKey)
 //{
 //	assert(id::IsValid(groupID));
 //	std::lock_guard lock{ shaderMutex };
 //	for (const auto& [key, value] : shaderGroups[groupID])
 //	{
-//		if (key == shaderKey) return (const CompiledShaderPtr)value.get();
+//		if (key == shaderKey) return (const shaders::CompiledShaderPtr)value.get();
 //	}
 //
 //	assert(false);

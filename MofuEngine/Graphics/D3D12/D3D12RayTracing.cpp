@@ -581,7 +581,7 @@ Render(const D3D12FrameInfo& frameInfo, DXGraphicsCommandList* const cmdList)
 		for(auto [entity, dirLight] : ecs::scene::GetRO<ecs::component::DirectionalLight>())
 		{
 			rtc->SunDirection_WS = dirLight.Direction;
-			memcpy(&rtc->SunIrradiance, &graphics::rt::settings::SunIrradiance, sizeof(v3));
+			rtc->SunIrradiance = graphics::rt::settings::SunIrradiance;
 			rtc->SunColor = dirLight.Color;
 			break; // only the first directional light
 		}
@@ -591,7 +591,7 @@ Render(const D3D12FrameInfo& frameInfo, DXGraphicsCommandList* const cmdList)
 	else
 	{
 		rtc->SunDirection_WS = graphics::rt::settings::SunDirection;
-		memcpy(&rtc->SunIrradiance, &graphics::rt::settings::SunIrradiance, sizeof(v3));
+		rtc->SunIrradiance = graphics::rt::settings::SunIrradiance;
 		rtc->SunColor = graphics::rt::settings::SunColor;
 		rtc->CosSunAngularRadius = cosf(graphics::rt::settings::SunAngularRadius);
 		rtc->SinSunAngularRadius = sinf(graphics::rt::settings::SunAngularRadius);
@@ -743,7 +743,7 @@ bool CreatePSO()
 
 	{
 		D3D12_DXIL_LIBRARY_DESC dxilDesc{};
-		dxilDesc.DXILLibrary = shaders::GetEngineShader(shaders::EngineShader::RayTracingLib);
+		dxilDesc.DXILLibrary = shaders::GetEngineShader(EngineShader::RayTracingLib);
 		stream.AddSubobject(dxilDesc);
 	}
 	// Hit Groups
@@ -915,4 +915,11 @@ UpdateAccelerationStructure()
 	editor::debug::UpdateAccelerationStructureData(_accStructVertexCount, _accStructIndexCount, _lastAccelerationStructureBuildFrame);
 }
 
+void
+ResetShaders()
+{
+	_rtPSO = nullptr;
+	CreatePSO();
+	CreateHitGroups();
+}
 }

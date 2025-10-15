@@ -3,7 +3,7 @@
 #include "Content/EngineShaders.h"
 #include "Graphics/D3D12/D3D12CommonHeaders.h"
 
-namespace mofu::content::shaders {
+namespace mofu::shaders::content {
 struct ShaderBytecode
 {
 	const void* Bytecode;

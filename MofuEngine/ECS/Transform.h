@@ -39,9 +39,9 @@ struct WorldTransform : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] WorldTransform& c)
 	{
-		editor::DisplayLabelT("TRS");
+		editor::ui::DisplayLabelT("TRS");
 		ImGui::TableNextRow();
-		editor::DisplayEditableMatrix4x4(&c.TRS, "TRS");
+		editor::ui::DisplayEditableMatrix4x4(&c.TRS, "TRS");
 	}
 #endif
 };
@@ -57,7 +57,7 @@ struct RenderMesh : Component
 	static void RenderFields([[maybe_unused]] RenderMesh& c)
 	{
 		ImGui::TableNextRow();
-		editor::DisplayUint(c.MeshID, "Mesh ID");
+		editor::ui::DisplayUint(c.MeshID, "Mesh ID");
 	}
 #endif
 };
@@ -73,7 +73,7 @@ struct RenderMaterial : Component
 	{
 		ImGui::TableNextRow();
 		if (c.MaterialID == id::INVALID_ID) return;
-		editor::DisplayUint(c.MaterialID, "Material ID");
+		editor::ui::DisplayUint(c.MaterialID, "Material ID");
 	}
 #endif
 };
@@ -184,17 +184,17 @@ struct LocalTransform : Component
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Local Transform");
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Position, "Position", minPosVal, maxPosVal);
+		editor::ui::DisplayEditableVector3(&c.Position, "Position", minPosVal, maxPosVal);
 		ImGui::TableNextRow();
-		editor::DisplayLabelT("Rotation");
+		editor::ui::DisplayLabelT("Rotation");
 		// TODO: update the rotation the editor can use, maybe at the end of the frame after confirming all transforms
 		//v3 eulerRot{ math::QuatToEulerDeg(c.Rotation) }; 
-		if (editor::DisplayEditableVector3(&prevEuler, "Rotation", minRotVal, maxRotVal, "%.1f"))
+		if (editor::ui::DisplayEditableVector3(&prevEuler, "Rotation", minRotVal, maxRotVal, "%.1f"))
 		{
 			c.Rotation = math::EulerDegToQuat(prevEuler);
 		}
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Scale, "Scale", minScaleVal, maxScaleVal);
+		editor::ui::DisplayEditableVector3(&c.Scale, "Scale", minScaleVal, maxScaleVal);
 
 		//static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
 		//static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
@@ -295,11 +295,11 @@ struct Camera : Component
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Camera");
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.MoveSpeed, "MoveSpeed", 0.00007f, 0.001f, "%.5f");
+		editor::ui::DisplayEditableFloat(&c.MoveSpeed, "MoveSpeed", 0.00007f, 0.001f, "%.5f");
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.RotationSpeed, "RotationSpeed", 0.9f, 2.0f);
+		editor::ui::DisplayEditableFloat(&c.RotationSpeed, "RotationSpeed", 0.9f, 2.0f);
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.SlerpFactor, "SlerpFactor", 0.1f, 0.99f);
+		editor::ui::DisplayEditableFloat(&c.SlerpFactor, "SlerpFactor", 0.1f, 0.99f);
 	}
 #endif
 };
@@ -352,13 +352,13 @@ struct DirectionalLight : Component
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Directional Light");
 		ImGui::TableNextRow();
-		bool changed{ editor::DisplayEditableVector3(&c.Direction, "Direction") };
+		bool changed{ editor::ui::DisplayEditableVector3(&c.Direction, "Direction") };
 		ImGui::TableNextRow();
-		changed |= editor::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
+		changed |= editor::ui::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
 		ImGui::TableNextRow();
-		changed |= editor::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
+		changed |= editor::ui::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
 		ImGui::TableNextRow();
-		changed |= editor::DisplayEditableBool(&c.Enabled, "Enabled");
+		changed |= editor::ui::DisplayEditableBool(&c.Enabled, "Enabled");
 		if (changed)
 		{
 			graphics::light::UpdateDirectionalLight(c);
@@ -386,15 +386,15 @@ struct PointLight : Component
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Point Light");
 		ImGui::TableNextRow();
-		bool changed{ editor::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f) };
+		bool changed{ editor::ui::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f) };
 		ImGui::TableNextRow();
-		changed |= editor::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
+		changed |= editor::ui::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
 		ImGui::TableNextRow();
-		changed |= editor::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
+		changed |= editor::ui::DisplayEditableFloat(&c.Intensity, "Intensity", 0.f, 10.f);
 		ImGui::TableNextRow();
-		changed |= editor::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
+		changed |= editor::ui::DisplayEditableVector3(&c.Color, "Color", 0.f, 1.f);
 		ImGui::TableNextRow();
-		changed |= editor::DisplayEditableBool(&c.Enabled, "Enabled");
+		changed |= editor::ui::DisplayEditableBool(&c.Enabled, "Enabled");
 		if (changed)
 		{
 			graphics::light::UpdatePointLight(c);
@@ -424,13 +424,13 @@ struct SpotLight : Component
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Spot Light");
 		ImGui::TableNextRow();
-		editor::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f);
+		editor::ui::DisplayEditableVector3(&c.Attenuation, "Attenuation", 0.f, 10.f);
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
+		editor::ui::DisplayEditableFloat(&c.Range, "Range", 0.f, 50.f);
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.Umbra, "Umbra", 0.f, math::PI);
+		editor::ui::DisplayEditableFloat(&c.Umbra, "Umbra", 0.f, math::PI);
 		ImGui::TableNextRow();
-		editor::DisplayEditableFloat(&c.Penumbra, "Penumbra", c.Umbra, math::PI);
+		editor::ui::DisplayEditableFloat(&c.Penumbra, "Penumbra", c.Umbra, math::PI);
 	}
 #endif
 };
@@ -444,7 +444,7 @@ struct NameComponent : Component
 	{
 		constexpr u32 MAX_NAME_LENGTH{ 16 };
 		static char nameBuffer[MAX_NAME_LENGTH];
-		editor::DisplayLabelT("Name");
+		editor::ui::DisplayLabelT("Name");
 		ImGui::InputText("", nameBuffer, MAX_NAME_LENGTH);
 		ImGui::TableNextColumn();
 		if (ImGui::Button("Confirm"))
@@ -468,13 +468,13 @@ struct PathTraceable : Component
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("PathTraceable");
 		ImGui::TableNextRow();
-		editor::DisplayUint(c.MeshInfo.VertexCount, "Vertex Count");
+		editor::ui::DisplayUint(c.MeshInfo.VertexCount, "Vertex Count");
 		ImGui::TableNextRow();
-		editor::DisplayUint(c.MeshInfo.VertexGlobalOffset, "Vertex Global Offset");
+		editor::ui::DisplayUint(c.MeshInfo.VertexGlobalOffset, "Vertex Global Offset");
 		ImGui::TableNextRow();
-		editor::DisplayUint(c.MeshInfo.IndexCount, "Index Count");
+		editor::ui::DisplayUint(c.MeshInfo.IndexCount, "Index Count");
 		ImGui::TableNextRow();
-		editor::DisplayUint(c.MeshInfo.IndexGlobalOffset, "Index Global Offset");
+		editor::ui::DisplayUint(c.MeshInfo.IndexGlobalOffset, "Index Global Offset");
 	}
 #endif
 };

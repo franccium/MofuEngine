@@ -59,6 +59,8 @@ SetupPlatformInterface(PlatformInterface& pi)
 	pi.resources.removeRenderItem = content::render_item::RemoveRenderItem;
 	pi.resources.updateRenderItemData = content::render_item::UpdateRenderItemData;
 
+	pi.shaders.onShadersRecompiled = core::OnShadersRecompiled;
+
 	//TODO: pi.ui.initialize = ui::Initialize;
 	pi.ui.shutdown = ui::Shutdown;
 	pi.ui.startNewFrame = ui::StartNewFrame;

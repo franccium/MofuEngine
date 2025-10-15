@@ -5,6 +5,7 @@
 #include "Platform/Window.h"
 #include <functional>
 #include "EngineAPI/Camera.h"
+#include "Content/EngineShaders.h"
 #include "ECS/Entity.h"
 
 namespace mofu::graphics {
@@ -48,6 +49,11 @@ struct PlatformInterface
 		void(*removeRenderItem)(id_t);
 		void(*updateRenderItemData)(id_t, id_t);
 	} resources;
+
+	struct
+	{
+		void(*onShadersRecompiled)(EngineShader::ID);
+	} shaders;
 
 	struct
 	{

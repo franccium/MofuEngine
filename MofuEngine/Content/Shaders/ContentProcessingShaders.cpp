@@ -2,7 +2,7 @@
 #include "Content/ResourceCreation.h"
 #include "Content/ShaderCompilation.h"
 
-namespace mofu::content::shaders {
+namespace mofu::shaders::content {
 namespace {
 CompiledShaderPtr contentShaders[ContentShader::Count]{};
 // a chunk of memory with all compiled content shaders
@@ -18,7 +18,7 @@ LoadShaders()
     assert(std::filesystem::exists(path));
 
     u64 totalSize{ 0 };
-    bool result{ ReadFileToByteBuffer(path, contentShadersBlob, totalSize) };
+    bool result{ mofu::content::ReadFileToByteBuffer(path, contentShadersBlob, totalSize) };
     if (!result) return false;
 
     assert(contentShadersBlob && totalSize != 0);
@@ -27,12 +27,12 @@ LoadShaders()
     u32 index{ 0 };
     while (offset < totalSize)
     {
-        content::CompiledShaderPtr& shader{ contentShaders[index] };
+        CompiledShaderPtr& shader{ contentShaders[index] };
         assert(!shader);
         result &= (index < ContentShader::Count && !shader);
         if (!result) break;
 
-        shader = reinterpret_cast<const content::CompiledShaderPtr>(&contentShadersBlob[offset]);
+        shader = reinterpret_cast<const CompiledShaderPtr>(&contentShadersBlob[offset]);
         offset += shader->GetBufferSize();
         ++index;
     }

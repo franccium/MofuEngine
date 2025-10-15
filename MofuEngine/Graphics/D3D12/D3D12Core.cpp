@@ -16,6 +16,7 @@
 #include "Lights/D3D12LightCulling.h"
 #include "D3D12RayTracing.h"
 #include "Graphics/RTSettings.h"
+#include "Content/EngineShaders.h"
 
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
@@ -1059,6 +1060,16 @@ u32
 SurfaceHeight(surface_id id)
 {
     return surfaces[id].Height();
+}
+
+void OnShadersRecompiled(EngineShader::ID shaderID)
+{
+    shaders::ReloadShader(shaderID);
+    switch (shaderID)
+    {
+    case EngineShader::RayTracingLib:
+        rt::ResetShaders();
+    }
 }
 
 }

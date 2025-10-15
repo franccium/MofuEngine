@@ -2,14 +2,29 @@
 #include "GraphicsPlatformInterface.h"
 #include "D3D12/D3D12Interface.h"
 #include "EngineAPI/Camera.h"
+#include "Content/EngineShaders.h"
 
 namespace mofu::graphics {
 namespace {
-constexpr const char* ENGINE_SHADERS_PATHS[]{
-    ".\\shaders\\d3d12\\shaders.bin"
+constexpr const char* ENGINE_SHADERS_BLOB_PATHS[]{
+    ".\\shaders\\d3d12\\shaders.bin",
 };
-constexpr const char* ENGINE_DEBUG_SHADERS_PATHS[]{
-    ".\\shaders\\d3d12\\shaders_d.bin"
+constexpr const char* ENGINE_DEBUG_SHADERS_BLOB_PATHS[]{
+    ".\\shaders\\d3d12\\shaders_d.bin",
+};
+constexpr const char* ENGINE_SHADERS_PATHS[][EngineShader::Count]{
+    {
+        ".\\shaders\\d3d12\\FSTriangle.bin",
+        ".\\shaders\\d3d12\\PostProcess.bin",
+        ".\\shaders\\d3d12\\GridFrustums.bin",
+        ".\\shaders\\d3d12\\LightCulling.bin",
+        ".\\shaders\\d3d12\\RayTracing.bin",
+    }
+};
+constexpr const char* ENGINE_DEBUG_SHADERS_PATHS[][EngineDebugShader::Count]{
+    {
+        ".\\shaders\\d3d12\\PostProcess_d.bin",
+    }
 };
 
 PlatformInterface gfxInterface;
@@ -93,28 +108,46 @@ GetVisibleEntities()
     return visibleEntities;
 }
 
-const char* 
+const char* const
 GetEngineShadersPath()
 {
-    return ENGINE_SHADERS_PATHS[(u32)gfxInterface.platform];
+    return ENGINE_SHADERS_BLOB_PATHS[(u32)gfxInterface.platform];
 }
 
-const char* 
+const char* const
+GetEngineShaderPath(EngineShader::ID shaderID)
+{
+    return ENGINE_SHADERS_PATHS[(u32)GraphicsPlatform::Direct3D12][shaderID];
+}
+
+const char* const
+GetDebugEngineShaderPath(EngineDebugShader::ID shaderID)
+{
+    return ENGINE_DEBUG_SHADERS_PATHS[(u32)GraphicsPlatform::Direct3D12][shaderID];
+}
+
+const char*  const
 GetDebugEngineShadersPath()
 {
-    return ENGINE_DEBUG_SHADERS_PATHS[(u32)gfxInterface.platform];
+    return ENGINE_DEBUG_SHADERS_BLOB_PATHS[(u32)gfxInterface.platform];
 }
 
-const char*
+const char* const
 GetEngineShadersPath(GraphicsPlatform platform)
 {
-    return ENGINE_SHADERS_PATHS[(u32)platform];
+    return ENGINE_SHADERS_BLOB_PATHS[(u32)platform];
 }
 
-const char*
+const char* const
 GetDebugEngineShadersPath(GraphicsPlatform platform)
 {
-    return ENGINE_DEBUG_SHADERS_PATHS[(u32)platform];
+    return ENGINE_DEBUG_SHADERS_BLOB_PATHS[(u32)platform];
+}
+
+void 
+OnShadersRecompiled(EngineShader::ID shaderID)
+{
+	gfxInterface.shaders.onShadersRecompiled(shaderID);
 }
 
 void 

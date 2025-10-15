@@ -213,6 +213,11 @@ void MofuUpdate()
 	ZoneScoped;
 
 	timer.Start();
+#if SHADER_HOT_RELOAD_ENABLED
+	// autosave is problematic so keybind only for now
+	if (input::WasKeyPressed(input::Keys::End)) shaders::UpdateHotReload();
+#endif
+
 #if RAYTRACING
 	if (input::WasKeyPressed(input::Keys::E)) graphics::d3d12::rt::RequestRTUpdate();
 	if (input::WasKeyPressed(input::Keys::T)) graphics::d3d12::rt::RequestRTAccStructureRebuild();

@@ -55,7 +55,7 @@ constexpr const char* MATERIAL_SURFACE_TYPE_TO_STRING[graphics::MaterialType::Co
 	"Opaque",
 };
 id_t DEFAULT_TEXTURES[TextureUsage::Count];
-id_t DEFAULT_SHADERS[graphics::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
+id_t DEFAULT_SHADERS[shaders::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
 
 ecs::Entity materialOwner{};
 EditorMaterial editorMaterial{};
@@ -183,7 +183,7 @@ UpdateMaterialInitInfo()
 	materialInitInfo.Type = editorMaterial.Type;
 	materialInitInfo.Surface = editorMaterial.Surface;
 	materialInitInfo.TextureCount = editorMaterial.TextureCount;
-	memcpy(materialInitInfo.ShaderIDs, editorMaterial.ShaderIDs, graphics::ShaderType::Count * sizeof(id_t));
+	memcpy(materialInitInfo.ShaderIDs, editorMaterial.ShaderIDs, shaders::ShaderType::Count * sizeof(id_t));
 	materialInitInfo.TextureIDs = new id_t[editorMaterial.TextureCount];
 	memcpy(materialInitInfo.TextureIDs, editorMaterial.TextureIDs, editorMaterial.TextureCount * sizeof(id_t));
 	materialInitInfo.MaterialFlags = (graphics::MaterialFlags::Flags)editorMaterial.Flags;
@@ -259,17 +259,17 @@ DisplayMaterialSurfaceProperties(const graphics::MaterialSurface& surface)
 		ImGui::TableNextRow();
 		ImGui::TextUnformatted("Surface:");
 		ImGui::TableNextRow();
-		DisplayVector4(surface.BaseColor, "Base Color");
+		ui::DisplayVector4(surface.BaseColor, "Base Color");
 		ImGui::TableNextRow();
-		DisplayFloat(surface.Metallic, "Metallic");
+		ui::DisplayFloat(surface.Metallic, "Metallic");
 		ImGui::TableNextRow();
-		DisplayFloat(surface.Roughness, "Roughness");
+		ui::DisplayFloat(surface.Roughness, "Roughness");
 		ImGui::TableNextRow();
-		DisplayVector3(surface.Emissive, "Emission Color");
+		ui::DisplayVector3(surface.Emissive, "Emission Color");
 		ImGui::TableNextRow();
-		DisplayFloat(surface.EmissiveIntensity, "Emission Intensity");
+		ui::DisplayFloat(surface.EmissiveIntensity, "Emission Intensity");
 		ImGui::TableNextRow();
-		DisplayFloat(surface.AmbientOcclusion, "Ambient Occlusion");
+		ui::DisplayFloat(surface.AmbientOcclusion, "Ambient Occlusion");
 		ImGui::EndTable();
 	}
 }
@@ -287,18 +287,18 @@ DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& surface)
 		constexpr f32 min{ 0.f };
 		constexpr f32 max{ 1.f };
 		static bool colorEditOpen{ false };
-		DisplayLabelT("Base Color");
+		ui::DisplayLabelT("Base Color");
 		ImGui::ColorEdit4("", (float*)&surface.BaseColor, ImGuiColorEditFlags_PickerHueWheel);
 		ImGui::TableNextRow();
-		DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
+		ui::DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
 		ImGui::TableNextRow();
-		DisplayEditableFloat(&surface.Roughness, "Roughness", min, max);
+		ui::DisplayEditableFloat(&surface.Roughness, "Roughness", min, max);
 		ImGui::TableNextRow();
-		DisplayEditableVector3(&surface.Emissive, "Emission Color", min, max);
+		ui::DisplayEditableVector3(&surface.Emissive, "Emission Color", min, max);
 		ImGui::TableNextRow();
-		DisplayEditableFloat(&surface.EmissiveIntensity, "Emission Intensity", min, max);
+		ui::DisplayEditableFloat(&surface.EmissiveIntensity, "Emission Intensity", min, max);
 		ImGui::TableNextRow();
-		DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
+		ui::DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
 		ImGui::EndTable();
 	}
 	DisplayStandardMaterialEdit(standardMaterial);
@@ -344,8 +344,8 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 	memcpy(editorMaterial.TextureIDs, materialInitInfo.TextureIDs, sizeof(id_t) * materialInitInfo.TextureCount);
 	bool textured{ materialInitInfo.TextureCount != 0 };
 	std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
-	materialInitInfo.ShaderIDs[graphics::ShaderType::Vertex] = vsps.first;
-	materialInitInfo.ShaderIDs[graphics::ShaderType::Pixel] = vsps.second;
+	materialInitInfo.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
+	materialInitInfo.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
 	for (u32 i{ 0 }; i < TextureUsage::Count; ++i)
 	{
 		editorMaterial.ShaderIDs[i] = materialInitInfo.ShaderIDs[i];

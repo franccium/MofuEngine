@@ -28,7 +28,7 @@ CreateDefaultShaders()
     shaders::ShaderFileInfo info{};
     info.File = "TestShader.hlsl";
     info.EntryPoint = "TestShaderVS";
-    info.Type = graphics::ShaderType::Vertex;
+    info.Type = shaders::ShaderType::Vertex;
     const char* shaderPath{ "..\\ExampleApp\\" };
 
     std::wstring defines[]{ L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
@@ -50,7 +50,7 @@ CreateDefaultShaders()
     }
 
     info.EntryPoint = "TestShaderPS";
-    info.Type = graphics::ShaderType::Pixel;
+    info.Type = shaders::ShaderType::Pixel;
     Vec<std::unique_ptr<u8[]>> pixelShaders{};
 
     extraArgs.clear();
@@ -78,8 +78,8 @@ CreateDefaultMaterial()
     assert(id::IsValid(defaultVSID) && id::IsValid(defaultPSID));
 
     graphics::MaterialInitInfo info{};
-    info.ShaderIDs[graphics::ShaderType::Vertex] = defaultVSID;
-    info.ShaderIDs[graphics::ShaderType::Pixel] = defaultPSID;
+    info.ShaderIDs[shaders::ShaderType::Vertex] = defaultVSID;
+    info.ShaderIDs[shaders::ShaderType::Pixel] = defaultPSID;
     info.Type = graphics::MaterialType::Opaque;
     defaultMaterialID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
 }
@@ -132,6 +132,44 @@ LoadEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
 }
 
 bool
+LoadEngineShaders(Array<std::unique_ptr<u8[]>>& shaders, u64& size)
+{
+    for (u32 i{0}; i < EngineShader::Count; ++i)
+    {
+        std::filesystem::path path{ graphics::GetEngineShaderPath((EngineShader::ID)i) };
+        bool readShader{ ReadFileToByteBuffer(path, shaders[i], size) };
+        if (!readShader) return false;
+	}
+    CreateDefaultShaders();
+    CreateDefaultMaterial();
+    return true;
+}
+
+bool
+LoadEngineShader(std::unique_ptr<u8[]>& shader, EngineShader::ID shaderID)
+{
+    std::filesystem::path path{ graphics::GetEngineShaderPath((EngineShader::ID)shaderID) };
+	u64 size{ 0 };
+    bool readShader{ ReadFileToByteBuffer(path, shader, size) };
+    if (!readShader) return false;
+    return true;
+}
+
+bool
+LoadDebugEngineShaders(Array<std::unique_ptr<u8[]>>& shaders, u64& size)
+{
+    for (u32 i{ 0 }; i < EngineDebugShader::Count; ++i)
+    {
+        std::filesystem::path path{ graphics::GetDebugEngineShaderPath((EngineDebugShader::ID)i) };
+        bool readShader{ ReadFileToByteBuffer(path, shaders[i], size) };
+        if (!readShader) return false;
+    }
+    CreateDefaultShaders();
+    CreateDefaultMaterial();
+    return true;
+}
+
+bool
 LoadDebugEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
 {
     bool readShaders{ ReadFileToByteBuffer(std::filesystem::path{ graphics::GetDebugEngineShadersPath() }, shaders, size) };
@@ -165,7 +203,6 @@ SaveGeometry(const MeshGroupData& data, std::filesystem::path path)
 
 	file.write(GEOMETRY_SERIALIZED_ASSET_VERSION, SERIALIZED_ASSET_VERSION_LENGTH);
     file.write(reinterpret_cast<const char*>(data.Buffer), data.BufferSize);
-    file.close();
 }
 
 id_t 
@@ -219,8 +256,6 @@ ReadAssetFile(std::filesystem::path path, std::unique_ptr<u8[]>& dataOut, u64& s
 
 	dataOut = std::make_unique<u8[]>(sizeOut);
     file.read(reinterpret_cast<char*>(dataOut.get()), sizeOut);
-
-	file.close();
 }
 
 void
@@ -246,8 +281,6 @@ ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOu
 
     dataOut = std::make_unique<u8[]>(sizeOut);
     file.read(reinterpret_cast<char*>(dataOut.get()), sizeOut);
-
-    file.close();
 }
 
 }

@@ -42,16 +42,36 @@ DrawRayTracingSettings()
 
 	ImGui::Checkbox("Sun From DirLight", (bool*)&settings.SunFromDirectionalLight);
 	ImGui::Checkbox("Indirect Enabled", (bool*)&settings.IndirectEnabled);
+	ImGui::Checkbox("Specular Enabled", (bool*)&settings.SpecularEnabled);
+	ImGui::Checkbox("Diffuse Enabled", (bool*)&settings.DiffuseEnabled);
 	ImGui::Checkbox("Show Normals", (bool*)&settings.ShowNormals);
 	ImGui::Checkbox("Show Ray Directions", (bool*)&settings.ShowRayDirs);
 	ImGui::Checkbox("Render Skybox", (bool*)&settings.RenderSkybox);
 	ImGui::Checkbox("Enabled Sun", (bool*)&settings.SunEnabled);
+	ui::DisplayColorPicker((v3*)&SunIrradiance, "Sun Irradiance");
+
 	ImGui::Checkbox("Shadows Only", (bool*)&settings.ShadowsOnly);
 
-	DisplayEditableUintNT(&settings.PPSampleCountSqrt, "Sample Count (Sqrt)", 1, 16);
+	ui::DisplayEditableFloatNT(&settings.DiffuseSpecularSelector, "Diffuse/Specular Selector", 0.f, 1.f);
+
+	constexpr const char* BRDF_OPTIONS[BRDF_COUNT]{ "0" };
+	ImGui::TextUnformatted("BRDF Type: ", BRDF_OPTIONS[settings.BRDFType]);
+	for (u32 i{ 0 }; i < BRDF_COUNT; ++i)
+	{
+		if (ImGui::Button(BRDF_OPTIONS[i]))
+		{
+			settings.BRDFType = i;
+		}
+		ImGui::SameLine();
+	}
+	ImGui::NewLine();
+	ImGui::Checkbox("Apply Energy Conservation", (bool*)&settings.ApplyEnergyConservation);
+	ImGui::Checkbox("Use Russian Roulette", (bool*)&settings.UseRussianRoulette);
+
+	ui::DisplayEditableUintNT(&settings.PPSampleCountSqrt, "Sample Count (Sqrt)", 1, 16);
 	PPSampleCount = settings.PPSampleCountSqrt * settings.PPSampleCountSqrt;
-	DisplayEditableUintNT(&settings.MaxPathLength, "Max Path Length", 1, 6);
-	DisplayEditableUintNT(&settings.MaxAnyHitPathLength, "Max Any-Hit Path Length", 0, 6);
+	ui::DisplayEditableUintNT(&settings.MaxPathLength, "Max Path Length", 1, 6);
+	ui::DisplayEditableUintNT(&settings.MaxAnyHitPathLength, "Max Any-Hit Path Length", 0, 6);
 }
 
 } // anonymous namespace

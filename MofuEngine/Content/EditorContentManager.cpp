@@ -321,7 +321,7 @@ SaveAssetRegistry()
 void
 InitializeAssetRegistry()
 {
-	content::shaders::Initialize();
+	shaders::content::Initialize();
 	//texture::InitializeEnvironmentProcessing();
 
 	editor::InitializeAssetBrowserGUI();
@@ -338,7 +338,7 @@ void
 ShutdownAssetRegistry()
 {
 	//texture::ShutdownEnvironmentProcessing();
-	content::shaders::Shutdown();
+	shaders::content::Shutdown();
 
 	SerializeRegistry();
 
@@ -370,8 +370,6 @@ GetTextureIconData(const std::filesystem::path& path, u64& outIconSize, std::uni
 	outIconSize = iconSize;
 	iconBuffer = std::make_unique<u8[]>(outIconSize);
 	file.read(reinterpret_cast<char*>(iconBuffer.get()), iconSize);
-
-	file.close();
 }
 
 void 
@@ -430,8 +428,6 @@ GetTextureMetadata(const std::filesystem::path& path, u64& outTextureSize, std::
 
 	textureBuffer = std::make_unique<u8[]>(outTextureSize);
 	file.read(reinterpret_cast<char*>(textureBuffer.get()), outTextureSize);
-
-	file.close();
 }
 
 

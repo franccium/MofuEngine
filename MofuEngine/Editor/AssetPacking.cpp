@@ -113,7 +113,6 @@ PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPat
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
-	file.close();
 }
 
 void
@@ -132,7 +131,6 @@ SaveIcon(texture::TextureData& data, std::filesystem::path targetPath)
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
-	file.close();
 }
 
 // NOTE: engine expects data to contain:
@@ -195,7 +193,6 @@ PackTextureForEngine(texture::TextureData& data, std::filesystem::path targetPat
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
-	file.close();
 }
 
 }

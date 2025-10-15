@@ -106,11 +106,11 @@ RenderTextureImportSettings()
 		ImGui::EndCombo();
 	}
 
-	DisplayEditableUintNT(&textureImportSettings.MipLevels, "Mip Levels", 0, 14);
+	ui::DisplayEditableUintNT(&textureImportSettings.MipLevels, "Mip Levels", 0, 14);
 	ImGui::SliderFloat("Alpha Threshold", &textureImportSettings.AlphaThreshold, 0.f, 1.f);
 	ImGui::TextUnformatted("Format: "); ImGui::SameLine();
 	ImGui::TextUnformatted(texture::TEXTURE_FORMAT_STRING[textureImportSettings.OutputFormat]);
-	DisplayEditableUintNT(&textureImportSettings.CubemapSize, "Cubemap Size", 16, 4096);
+	ui::DisplayEditableUintNT(&textureImportSettings.CubemapSize, "Cubemap Size", 16, 4096);
 
 	ImGui::Checkbox("Prefer BC7", (bool*)&textureImportSettings.PreferBC7);
 	ImGui::Checkbox("Compress", (bool*)&textureImportSettings.Compress);

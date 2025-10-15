@@ -621,7 +621,6 @@ PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data, std::file
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
-	file.close();
 }
 
 /* the engine expects data to contain :
@@ -717,7 +716,6 @@ PackGeometryForEngine(const MeshGroup& group, std::filesystem::path targetPath)
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
-	file.close();
 }
 
 void
