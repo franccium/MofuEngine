@@ -37,6 +37,7 @@ DrawRayTracingSettings()
 {
 	using namespace graphics::rt::settings;
 	Settings& settings{ RTGlobalSettings };
+	ImGui::Checkbox("Enable Path Tracing", &PathTracingEnabled);
 	ImGui::Checkbox("Always Restart Tracing", &AlwaysRestartPathTracing);
 	ImGui::Checkbox("Always New Sample", &AlwaysNewSample);
 
@@ -80,7 +81,7 @@ void
 DrawRenderingConsole()
 {
 #if USE_DEBUG_KEYBINDS
-	if (input::WasKeyPressed(input::Keys::Key::K))
+	if (input::WasKeyPressed(input::Keybinds::Editor.ToggleRenderingConsole))
 	{
 		_isOpen = !_isOpen;
 	}

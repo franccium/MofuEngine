@@ -28,6 +28,7 @@ struct Settings
 };
 extern Settings RTGlobalSettings;
 
+extern bool PathTracingEnabled;
 extern u32 PPSampleCount;
 extern bool AlwaysRestartPathTracing;
 extern bool AlwaysNewSample;

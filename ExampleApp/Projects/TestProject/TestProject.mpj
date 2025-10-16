@@ -1,6 +1,3 @@
 Project:
   Name: Test Project
-  AssetDirectory: Assets
-  ScriptDirectory: Scripts
-  ResourceDirectory: Resources
   StartScene: 0

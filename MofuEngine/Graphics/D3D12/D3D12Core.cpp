@@ -17,6 +17,7 @@
 #include "D3D12RayTracing.h"
 #include "Graphics/RTSettings.h"
 #include "Content/EngineShaders.h"
+#include "Graphics/RTSettings.h"
 
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
@@ -706,10 +707,13 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
     fx::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
 
-    const bool wasCameraUpdated{ camera::GetCamera(frameInfo.CameraID).WasUpdated() };
-    const bool shouldRestartPathTracing{ graphics::rt::settings::AlwaysRestartPathTracing || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
-    rt::Update(shouldRestartPathTracing, renderItemsUpdated);
-    renderItemsUpdated = false;
+    if (graphics::rt::settings::PathTracingEnabled)
+    {
+        const bool wasCameraUpdated{ camera::GetCamera(frameInfo.CameraID).WasUpdated() };
+        const bool shouldRestartPathTracing{ graphics::rt::settings::AlwaysRestartPathTracing || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
+        rt::Update(shouldRestartPathTracing, renderItemsUpdated);
+        renderItemsUpdated = false;
+    }
 
     ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
 
@@ -730,8 +734,10 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
     }
 
-    rt::Render(d3d12FrameInfo, cmdList);
-
+    if (graphics::rt::settings::PathTracingEnabled)
+    {
+        rt::Render(d3d12FrameInfo, cmdList);
+    }
 
     {
         // Depth Prepass
@@ -1067,8 +1073,14 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
     shaders::ReloadShader(shaderID);
     switch (shaderID)
     {
-    case EngineShader::RayTracingLib:
-        rt::ResetShaders();
+        case EngineShader::PostProcessPS:
+            fx::ResetShaders(false);
+        case EngineShader::LightCullingCS:
+            light::ResetShaders();
+        case EngineShader::RayTracingLib:
+            rt::ResetShaders();
+        default:
+            break;
     }
 }
 

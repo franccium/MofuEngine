@@ -30,7 +30,9 @@ SerializeEntityHierarchy(YAML::Emitter& out, const Vec<ecs::Entity>& entities)
 	u32 currentIndex{};
 
 	assert(out.good()); // TODO: the hell does that mean
+	// TODO: prefab handle system if needed
 	out << YAML::BeginMap;
+	out << YAML::Key << "Prefab" << YAML::Value << Guid{};
 
 	out << YAML::Key << "Entities" << YAML::Value << YAML::BeginMap;
 
@@ -105,6 +107,9 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 #endif
 	};
 	Vec<RenderableEntitySpawnContext> renderables{};
+
+	// TODO: prefab handle system if needed
+	Guid prefabID{ entityHierarchyData["Prefab"].as<u64>() };
 
 	auto entityNodes{ entityHierarchyData["Entities"] };
 	for (auto entityNode : entityNodes)
@@ -334,7 +339,7 @@ SerializeEntityHierarchy(const Vec<ecs::Entity>& entities)
 	Entity parent{ entities.front() };
 	const char* parentName{ scene::GetComponent<component::NameComponent>(parent).Name };
 	std::string prefabFilename{ parentName };
-	prefabFilename += ".pre";
+	prefabFilename += content::PREFAB_FILE_EXTENSION;
 	const std::filesystem::path resourcesPath{ mofu::editor::project::GetResourceDirectory() };
 	std::filesystem::path prefabPath{ resourcesPath / "Prefabs" / prefabFilename };
 	
@@ -356,10 +361,10 @@ SerializeScene(const ecs::scene::Scene& scene, const Vec<Vec<ecs::Entity>>& hier
 	{
 		SerializeEntityHierarchy()
 	}*/
-	char sceneFilename[16];
-	snprintf(sceneFilename, 16, "scene%u.sc", scene.GetSceneID());
-	const std::filesystem::path projectPath{ mofu::editor::project::GetProjectDirectory() };
-	std::filesystem::path prefabPath{ projectPath / "Scenes" / sceneFilename };
+	constexpr u32 maxSceneNameLength{ ecs::scene::Scene::MAX_NAME_LENGTH + 4 };
+	char sceneFilename[maxSceneNameLength];
+	snprintf(sceneFilename, maxSceneNameLength, "%s.sc", scene.Name);
+	std::filesystem::path scenePath{ mofu::editor::project::GetSceneDirectory() / sceneFilename };
 
 	YAML::Emitter out;
 	out << YAML::BeginMap;
@@ -379,13 +384,17 @@ SerializeScene(const ecs::scene::Scene& scene, const Vec<Vec<ecs::Entity>>& hier
 
 	out << YAML::EndMap;
 
-	std::ofstream outFile(prefabPath);
+	std::ofstream outFile(scenePath);
 	outFile << out.c_str();
 }
 
 void
-DeserializeScene(Vec<Vec<ecs::Entity>>& hierarchies, const std::filesystem::path& path)
+LoadScene(Vec<Vec<ecs::Entity>>& hierarchies, const std::filesystem::path& path)
 {
+	ecs::scene::UnloadScene();
+	std::string sceneName{ path.stem().string() };
+	ecs::scene::CreateScene(sceneName.c_str());
+
 	YAML::Node data = YAML::LoadFile(path.string());
 
 	const auto& sceneData{ data["Scene"] };

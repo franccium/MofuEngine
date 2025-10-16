@@ -42,35 +42,35 @@ namespace mofu::ecs::system {
 				cam.TargetPos = lt.Position;
 				f32 moveSpeed{ cam.MoveSpeed };
 
-				if (input::IsKeyDown(input::Keys::R))
+				if (input::IsKeyDown(input::Keybinds::Movement.LockRotation))
 				{
 					isInputEnabled = !isInputEnabled;
 				}
-				if (input::IsKeyDown(input::Keys::W))
+				if (input::IsKeyDown(input::Keybinds::Movement.Forward))
 				{
 					move.z = 1.f;
 				}
-				if (input::IsKeyDown(input::Keys::S))
+				if (input::IsKeyDown(input::Keybinds::Movement.Backwards))
 				{
 					move.z = -1.f;
 				}
-				if (input::IsKeyDown(input::Keys::A))
+				if (input::IsKeyDown(input::Keybinds::Movement.Left))
 				{
 					move.x = 1.f;
 				}
-				if (input::IsKeyDown(input::Keys::D))
+				if (input::IsKeyDown(input::Keybinds::Movement.Right))
 				{
 					move.x = -1.f;
 				}
-				if (input::IsKeyDown(input::Keys::Space))
+				if (input::IsKeyDown(input::Keybinds::Movement.Up))
 				{
 					move.y = 1.f;
 				}
-				if (input::IsKeyDown(input::Keys::Z))
+				if (input::IsKeyDown(input::Keybinds::Movement.Down))
 				{
 					move.y = -1.f;
 				}
-				if (input::IsKeyDown(input::Keys::Shift))
+				if (input::IsKeyDown(input::Keybinds::Movement.Sprint))
 				{
 					moveSpeed *= 2.f;
 				}

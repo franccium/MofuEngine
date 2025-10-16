@@ -12,6 +12,7 @@
 #include "Content/EditorContentManager.h"
 #include "Editor/Project/Project.h"
 #include "EditorInterface.h"
+#include "PrefabView.h"
 
 namespace mofu::editor {
 
@@ -20,6 +21,7 @@ std::filesystem::path assetBaseDirectory;
 std::filesystem::path assetImportedDirectory;
 std::filesystem::path currentDirectory;
 std::filesystem::path projectBaseDirectory;
+std::filesystem::path prefabsDirectory;
 
 std::bitset<content::AssetType::Count> itemTypeFilter{};
 
@@ -226,7 +228,6 @@ struct AssetBrowser
 
 
 AssetBrowser assetBrowser;
-AssetBrowser fileBrowser;
 
 BrowserMode browserMode{ BrowserMode::Assets };
 
@@ -263,9 +264,13 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                 CurrentNode = CurrentNode->Parent;
             }
         }
-        if (ImGui::MenuItem("Mode"))
+        if (ImGui::MenuItem("Prefabs"))
         {
-            browserMode = browserMode == BrowserMode::Assets ? BrowserMode::AllFiles : BrowserMode::Assets;
+            browserMode = BrowserMode::Prefabs;
+        }
+        if (ImGui::MenuItem("Files"))
+        {
+            browserMode = BrowserMode::AllFiles;
         }
         if (ImGui::MenuItem("Clear Selection"))
         {
@@ -675,112 +680,205 @@ RenderAssetBrowser()
     assetBrowser.Draw("Asset Browser", nullptr);
 }
 
-void
-RenderFileBrowser()
+template<typename T>
+struct Browser
 {
-    if (ImGui::BeginMenuBar())
-    {
-        if (ImGui::MenuItem("Mode"))
-        {
-            browserMode = browserMode == BrowserMode::Assets ? BrowserMode::AllFiles : BrowserMode::Assets;
-        }
-        ImGui::EndMenuBar();
-    }
+    std::filesystem::path BaseDirectory;
+    std::filesystem::path CurrentDirectory;
+    Selection Selection;
 
-    if (currentDirectory != projectBaseDirectory)
+    void Draw()
     {
-        if (ImGui::Button("<---"))
-        {
-            currentDirectory = currentDirectory.parent_path();
-        }
+        static_cast<T*>(this)->Draw();
     }
+};
 
-    for (auto& dirEntry : std::filesystem::directory_iterator{ currentDirectory })
+struct FileBrowser : Browser<FileBrowser>
+{
+    void Draw()
     {
-        const auto& path{ dirEntry.path() };
-        std::string filename = path.filename().string();
-        const char* name = filename.c_str();
-        if (dirEntry.is_directory())
+        if (ImGui::BeginMenuBar())
         {
-            if (ImGui::Button(name))
+            if (ImGui::MenuItem("Assets"))
             {
-                currentDirectory = path;
+                browserMode = BrowserMode::Assets;
+            }
+            if (ImGui::MenuItem("Prefabs"))
+            {
+                browserMode = BrowserMode::Prefabs;
+            }
+            ImGui::EndMenuBar();
+        }
+
+        if (CurrentDirectory != BaseDirectory)
+        {
+            if (ImGui::Button("<---"))
+            {
+                CurrentDirectory = CurrentDirectory.parent_path();
             }
         }
-        else
+
+        for (auto& dirEntry : std::filesystem::directory_iterator{ CurrentDirectory })
         {
-            std::string extension{ path.extension().string() };
-            if (content::IsEngineAssetExtension(extension)) continue;
-
-            //TODO:
-            ImGui::PushID(path.string().c_str());
-
-            bool selected = fileBrowser.Selection.Contains((ImGuiID)name);
-            bool clicked = ImGui::Selectable(name, selected);
-
-            if (ImGui::IsItemHovered())
+            const auto& path{ dirEntry.path() };
+            std::string filename = path.filename().string();
+            const char* name = filename.c_str();
+            if (dirEntry.is_directory())
             {
-                if (content::IsAllowedAssetExtension(extension))
+                if (ImGui::Button(name))
                 {
-                    content::AssetHandle handle{ content::assets::GetHandleFromPath(path) };
-                    assert(handle != content::INVALID_HANDLE);
-                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                    CurrentDirectory = path;
+                }
+            }
+            else
+            {
+                std::string extension{ path.extension().string() };
+                if (content::IsEngineAssetExtension(extension)) continue;
+
+                //TODO:
+                ImGui::PushID(path.string().c_str());
+
+                bool selected = Selection.Contains((ImGuiID)name);
+                bool clicked = ImGui::Selectable(name, selected);
+
+                if (ImGui::IsItemHovered())
+                {
+                    if (content::IsAllowedAssetExtension(extension))
                     {
-                        //content::AssetPtr asset{};
-                        //if (asset->Type == content::AssetType::Texture)
-                        //{
-                        //    void* it = NULL;
-                        //    ImGuiID id = 0;
-                        //    Vec<content::AssetPtr> chosenAssets{};
-                        //    while (Selection.GetNextSelectedItem(&it, &id))
-                        //    {
-                        //        chosenAssets.emplace_back(assets[id].second);
-                        //    }
-                        //    content::texture::TextureImportSettings settings{};
-                        //    settings.FileCount = chosenAssets.size();
-                        //    for (const content::AssetPtr a : chosenAssets)
-                        //    {
-                        //        settings.Files += a->ImportedFilePath.string() + ";";
-                        //    }
-                        //    assets::ViewImportSettings(id, settings);
-                        //}
-                        //else
+                        content::AssetHandle handle{ content::assets::GetHandleFromPath(path) };
+                        assert(handle != content::INVALID_HANDLE);
+                        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                         {
-                            assets::ViewImportSettings(handle);
+                            //content::AssetPtr asset{};
+                            //if (asset->Type == content::AssetType::Texture)
+                            //{
+                            //    void* it = NULL;
+                            //    ImGuiID id = 0;
+                            //    Vec<content::AssetPtr> chosenAssets{};
+                            //    while (Selection.GetNextSelectedItem(&it, &id))
+                            //    {
+                            //        chosenAssets.emplace_back(assets[id].second);
+                            //    }
+                            //    content::texture::TextureImportSettings settings{};
+                            //    settings.FileCount = chosenAssets.size();
+                            //    for (const content::AssetPtr a : chosenAssets)
+                            //    {
+                            //        settings.Files += a->ImportedFilePath.string() + ";";
+                            //    }
+                            //    assets::ViewImportSettings(id, settings);
+                            //}
+                            //else
+                            {
+                                assets::ViewImportSettings(handle);
+                            }
                         }
+                        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                        {
+                            //FIXME: temporary
+                            content::texture::TextureImportSettings& settings{ assets::GetTextureImportSettingsA() };
+                            settings.FileCount = 1;
+                            settings.Files = path.string();
+                            content::ImportAsset(handle);
+                        }
+                        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                        {
+                            editor::InspectAsset(handle);
+                        }
+                    }
+                }
+
+                ImGui::PopID();
+            }
+        }
+    }
+};
+
+struct PrefabBrowser : Browser<PrefabBrowser>
+{
+    void Draw()
+    {
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::MenuItem("Assets"))
+            {
+                browserMode = BrowserMode::Assets;
+            }
+            if (ImGui::MenuItem("Files"))
+            {
+                browserMode = BrowserMode::AllFiles;
+            }
+            ImGui::EndMenuBar();
+        }
+
+        if (CurrentDirectory != BaseDirectory)
+        {
+            if (ImGui::Button("<---"))
+            {
+                CurrentDirectory = CurrentDirectory.parent_path();
+            }
+        }
+
+        for (auto& dirEntry : std::filesystem::directory_iterator{ CurrentDirectory })
+        {
+            const auto& path{ dirEntry.path() };
+            std::string filename = path.filename().string();
+            const char* name = filename.c_str();
+            if (dirEntry.is_directory())
+            {
+                if (ImGui::Button(name))
+                {
+                    CurrentDirectory = path;
+                }
+            }
+            else
+            {
+                if (path.extension().string() != content::PREFAB_FILE_EXTENSION) continue;
+
+                //TODO:
+                ImGui::PushID(path.string().c_str());
+
+                bool selected = Selection.Contains((ImGuiID)name);
+                bool clicked = ImGui::Selectable(name, selected);
+
+                if (ImGui::IsItemHovered())
+                {
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    {
+                        // TODO: jsut pass prefab handle
+                        scene::InspectPrefab(path.string());
                     }
                     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                     {
-                        //FIXME: temporary
-                        content::texture::TextureImportSettings& settings{ assets::GetTextureImportSettingsA() };
-                        settings.FileCount = 1;
-                        settings.Files = path.string();
-                        content::ImportAsset(handle);
-                    }
-                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-                    {
-                        editor::InspectAsset(handle);
+                        scene::LoadPrefab(path.string());
                     }
                 }
-            }
 
-            ImGui::PopID();
+                ImGui::PopID();
+            }
         }
     }
-}
+};
+
+//TODO: unify with AssetBrowser maybe
+FileBrowser tdfileBrowser;
+PrefabBrowser tdprefabBrowser;
 
 void
 RenderContentBrowser()
 {
     ImGui::Begin("Content Browser", nullptr, ImGuiWindowFlags_MenuBar);
 
-    if (browserMode == BrowserMode::Assets)
+    switch (browserMode)
     {
-        RenderAssetBrowser();
-    }
-    else
-    {
-        RenderFileBrowser();
+        case BrowserMode::Assets:
+            RenderAssetBrowser();
+			break;
+        case BrowserMode::AllFiles:
+            tdfileBrowser.Draw();
+			break;
+        case BrowserMode::Prefabs:
+            tdprefabBrowser.Draw();
+            break;
     }
 
     ImGui::End();
@@ -794,12 +892,18 @@ InitializeAssetBrowserGUI()
     projectBaseDirectory = editor::project::GetProjectDirectory();
     assetBaseDirectory = editor::project::GetAssetDirectory();
     assetImportedDirectory = editor::project::GetResourceDirectory();
+    prefabsDirectory = editor::project::GetPrefabDirectory();
     currentDirectory = projectBaseDirectory;
     assert(std::filesystem::exists(projectBaseDirectory) && std::filesystem::exists(assetBaseDirectory)
         && std::filesystem::exists(assetImportedDirectory) && std::filesystem::exists(currentDirectory));
     itemTypeFilter.set();
 
     assetBrowser.CreateRoot();
+
+	tdfileBrowser.BaseDirectory = assetBaseDirectory;
+	tdfileBrowser.CurrentDirectory = assetBaseDirectory;
+	tdprefabBrowser.BaseDirectory = prefabsDirectory;
+	tdprefabBrowser.CurrentDirectory = prefabsDirectory;
 
     return true;
 }

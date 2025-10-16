@@ -161,7 +161,8 @@ namespace mofu::graphics::d3d12 {
 			}
 
 #if RAYTRACING
-			if (ecs::messages::GetBoolMessage(ecs::messages::SystemBoolMessage::TransformChanged) || input::WasKeyPressed(input::Keys::B))
+			if (ecs::messages::GetBoolMessage(ecs::messages::SystemBoolMessage::TransformChanged) 
+				|| input::WasKeyPressed(input::Keybinds::Debug.RTASRebuild))
 				graphics::d3d12::rt::UpdateAccelerationStructure();
 #endif
 

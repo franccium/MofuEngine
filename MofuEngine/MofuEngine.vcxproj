@@ -130,7 +130,6 @@
     <ClCompile Include="Core\Main.cpp" />
     <ClCompile Include="ECS\ECSCore.cpp" />
     <ClCompile Include="ECS\Scene.cpp" />
-    <ClCompile Include="ECS\SceneSerializer.cpp" />
     <ClCompile Include="ECS\SystemMessages.cpp" />
     <ClCompile Include="ECS\Systems\CameraFreeLookSystem.cpp" />
     <ClCompile Include="ECS\Systems\FrustumCullingSystem.cpp" />
@@ -150,6 +149,7 @@
     <ClCompile Include="Editor\ImporterView.cpp" />
     <ClCompile Include="Editor\Material.cpp" />
     <ClCompile Include="Editor\MaterialEditor.cpp" />
+    <ClCompile Include="Editor\PrefabView.cpp" />
     <ClCompile Include="Editor\Project\Project.cpp" />
     <ClCompile Include="Editor\RenderingConsole.cpp" />
     <ClCompile Include="Editor\SceneEditorView.cpp" />
@@ -234,7 +234,6 @@
     <ClInclude Include="ECS\Entity.h" />
     <ClInclude Include="ECS\EntityManager.h" />
     <ClInclude Include="ECS\Scene.h" />
-    <ClInclude Include="ECS\SceneSerializer.h" />
     <ClInclude Include="ECS\SystemMessages.h" />
     <ClInclude Include="ECS\SystemRegistry.h" />
     <ClInclude Include="ECS\Systems\SubmitEntityRenderSystem.cpp" />
@@ -251,6 +250,7 @@
     <ClInclude Include="Editor\ImporterView.h" />
     <ClInclude Include="Editor\Material.h" />
     <ClInclude Include="Editor\MaterialEditor.h" />
+    <ClInclude Include="Editor\PrefabView.h" />
     <ClInclude Include="Editor\Project\Project.h" />
     <ClInclude Include="Editor\RenderingConsole.h" />
     <ClInclude Include="Editor\SceneEditorView.h" />
@@ -310,6 +310,7 @@
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\PlatformWin32.h" />
     <ClInclude Include="Platform\Window.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Utilities\DataStructures\Array.h" />
     <ClInclude Include="Utilities\DataStructures\DataStructures.h" />
     <ClInclude Include="Utilities\DataStructures\FreeList.h" />
@@ -324,6 +325,12 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="ECS\implementationnotes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MofuEngine.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\Users\bawer\OneDrive\Pulpit\mofuengine-logo1.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -21,7 +21,7 @@ struct TransformSystem : ecs::system::System<TransformSystem>
 	{
 		ZoneScopedN("TransformSystem");
 
-		ecs::UpdateTransformHierarchy(); //TODO: move this somewhere
+		ecs::transform::UpdateHierarchy(); //TODO: move this somewhere
 	}
 };
 REGISTER_SYSTEM(TransformSystem, ecs::system::SystemGroup::Update, 0);

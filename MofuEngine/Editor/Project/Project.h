@@ -8,15 +8,15 @@ struct ProjectProperties
 {
 	std::string Name{ "Untitled" };
 
-	std::filesystem::path AssetDirectory{ "Assets" };
-	std::filesystem::path ScriptDirectory{ "Scripts" };
-	std::filesystem::path ResourceDirectory{ "Resources" };
-	std::filesystem::path ResourceMetadataDirectory{ "Metadata" };
+	std::filesystem::path AssetDirectory;
+	std::filesystem::path ResourceDirectory;
+	std::filesystem::path ScriptDirectory;
+	std::filesystem::path ResourceMetadataDirectory;
 
-	// editable directories where imported assets will be saved to by default
-	std::filesystem::path TextureDirectory{ "Textures" };
-	std::filesystem::path MeshDirectory{ "Meshes" };
-	std::filesystem::path PrefabDirectory{ "Prefabs" };
+	std::filesystem::path SceneDirectory;
+	std::filesystem::path TextureDirectory;
+	std::filesystem::path MeshDirectory;
+	std::filesystem::path PrefabDirectory;
 
 	u32 StartScene{ 0 };
 };
@@ -26,7 +26,7 @@ struct Project
 	ProjectProperties Properties{};
 	std::filesystem::path ProjectDirectory;
 	std::filesystem::path ProjectFilePath;
-	std::filesystem::path AssetRegistryFilePath{ "AssetRegistry.ar" };
+	std::filesystem::path AssetRegistryFilePath;
 };
 
 void CreateNewProject();
@@ -37,10 +37,12 @@ const Project& GetActiveProject();
 
 void RefreshAllAssets();
 
-const std::filesystem::path GetProjectDirectory();
-const std::filesystem::path GetAssetRegistryPath();
-const std::filesystem::path GetAssetDirectory();
-const std::filesystem::path GetResourceDirectory();
+const std::filesystem::path& GetProjectDirectory();
+const std::filesystem::path& GetAssetRegistryPath();
+const std::filesystem::path& GetAssetDirectory();
+const std::filesystem::path& GetResourceDirectory();
+const std::filesystem::path& GetSceneDirectory();
+const std::filesystem::path& GetScriptDirectory();
 const std::filesystem::path& GetTextureDirectory();
 const std::filesystem::path& GetMeshDirectory();
 const std::filesystem::path& GetPrefabDirectory();

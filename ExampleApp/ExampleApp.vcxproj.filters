@@ -30,6 +30,9 @@
     <ClInclude Include="src\EditorTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
@@ -51,5 +54,21 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\MofuEngine\External\imgui\misc\imgui.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ExampleApp.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\Users\bawer\OneDrive\Pulpit\mofuengine-logo1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\Users\bawer\OneDrive\Pulpit\mofuengine-logo1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

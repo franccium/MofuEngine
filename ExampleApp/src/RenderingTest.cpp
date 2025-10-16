@@ -517,8 +517,8 @@ CreateTestRenderItems()
 	ecs::component::PathTraceable pt{};
 	pt.MeshInfo = graphics::d3d12::content::geometry::MeshInfo{ graphics::d3d12::content::geometry::GetMeshInfo(mesh.MeshID) };
 
-	//editor::ImportScene("Projects/TestProject/Resources/Prefabs/a2.pre");
-	//editor::ImportScene("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
+	//editor::AddPrefab("Projects/TestProject/Resources/Prefabs/a2.pre");
+	//editor::AddPrefab("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
 
 	ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform,
 		ecs::component::Parent, ecs::component::WorldTransform, ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::PathTraceable>(transform, {}, {},
@@ -529,7 +529,7 @@ CreateTestRenderItems()
 			mesh, mat) };
 #endif
 
-	///editor::ImportScene("Projects/TestProject/Resources/Prefabs/a2.pre");
+	///editor::AddPrefab("Projects/TestProject/Resources/Prefabs/a2.pre");
 	ecs::component::RenderMesh& meshEd{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entityData.id) };
 	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 	editor::AddEntityToSceneView(entityData.id);
@@ -537,10 +537,10 @@ CreateTestRenderItems()
 	AddLights();
 
 	const content::AssetHandle RT_CUBES{ 15519544575226091575 };
-	editor::ImportScene("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
-	editor::ImportScene("Projects/TestProject/Resources/Prefabs/boxestest.pre");
+	//editor::AddPrefab("Projects/TestProject/Resources/Prefabs/three-cubes.pre");
+	editor::AddPrefab("Projects/TestProject/Resources/Prefabs/boxestest.pre");
 	const content::AssetHandle SUN_TEMPLE{ 13905473850964664605 };
-	//editor::ImportScene("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
+	//editor::AddPrefab("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
 
 	return loadedModelsCount;
 }

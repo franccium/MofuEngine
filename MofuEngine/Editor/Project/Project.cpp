@@ -20,9 +20,6 @@ SerializeProject(const std::filesystem::path& projectPath)
 		{
 			out << YAML::BeginMap;
 			out << YAML::Key << "Name" << YAML::Value << properties.Name;
-			out << YAML::Key << "AssetDirectory" << YAML::Value << properties.AssetDirectory.string();
-			out << YAML::Key << "ScriptDirectory" << YAML::Value << properties.ScriptDirectory.string();
-			out << YAML::Key << "ResourceDirectory" << YAML::Value << properties.ResourceDirectory.string();
 			out << YAML::Key << "StartScene" << YAML::Value << properties.StartScene;
 			out << YAML::EndMap;
 		}
@@ -48,12 +45,42 @@ DeserializeProject(const std::filesystem::path& projectPath)
 	if (!projectNode) return false;
 
 	properties.Name = projectNode["Name"].as<std::string>();
-	properties.AssetDirectory = projectNode["AssetDirectory"].as<std::string>();
-	properties.ScriptDirectory = projectNode["ScriptDirectory"].as<std::string>();
-	properties.ResourceDirectory = projectNode["ResourceDirectory"].as<std::string>();
 	properties.StartScene = projectNode["StartScene"].as<u32>();
 
 	return true;
+}
+
+void InitializeProjectProperties()
+{
+	const char* ASSET_DIRECTORY_NAME{ "Assets" };
+	const char* SCRIPT_DIRECTORY_NAME{ "Scripts" };
+	const char* RESOURCE_DIRECTORY_NAME{ "Resources" };
+	const char* RESOURCE_METADATA_DIRECTORY_NAME{ "Metadata" };
+	const char* SCENE_DIRECTORY_NAME{ "Scenes" };
+	const char* TEXTURE_DIRECTORY_NAME{ "Textures" };
+	const char* MESH_DIRECTORY_NAME{ "Meshes" };
+	const char* PREFABS_DIRECTORY_NAME{ "Prefabs" };
+	ProjectProperties& properties{ activeProject.Properties };
+	properties.AssetDirectory = activeProject.ProjectDirectory / ASSET_DIRECTORY_NAME;
+	properties.ResourceDirectory = activeProject.ProjectDirectory / RESOURCE_DIRECTORY_NAME;
+	properties.ScriptDirectory = activeProject.ProjectDirectory / SCRIPT_DIRECTORY_NAME;
+	properties.SceneDirectory = activeProject.ProjectDirectory / SCENE_DIRECTORY_NAME;
+	properties.ResourceMetadataDirectory = properties.ResourceDirectory / RESOURCE_METADATA_DIRECTORY_NAME;
+	properties.TextureDirectory = properties.ResourceDirectory / TEXTURE_DIRECTORY_NAME;
+	properties.MeshDirectory = properties.ResourceDirectory / MESH_DIRECTORY_NAME;
+	properties.PrefabDirectory = properties.ResourceDirectory / PREFABS_DIRECTORY_NAME;
+}
+
+void CreateProjectDirectories(const ProjectProperties& properties)
+{
+	std::filesystem::create_directory(properties.AssetDirectory);
+	std::filesystem::create_directory(properties.ResourceDirectory);
+	std::filesystem::create_directory(properties.ScriptDirectory);
+	std::filesystem::create_directory(properties.ResourceMetadataDirectory);
+	std::filesystem::create_directory(properties.SceneDirectory);
+	std::filesystem::create_directory(properties.TextureDirectory);
+	std::filesystem::create_directory(properties.MeshDirectory);
+	std::filesystem::create_directory(properties.PrefabDirectory);
 }
 
 } // anonymous namespace
@@ -66,6 +93,10 @@ CreateNewProject()
 	activeProject.Properties.Name = testName;
 	//TODO: some popups for setup
 	activeProject.ProjectFilePath = "Projects/TestProject/TestProject.mpj";
+	activeProject.ProjectDirectory = activeProject.ProjectFilePath.parent_path();
+	activeProject.AssetRegistryFilePath = activeProject.ProjectDirectory / "AssetRegistry.ar";
+	InitializeProjectProperties();
+	CreateProjectDirectories(activeProject.Properties);
 }
 
 void
@@ -85,10 +116,12 @@ LoadProject(std::filesystem::path projectPath)
 	{
 		activeProject.ProjectFilePath = projectPath;
 		activeProject.ProjectDirectory = projectPath.parent_path();
+		activeProject.AssetRegistryFilePath = activeProject.ProjectDirectory / "AssetRegistry.ar";
+
+		InitializeProjectProperties();
 
 		content::assets::InitializeAssetRegistry();
 	}
-
 }
 
 void 
@@ -117,29 +150,42 @@ RefreshAllAssets()
 	content::assets::RegisterAllAssetsOfType(content::AssetType::Material);
 }
 
-const std::filesystem::path
+const std::filesystem::path&
 GetProjectDirectory()
 {
 	return activeProject.ProjectDirectory;
 }
 
-const std::filesystem::path 
+const std::filesystem::path&
 GetAssetRegistryPath()
 {
-	return activeProject.ProjectDirectory / activeProject.AssetRegistryFilePath;
+	return activeProject.AssetRegistryFilePath;
 }
 
-const std::filesystem::path
+const std::filesystem::path&
 GetAssetDirectory()
 {
-	return activeProject.ProjectDirectory / activeProject.Properties.AssetDirectory;
+	return activeProject.Properties.AssetDirectory;
 }
 
-const std::filesystem::path
+const std::filesystem::path&
 GetResourceDirectory()
 {
-	return activeProject.ProjectDirectory / activeProject.Properties.ResourceDirectory;
+	return activeProject.Properties.ResourceDirectory;
 }
+
+const std::filesystem::path&
+GetSceneDirectory()
+{
+	return activeProject.Properties.SceneDirectory;
+}
+
+const std::filesystem::path&
+GetScriptDirectory()
+{
+	return activeProject.Properties.ScriptDirectory;
+}
+
 
 const std::filesystem::path& 
 GetTextureDirectory()
@@ -147,7 +193,7 @@ GetTextureDirectory()
 	return activeProject.Properties.TextureDirectory;
 }
 
-const std::filesystem::path& 
+const std::filesystem::path&
 GetMeshDirectory()
 {
 	return activeProject.Properties.MeshDirectory;

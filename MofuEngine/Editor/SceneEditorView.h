@@ -8,6 +8,8 @@ namespace mofu::editor
 void AddEntityToSceneView(ecs::Entity entity);
 
 bool InitializeSceneEditorView();
+void ShutdownSceneEditorView();
 void RenderSceneEditorView();
-void ImportScene(const std::filesystem::path& path); //FIXME: shouldnt be there
+void LoadScene(const std::filesystem::path& path); //FIXME: shouldnt be there
+void AddPrefab(const std::filesystem::path& path); // FIXME: shouldnt be there
 }

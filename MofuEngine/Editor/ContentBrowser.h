@@ -7,7 +7,9 @@ namespace mofu::editor {
 enum class BrowserMode
 {
 	Assets = 0,
-	AllFiles = 1
+	AllFiles,
+	Prefabs,
+	Count
 };
 
 bool InitializeAssetBrowserGUI();

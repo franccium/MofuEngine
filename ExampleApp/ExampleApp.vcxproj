@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClInclude Include="External\tracy\public\tracy\Tracy.hpp" />
     <ClInclude Include="External\tracy\public\tracy\TracyD3D12.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="src\EditorTest.h" />
     <ClInclude Include="src\TestTimer.h" />
     <ClInclude Include="src\WindowTest.h">
@@ -135,6 +136,14 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\MofuEngine\External\imgui\misc\imgui.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ExampleApp.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\Users\bawer\OneDrive\Pulpit\mofuengine-logo1.ico" />
+    <Image Include="..\..\..\Users\bawer\OneDrive\Pulpit\mofuengine-logo1.png" />
+    <Image Include="icon1.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -13,15 +13,19 @@ namespace mofu::ecs::scene {
 class Scene
 {
 public:
-	constexpr explicit Scene(u32 id) : _id{ id } {}
+	explicit Scene(u32 id) : _id{ id } { memset(Name, 0, sizeof(Name)); }
 
 	constexpr u32 GetSceneID() const { return _id; }
+#if EDITOR_BUILD
+	static constexpr u32 MAX_NAME_LENGTH{ 32 };
+	char Name[MAX_NAME_LENGTH];
+#endif
 private:
 	u32 _id;
 };
 
 const Scene& GetCurrentScene();
-void CreateScene();
+void CreateScene(const char* scenename);
 
 template<typename... Component>
 CetMask GetCetMask() 

@@ -68,6 +68,7 @@ InspectAsset(content::AssetHandle handle)
 void
 ShutdownEditorGUI()
 {
+    ShutdownSceneEditorView();
 }
 
 }

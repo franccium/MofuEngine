@@ -126,6 +126,9 @@ constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET {
 	".sk",
 };
 
+constexpr const char* PREFAB_FILE_EXTENSION{ ".pre" };
+constexpr const char* SCENE_FILE_EXTENSION{ ".sc" };
+
 [[nodiscard]] inline AssetType::type 
 GetAssetTypeFromExtension(std::string_view extension)
 {

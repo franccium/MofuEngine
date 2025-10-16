@@ -2,7 +2,7 @@
 #include "Scene.h"
 #include "SystemMessages.h"
 
-namespace mofu::ecs {
+namespace mofu::ecs::transform {
 namespace {
 
 /*
@@ -46,7 +46,7 @@ FindEntityFinalTRS(Entity entity)
 } // anonymous namespace
 
 void 
-AddEntityToTransformHierarchy(Entity entity)
+AddEntityToHierarchy(Entity entity)
 {
 	Entity currentEntity{ entity };
 	u32 parentCount{ 0 };
@@ -87,17 +87,17 @@ AddEntityToTransformHierarchy(Entity entity)
 }
 
 void
-MoveEntityInTransformHierarchy(Entity entity)
+MoveEntityInHierarchy(Entity entity)
 {
 }
 
 void
-RemoveEntityFromTransformHierarchy(Entity entity)
+RemoveEntityFromHierarchy(Entity entity)
 {
 }
 
 void 
-UpdateEntityTransformComponents(Entity entity)
+UpdateEntityComponents(Entity entity)
 {
 	//TODO: the Entity values might change depending on how i implement generations
 	EntityFinalTRS& entityTransform{ FindEntityFinalTRS(entity) };
@@ -108,12 +108,12 @@ UpdateEntityTransformComponents(Entity entity)
 }
 
 void
-ReconfigureTransformHierarchy()
+ReconfigureHierarchy()
 {
 }
 
 void 
-UpdateTransformHierarchy()
+UpdateHierarchy()
 {
 	using namespace DirectX;
 	if (finalTransforms.empty()) return;
@@ -160,6 +160,12 @@ UpdateTransformHierarchy()
 	}
 
 	messages::SetMessage(messages::SystemBoolMessage::TransformChanged, transformChanged);
+}
+
+void 
+DeleteHierarchy()
+{
+	finalTransforms.clear();
 }
 
 }

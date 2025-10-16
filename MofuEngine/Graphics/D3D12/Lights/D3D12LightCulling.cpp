@@ -317,4 +317,12 @@ GetLightIndexListOpaqueBuffer(u32 lightCullingID, u32 frameIndex)
 	return lightCullers[lightCullingID].Cullers[frameIndex].LightIndexListOpaqueBuffer;
 }
 
+void
+ResetShaders()
+{
+	lightCullingPSO = nullptr;
+	gridFrustumsPSO = nullptr;
+	CreateCullingPSOs();
+}
+
 }

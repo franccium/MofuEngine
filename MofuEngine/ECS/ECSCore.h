@@ -48,6 +48,15 @@ struct EntityBlock
 	}
 
 	inline std::span<ComponentID> GetComponentView() const { return { ComponentIDs, ComponentCount }; }
+
+	~EntityBlock()
+	{
+		if (ComponentIDs)
+		{
+			delete[] ComponentIDs;
+			ComponentIDs = nullptr;
+		}
+	}
 };
 
 struct EntityData

@@ -14,4 +14,6 @@ void RemoveLightCuller(id_t cullerID);
 D3D12_GPU_VIRTUAL_ADDRESS GetGridFrustumsBuffer(u32 lightCullingID, u32 frameIndex);
 D3D12_GPU_VIRTUAL_ADDRESS GetLightGridOpaqueBuffer(u32 lightCullingID, u32 frameIndex);
 D3D12_GPU_VIRTUAL_ADDRESS GetLightIndexListOpaqueBuffer(u32 lightCullingID, u32 frameIndex);
+
+void ResetShaders();
 }

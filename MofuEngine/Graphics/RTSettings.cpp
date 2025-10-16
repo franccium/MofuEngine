@@ -1,6 +1,7 @@
 #include "RTSettings.h"
 
 namespace mofu::graphics::rt::settings {
+bool PathTracingEnabled;
 u32 PPSampleCount;
 bool AlwaysRestartPathTracing;
 bool AlwaysNewSample;
@@ -15,6 +16,8 @@ Settings RTGlobalSettings;
 void 
 Initialize()
 {
+    PathTracingEnabled = true;
+
     SunAngularRadius = 0.5f;
     SunIrradiance = v3{ 1.f, 1.f, 1.f };
     SunDirection = v3{ 0.3f, 0.92f, 0.1f };

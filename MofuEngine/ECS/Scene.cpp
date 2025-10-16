@@ -6,7 +6,6 @@
 #include "Utilities/Logger.h"
 #include "ECSCore.h"
 #include "QueryView.h"
-#include "SceneSerializer.h"
 #include "Utilities/PoolAllocator.h"
 #include "Utilities/SlabAllocator.h"
 #include "ComponentRegistry.h"
@@ -25,14 +24,14 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 Vec<Scene> scenes;
 u32 currentSceneIndex;
 
-std::unordered_map<CetMask, Vec<EntityBlock*>> queryToBlockMap;
+HashMap<CetMask, Vec<EntityBlock*>> queryToBlockMap;
 //constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
 //constexpr u32 TEST_BLOCK_COUNT{ 5 };
 Vec<EntityBlock*> blocks{};
 
 // NOTE: entity IDs globally unique, in format generation | index, index goes into entityData, generation is compared
 Vec<EntityData> entityDatas{};
-std::deque<u32> _freeEntityIDs; // TODO: recycling
+Deque<u32> _freeEntityIDs; // TODO: recycling, also then do this when unloading the scene
 
 constexpr size_t ENTITY_BLOCK_SIZE{ 32 * 1024 }; // 64 KiB per block
 constexpr size_t ENTITY_BLOCK_ALIGNMENT{ 64 }; // 64 byte alignment
@@ -167,7 +166,7 @@ MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlo
 	//TODO: to avoid updating all possible references, implement the generations finally
 	if (EntityHasComponent<component::WorldTransform>(entity))
 	{
-		UpdateEntityTransformComponents(entity);
+		transform::UpdateEntityComponents(entity);
 	}
 }
 
@@ -240,9 +239,11 @@ GetCurrentScene()
 }
 
 void 
-CreateScene()
+CreateScene(const char* name)
 {
+	//TODO: for now its just an incremental id
 	scenes.emplace_back(Scene{ (u32)scenes.size() });
+	memcpy(scenes.back().Name, name, Scene::MAX_NAME_LENGTH);
 }
 
 CetLayout
@@ -428,13 +429,19 @@ RemoveEntity(Entity entity)
 void 
 UnloadScene()
 {
-
+	transform::DeleteHierarchy();
+	for (EntityBlock* b : blocks) delete b;
+	blocks.clear();
+	entityDatas.clear();
+	//TODO: for now its just an incremental id
+	scenes.emplace_back(Scene{ (u32)scenes.size() });
+	currentSceneIndex = (u32)scenes.size() - 1;
 }
 
 void
 Initialize()
 {
-	CreateScene();
+	CreateScene("default");
 
 	//TODO: bake the EntityBlocks from scene data
 

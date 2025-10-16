@@ -47,10 +47,10 @@ u32v2 currentDimensions{ 0, 0 };
 D3D12RenderTexture renderTexture{};
 constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
 
-bool
-CreateDebugPSO()
+void
+CreateDebugRootSignature()
 {
-	assert(!fxRootSig_Debug && !fxPSO_Debug);
+	assert(!fxRootSig_Debug);
 
 	d3dx::D3D12DescriptorRange range
 	{
@@ -82,6 +82,12 @@ CreateDebugPSO()
 	fxRootSig_Debug = rootSigDesc.Create();
 	assert(fxRootSig_Debug);
 	NAME_D3D12_OBJECT(fxRootSig_Debug, L"Post-Process FX Root Signature (DEBUG)");
+}
+
+bool
+CreateDebugPSO()
+{
+	assert(!fxPSO_Debug);
 
 	struct {
 		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Debug };
@@ -103,10 +109,10 @@ CreateDebugPSO()
 	return fxRootSig_Debug && fxPSO_Debug;
 }
 
-bool
-CreatePSO()
+void
+CreateRootSignature()
 {
-	assert(!fxRootSig_Default && !fxPSO_Default);
+	assert(!fxRootSig_Default);
 
 	d3dx::D3D12DescriptorRange range
 	{
@@ -137,6 +143,12 @@ CreatePSO()
 	fxRootSig_Default = rootSigDesc.Create();
 	assert(fxRootSig_Default);
 	NAME_D3D12_OBJECT(fxRootSig_Default, L"Post-Process FX Root Signature");
+}
+
+bool
+CreatePSO()
+{
+	assert(!fxPSO_Default);
 
 	struct {
 		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Default };
@@ -205,7 +217,12 @@ SetBufferSize(u32v2 size)
 bool 
 Initialize()
 {
-	if constexpr (CREATE_DEBUG_PSO_AT_LAUNCH) CreateDebugPSO();
+	if constexpr (CREATE_DEBUG_PSO_AT_LAUNCH)
+	{
+		CreateDebugRootSignature();
+		CreateDebugPSO();
+	}
+	CreateRootSignature();
     return CreatePSO();
 }
 
@@ -289,6 +306,21 @@ D3D12_GPU_DESCRIPTOR_HANDLE
 GetSrvGPUDescriptorHandle()
 {
 	return renderTexture.SRV().gpu;
+}
+
+void
+ResetShaders(bool debug)
+{
+	if (!debug)
+	{
+		fxPSO_Default = nullptr;
+		CreatePSO();
+	}
+	else
+	{
+		fxPSO_Debug = nullptr;
+		CreateDebugPSO();
+	}
 }
 
 }

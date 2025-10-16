@@ -14,4 +14,31 @@ namespace mofu::input {
 
 void Update();
 
+static struct Keybinds
+{
+	static struct
+	{
+		static constexpr Keys::Key Forward{ Keys::Key::W };
+		static constexpr Keys::Key Backwards{ Keys::Key::S };
+		static constexpr Keys::Key Left{ Keys::Key::A };
+		static constexpr Keys::Key Right{ Keys::Key::D };
+		static constexpr Keys::Key Up{ Keys::Key::Space };
+		static constexpr Keys::Key Down{ Keys::Key::C };
+		static constexpr Keys::Key Sprint{ Keys::Key::Shift };
+		static constexpr Keys::Key LockRotation{ Keys::Key::R };
+	} Movement;
+
+	static struct
+	{
+		static constexpr Keys::Key ShaderReload{ Keys::Key::End };
+		static constexpr Keys::Key ToggleRenderingConsole{ Keys::Key::K };
+	} Editor;
+
+	static struct
+	{
+		static constexpr Keys::Key RTUpdate{ Keys::Key::E };
+		static constexpr Keys::Key RTASRebuild{ Keys::Key::T };
+	} Debug;
+};
+
 }

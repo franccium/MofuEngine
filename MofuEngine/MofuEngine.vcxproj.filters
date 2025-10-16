@@ -129,9 +129,6 @@
     <ClCompile Include="ECS\Systems\PrepareFrameRenderSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ECS\SceneSerializer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\SceneEditorView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -265,6 +262,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ECS\SystemMessages.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\PrefabView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -455,9 +455,6 @@
     <ClInclude Include="Graphics\D3D12\GPassCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ECS\SceneSerializer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\SceneEditorView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -617,8 +614,24 @@
     <ClInclude Include="Content\Shaders\ShaderData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\PrefabView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ECS\implementationnotes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MofuEngine.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\Users\bawer\OneDrive\Pulpit\mofuengine-logo1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

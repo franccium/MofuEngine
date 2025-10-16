@@ -21,12 +21,16 @@ struct EntityTreeNode
     u16 IndexInParent = 0;
 };
 
-EntityTreeNode* rootNode{ nullptr };
+EntityTreeNode* _rootNode{ nullptr };
 Vec<std::pair<ecs::Entity, EntityTreeNode*>> entityToPair{};
 
+Vec<std::string> sceneFiles{};
 Vec<std::string> prefabFiles{};
 Vec<std::string> meshFiles{};
+std::filesystem::path currentScenePath{};
 EntityTreeNode* selectedNode{ nullptr };
+char sceneNameBuffer[ecs::scene::Scene::MAX_NAME_LENGTH];
+
 
 constexpr EntityTreeNode*
 FindParentAsNode(ecs::Entity parentEntity)
@@ -36,7 +40,7 @@ FindParentAsNode(ecs::Entity parentEntity)
         if (e == parentEntity) return n;
     }
     assert(false);
-    return rootNode;
+    return _rootNode;
 }
 
 void
@@ -83,7 +87,6 @@ PrepareAddedComponent(ecs::ComponentID cid, ecs::Entity entity)
 void
 CreateEntityTreeNode(ecs::Entity entity, EntityTreeNode* parentNode)
 {
-    if (!parentNode) parentNode = rootNode;
     EntityTreeNode* node = new EntityTreeNode{};
     node->ID = entity;
     if (ecs::scene::HasComponent<ecs::component::NameComponent>(entity))
@@ -104,14 +107,14 @@ CreateEntityTreeNode(ecs::Entity entity, EntityTreeNode* parentNode)
 // TODO: can probably do it better
 static void CreateSceneHierarchyTree(const Vec<ecs::EntityData>& entityData)
 {
-    rootNode = new EntityTreeNode{};
+    _rootNode = new EntityTreeNode{};
 	char rootName[NODE_NAME_LENGTH]{ "Root" };
-    snprintf(rootNode->Name, NODE_NAME_LENGTH, "%s", rootName);
-    rootNode->ID = ecs::Entity{ id::INVALID_ID };
+    snprintf(_rootNode->Name, NODE_NAME_LENGTH, "%s", rootName);
+    _rootNode->ID = ecs::Entity{ id::INVALID_ID };
 
     for (const ecs::EntityData& e : entityData)
     {
-        CreateEntityTreeNode(e.id, rootNode);
+        CreateEntityTreeNode(e.id, _rootNode);
 	}
 }
 
@@ -195,36 +198,84 @@ struct SceneHierarchy
 {
     ImGuiTextFilter Filter;
 
-    void Draw(EntityTreeNode* root_node)
+    void
+    DrawSceneSaveLoad()
     {
-        ImGui::BeginGroup();
-        if (ImGui::Button("Import Hierarchy"))
+        ImGui::Text("Scene: %s", ecs::scene::GetCurrentScene().Name);
+        if (ImGui::IsItemClicked())
         {
-            prefabFiles.clear();
-            content::ListFilesByExtensionRec(".pre", project::GetResourceDirectory() / "Prefabs", prefabFiles);
-            ImGui::OpenPopup("ImportHierarchyPopup");
+			ImGui::OpenPopup("RenameScenePopup");
+			memcpy(sceneNameBuffer, ecs::scene::GetCurrentScene().Name, ecs::scene::Scene::MAX_NAME_LENGTH);
         }
-        if (ImGui::BeginPopup("ImportHierarchyPopup"))
+        if (ImGui::IsPopupOpen("RenameScenePopup"))
         {
-            for (std::string_view path : prefabFiles)
+			ImGui::TextUnformatted("Name:");
+            ImGui::SameLine();
+			ImGui::PushID(&sceneNameBuffer);
+            ImGui::InputText("", sceneNameBuffer, ecs::scene::Scene::MAX_NAME_LENGTH);
+			ImGui::PopID();
+            ImGui::TableNextColumn();
+            ImGui::SameLine();
+            if (ImGui::Button("Confirm"))
+            {
+                memcpy((void*)ecs::scene::GetCurrentScene().Name, sceneNameBuffer, ecs::scene::Scene::MAX_NAME_LENGTH);
+				ImGui::CloseCurrentPopup();
+                std::filesystem::path newScenePath;
+                if (std::filesystem::exists(currentScenePath))
+                {
+                    newScenePath = currentScenePath;
+				    newScenePath.replace_filename(sceneNameBuffer);
+				    newScenePath.replace_extension(content::SCENE_FILE_EXTENSION);
+                    std::filesystem::rename(currentScenePath, newScenePath);
+                }
+                else
+                {
+					newScenePath = project::GetSceneDirectory() / sceneNameBuffer;
+					newScenePath += content::SCENE_FILE_EXTENSION;
+                }
+				currentScenePath = newScenePath;
+            }
+        }
+
+        if (ImGui::Button("Save Scene"))
+        {
+            Vec<Vec<ecs::Entity>> hierarchies{};
+            //TODO: more depth levels
+            for (EntityTreeNode* parent : _rootNode->Children)
+            {
+                hierarchies.emplace_back();
+                Vec<ecs::Entity>& hierarchy{ hierarchies.back() };
+                hierarchy.emplace_back(parent->ID);
+                for (EntityTreeNode* child : parent->Children)
+                {
+                    hierarchy.emplace_back(child->ID);
+                }
+            }
+            assets::SerializeScene(ecs::scene::GetCurrentScene(), hierarchies);
+        }
+        if (ImGui::Button("Load Scene"))
+        {
+            sceneFiles.clear();
+            content::ListFilesByExtensionRec(content::SCENE_FILE_EXTENSION, project::GetSceneDirectory(), sceneFiles);
+            ImGui::OpenPopup("LoadScenePopup");
+        }
+        if (ImGui::BeginPopup("LoadScenePopup"))
+        {
+            for (std::string_view path : sceneFiles)
             {
                 if (ImGui::Selectable(path.data()))
                 {
-                    ImportScene(path);
+                    LoadScene(path);
                     ImGui::CloseCurrentPopup();
                 }
             }
             ImGui::EndPopup();
         }
-        if (ImGui::Button("Add Entity"))
-        {
-            ecs::component::LocalTransform transform{};
-            ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, 
-                ecs::component::Parent, ecs::component::WorldTransform>(transform, {}, {}) };
-            AddEntityToSceneView(entityData.id);
-        }
-        ImGui::EndGroup();
+    }
 
+    void
+    DrawEntityHierarchy()
+    {
         // Left side: draw tree
         if (ImGui::BeginChild("##tree", ImVec2(250, 0), ImGuiChildFlags_ResizeX | ImGuiChildFlags_ResizeY | ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened))
         {
@@ -238,7 +289,7 @@ struct SceneHierarchy
 
             if (ImGui::BeginTable("##bg", 1, ImGuiTableFlags_RowBg))
             {
-                for (EntityTreeNode* node : root_node->Children)
+                for (EntityTreeNode* node : _rootNode->Children)
                     if (Filter.PassFilter(node->Name)) // Filter root node
                         DrawTreeNode(node);
                 ImGui::EndTable();
@@ -363,39 +414,41 @@ struct SceneHierarchy
             }
         }
         ImGui::EndGroup();
+    }
 
-        if (ImGui::Button("Save Scene"))
+    void Draw()
+    {
+        ImGui::BeginGroup();
+        DrawSceneSaveLoad();
+
+        if (ImGui::Button("Import Hierarchy"))
         {
-            Vec<Vec<ecs::Entity>> hierarchies{};
-            //TODO: more depth levels
-            for (EntityTreeNode* parent : root_node->Children)
+            prefabFiles.clear();
+            content::ListFilesByExtensionRec(content::PREFAB_FILE_EXTENSION, project::GetPrefabDirectory(), prefabFiles);
+            ImGui::OpenPopup("ImportHierarchyPopup");
+        }
+        if (ImGui::BeginPopup("ImportHierarchyPopup"))
+        {
+            for (std::string_view path : prefabFiles)
             {
-                hierarchies.emplace_back();
-                Vec<ecs::Entity>& hierarchy{ hierarchies.back() };
-                hierarchy.emplace_back(parent->ID);
-                for (EntityTreeNode* child : parent->Children)
+                if (ImGui::Selectable(path.data()))
                 {
-                    hierarchy.emplace_back(child->ID);
+                    AddPrefab(path);
+                    ImGui::CloseCurrentPopup();
                 }
             }
-            assets::SerializeScene(ecs::scene::GetCurrentScene(), hierarchies);
+            ImGui::EndPopup();
         }
-
-        if (ImGui::Button("Load Scene"))
+        if (ImGui::Button("Add Entity"))
         {
-            Vec<Vec<ecs::Entity>> hierarchies{};
-
-            std::filesystem::path scenePath{ project::GetProjectDirectory() / "Scenes" / "scene0.sc" };
-            assets::DeserializeScene(hierarchies, scenePath);
-
-            for (const auto& hierarchy : hierarchies)
-            {
-                for (ecs::Entity entity : hierarchy)
-                {
-                    AddEntityToSceneView(entity);
-                }
-            }
+            ecs::component::LocalTransform transform{};
+            ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, 
+                ecs::component::Parent, ecs::component::WorldTransform>(transform, {}, {}) };
+            AddEntityToSceneView(entityData.id);
         }
+        ImGui::EndGroup();
+
+        DrawEntityHierarchy();
     }
 
     void DrawTreeNode(EntityTreeNode* node)
@@ -438,15 +491,14 @@ struct SceneHierarchy
 
 SceneHierarchy sceneHierarchy;
 
-}
-
+} // anonymous namespace
 
 //TODO: instead of adding 1 by 1 add a whole bunch from tables of to add and to remove or sth?
 void AddEntityToSceneView(ecs::Entity entity)
 {
     assert(ecs::scene::IsEntityAlive(entity));
 
-    EntityTreeNode* parentNode{ rootNode };
+    EntityTreeNode* parentNode{ _rootNode };
     if (ecs::scene::HasComponent<ecs::component::Child>(entity))
     {
         ecs::component::Child p{ ecs::scene::GetComponent<ecs::component::Child>(entity) };
@@ -457,12 +509,13 @@ void AddEntityToSceneView(ecs::Entity entity)
 
 
     //TODO: move this somewhere, for now its the only palce where i know the components are all initialized
-    ecs::AddEntityToTransformHierarchy(entity);
+    ecs::transform::AddEntityToHierarchy(entity);
 }
 
 bool 
 InitializeSceneEditorView()
 {
+	memset(sceneNameBuffer, 0, sizeof(sceneNameBuffer));
     const Vec<ecs::EntityData>& entityData = ecs::scene::GetAllEntityData();
     for (const ecs::EntityData e : entityData)
     {
@@ -478,12 +531,48 @@ void RenderSceneEditorView()
 {
     ImGui::Begin("Scene hierarchy");
 
-    sceneHierarchy.Draw(rootNode);
+    sceneHierarchy.Draw();
 
     ImGui::End();
 }
 
-void ImportScene(const std::filesystem::path& path)
+void LoadScene(const std::filesystem::path& path)
+{
+    if(currentScenePath == path)
+    {
+        log::Warn("Scene already loaded");
+        return;
+	}
+    Vec<Vec<ecs::Entity>> hierarchies{};
+    assets::LoadScene(hierarchies, path);
+    currentScenePath = path;
+    entityToPair.clear();
+    delete _rootNode;
+    _rootNode = nullptr;
+    selectedNode = nullptr;
+
+    _rootNode = new EntityTreeNode{};
+    char rootName[NODE_NAME_LENGTH]{ "Root" };
+    snprintf(_rootNode->Name, NODE_NAME_LENGTH, "%s", rootName);
+    _rootNode->ID = ecs::Entity{ id::INVALID_ID };
+    //CreateSceneHierarchyTree(ecs::scene::GetAllEntityData());
+    for (const Vec<ecs::Entity>& hierarchy : hierarchies)
+    {
+        for (const ecs::Entity e : hierarchy)
+        {
+            AddEntityToSceneView(e);
+        }
+	}
+}
+
+void 
+ShutdownSceneEditorView()
+{
+	delete _rootNode;
+	_rootNode = nullptr;
+}
+
+void AddPrefab(const std::filesystem::path& path)
 {
     Vec<ecs::Entity> entities{};
     assets::DeserializeEntityHierarchy(entities, path);

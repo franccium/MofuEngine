@@ -3,7 +3,7 @@
 #include "Entity.h"
 #include "Transform.h"
 
-namespace mofu::ecs {
+namespace mofu::ecs::transform {
 
 struct EntityFinalTRS
 {
@@ -14,11 +14,14 @@ struct EntityFinalTRS
 	component::LocalTransform* LocalTransform;
 };
 
-void AddEntityToTransformHierarchy(Entity entity);
-void MoveEntityInTransformHierarchy(Entity entity);
-void RemoveEntityFromTransformHierarchy(Entity entity);
-void UpdateEntityTransformComponents(Entity entity);
+void AddEntityToHierarchy(Entity entity);
+void MoveEntityInHierarchy(Entity entity);
+void RemoveEntityFromHierarchy(Entity entity);
+void UpdateEntityComponents(Entity entity);
 
-void ReconfigureTransformHierarchy();
-void UpdateTransformHierarchy(); // NOTE: called at the end of the frame, after all local transforms have been updated 
+void ReconfigureHierarchy();
+void UpdateHierarchy(); // NOTE: called at the end of the frame, after all local transforms have been updated 
+
+// when unloading a scene
+void DeleteHierarchy();
 }
