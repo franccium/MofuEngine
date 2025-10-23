@@ -482,7 +482,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 	};
 	Vec<RenderableEntitySpawnContext> spawnedEntities(submeshCount);
 
-	snprintf(name.Name, ecs::component::NAME_LENGTH, "%s", _name.c_str());
+	snprintf(name.Name, ecs::component::NAME_LENGTH, "%s", _names[0].c_str());
 	name.Name[15] = '\0';
 	// create root entity
 	ecs::component::Parent parentEntity{ {} };
@@ -505,7 +505,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		material.MaterialCount = 1;
 		material.MaterialAsset = _materialAssets[i];
 
-		snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
+		snprintf(name.Name, ecs::component::NAME_LENGTH, "%s", _names[i].c_str());
 
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child, ecs::component::NameComponent>(
@@ -533,6 +533,8 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 	_name = state.OutModelFile.stem().string();
 	_geometryPath = state.OutModelFile;
 	_textureImageFiles = state.ImageFiles;
+	assert(!state.MeshNames.empty());
+	_names = state.MeshNames;
 
 	_meshAssets.emplace_back(content::assets::GetHandleFromImportedPath(state.OutModelFile));
 

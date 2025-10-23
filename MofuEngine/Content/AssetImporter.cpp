@@ -556,6 +556,7 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 
 		lodGroup.Meshes.emplace_back(mesh);
 	}
+	state.MeshNames.emplace_back(m->name.data, m->name.length);
 }
 
 void

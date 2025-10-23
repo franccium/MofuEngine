@@ -87,7 +87,7 @@ CreateDebugRootSignature()
 bool
 CreateDebugPSO()
 {
-	assert(!fxPSO_Debug);
+	assert(!fxPSO_Debug && fxRootSig_Debug);
 
 	struct {
 		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Debug };
@@ -148,7 +148,7 @@ CreateRootSignature()
 bool
 CreatePSO()
 {
-	assert(!fxPSO_Default);
+	assert(!fxPSO_Default && fxRootSig_Default);
 
 	struct {
 		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Default };
@@ -241,7 +241,8 @@ SetDebug(bool debugOn)
 {
 	if (debugOn)
 	{
-		if (!fxRootSig_Debug || !fxPSO_Debug) CreateDebugPSO();
+		if (!fxRootSig_Debug) CreateDebugRootSignature();
+		if (!fxPSO_Debug) CreateDebugPSO();
 		fxRootSig = fxRootSig_Debug;
 		fxPSO = fxPSO_Debug;
 	}

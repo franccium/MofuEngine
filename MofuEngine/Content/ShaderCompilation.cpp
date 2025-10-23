@@ -636,19 +636,24 @@ UpdateHotReload()
     std::filesystem::path shadersCompiledPath{ GetEngineShadersPath() };
     shadersCompiledPath.remove_filename();
 
-    std::filesystem::path shaderPath{ shadersSourcePath / ENGINE_SHADER_FILES[EngineShader::RayTracingLib].Info.File };
-    //std::filesystem::path compiledShaderPath{ shadersCompiledPath / graphics::GetEngineShaderPath(EngineShader::RayTracingLib) };
-    std::filesystem::path compiledShaderPath{ graphics::GetEngineShaderPath(EngineShader::RayTracingLib) };
-	std::filesystem::directory_entry entry{ shaderPath };
-    const auto lastSourceUpdateTime{ std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(shaderPath))};
-    const auto lastCompileTime{ std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(compiledShaderPath))};
-
-    if (lastSourceUpdateTime > lastCompileTime + std::chrono::seconds(1))
+    for (u32 i{ 0 }; i < EngineShader::Count; ++i)
     {
-        //TODO: maybe dont write to a file, just use the blob? - that could be a problem for the next engine run though
-        DxcCompiledShader shader{ CompileEngineShader(EngineShader::RayTracingLib, compiler) };
-		SaveCompiledEngineShader(shader, graphics::GetEngineShaderPath(EngineShader::RayTracingLib));
-        graphics::OnShadersRecompiled(EngineShader::ID::RayTracingLib);
+        shaderID = (EngineShader::ID)i;
+        std::filesystem::path shaderPath{ shadersSourcePath / ENGINE_SHADER_FILES[shaderID].Info.File };
+        //std::filesystem::path compiledShaderPath{ shadersCompiledPath / graphics::GetEngineShaderPath(shaderID) };
+        std::filesystem::path compiledShaderPath{ graphics::GetEngineShaderPath(shaderID) };
+
+        std::filesystem::directory_entry entry{ shaderPath };
+        const auto lastSourceUpdateTime{ std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(shaderPath)) };
+        const auto lastCompileTime{ std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(compiledShaderPath)) };
+
+        if (lastSourceUpdateTime > lastCompileTime + std::chrono::seconds(1))
+        {
+            //TODO: maybe dont write to a file, just use the blob? - that could be a problem for the next engine run though
+            DxcCompiledShader shader{ CompileEngineShader(shaderID, compiler) };
+		    SaveCompiledEngineShader(shader, graphics::GetEngineShaderPath(shaderID));
+            graphics::OnShadersRecompiled(shaderID);
+        }
     }
 }
 }

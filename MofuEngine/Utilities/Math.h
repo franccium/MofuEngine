@@ -210,18 +210,4 @@ inline quat EulerRadToQuat(const v3& eulerRad)
 	return q;
 }
 
-inline void TRS4x4To3x4RowMajor(const m4x4& m, float rm[12])
-{
-	rm[0] = m._11; rm[1] = m._12; rm[2] = m._13; rm[3] = m._14;
-	rm[4] = m._21; rm[5] = m._22; rm[6] = m._23; rm[7] = m._24;
-	rm[8] = m._31; rm[9] = m._32; rm[10] = m._33; rm[11] = m._34;
-}
-
-inline void TRS4x4To3x4RowMajor(const m4x4a& m, float rm[12])
-{
-	rm[0] = m._11; rm[1] = m._12; rm[2] = m._13; rm[3] = m._14;
-	rm[4] = m._21; rm[5] = m._22; rm[6] = m._23; rm[7] = m._24;
-	rm[8] = m._31; rm[9] = m._32; rm[10] = m._33; rm[11] = m._34;
-}
-
 }

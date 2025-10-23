@@ -21,6 +21,7 @@ private:
 	Vec<material::EditorMaterial> _materials;
 	Vec<graphics::MaterialInitInfo> _materialInfos;
 	Vec<std::string> _textureImageFiles;
+	Vec<std::string> _names;
 
 	Vec<content::AssetHandle> _meshAssets;
 	Vec<content::AssetHandle> _materialAssets;

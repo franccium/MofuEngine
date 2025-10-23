@@ -7,6 +7,8 @@
 #include "ValueDisplay.h"
 #include "ImporterView.h"
 #include "Content/EditorContentManager.h"
+#include <Jolt/Jolt.h>
+#include <Jolt/RegisterTypes.h>
 
 #include "imgui.h"
 

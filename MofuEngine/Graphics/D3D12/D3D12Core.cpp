@@ -1075,10 +1075,13 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
     {
         case EngineShader::PostProcessPS:
             fx::ResetShaders(false);
+            break;
         case EngineShader::LightCullingCS:
             light::ResetShaders();
+            break;
         case EngineShader::RayTracingLib:
             rt::ResetShaders();
+            break;
         default:
             break;
     }

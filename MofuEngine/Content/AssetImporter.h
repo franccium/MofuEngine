@@ -13,16 +13,7 @@ namespace mofu::content {
 
 struct FBXImportState
 {
-	std::string FbxFile;
-	std::filesystem::path OutModelFile;
-	Vec<LodGroup> LodGroups;
-	Vec<editor::material::EditorMaterial> Materials;
-	Vec<editor::texture::ViewableTexture> Textures;
-	Vec<u32> SourceImages;
-	Vec<std::string> ImageFiles;
-
 	GeometryImportSettings ImportSettings;
-
 	enum ErrorFlags : u32
 	{
 		None = 0x0,
@@ -34,6 +25,15 @@ struct FBXImportState
 		Test4 = 0x20,
 	};
 	u32 Errors;
+
+	std::string FbxFile;
+	std::filesystem::path OutModelFile;
+	Vec<LodGroup> LodGroups;
+	Vec<editor::material::EditorMaterial> Materials;
+	Vec<editor::texture::ViewableTexture> Textures;
+	Vec<u32> SourceImages;
+	Vec<std::string> ImageFiles;
+	Vec<std::string> MeshNames;
 };
 
 void ImportAsset(std::filesystem::path path);
