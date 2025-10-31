@@ -42,6 +42,7 @@ void
 RenderMeshImportSettings()
 {
 	ImGui::TextUnformatted("Mesh Import Settings");
+	ImGui::Checkbox("Static Object", &geometryImportSettings.IsStatic);
 	ImGui::Checkbox("Import Embedded Textures", &geometryImportSettings.ImportEmbeddedTextures);
 	ImGui::Checkbox("Calculate Tangents", &geometryImportSettings.CalculateTangents);
 	ImGui::Checkbox("Calculate Normals", &geometryImportSettings.CalculateNormals);

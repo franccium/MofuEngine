@@ -30,7 +30,8 @@ using ComponentTypes = std::tuple<
     PotentiallyVisible,
     CullableObject,
     DynamicObject,
-    PathTraceable
+    PathTraceable,
+    Collider
     //NOTE: dont put a , after the last item
 >;
 constexpr u32 ComponentTypeCount{ std::tuple_size_v<ComponentTypes> };
@@ -67,6 +68,7 @@ constexpr std::array<u32, ComponentTypeCount> ComponentSizes {
     sizeof(CullableObject),
     sizeof(DynamicObject),
     sizeof(PathTraceable),
+    sizeof(Collider),
 };
 
 template<ComponentID ID>
@@ -112,6 +114,7 @@ constexpr std::array<const char*, ComponentTypeCount> ComponentNames {
     "CullableObject",
 	"DynamicObject",
 	"PathTraceable",
+	"Collider",
 };
 
 //TODO: passing component ids as arguments might be a better idea

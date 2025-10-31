@@ -37,16 +37,20 @@ Shutdown()
 }
 
 void 
-Update(system::SystemUpdateData data)
+UpdatePrePhysics(system::SystemUpdateData data)
 {
 	messages::RestartFrameMessages();
 
 	system::SystemRegistry& systemRegistry{ system::SystemRegistry::Instance() };
 	systemRegistry.UpdateSystems(system::SystemGroup::Initial, data);
 	systemRegistry.UpdateSystems(system::SystemGroup::PreUpdate, data);
+}
+
+void
+UpdatePostPhysics(system::SystemUpdateData data)
+{
+	system::SystemRegistry& systemRegistry{ system::SystemRegistry::Instance() };
 	systemRegistry.UpdateSystems(system::SystemGroup::Update, data);
-	//systemRegistry.UpdateSystems(system::SystemGroup::PostUpdate, data);
-	//systemRegistry.UpdateSystems(system::SystemGroup::Final, data);
 }
 
 void UpdateRenderSystems(system::SystemUpdateData data, [[maybe_unused]] const graphics::d3d12::D3D12FrameInfo& d3d12FrameInfo)

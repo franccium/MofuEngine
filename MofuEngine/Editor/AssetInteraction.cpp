@@ -15,6 +15,7 @@
 #include "Content/EditorContentManager.h"
 #include "Material.h"
 #include <stack>
+#include "Physics/BodyInterface.h"
 
 namespace mofu::editor::assets {
 namespace {
@@ -514,6 +515,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		spawnedEntities[i] = { e.id, mesh, material, true, child };
 	}
 
+	u32 entityIdx{ 0 };
 	for (auto& c : spawnedEntities)
 	{
 		if (c.isChild)
@@ -521,9 +523,21 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 			assert(c.child.ParentEntity == child.ParentEntity);
 			assert(ecs::scene::GetComponent<ecs::component::Child>(c.entity).ParentEntity == child.ParentEntity);
 		}
-		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent< ecs::component::RenderMesh >(c.entity) };
+
+
+		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(c.entity) };
 		mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialID);
 		editor::AddEntityToSceneView(c.entity);
+		//FIXME: has to be there cause i add entity to transform hierarchy in AddEntityToSceneView() which makes no sense; cant migrate the entity because of that; think of creating some buffer for the new entity before adding it
+		if (_joltMeshShapes[entityIdx].GetPtr() != nullptr)
+		{
+			JPH::BodyID bodyID{ physics::AddPhysicsBody(_joltMeshShapes[entityIdx]) };
+			ecs::scene::AddComponent<ecs::component::Collider>(c.entity);
+			ecs::scene::AddComponent<ecs::component::StaticObject>(c.entity);
+			ecs::component::Collider& collider{ ecs::scene::GetComponent<ecs::component::Collider>(c.entity) };
+			collider.BodyID = bodyID;
+		}
+		entityIdx++;
 	}
 }
 
@@ -542,6 +556,8 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 
 	_materialInfos.resize(meshCount);
 	_materials.resize(meshCount);
+
+	_joltMeshShapes = std::move(state.JoltMeshShapes);
 
 	if (extractMaterials)
 	{

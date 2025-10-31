@@ -572,7 +572,7 @@ ShutdownSceneEditorView()
 	_rootNode = nullptr;
 }
 
-void AddPrefab(const std::filesystem::path& path)
+ecs::Entity AddPrefab(const std::filesystem::path& path)
 {
     Vec<ecs::Entity> entities{};
     assets::DeserializeEntityHierarchy(entities, path);
@@ -580,6 +580,7 @@ void AddPrefab(const std::filesystem::path& path)
     {
         AddEntityToSceneView(e);
     }
+    return entities[0];
 }
 
 }

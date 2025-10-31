@@ -1,0 +1,28 @@
+Prefab: 6609794550874802810
+Entities:
+  18:
+    Component IDs:
+      - 0
+      - 1
+      - 2
+      - 4
+      - 5
+      - 12
+      - 17
+    Components:
+      LocalTransform:
+        Position: [0, 8, 0]
+        Rotation: [0, 0, 0, 1]
+        Scale: [1, 1, 1]
+        Forward: [0, 0, 1]
+      WorldTransform: ~
+      Parent: ~
+      RenderMesh:
+        Mesh: 8911571523789389110
+      RenderMaterial:
+        Material: 0
+      NameComponent:
+        Name: pcube
+      Collider: ~
+Parents:
+  - 0

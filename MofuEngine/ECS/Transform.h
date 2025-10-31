@@ -13,6 +13,9 @@
 #include "Content/SerializationUtils.h"
 #include "Graphics/Lights/Light.h"
 #include "Graphics/D3D12/D3D12Content/D3D12Geometry.h"
+
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Collision/Shape/Shape.h>
 #endif
 
 /*
@@ -475,6 +478,23 @@ struct PathTraceable : Component
 		editor::ui::DisplayUint(c.MeshInfo.IndexCount, "Index Count");
 		ImGui::TableNextRow();
 		editor::ui::DisplayUint(c.MeshInfo.IndexGlobalOffset, "Index Global Offset");
+	}
+#endif
+};
+
+struct Collider : Component
+{
+	JPH::BodyID BodyID;
+
+#if EDITOR_BUILD
+	static void RenderFields([[maybe_unused]] Collider& c)
+	{
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("Collider");
+		ImGui::TableNextRow();
+		editor::ui::DisplayUint(c.BodyID.GetIndex(), "Body Index");
+		ImGui::TableNextRow();
+		editor::ui::DisplayUint(c.BodyID.GetSequenceNumber(), "Body Sequence Num");
 	}
 #endif
 };

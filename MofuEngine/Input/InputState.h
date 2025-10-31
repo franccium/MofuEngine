@@ -141,6 +141,12 @@ struct Keys
     };
 };
 
+struct ModdedKey
+{
+    Keys::Key Key;
+    Keys::Key Mod;
+};
+
 struct InputState
 {
 	u8 KeyDown[Keys::Count]{};

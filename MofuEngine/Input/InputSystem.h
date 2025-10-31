@@ -3,10 +3,10 @@
 #include "InputState.h"
 
 namespace mofu::input {
-
 [[nodiscard]] bool IsKeyDown(Keys::Key key);
 [[nodiscard]] bool WasKeyPressed(Keys::Key key);
 [[nodiscard]] bool WasKeyPressed(Keys::Key key, Keys::Key modifier);
+[[nodiscard]] bool WasKeyPressed(ModdedKey keyMod);
 [[nodiscard]] bool WasKeyReleased(Keys::Key key);
 [[nodiscard]] v2 GetMousePosition();
 [[nodiscard]] v2 GetMouseDelta();
@@ -32,6 +32,7 @@ static struct Keybinds
 	{
 		static constexpr Keys::Key ShaderReload{ Keys::Key::End };
 		static constexpr Keys::Key ToggleRenderingConsole{ Keys::Key::K };
+		static constexpr ModdedKey ToggleObjectAdder{ Keys::Key::A, Keys::Key::Alt };
 	} Editor;
 
 	static struct

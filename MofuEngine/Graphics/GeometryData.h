@@ -172,6 +172,7 @@ struct MeshGroup
 struct GeometryImportSettings
 {
 	f32 SmoothingAngle{ 0.f };
+	bool IsStatic{ true };
 	bool CalculateNormals{ false };
 	bool CalculateTangents{ true };
 	bool ReverseHandedness{ false };

@@ -82,7 +82,8 @@ void ForEachComponent(const EntityBlock* const block, u32 row, Fun&& func)
 void Initialize();
 void Shutdown();
 
-void Update(system::SystemUpdateData data);
+void UpdatePrePhysics(system::SystemUpdateData data);
+void UpdatePostPhysics(system::SystemUpdateData data);
 //TODO: temporary solution
 void UpdateRenderSystems(system::SystemUpdateData data, const graphics::d3d12::D3D12FrameInfo& d3d12FrameInfo);
 }

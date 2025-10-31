@@ -11,6 +11,7 @@
 #include "ActionHistory.h"
 #include "Input/InputSystem.h"
 #include "RenderingConsole.h"
+#include "ObjectAddInterface.h"
 
 namespace mofu::editor {
 namespace {
@@ -36,6 +37,7 @@ RenderEditorGUI()
     assets::RenderImportSettings();
     assets::RenderImportSummary();
     debug::DrawRenderingConsole();
+    object::RenderObjectAddInterface();
 
     if (input::WasKeyPressed(input::Keys::Z, input::Keys::Control))
     {

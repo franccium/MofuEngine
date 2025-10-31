@@ -11,5 +11,5 @@ bool InitializeSceneEditorView();
 void ShutdownSceneEditorView();
 void RenderSceneEditorView();
 void LoadScene(const std::filesystem::path& path); //FIXME: shouldnt be there
-void AddPrefab(const std::filesystem::path& path); // FIXME: shouldnt be there
+ecs::Entity AddPrefab(const std::filesystem::path& path); // FIXME: shouldnt be there
 }

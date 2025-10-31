@@ -7,6 +7,8 @@
 #include "Graphics/GeometryData.h"
 #include "Editor/TextureView.h"
 #include "Editor/MaterialEditor.h"
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 
 namespace mofu::content {
 
@@ -34,6 +36,7 @@ struct FBXImportState
 	Vec<u32> SourceImages;
 	Vec<std::string> ImageFiles;
 	Vec<std::string> MeshNames;
+	Vec<JPH::Ref<JPH::MeshShape>> JoltMeshShapes;
 };
 
 void ImportAsset(std::filesystem::path path);

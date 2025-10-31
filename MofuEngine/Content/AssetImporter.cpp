@@ -12,6 +12,7 @@
 #include "Editor/MaterialEditor.h"
 #include "Editor/Project/Project.h"
 #include "EditorContentManager.h"
+#include "PhysicsImporter.h"
 
 namespace mofu::content {
 namespace {
@@ -462,6 +463,7 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 		mesh.LodThreshold = 0.f;
 
 		Vec<Vertex>& vertices{ mesh.Vertices };
+		Vec<v3>& vertexPositions{ mesh.Positions };
 		Vec<u32> partIndices{};
 
 		for (u32 faceIdx : part.face_indices)
@@ -470,9 +472,10 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 
 			// Triangulate the face
 			u32 triangleCount{ ufbx_triangulate_face(triangleIndices.data(), triangleIndices.size(), m, face) };
+			const u32 vertexCount{ triangleCount * 3 };
 
 			// Iterate over each triangle corner contiguously
-			for (u32 i{ 0 }; i < triangleCount * 3; ++i)
+			for (u32 i{ 0 }; i < vertexCount; ++i)
 			{
 				u32 index{ triangleIndices[i] };
 
@@ -486,8 +489,11 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 				v.UV = { (f32)uv.x, 1.f - (f32)uv.y };
 				
 				vertices.emplace_back(v);
+				vertexPositions.emplace_back(v.Position);
 			}
 		}
+
+		state.JoltMeshShapes.emplace_back(physics::CreateJoltMeshFromVertices(vertexPositions, state.ImportSettings));
 
 		if (m->vertex_tangent.exists && !state.ImportSettings.CalculateTangents)
 		{

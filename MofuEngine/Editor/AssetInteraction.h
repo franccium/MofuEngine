@@ -4,6 +4,9 @@
 #include "Content/AssetImporter.h"
 #include "ECS/Scene.h"
 #include "Material.h"
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/PhysicsMaterial.h>
 
 namespace mofu::editor::assets
 {
@@ -25,6 +28,8 @@ private:
 
 	Vec<content::AssetHandle> _meshAssets;
 	Vec<content::AssetHandle> _materialAssets;
+
+	Vec<JPH::Ref<JPH::MeshShape>> _joltMeshShapes;
 };
 
 void DropModelIntoScene(std::filesystem::path modelPath, u32* materials = nullptr);

@@ -1,4 +1,7 @@
 #pragma once
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include "Platform/Platform.h"
 #include "Graphics/Renderer.h"
 #include "Content/ShaderCompilation.h"
@@ -22,6 +25,7 @@
 #include "Editor/SceneEditorView.h"
 #include "Input/InputSystem.h"
 #include "Graphics/D3D12/D3D12RayTracing.h"
+#include "Physics/PhysicsCore.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -48,6 +52,8 @@ u32 renderItemCount{ 0 };
 Vec<id_t> renderItemIDsCache{};
 
 Timer timer{};
+f32 fixedAccum{ 0.f };
+static constexpr f32 FIXED_DT{ 1.f / 60.f };
 
 bool MofuInitialize();
 void MofuShutdown();
@@ -143,6 +149,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 bool MofuInitialize()
 {
 	mofu::InitializeEngineModules();
+	physics::core::Initialize();
 	while (!shaders::CompileEngineShaders())
 	{
 		if (MessageBox(nullptr, L"Failed to compile engine shaders", L"Error", MB_RETRYCANCEL) != IDRETRY) return false;
@@ -213,6 +220,10 @@ void MofuUpdate()
 	ZoneScoped;
 
 	timer.Start();
+	f32 dt{ 16.7f };
+	fixedAccum += dt;
+	constexpr f32 MAX_ACCUMULATED_TIME = 0.1f;
+	fixedAccum = std::min(fixedAccum, MAX_ACCUMULATED_TIME);
 #if SHADER_HOT_RELOAD_ENABLED
 	// autosave is problematic so keybind only for now
 	if (input::WasKeyPressed(input::Keybinds::Editor.ShaderReload)) shaders::UpdateHotReload();
@@ -223,10 +234,26 @@ void MofuUpdate()
 #endif
 
 	{
+		ZoneScopedN("ECS pre-update");
+		ecs::system::SystemUpdateData ecsUpdateData{};
+		ecsUpdateData.DeltaTime = dt;
+		ecs::UpdatePrePhysics(ecsUpdateData);
+	}
+
+	{
+		ZoneScopedN("Physics update");
+		while (fixedAccum >= FIXED_DT)
+		{
+			physics::core::Update(FIXED_DT);
+			fixedAccum -= FIXED_DT;
+		}
+	}
+
+	{
 		ZoneScopedN("ECS update");
 		ecs::system::SystemUpdateData ecsUpdateData{};
-		ecsUpdateData.DeltaTime = 16.7f;
-		ecs::Update(ecsUpdateData);
+		ecsUpdateData.DeltaTime = dt;
+		ecs::UpdatePostPhysics(ecsUpdateData);
 	}
 	
 #if RENDER_GUI
