@@ -296,6 +296,16 @@ GenerateCetLayout(const CetMask& cetMask)
 //	AddEntity(newBlock, entity);
 //}
 
+ecs::Entity 
+GetSingleton(ecs::ComponentID withComponent)
+{
+	CetMask cetMask{};
+	cetMask.set(withComponent);
+	Vec<EntityBlock*> blocks{ GetBlocksFromCet(cetMask) };
+	assert(blocks.size() == 1);
+	return blocks[0]->Entities[0];
+}
+
 void
 AddComponents(EntityData& data, const CetMask& newSignature, EntityBlock* oldBlock)
 {
@@ -413,9 +423,8 @@ SerializeTest()
 bool
 IsEntityAlive(Entity id)
 {
-	assert(id::IsValid(id));
 	// if the generation doesn't match, the entity had to die/never exist
-	return id::Generation(entityDatas[id::Index(id)].id) == id::Generation(id);
+	return id::IsValid(id) && id::Generation(entityDatas[id::Index(id)].id) == id::Generation(id);
 }
 
 void 

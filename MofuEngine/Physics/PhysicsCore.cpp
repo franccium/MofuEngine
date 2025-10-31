@@ -84,8 +84,8 @@ Initialize()
 
 	_tempAllocator = new JPH::TempAllocatorImpl{ TEMP_ALLOCATOR_SIZE };
 
-	//const s32 jobSystemThreadCount{ (s32)(std::thread::hardware_concurrency() - 1u) };
-	const s32 jobSystemThreadCount{ 1 };
+	const s32 jobSystemThreadCount{ (s32)(std::thread::hardware_concurrency() - 1u) };
+	//const s32 jobSystemThreadCount{ 1 };
 	_jobSystem = new jobs::JobSystem{ JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, jobSystemThreadCount };
 
 	_physicsSystem.Init(MAX_RIGID_BODIES, NUM_BODY_MUTEXES, MAX_BODY_PAIRS, MAX_CONTACT_CONSTRAINTS,

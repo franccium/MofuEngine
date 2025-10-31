@@ -72,6 +72,9 @@ GetEntityComponent(Entity id)
 	return data.block->GetComponentArray<C>()[data.row];
 }
 
+// TODO: its a waste that singletons take up a whole block
+ecs::Entity GetSingleton(ecs::ComponentID withComponent);
+
 template<IsComponent C>
 bool
 EntityHasComponent(Entity e)
@@ -90,6 +93,11 @@ AddComponents(Entity entity)
 	EntityData& data{ GetEntityData(entity) };
 	EntityBlock* oldBlock{ data.block };
 	CetMask newSignature{ PreviewCetMaskPlusComponents<C...>(oldBlock->Signature) };
+	if (newSignature == oldBlock->Signature) 
+	{ 
+		log::Info("ecs::scene::AddComponents: Entity already has these components"); 
+		return; 
+	};
 	
 	AddComponents(data, newSignature, oldBlock);
 }

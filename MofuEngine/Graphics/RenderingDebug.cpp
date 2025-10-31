@@ -7,6 +7,7 @@ DebugMode _debugMode{ DebugMode::Default };
 bool _isUsingDebugPostProcessing{ false };
 
 } // anonymous namespace
+Settings RenderingSettings{};
 
 DebugMode
 GetDebugMode()

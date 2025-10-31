@@ -2,15 +2,21 @@
 
 namespace mofu::graphics::d3d12::primitives {
 namespace {
-Vec<Primitive> _primitives[2]{};
+util::FreeList<Primitive> _primitives[2]{};
 } // anonymous namespace
 
 u32
 AddPrimitive(Primitive primitive)
 {
-    u32 idx{ (u32)_primitives[0].size() };
-    _primitives[0].emplace_back(primitive);
+    u32 idx{ _primitives[0].add(primitive) };
     return idx;
+}
+
+void
+RemovePrimitive(u32 primitiveIdx)
+{
+    assert(primitiveIdx < _primitives[0].size());
+    _primitives[0].remove(primitiveIdx);
 }
 
 void 
@@ -41,6 +47,7 @@ ReleaseVertexBuffer(u32 primitiveIdx)
     primitive.VertexCount = 0;
     primitive.NumVertexToDraw = 0;
     primitive.VertexSize = 0;
+    _primitives[0].remove(primitiveIdx);
 }
 
 void

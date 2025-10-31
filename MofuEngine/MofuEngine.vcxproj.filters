@@ -285,6 +285,9 @@
     <ClCompile Include="Graphics\D3D12\D3D12Primitives.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\ObjectPicker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -666,6 +669,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\D3D12\D3D12Primitives.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\CommonDefines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\MathUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\ObjectPicker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

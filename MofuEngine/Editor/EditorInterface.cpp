@@ -12,6 +12,7 @@
 #include "Input/InputSystem.h"
 #include "RenderingConsole.h"
 #include "ObjectAddInterface.h"
+#include "ObjectPicker.h"
 
 namespace mofu::editor {
 namespace {
@@ -19,11 +20,10 @@ namespace {
 
 } // anonymous namespace
 
-
-
 bool
 InitializeEditorGUI()
 {
+    object::Initialize();
     return InitializeSceneEditorView() && material::InitializeMaterialEditor();
 }
 

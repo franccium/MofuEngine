@@ -75,6 +75,7 @@ void FlushCommandQueue();
 Surface CreateSurface(platform::Window window);
 void RemoveSurface(surface_id id);
 void RenderSurface(surface_id id, FrameInfo frameInfo);
+void EndFrame(surface_id id);
 void ResizeSurface(surface_id id, u32 width, u32 height);
 u32 SurfaceWidth(surface_id id);
 u32 SurfaceHeight(surface_id id);

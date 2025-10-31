@@ -69,6 +69,11 @@ inline EntityData& SpawnEntity(const CetMask& signature)
 	return entityData;
 }
 
+inline ecs::Entity GetSingletonEntity(ecs::ComponentID withComponent)
+{
+	return scene::GetSingleton(withComponent);
+}
+
 void DestroyEntity(Entity entity);
 
 void DestroyScene();

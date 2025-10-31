@@ -73,7 +73,7 @@ private:
 
     JPH::Mutex _linesMutex{};
     Vec<Line> _lines{};
-    Vec<u32> _linesPrimitivesIndices{};
+    u32 _linesPrimitivesIndex{ U32_INVALID_ID };
     
     ID3D12RootSignature* _triangleRootSig{ nullptr };
     ID3D12PipelineState* _trianglePSO{ nullptr };
@@ -87,5 +87,6 @@ void Initialize();
 void Shutdown();
 void Render(const D3D12FrameInfo& frameInfo);
 void Clear();
+DebugRenderer* const GetDebugRenderer();
 
 }

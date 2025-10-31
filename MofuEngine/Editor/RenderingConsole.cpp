@@ -85,6 +85,10 @@ DrawRenderingConsole()
 	{
 		_isOpen = !_isOpen;
 	}
+	if (input::WasKeyPressed(input::Keybinds::Editor.TogglePhysicsDebugRendering))
+	{
+		graphics::debug::RenderingSettings.EnablePhysicsDebugRendering = !graphics::debug::RenderingSettings.EnablePhysicsDebugRendering;
+	}
 #endif
 
 	if (!ImGui::Begin("Rendering", &_isOpen))
@@ -92,6 +96,8 @@ DrawRenderingConsole()
 		ImGui::End();
 		return;
 	}
+
+	ImGui::Checkbox("Enable Physics Debug Render", &graphics::debug::RenderingSettings.EnablePhysicsDebugRendering);
 
 	bool isInDebugPostProcessing{ graphics::debug::IsUsingDebugPostProcessing() };
 	u32 debugPostProcessingOption{ isInDebugPostProcessing ? 1u : 0u };

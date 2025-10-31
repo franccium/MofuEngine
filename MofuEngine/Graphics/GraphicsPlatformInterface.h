@@ -19,6 +19,7 @@ struct PlatformInterface
 		Surface(*create)(platform::Window);
 		void(*remove)(surface_id);
 		void(*render)(surface_id, FrameInfo);
+		void(*endFrame)(surface_id);
 		void(*resize)(surface_id, u32 width, u32 height);
 		u32(*width)(surface_id);
 		u32(*height)(surface_id);

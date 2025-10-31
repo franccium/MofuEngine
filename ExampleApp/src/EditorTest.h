@@ -26,7 +26,9 @@
 #include "Input/InputSystem.h"
 #include "Graphics/D3D12/D3D12RayTracing.h"
 #include "Physics/PhysicsCore.h"
+#include "Physics/PhysicsLayers.h"
 #include "Physics/DebugRenderer/DebugRenderer.h"
+#include "Editor/ObjectPicker.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -55,6 +57,9 @@ Vec<id_t> renderItemIDsCache{};
 Timer timer{};
 f32 fixedAccum{ 0.f };
 static constexpr f32 FIXED_DT{ 1.f / 60.f };
+
+std::chrono::microseconds _physicsTotalTime{ std::chrono::microseconds{0} };
+u32 _physicsStepNumber{ 0 };
 
 bool MofuInitialize();
 void MofuShutdown();
@@ -230,6 +235,8 @@ void MofuUpdate()
 	if (input::WasKeyPressed(input::Keybinds::Editor.ShaderReload)) shaders::UpdateHotReload();
 #endif
 
+	editor::object::UpdateObjectPickerProbe();
+
 #if RAYTRACING
 	if (input::WasKeyPressed(input::Keybinds::Debug.RTASRebuild)) graphics::d3d12::rt::RequestRTUpdate();
 #endif
@@ -243,11 +250,12 @@ void MofuUpdate()
 
 	{
 		ZoneScopedN("Physics update");
-		while (fixedAccum >= FIXED_DT)
-		{
-			physics::core::Update(FIXED_DT);
-			fixedAccum -= FIXED_DT;
-		}
+		std::chrono::high_resolution_clock::time_point clockStart = std::chrono::high_resolution_clock::now();
+		physics::core::Update(FIXED_DT);
+		std::chrono::high_resolution_clock::time_point clockEnd = std::chrono::high_resolution_clock::now();
+		std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(clockEnd - clockStart);
+		_physicsTotalTime += duration;
+		_physicsStepNumber++;
 	}
 
 	{
@@ -273,6 +281,7 @@ void MofuUpdate()
 			//frameInfo.RenderItemIDs = renderItemIDsCache.data();
 
 			renderSurfaces[i].surface.surface.Render(graphics::GetCurrentFrameInfo());
+			renderSurfaces[i].surface.surface.EndFrame();
 		}
 	}
 

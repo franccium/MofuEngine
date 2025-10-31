@@ -11,6 +11,12 @@ enum DebugMode : u32
 
 	Count
 };
+struct Settings
+{
+	bool EnablePhysicsDebugRendering{ true };
+	bool DrawPhysicsWorldBounds{ true };
+};
+extern Settings RenderingSettings;
 
 DebugMode GetDebugMode();
 void SetDebugMode(DebugMode mode);

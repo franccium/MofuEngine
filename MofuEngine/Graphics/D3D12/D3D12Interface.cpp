@@ -35,6 +35,7 @@ SetupPlatformInterface(PlatformInterface& pi)
 	pi.surface.create = core::CreateSurface;
 	pi.surface.remove = core::RemoveSurface;
 	pi.surface.render = core::RenderSurface;
+	pi.surface.endFrame = core::EndFrame;
 	pi.surface.resize = core::ResizeSurface;
 	pi.surface.width = core::SurfaceWidth;
 	pi.surface.height = core::SurfaceHeight;

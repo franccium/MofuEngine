@@ -30,9 +30,11 @@ static struct Keybinds
 
 	static struct
 	{
+		static constexpr Keys::Key PickObject{ Keys::Key::MouseLMB };
 		static constexpr Keys::Key ShaderReload{ Keys::Key::End };
 		static constexpr Keys::Key ToggleRenderingConsole{ Keys::Key::K };
 		static constexpr ModdedKey ToggleObjectAdder{ Keys::Key::A, Keys::Key::Alt };
+		static constexpr ModdedKey TogglePhysicsDebugRendering{ Keys::Key::A, Keys::Key::R };
 	} Editor;
 
 	static struct

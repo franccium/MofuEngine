@@ -1,8 +1,8 @@
 #pragma once
+#include "CommonDefines.h"
+#include "StandardTypes.h"
+#include "MathUtils.h"
 #include <Jolt/Jolt.h>
-#ifdef _WIN64
-#include <DirectXMath.h>
-#endif
 
 namespace mofu::math {
 constexpr float PI = 3.14159265f;
@@ -23,7 +23,7 @@ namespace mofu {
 #ifdef _WIN64
 using v2 = DirectX::XMFLOAT2;
 using v2a = DirectX::XMFLOAT2A;
-//using v3 = DirectX::XMFLOAT3;
+
 struct v3 : public DirectX::XMFLOAT3
 {
     constexpr v3() = default;
@@ -54,7 +54,37 @@ struct v3 : public DirectX::XMFLOAT3
         z = other.z;
         return *this;
     }
+
+    v3 operator+(const v3& o) const
+    {
+        return math::Add(*this, o);
+    }
+
+    v3 operator*(f32 s) const
+    {
+        return math::Scale(*this, s);
+    }
+
+    v3 operator/(f32 s) const {
+        return math::Scale(*this, 1.0f / s);
+    }
+
+    // Compound assignment operators
+    v3& operator+=(const v3& o) {
+        *this = math::Add(*this, o);
+        return *this;
+    }
+
+    v3& operator*=(f32 s) {
+        *this = math::Scale(*this, s);
+        return *this;
+    }
+
+    v3 operator-() const {
+        return math::Scale(*this, -1.0f);
+    }
 };
+
 using v3a = DirectX::XMFLOAT3A;
 using v4 = DirectX::XMFLOAT4;
 using v4a = DirectX::XMFLOAT4A;

@@ -1,13 +1,5 @@
 #pragma once
-#ifdef _WIN64
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#endif
-
+#include "CommonDefines.h"
 // C/C++
 #include <stdint.h>
 #include <assert.h>
@@ -59,25 +51,3 @@
 #define PATH_TRACE_ALL 1
 #define PHYSICS_DEBUG_RENDER_ENABLED 1
 
-#ifndef _ALWAYS_INLINE
-#if defined(__GNUC__)
-#define _ALWAYS_INLINE __attribute__((always_inline)) inline
-#elif defined(_MSC_VER)
-#define _ALWAYS_INLINE __forceinline
-#else
-#define _ALWAYS_INLINE
-#endif
-#endif
-
-#ifndef _NO_INLINE
-#if defined(__GNUC__)
-#define _NO_INLINE __attribute__((noinline))
-#elif defined(_MSC_VER)
-#define _NO_INLINE __declspec(noinline)
-#else
-#define _NO_INLINE
-#endif
-
-#define TODO_(x) assert(false && x)
-
-#endif

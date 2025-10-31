@@ -151,6 +151,7 @@
     <ClCompile Include="Editor\Material.cpp" />
     <ClCompile Include="Editor\MaterialEditor.cpp" />
     <ClCompile Include="Editor\ObjectAddInterface.cpp" />
+    <ClCompile Include="Editor\ObjectPicker.cpp" />
     <ClCompile Include="Editor\PrefabView.cpp" />
     <ClCompile Include="Editor\Project\Project.cpp" />
     <ClCompile Include="Editor\RenderingConsole.cpp" />
@@ -213,6 +214,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\CommonHeaders.h" />
+    <ClInclude Include="Common\CommonDefines.h" />
     <ClInclude Include="Common\id.h" />
     <ClInclude Include="Common\StandardTypes.h" />
     <ClInclude Include="Content\Asset.h" />
@@ -258,6 +260,7 @@
     <ClInclude Include="Editor\Material.h" />
     <ClInclude Include="Editor\MaterialEditor.h" />
     <ClInclude Include="Editor\ObjectAddInterface.h" />
+    <ClInclude Include="Editor\ObjectPicker.h" />
     <ClInclude Include="Editor\PrefabView.h" />
     <ClInclude Include="Editor\Project\Project.h" />
     <ClInclude Include="Editor\RenderingConsole.h" />
@@ -335,6 +338,7 @@
     <ClInclude Include="Utilities\Math.h" />
     <ClInclude Include="Utilities\MathTypes.h" />
     <ClInclude Include="Utilities\DataStructures\Vector.h" />
+    <ClInclude Include="Utilities\MathUtils.h" />
     <ClInclude Include="Utilities\PoolAllocator.h" />
     <ClInclude Include="Utilities\SlabAllocator.h" />
     <ClInclude Include="Utilities\TypeUtils.h" />

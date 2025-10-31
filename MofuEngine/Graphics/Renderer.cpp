@@ -178,6 +178,12 @@ Surface::Render(FrameInfo info) const
     gfxInterface.surface.render(_id, info);
 }
 
+void 
+Surface::EndFrame() const
+{
+    assert(IsValid());
+    gfxInterface.surface.endFrame(_id);
+}
 
 void 
 Camera::Up(v3 up) const

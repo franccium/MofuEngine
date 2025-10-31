@@ -8,7 +8,8 @@ struct Primitive
 	enum Topology : u8
 	{
 		Line = D3D_PRIMITIVE_TOPOLOGY_LINELIST,
-		Triangle = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+		Triangle = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+		Count = 2
 	};
 
 	Topology PrimitiveTopology;
@@ -19,6 +20,7 @@ struct Primitive
 };
 
 u32 AddPrimitive(Primitive primitive);
+void RemovePrimitive(u32 primitiveIdx);
 void CreateVertexBuffer(u32 primitiveIdx, u32 vertexSize, u32 vertexCount, void* data);
 void LockVertexBuffer(u32 primitiveIdx);
 void ReleaseVertexBuffer(u32 primitiveIdx);

@@ -568,7 +568,9 @@ CreateTestRenderItems()
 		JPH::Quat rot{ lt.Rotation.x, lt.Rotation.y, lt.Rotation.z, lt.Rotation.w };
 
 		//TODO: move this to some entity adding buffer
-		JPH::Body& body = *physics::core::BodyInterface().CreateBody(JPH::BodyCreationSettings(shape, pos, rot, JPH::EMotionType::Static, physics::PhysicsLayers::Movable));
+		JPH::BodyCreationSettings bodySettings{ shape, pos, rot, JPH::EMotionType::Static, physics::PhysicsLayers::Static };
+		bodySettings.mUserData = e;
+		JPH::Body& body = *physics::core::BodyInterface().CreateBody(bodySettings);
 		ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(e) };
 		collider.BodyID = body.GetID();
 		physics::core::BodyInterface().AddBody(body.GetID(), JPH::EActivation::Activate);

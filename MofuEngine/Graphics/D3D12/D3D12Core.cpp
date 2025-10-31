@@ -16,6 +16,7 @@
 #include "Lights/D3D12LightCulling.h"
 #include "D3D12RayTracing.h"
 #include "Graphics/RTSettings.h"
+#include "Graphics/RenderingDebug.h"
 #include "Content/EngineShaders.h"
 #include "Graphics/RTSettings.h"
 #include "Physics/DebugRenderer/DebugRenderer.h"
@@ -47,6 +48,7 @@ bool renderItemsUpdated{ true };
 u64 _currentCPUFrame{ 0 };
 u64 _currentGPUFrame{ 0 };
 bool _rtUpdateRequested{ false };
+bool _physicsCleared{ false };
 
 class D3D12Command
 {
@@ -822,11 +824,6 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     gfxCommand.BeginFrame();
     TracyD3D12NewFrame(tracyQueueContext);
 
-#if PHYSICS_DEBUG_RENDER_ENABLED
-    graphics::d3d12::debug::Clear();
-#endif
-
-
     DXGraphicsCommandList* const cmdListDepthSetup{ gfxCommand.CommandList(DEPTH_SETUP_LIST) };
     DXGraphicsCommandList* const cmdListGPassSetup{ gfxCommand.CommandList(MAIN_SETUP_LIST) };
     DXGraphicsCommandList* const cmdListFXSetup{ gfxCommand.CommandList(CLOSING_LIST_INDEX) };
@@ -991,7 +988,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     }
 
 #if PHYSICS_DEBUG_RENDER_ENABLED
-    graphics::d3d12::debug::Render(d3d12FrameInfo);
+    if(graphics::debug::RenderingSettings.EnablePhysicsDebugRendering)
+        graphics::d3d12::debug::Render(d3d12FrameInfo);
 #endif
 
     // Post Processing
@@ -1045,6 +1043,19 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
 }
 #endif
+
+void
+EndFrame(surface_id surfaceID)
+{
+#if PHYSICS_DEBUG_RENDER_ENABLED
+if (graphics::debug::RenderingSettings.EnablePhysicsDebugRendering || !_physicsCleared)
+{
+    graphics::d3d12::debug::Clear();
+    _physicsCleared = true;
+}
+    
+#endif
+}
 
 Surface
 CreateSurface(platform::Window window)

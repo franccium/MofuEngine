@@ -5,12 +5,47 @@
 #include "PhysicsCore.h"
 #include "PhysicsLayers.h"
 #include "Utilities/Logger.h"
+#include "ECS/Transform.h"
+#include "ECS/Scene.h"
 
-JPH::BodyID mofu::physics::AddPhysicsBody(JPH::Ref<JPH::MeshShape> meshShape)
+namespace mofu::physics {
+JPH::BodyID 
+AddStaticBodyFromMesh(JPH::Ref<JPH::MeshShape> meshShape, ecs::Entity ownerEntity)
 {
-    JPH::BodyCreationSettings bodySettings{ meshShape.GetPtr(), JPH::RVec3(0.f, 0.f, 0.f), JPH::Quat::sIdentity(), JPH::EMotionType::Static, PhysicsLayers::Layer::Static};
+    ecs::scene::AddComponents<ecs::component::Collider, ecs::component::StaticObject>(ownerEntity);
+
+    const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
+    JPH::BodyCreationSettings bodySettings{ meshShape.GetPtr(), lt.Position.AsJPVec3(), lt.Rotation, 
+        JPH::EMotionType::Static, PhysicsLayers::Layer::Static};
+    bodySettings.mUserData = ownerEntity;
+
     JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
-    core::BodyInterface().AddBody(body->GetID(), JPH::EActivation::DontActivate);
-    log::Info("JOLT: Added new physics body: [%u]", body->GetID().GetIndex());
-    return body->GetID();
+    const JPH::BodyID bodyID{ body->GetID() };
+    core::BodyInterface().AddBody(bodyID, JPH::EActivation::DontActivate);
+    log::Info("JOLT: Added a new physics body: [%u]", body->GetID().GetIndex());
+    ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(ownerEntity) };
+    collider.BodyID = bodyID;
+
+    return bodyID;
+}
+
+JPH::BodyID
+AddDynamicBody(JPH::Ref<JPH::Shape> meshShape, ecs::Entity ownerEntity)
+{
+    ecs::scene::AddComponents<ecs::component::Collider, ecs::component::DynamicObject>(ownerEntity);
+
+    const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
+    JPH::BodyCreationSettings bodySettings{ meshShape.GetPtr(), lt.Position.AsJPVec3(), lt.Rotation,
+        JPH::EMotionType::Dynamic, PhysicsLayers::Layer::Movable };
+    bodySettings.mUserData = ownerEntity;
+
+    JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
+    const JPH::BodyID bodyID{ body->GetID() };
+    core::BodyInterface().AddBody(bodyID, JPH::EActivation::Activate);
+    log::Info("JOLT: Added a new physics body: [%u]", body->GetID().GetIndex());
+    ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(ownerEntity) };
+    collider.BodyID = bodyID;
+
+    return bodyID;
+}
 }

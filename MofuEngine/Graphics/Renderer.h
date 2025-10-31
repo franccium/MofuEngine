@@ -34,6 +34,7 @@ public:
     u32 Width() const;
     u32 Height() const;
     void Render(FrameInfo info) const;
+    void EndFrame() const;
 
 private:
     surface_id _id{ id::INVALID_ID };

@@ -531,11 +531,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		//FIXME: has to be there cause i add entity to transform hierarchy in AddEntityToSceneView() which makes no sense; cant migrate the entity because of that; think of creating some buffer for the new entity before adding it
 		if (_joltMeshShapes[entityIdx].GetPtr() != nullptr)
 		{
-			JPH::BodyID bodyID{ physics::AddPhysicsBody(_joltMeshShapes[entityIdx]) };
-			ecs::scene::AddComponent<ecs::component::Collider>(c.entity);
-			ecs::scene::AddComponent<ecs::component::StaticObject>(c.entity);
-			ecs::component::Collider& collider{ ecs::scene::GetComponent<ecs::component::Collider>(c.entity) };
-			collider.BodyID = bodyID;
+			JPH::BodyID bodyID{ physics::AddStaticBodyFromMesh(_joltMeshShapes[entityIdx], c.entity) };
 		}
 		entityIdx++;
 	}

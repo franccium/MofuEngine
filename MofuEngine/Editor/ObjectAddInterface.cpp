@@ -11,6 +11,8 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include "Physics/PhysicsCore.h"
 #include "Physics/PhysicsLayers.h"
+#include "Physics/BodyInterface.h"
+#include <Jolt/Physics/Body/BodyLock.h>
 #include "ECS/Transform.h"
 #include "ECS/Scene.h"
 
@@ -41,16 +43,10 @@ void AddPhysicsCube(v2 mousePos)
 	ecs::scene::AddComponent<ecs::component::DynamicObject>(e); // TODO: should be in the prefab
 	JPH::BoxShape boxShape{ JPH::Vec3{1.f, 1.f, 1.f} };
 	JPH::Shape* shape{ new JPH::BoxShape{JPH::Vec3{1.f, 1.f, 1.f}} };
-	const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(e) };
-	JPH::RVec3 pos{ lt.Position.x, lt.Position.y, lt.Position.z };
-	JPH::Quat rot{ lt.Rotation.x, lt.Rotation.y, lt.Rotation.z, lt.Rotation.w };
+	JPH::BodyID id{ physics::AddDynamicBody(shape, e) };
 
-	//TODO: move this to some entity adding buffer
-	JPH::Body& body = *physics::core::BodyInterface().CreateBody(JPH::BodyCreationSettings(shape, pos, rot, JPH::EMotionType::Dynamic, physics::PhysicsLayers::Movable));
-	ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(e) };
-	collider.BodyID = body.GetID();
-	body.GetMotionProperties()->SetGravityFactor(0.1f);
-	physics::core::BodyInterface().AddBody(body.GetID(), JPH::EActivation::Activate);
+	JPH::BodyLockWrite lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), id };
+	lock.GetBody().GetMotionProperties()->SetGravityFactor(0.1f);
 }
 
 void AddPhysicsSphere(v2 mousePos)

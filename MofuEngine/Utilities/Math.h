@@ -202,12 +202,14 @@ EulerDegToQuat(const v3& eulerDeg)
 	return q;
 }
 
-[[nodiscard]] 
-inline quat EulerRadToQuat(const v3& eulerRad)
+[[nodiscard]] inline quat 
+EulerRadToQuat(const v3& eulerRad)
 {
 	v4a q{};
 	XMStoreFloat4A(&q, XMQuaternionRotationRollPitchYaw(eulerRad.x, eulerRad.y, eulerRad.z));
 	return q;
 }
+
+
 
 }

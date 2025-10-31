@@ -16,6 +16,7 @@
 #include "Graphics/D3D12/D3D12Camera.h"
 #include "Graphics/D3D12/D3D12GPass.h" // TODO: store the formats in some separate header
 #include "Graphics/D3D12/D3D12Primitives.h"
+#include "Graphics/RenderingDebug.h"
 
 //FIXME: TESTING
 #include "ECS/Scene.h"
@@ -224,7 +225,7 @@ DebugRenderer::DrawLines(const D3D12FrameInfo& frameInfo)
 	{
 		u32 idx(primitives::AddPrimitive(primitives::Primitive{ primitives::Primitive::Topology::Line }));
 		primitives::CreateVertexBuffer(idx, sizeof(Line) / 2, _lines.size() * 2, &_lines[0]);
-		_linesPrimitivesIndices.emplace_back(idx);
+		_linesPrimitivesIndex = idx;
 		DXGraphicsCommandList* const cmdList{ core::GraphicsCommandList() };
 
 		VSConstants* constants = core::CBuffer().AllocateSpace<VSConstants>();
@@ -242,10 +243,7 @@ void
 DebugRenderer::ClearLines()
 {
 	std::lock_guard lock{ _linesMutex };
-	if (!_lines.empty())
-	{
-		primitives::ReleaseVertexBuffer(_linesPrimitivesIndices[0]);
-	}
+	if(_linesPrimitivesIndex != U32_INVALID_ID) primitives::RemovePrimitive(_linesPrimitivesIndex);
 	_lines.clear();
 }
 
@@ -264,24 +262,25 @@ Shutdown()
 void 
 Render(const D3D12FrameInfo& frameInfo)
 {
-	for (auto [entity, s, lt, wt, col] : ecs::scene::GetRW<ecs::component::StaticObject, ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Collider>())
-	{
-		/*JPH::OrientedBox box{};
-		box.mHalfExtents = JPH::Vec3(0.5f, 0.5f, 0.5f);
-		box.mOrientation;*/
-		auto shape{ physics::core::PhysicsSystem().GetBodyInterface().GetShape(col.BodyID).GetPtr() };
-		JPH::AABox box{ shape->GetLocalBounds() };
-		JPH::Color color{ JPH::Color{ JPH::Color::sRed } };
-		_renderer->DrawWireBox(JPH::RMat44::sRotationTranslation(lt.Rotation, lt.Position.AsJPVec3()) * JPH::Mat44::sScale(JPH::Vec3(1.f, 1.f, 1.f)),
-			shape->GetLocalBounds(), color);
-	}
-	//JPH::PhysicsSystem& physicsSystem{mofu::physics::core::}
+	//for (auto [entity, s, lt, wt, col] : ecs::scene::GetRW<ecs::component::StaticObject, ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Collider>())
+	//{
+	//	/*JPH::OrientedBox box{};
+	//	box.mHalfExtents = JPH::Vec3(0.5f, 0.5f, 0.5f);
+	//	box.mOrientation;*/
+	//	auto shape{ physics::core::PhysicsSystem().GetBodyInterface().GetShape(col.BodyID).GetPtr() };
+	//	JPH::AABox box{ shape->GetLocalBounds() };
+	//	JPH::Color color{ JPH::Color{ JPH::Color::sRed } };
+	//	_renderer->DrawWireBox(JPH::RMat44::sRotationTranslation(lt.Rotation, lt.Position.AsJPVec3()) * JPH::Mat44::sScale(JPH::Vec3(1.f, 1.f, 1.f)),
+	//		shape->GetLocalBounds(), color);
+	//}
+	JPH::PhysicsSystem& physicsSystem{ mofu::physics::core::PhysicsSystem() };
 	JPH::BodyManager::DrawSettings settings{};
-	_renderer->Draw(frameInfo);
+	if(graphics::debug::RenderingSettings.DrawPhysicsWorldBounds) _renderer->DrawWireBox(physicsSystem.GetBounds(), JPH::Color::sGreen);
 	/*physicsSystem.DrawBodies(settings, _renderer, nullptr);
 	physicsSystem.DrawConstraints(_renderer);
 	physicsSystem.DrawConstraintLimits(_renderer);
 	physicsSystem.DrawConstraintReferenceFrame(_renderer);*/
+	_renderer->Draw(frameInfo);
 }
 
 void
@@ -289,5 +288,7 @@ Clear()
 {
 	_renderer->Clear();
 }
+
+DebugRenderer* const GetDebugRenderer() { return _renderer; }
 
 }
