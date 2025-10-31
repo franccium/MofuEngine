@@ -1,5 +1,4 @@
 #include "PhysicsCore.h"
-#include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Memory.h>
 #include <Jolt/Core/Factory.h>
@@ -105,6 +104,7 @@ Shutdown()
 	JPH::UnregisterTypes();
 
 	delete _jobSystem;
+	delete _tempAllocator;
 
 	delete JPH::Factory::sInstance;
 	JPH::Factory::sInstance = nullptr;
@@ -140,10 +140,9 @@ Update(f32 deltaTime)
 		//DirectX::XMStoreFloat4x4(&wt.TRS, newTransform);
 		//log::Info("PHYSICS: Updated object transform");
 	}
-
-	// TODO: debug render
 }
 
 JPH::BodyInterface& BodyInterface() { return _physicsSystem.GetBodyInterface(); }
+JPH::PhysicsSystem& PhysicsSystem() { return _physicsSystem; }
 
 }

@@ -267,7 +267,7 @@
     <ClCompile Include="Editor\PrefabView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Physics\DebugRenderer.cpp">
+    <ClCompile Include="Physics\DebugRenderer\DebugRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Physics\PhysicsCore.cpp">
@@ -280,6 +280,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Physics\BodyInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12Primitives.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -635,7 +638,7 @@
     <ClInclude Include="Editor\PrefabView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Physics\DebugRenderer.h">
+    <ClInclude Include="Physics\DebugRenderer\DebugRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Physics\PhysicsCore.h">
@@ -660,6 +663,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Physics\BodyInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12Primitives.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -18,6 +18,7 @@
 #include "Graphics/RTSettings.h"
 #include "Content/EngineShaders.h"
 #include "Graphics/RTSettings.h"
+#include "Physics/DebugRenderer/DebugRenderer.h"
 
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
@@ -521,6 +522,10 @@ Initialize()
 
     if (!ui::Initialize(gfxCommand.CommandQueue())) return InitializeFailed();
 
+#if PHYSICS_DEBUG_RENDER_ENABLED
+    graphics::d3d12::debug::Initialize();
+#endif
+
     return true;
 }
 
@@ -535,7 +540,9 @@ Shutdown()
     shaders::Shutdown();
     upload::Shutdown();
     content::Shutdown();
-
+#if PHYSICS_DEBUG_RENDER_ENABLED
+    graphics::d3d12::debug::Shutdown();
+#endif
     for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
         constantBuffers[i].Release();
 
@@ -815,6 +822,11 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     gfxCommand.BeginFrame();
     TracyD3D12NewFrame(tracyQueueContext);
 
+#if PHYSICS_DEBUG_RENDER_ENABLED
+    graphics::d3d12::debug::Clear();
+#endif
+
+
     DXGraphicsCommandList* const cmdListDepthSetup{ gfxCommand.CommandList(DEPTH_SETUP_LIST) };
     DXGraphicsCommandList* const cmdListGPassSetup{ gfxCommand.CommandList(MAIN_SETUP_LIST) };
     DXGraphicsCommandList* const cmdListFXSetup{ gfxCommand.CommandList(CLOSING_LIST_INDEX) };
@@ -978,6 +990,10 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         renderItemsUpdated = false;
     }
 
+#if PHYSICS_DEBUG_RENDER_ENABLED
+    graphics::d3d12::debug::Render(d3d12FrameInfo);
+#endif
+
     // Post Processing
     {
         TracyD3D12ZoneC(tracyQueueContext, cmdListFXSetup, "Post Processing", tracy::Color::Blue2);
@@ -993,6 +1009,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             barriers.ApplyBarriers(cmdListFXSetup);
         }
     }
+
+
 
     // Editor UI
     {

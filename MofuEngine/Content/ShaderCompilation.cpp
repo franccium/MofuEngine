@@ -356,10 +356,30 @@ SaveCompiledEngineShaders(const Vec<DxcCompiledShader>& shaders)
 
     return true;
 }
+//FIXME: standardize
 bool
 SaveCompiledEngineShader(const DxcCompiledShader& shader, const std::filesystem::path& savePath)
 {
     std::ofstream file(savePath, std::ios::out | std::ios::binary);
+    if (!std::filesystem::exists(savePath) || !file || !file.is_open())
+    {
+        return false;
+    }
+
+    void* const bytecode{ shader.bytecode->GetBufferPointer() };
+    const u64 bytecodeLength{ shader.bytecode->GetBufferSize() };
+    file.write(reinterpret_cast<const char*>(&bytecodeLength), sizeof(bytecodeLength));
+    file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
+    file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
+
+    return true;
+}
+bool
+SaveCompiledPhysicsShader(const DxcCompiledShader& shader, const std::filesystem::path& savePath, bool clearFile)
+{
+    std::ofstream file(savePath, clearFile 
+        ? std::ios::out | std::ios::binary | std::ios::app 
+        : std::ios::out | std::ios::binary | std::ios::trunc);
     if (!std::filesystem::exists(savePath) || !file || !file.is_open())
     {
         return false;
@@ -498,6 +518,19 @@ CompileEngineShaderDebug(EngineDebugShader::ID shaderID, ShaderCompiler& compile
     return compiledShader;
 }
 
+DxcCompiledShader
+CompilePhysicsShader(physics::DebugShaders::ID shaderID, ShaderCompiler& compiler)
+{
+    auto& file{ physics::SHADER_FILES[shaderID] };
+    std::filesystem::path path{ physics::SHADERS_SRC_PATH };
+    path += file.Info.File;
+
+    Vec<std::wstring> extraArgs{};
+
+    DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs, false) };
+    return compiledShader;
+}
+
 #if SHADER_HOT_RELOAD_ENABLED
 bool
 CompileEngineShaders()
@@ -523,6 +556,39 @@ CompileEngineShaders()
         if (!shader.bytecode || !shader.bytecode->GetBufferPointer() || !shader.bytecode->GetBufferSize()) return false;
         SaveCompiledEngineShader(shader, graphics::GetDebugEngineShaderPath((EngineDebugShader::ID)i));
     }
+
+    Vec<DxcCompiledShader> physicsShaders;
+    for (u32 i{ 0 }; i < physics::DebugShaders::Count; ++i)
+    {
+        DxcCompiledShader shader{ CompilePhysicsShader((physics::DebugShaders::ID)i, compiler) };
+        if (!shader.bytecode || !shader.bytecode->GetBufferPointer() || !shader.bytecode->GetBufferSize()) return false;
+        physicsShaders.emplace_back(std::move(shader));
+    }
+
+    std::filesystem::path binPath{ physics::SHADERS_BIN_PATHS[0] };
+    std::filesystem::create_directories(binPath.parent_path());
+    std::ofstream file(binPath, std::ios::out | std::ios::binary);
+    if (!std::filesystem::exists(binPath) || !file || !file.is_open())
+    {
+        return false;
+    }
+
+    for (const auto& shader : physicsShaders)
+    {
+        void* const bytecode{ shader.bytecode->GetBufferPointer() };
+        const u64 bytecodeLength{ shader.bytecode->GetBufferSize() };
+        file.write(reinterpret_cast<const char*>(&bytecodeLength), sizeof(bytecodeLength));
+        file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
+        file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
+    }
+
+    //for (u32 i{ 0 }; i < physics::DebugShaders::Count; ++i)
+    //{
+    //    DxcCompiledShader shader{ CompilePhysicsShader((physics::DebugShaders::ID)i, compiler) };
+    //    if (!shader.bytecode || !shader.bytecode->GetBufferPointer() || !shader.bytecode->GetBufferSize()) return false;
+    //    std::filesystem::path binPath{ physics::SHADERS_BIN_PATHS[i] };
+    //    SaveCompiledPhysicsShader(shader, binPath, i % 2 == 0);
+    //}
 
     return true;
 }

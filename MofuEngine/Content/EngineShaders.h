@@ -50,6 +50,41 @@ constexpr EngineShaderInfo ENGINE_DEBUG_SHADER_FILES[]{
 };
 static_assert(_countof(ENGINE_DEBUG_SHADER_FILES) == EngineDebugShader::Count);
 
+
+namespace physics {
+struct DebugShaders
+{
+    enum ID : u8
+    {
+        LineVS,
+        LinePS,
+        //TriangleVS,
+        //TrianglePS,
+        Count
+    };
+};
+
+constexpr const char* SHADERS_SRC_PATH{ "../MofuEngine/Physics/DebugRenderer/Shaders/D3D12/" };
+constexpr const char* SHADERS_BIN_PATHS[DebugShaders::Count]{
+    ".\\shaders\\d3d12\\physics\\Line.bin",
+    ".\\shaders\\d3d12\\physics\\Line.bin",
+};
+
+struct PhysicsShaderInfo
+{
+    DebugShaders::ID ID;
+    ShaderFileInfo Info;
+};
+
+constexpr PhysicsShaderInfo SHADER_FILES[]{
+    {DebugShaders::LineVS, {"Line.hlsl", "LineVS", ShaderType::Vertex}},
+    {DebugShaders::LinePS, {"Line.hlsl", "LinePS", ShaderType::Pixel}},
+};
+static_assert(_countof(SHADER_FILES) == DebugShaders::Count);
+
+}
+
+
 namespace content {
 struct ContentShader
 {

@@ -1,7 +1,5 @@
 #pragma once
-#include "CommonHeaders.h"
-#include <Jolt/Jolt.h>
-#include <Jolt/Physics/PhysicsSystem.h>
+#include "JoltCommon.h"
 
 namespace mofu::physics::core {
 void Initialize();
@@ -10,4 +8,5 @@ void Update(f32 deltaTime);
 void FinalizePhysicsWorld();
 
 JPH::BodyInterface& BodyInterface();
+JPH::PhysicsSystem& PhysicsSystem();
 }

@@ -26,6 +26,7 @@
 #include "Input/InputSystem.h"
 #include "Graphics/D3D12/D3D12RayTracing.h"
 #include "Physics/PhysicsCore.h"
+#include "Physics/DebugRenderer/DebugRenderer.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -149,7 +150,6 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 bool MofuInitialize()
 {
 	mofu::InitializeEngineModules();
-	physics::core::Initialize();
 	while (!shaders::CompileEngineShaders())
 	{
 		if (MessageBox(nullptr, L"Failed to compile engine shaders", L"Error", MB_RETRYCANCEL) != IDRETRY) return false;
@@ -162,6 +162,7 @@ bool MofuInitialize()
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
 
+	physics::core::Initialize();
 	if (!graphics::Initialize(graphics::GraphicsPlatform::Direct3D12)) return false;
 
 	editor::project::LoadProject(TEST_PROJECT_FILE_PATH);
@@ -290,6 +291,7 @@ void MofuShutdown()
 	editor::ShutdownEditorGUI();
 	//graphics::ui::Shutdown();
 	ShutdownRenderingTest();
+	physics::core::Shutdown();
 
 	for (u32 i = 0; i < WINDOW_COUNT; ++i)
 	{

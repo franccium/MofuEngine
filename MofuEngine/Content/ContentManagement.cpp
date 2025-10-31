@@ -176,6 +176,19 @@ LoadDebugEngineShaders(std::unique_ptr<u8[]>& shaders, u64& size)
     return readShaders;
 }
 
+bool
+LoadPhysicsDebugShaders(std::unique_ptr<u8[]>& shaders, u64& size)
+{
+    bool readShaders{ ReadFileToByteBuffer(std::filesystem::path{ shaders::physics::SHADERS_BIN_PATHS[0] }, shaders, size) };
+    //for (u32 i{ 0 }; i < shaders::physics::DebugShaders::Count; ++i)
+    //{
+    //    std::filesystem::path path{ shaders::physics::SHADERS_BIN_PATHS[i] };
+    //    bool readShader{ ReadFileToByteBuffer(path, shaders[i], size) };
+    //    if (!readShader) return false;
+    //}
+    return readShaders;
+}
+
 void 
 GeneratePrimitiveMeshAsset(PrimitiveMeshInfo info)
 {

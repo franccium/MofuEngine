@@ -38,6 +38,7 @@ constexpr const char* _prefabPaths[Objects::Count] = {
 void AddPhysicsCube(v2 mousePos)
 {
 	ecs::Entity e{ editor::AddPrefab(_prefabPaths[Objects::PhysicsCube]) };
+	ecs::scene::AddComponent<ecs::component::DynamicObject>(e); // TODO: should be in the prefab
 	JPH::BoxShape boxShape{ JPH::Vec3{1.f, 1.f, 1.f} };
 	JPH::Shape* shape{ new JPH::BoxShape{JPH::Vec3{1.f, 1.f, 1.f}} };
 	const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(e) };

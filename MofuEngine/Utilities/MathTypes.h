@@ -30,17 +30,25 @@ struct v3 : public DirectX::XMFLOAT3
     constexpr v3(const DirectX::XMFLOAT3& other) : DirectX::XMFLOAT3(other) {}
     constexpr v3(float x, float y, float z) : DirectX::XMFLOAT3(x, y, z) {}
 
-    operator JPH::Float3() const {
+    operator JPH::Float3() const 
+    {
         return JPH::Float3(x, y, z);
     }
 
-    v3(const JPH::Float3& other) {
+    JPH::Vec3 AsJPVec3() const 
+    {
+        return JPH::Vec3(x, y, z);
+    }
+
+    v3(const JPH::Float3& other) 
+    {
         x = other.x;
         y = other.y;
         z = other.z;
     }
 
-    v3& operator=(const JPH::Float3& other) {
+    v3& operator=(const JPH::Float3& other) 
+    {
         x = other.x;
         y = other.y;
         z = other.z;
@@ -51,23 +59,27 @@ using v3a = DirectX::XMFLOAT3A;
 using v4 = DirectX::XMFLOAT4;
 using v4a = DirectX::XMFLOAT4A;
 //using quat = v4;
-struct quat : public DirectX::XMFLOAT4 {
+struct quat : public DirectX::XMFLOAT4 
+{
     constexpr quat() = default;
     constexpr quat(const DirectX::XMFLOAT4& other) : DirectX::XMFLOAT4(other) {}
     constexpr quat(float x, float y, float z, float w) : DirectX::XMFLOAT4(x, y, z, w) {}
 
-    operator JPH::Quat() const {
+    operator JPH::Quat() const 
+    {
         return JPH::Quat(x, y, z, w);
     }
 
-    quat(const JPH::Quat& other) {
+    quat(const JPH::Quat& other) 
+    {
         x = other.GetX();
         y = other.GetY();
         z = other.GetZ();
         w = other.GetW();
     }
 
-    quat& operator=(const JPH::Quat& other) {
+    quat& operator=(const JPH::Quat& other) 
+    {
         x = other.GetX();
         y = other.GetY();
         z = other.GetZ();

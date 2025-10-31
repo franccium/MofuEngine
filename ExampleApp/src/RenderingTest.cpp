@@ -18,6 +18,16 @@
 
 #include "../External/tracy/public/tracy/Tracy.hpp"
 
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/EActivation.h>
+#include <Jolt/Physics/Body/Body.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include "Physics/PhysicsCore.h"
+#include "Physics/PhysicsLayers.h"
+#include "ECS/Transform.h"
+#include "ECS/Scene.h"
+
 using namespace mofu;
 
 id_t content::CreateResourceFromBlob(const void* const blob, content::AssetType::type resourceType);
@@ -541,6 +551,28 @@ CreateTestRenderItems()
 	editor::AddPrefab("Projects/TestProject/Resources/Prefabs/boxestest.pre");
 	const content::AssetHandle SUN_TEMPLE{ 13905473850964664605 };
 	//editor::AddPrefab("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
+
+
+	for (u32 i{ 0 }; i < 3; ++i)
+	{
+		ecs::Entity e{ editor::AddPrefab("EditorAssets/Prefabs/pcube.pre") };
+		ecs::scene::AddComponent<ecs::component::StaticObject>(e);
+		
+		JPH::BoxShape boxShape{ JPH::Vec3{1.f, 1.f, 1.f} };
+		JPH::Shape* shape{ new JPH::BoxShape{JPH::Vec3{1.f, 1.f, 1.f}} };
+		
+		ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(e) };
+		lt.Position.x += i * 3.f;
+		lt.Position.y += i * 0.2f;
+		JPH::RVec3 pos{ lt.Position.x, lt.Position.y, lt.Position.z };
+		JPH::Quat rot{ lt.Rotation.x, lt.Rotation.y, lt.Rotation.z, lt.Rotation.w };
+
+		//TODO: move this to some entity adding buffer
+		JPH::Body& body = *physics::core::BodyInterface().CreateBody(JPH::BodyCreationSettings(shape, pos, rot, JPH::EMotionType::Static, physics::PhysicsLayers::Movable));
+		ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(e) };
+		collider.BodyID = body.GetID();
+		physics::core::BodyInterface().AddBody(body.GetID(), JPH::EActivation::Activate);
+	}
 
 	return loadedModelsCount;
 }

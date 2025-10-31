@@ -1,20 +1,21 @@
 #pragma once
-#include "CommonHeaders.h"
-#include <Jolt/Jolt.h>
+#include "Physics/JoltCommon.h"
+
 #include <Jolt/Core/Mutex.h>
 #include <Jolt/Core/UnorderedMap.h>
 #include <Jolt/Renderer/DebugRenderer.h>
 #include "Graphics/D3D12/D3D12CommonHeaders.h"
 
 namespace mofu::graphics::d3d12::debug {
-class DebugRenderer final : JPH::DebugRenderer
+class DebugRenderer final : public JPH::DebugRenderer
 {
 public:
     JPH_OVERRIDE_NEW_DELETE;
     DebugRenderer();
 
-    void Draw();
+    void Draw(const D3D12FrameInfo& frameInfo);
     void Clear();
+    void CreatePSOs();
 
     void DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color) override;
 
@@ -30,9 +31,9 @@ public:
 private:
     struct Line
     {
-        v3 From;
-        v3 To;
+        JPH::Float3 From;
         JPH::Color FromColor;
+        JPH::Float3 To;
         JPH::Color ToColor;
     };
     struct Instance
@@ -57,7 +58,7 @@ private:
         JPH::String String;
     };
 
-    void DrawLines();
+    void DrawLines(const D3D12FrameInfo& frameInfo);
     void DrawTriangles();
     void DrawText();
     void ClearLines();
@@ -68,16 +69,23 @@ private:
     Batch _emptyBatch{};
 
     JPH::Mutex _textMutex{};
-    Array<Text> _textArray;
+    Vec<Text> _textArray{};
 
     JPH::Mutex _linesMutex{};
-    Array<Line> _lines;
+    Vec<Line> _lines{};
+    Vec<u32> _linesPrimitivesIndices{};
     
+    ID3D12RootSignature* _triangleRootSig{ nullptr };
     ID3D12PipelineState* _trianglePSO{ nullptr };
+    ID3D12RootSignature* _triangleWireframeRootSig{ nullptr };
     ID3D12PipelineState* _triangleWireframePSO{ nullptr };
+    ID3D12RootSignature* _lineRootSig{ nullptr };
     ID3D12PipelineState* _linePSO{ nullptr };
 };
 
-void Render();
+void Initialize();
+void Shutdown();
+void Render(const D3D12FrameInfo& frameInfo);
+void Clear();
 
 }

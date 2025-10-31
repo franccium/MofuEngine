@@ -1,4 +1,13 @@
 #pragma once
+#ifdef _WIN64
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#endif
+
 // C/C++
 #include <stdint.h>
 #include <assert.h>
@@ -48,6 +57,7 @@
 #define SHADER_HOT_RELOAD_ENABLED 1
 #define RAYTRACING 0
 #define PATH_TRACE_ALL 1
+#define PHYSICS_DEBUG_RENDER_ENABLED 1
 
 #ifndef _ALWAYS_INLINE
 #if defined(__GNUC__)

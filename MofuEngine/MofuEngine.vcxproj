@@ -183,6 +183,7 @@
     <ClCompile Include="Graphics\D3D12\D3D12Helpers.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Interface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12PostProcess.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Primitives.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12RayTracing.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Resources.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
@@ -200,7 +201,7 @@
     <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Input\Win32Input.cpp" />
     <ClCompile Include="Physics\BodyInterface.cpp" />
-    <ClCompile Include="Physics\DebugRenderer.cpp" />
+    <ClCompile Include="Physics\DebugRenderer\DebugRenderer.cpp" />
     <ClCompile Include="Physics\PhysicsCore.cpp" />
     <ClCompile Include="Platform\Platform.cpp" />
     <ClCompile Include="Platform\Win32Platform.cpp" />
@@ -292,6 +293,7 @@
     <ClInclude Include="Graphics\D3D12\D3D12Helpers.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Interface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12PostProcess.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Primitives.h" />
     <ClInclude Include="Graphics\D3D12\D3D12RayTracing.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Resources.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
@@ -316,7 +318,7 @@
     <ClInclude Include="Input\Win32Input.h" />
     <ClInclude Include="Physics\BodyInterface.h" />
     <ClInclude Include="Physics\BroadPhaseLayerInterface.h" />
-    <ClInclude Include="Physics\DebugRenderer.h" />
+    <ClInclude Include="Physics\DebugRenderer\DebugRenderer.h" />
     <ClInclude Include="Physics\JobSystem.h" />
     <ClInclude Include="Physics\JoltCommon.h" />
     <ClInclude Include="Physics\PhysicsCore.h" />

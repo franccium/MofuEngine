@@ -19,15 +19,15 @@ public:
 	constexpr void FarZ(f32 farZ);
 
 	[[nodiscard]] constexpr bool WasUpdated() const { return _isDirty; }
-	[[nodiscard]] constexpr DirectX::XMMATRIX View() const { return _view; }
-	[[nodiscard]] constexpr DirectX::XMMATRIX Projection() const { return _projection; }
-	[[nodiscard]] constexpr DirectX::XMMATRIX InverseProjection() const { return _inverseProjection; }
-	[[nodiscard]] constexpr DirectX::XMMATRIX InverseView() const { return _inverseView; }
-	[[nodiscard]] constexpr DirectX::XMMATRIX ViewProjection() const { return _viewProjection; }
-	[[nodiscard]] constexpr DirectX::XMMATRIX InverseViewProjection() const { return _inverseViewProjection; }
-	[[nodiscard]] constexpr DirectX::XMVECTOR Up() const { return _up; }
-	[[nodiscard]] constexpr DirectX::XMVECTOR Position() const { return _position; }
-	[[nodiscard]] constexpr DirectX::XMVECTOR Direction() const { return _direction; }
+	[[nodiscard]] constexpr xmmat View() const { return _view; }
+	[[nodiscard]] constexpr xmmat Projection() const { return _projection; }
+	[[nodiscard]] constexpr xmmat InverseProjection() const { return _inverseProjection; }
+	[[nodiscard]] constexpr xmmat InverseView() const { return _inverseView; }
+	[[nodiscard]] constexpr xmmat ViewProjection() const { return _viewProjection; }
+	[[nodiscard]] constexpr xmmat InverseViewProjection() const { return _inverseViewProjection; }
+	[[nodiscard]] constexpr xmm Up() const { return _up; }
+	[[nodiscard]] constexpr xmm Position() const { return _position; }
+	[[nodiscard]] constexpr xmm Direction() const { return _direction; }
 	[[nodiscard]] constexpr f32 NearZ() const { return _nearZ; }
 	[[nodiscard]] constexpr f32 FarZ() const { return _farZ; }
 	[[nodiscard]] constexpr f32 AspectRatio() const { return _aspectRatio; }
@@ -38,15 +38,15 @@ public:
 	[[nodiscard]] constexpr id_t EntityID() const { return _entityID; }
 
 private:
-	DirectX::XMMATRIX _view;
-	DirectX::XMMATRIX _inverseView;
-	DirectX::XMMATRIX _projection;
-	DirectX::XMMATRIX _inverseProjection;
-	DirectX::XMMATRIX _viewProjection;
-	DirectX::XMMATRIX _inverseViewProjection;
-	DirectX::XMVECTOR _up;
-	DirectX::XMVECTOR _position;
-	DirectX::XMVECTOR _direction;
+	xmmat _view;
+	xmmat _inverseView;
+	xmmat _projection;
+	xmmat _inverseProjection;
+	xmmat _viewProjection;
+	xmmat _inverseViewProjection;
+	xmm _up;
+	xmm _position;
+	xmm _direction;
 	f32 _nearZ;
 	f32 _farZ;
 	f32 _aspectRatio;

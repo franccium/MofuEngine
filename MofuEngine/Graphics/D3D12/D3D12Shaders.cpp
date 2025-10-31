@@ -40,13 +40,13 @@ LoadEngineShaders()
     }
 
     // load debug shaders
-    _engineShadersBlobs_Debug.Initialize(EngineShader::Count);
+    _engineShadersBlobs_Debug.Initialize(EngineDebugShader::Count);
     totalSize = 0;
     result = content::LoadDebugEngineShaders(_engineShadersBlobs_Debug, totalSize);
     if (!result) return false;
-    assert(_engineShadersBlobs.size() == EngineShader::Count && totalSize != 0);
+    assert(_engineShadersBlobs_Debug.size() == EngineDebugShader::Count && totalSize != 0);
 
-    for (u32 i{ 0 }; i < EngineShader::Count; ++i)
+    for (u32 i{ 0 }; i < EngineDebugShader::Count; ++i)
     {
         mofu::shaders::CompiledShaderPtr& shader{ _engineShaders_Debug[i] };
         assert(!shader);

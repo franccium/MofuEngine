@@ -637,7 +637,7 @@ PrefilterSpecular(const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& o
 			hr = SetShaderConstants(ctx.Get(), constantBuffer.Get(), constants);
 			if (FAILED(hr)) return hr;
 
-			const u32 blockSize{ max((u32)1, (u32)((PREFILTERED_SPECULAR_CUBEMAP_SIZE >> mip) + 15) >> 4) };
+			const u32 blockSize{ std::max((u32)1, (u32)((PREFILTERED_SPECULAR_CUBEMAP_SIZE >> mip) + 15) >> 4) };
 			Dispatch({ blockSize, blockSize, 6 }, shader.Get(), linearSampler.GetAddressOf(), cubemapsInSRV.GetAddressOf(), outCubemapsUAV.GetAddressOf(),
 				constantBuffer.GetAddressOf(), ctx.Get());
 		}
