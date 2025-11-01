@@ -10,6 +10,7 @@
 #include "Utilities/SlabAllocator.h"
 #include "ComponentRegistry.h"
 #include "TransformHierarchy.h"
+#include "Physics/BodyInterface.h"
 
 namespace mofu::ecs::scene {
 
@@ -115,6 +116,9 @@ RemoveEntity(EntityBlock* block, Entity entity)
 	}
 
 	const EntityData& data{ GetEntityData(entity) };
+
+	if (EntityHasComponent<ecs::component::Collider>(entity)) physics::DestroyPhysicsBody(entity);
+
 	if (data.row != lastRow)
 	{
 		const u32 newRow{ data.row };

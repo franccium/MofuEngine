@@ -36,7 +36,7 @@ struct FBXImportState
 	Vec<u32> SourceImages;
 	Vec<std::string> ImageFiles;
 	Vec<std::string> MeshNames;
-	Vec<JPH::Ref<JPH::MeshShape>> JoltMeshShapes;
+	Vec<JPH::Ref<JPH::Shape>> JoltMeshShapes;
 };
 
 void ImportAsset(std::filesystem::path path);

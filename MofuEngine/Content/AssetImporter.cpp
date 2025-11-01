@@ -658,11 +658,19 @@ ImportFBX(std::filesystem::path path, AssetPtr asset)
 	return importedAssetPath;
 }
 
+const std::filesystem::path
+ImportPhysicsShape(std::filesystem::path path, AssetPtr asset)
+{
+	assert(false);
+	return {};
+}
+
 using AssetImporter = const std::filesystem::path(*)(std::filesystem::path path, AssetPtr asset);
 constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
 	ImportFBX,
 	ImportTexture,
+	ImportPhysicsShape,
 	ImportUnknown,
 	ImportUnknown,
 	ImportUnknown,

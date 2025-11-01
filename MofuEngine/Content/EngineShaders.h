@@ -58,16 +58,17 @@ struct DebugShaders
     {
         LineVS,
         LinePS,
-        //TriangleVS,
-        //TrianglePS,
+        TriangleVS,
+        TrianglePS,
+        TextVS,
+        TextPS,
         Count
     };
 };
 
 constexpr const char* SHADERS_SRC_PATH{ "../MofuEngine/Physics/DebugRenderer/Shaders/D3D12/" };
 constexpr const char* SHADERS_BIN_PATHS[DebugShaders::Count]{
-    ".\\shaders\\d3d12\\physics\\Line.bin",
-    ".\\shaders\\d3d12\\physics\\Line.bin",
+    ".\\shaders\\d3d12\\physics\\PhysicsShaders.bin",
 };
 
 struct PhysicsShaderInfo
@@ -79,6 +80,10 @@ struct PhysicsShaderInfo
 constexpr PhysicsShaderInfo SHADER_FILES[]{
     {DebugShaders::LineVS, {"Line.hlsl", "LineVS", ShaderType::Vertex}},
     {DebugShaders::LinePS, {"Line.hlsl", "LinePS", ShaderType::Pixel}},
+    {DebugShaders::TriangleVS, {"Triangle.hlsl", "TriangleVS", ShaderType::Vertex}},
+    {DebugShaders::TrianglePS, {"Triangle.hlsl", "TrianglePS", ShaderType::Pixel}},
+    {DebugShaders::TextVS, {"Font.hlsl", "FontVS", ShaderType::Vertex}},
+    {DebugShaders::TextPS, {"Font.hlsl", "FontPS", ShaderType::Pixel}}
 };
 static_assert(_countof(SHADER_FILES) == DebugShaders::Count);
 

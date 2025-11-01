@@ -30,8 +30,8 @@ CastProbe(f32 probeLength, f32& outFraction, JPH::RVec3& outPos, JPH::BodyID& ou
 
 	const ecs::component::LocalTransform& camLT{ ecs::scene::GetComponent<ecs::component::LocalTransform>(_cameraEntity) };
 
-	JPH::RVec3 origin{ camLT.Position.AsJPVec3() };
-	JPH::Vec3 direction{ (camLT.Forward * probeLength).AsJPVec3() };
+	JPH::RVec3 origin{ camLT.Position.Vec3() };
+	JPH::Vec3 direction{ (camLT.Forward * probeLength).Vec3() };
 
 	outPos = origin + direction;
 	outFraction = 1.0f;
@@ -51,10 +51,13 @@ CastProbe(f32 probeLength, f32& outFraction, JPH::RVec3& outPos, JPH::BodyID& ou
 		graphics::d3d12::debug::GetDebugRenderer()->DrawMarker(outPos, JPH::Color::sYellow, 0.1f);
 		JPH::BodyLockRead lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), outBodyID};
 		_pickedEntity = (ecs::Entity)lock.GetBody().GetUserData();
+
+		//const ecs::component::LocalTransform& lt{ ecs::scene::GetComponent<ecs::component::LocalTransform>(_pickedEntity) };
+		//graphics::d3d12::debug::DrawBodyShape(lock.GetBody().GetShape(), physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, lock.GetBody().GetShape()), lt.Scale.Vec3());
 	}
 	else
 	{
-		graphics::d3d12::debug::GetDebugRenderer()->DrawMarker((camLT.Position + (camLT.Forward * 0.1f)).AsJPVec3(), JPH::Color::sRed, 0.001f);
+		graphics::d3d12::debug::GetDebugRenderer()->DrawMarker((camLT.Position + (camLT.Forward * 0.1f)).Vec3(), JPH::Color::sRed, 0.001f);
 	}
 	return hit;
 }
@@ -78,14 +81,14 @@ UpdateObjectPickerProbe()
 
 	if (ecs::scene::IsEntityAlive(_pickedEntity))
 	{
-		const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(_pickedEntity) };
+		/*const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(_pickedEntity) };
 		ecs::component::Collider col{ ecs::scene::GetEntityComponent<ecs::component::Collider>(_pickedEntity) };
 		auto shape{ physics::core::PhysicsSystem().GetBodyInterface().GetShape(col.BodyID).GetPtr() };
 		JPH::AABox box{ shape->GetLocalBounds() };
 		JPH::Color color{ JPH::Color{ JPH::Color::sRed } };
 		graphics::d3d12::debug::GetDebugRenderer()->DrawWireBox(
-			JPH::RMat44::sRotationTranslation(lt.Rotation, lt.Position.AsJPVec3()) * JPH::Mat44::sScale(lt.Scale.AsJPVec3()),
-			shape->GetLocalBounds(), color);
+			JPH::RMat44::sRotationTranslation(lt.Rotation, lt.Position.Vec3()) * JPH::Mat44::sScale(lt.Scale.Vec3()),
+			shape->GetLocalBounds(), color);*/
 	}
 }
 

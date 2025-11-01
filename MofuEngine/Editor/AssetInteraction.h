@@ -29,7 +29,8 @@ private:
 	Vec<content::AssetHandle> _meshAssets;
 	Vec<content::AssetHandle> _materialAssets;
 
-	Vec<JPH::Ref<JPH::MeshShape>> _joltMeshShapes;
+	Vec<JPH::Ref<JPH::Shape>> _joltMeshShapes;
+	Vec<content::AssetHandle> _joltShapeAssets;
 };
 
 void DropModelIntoScene(std::filesystem::path modelPath, u32* materials = nullptr);

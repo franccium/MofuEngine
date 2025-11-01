@@ -16,6 +16,7 @@
 #include "Material.h"
 #include <stack>
 #include "Physics/BodyInterface.h"
+#include "Physics/PhysicsShapes.h"
 
 namespace mofu::editor::assets {
 namespace {
@@ -106,6 +107,8 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 #if RAYTRACING
 		ecs::component::PathTraceable& PathTraceable;
 #endif
+		bool hasCollider;
+		ecs::component::Collider& Collider;
 	};
 	Vec<RenderableEntitySpawnContext> renderables{};
 
@@ -152,12 +155,20 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 		{
 			component::RenderMesh& mesh{ ecs::scene::GetComponent<component::RenderMesh>(entity) };
 			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
+			component::Collider col{};
 #if RAYTRACING && PATH_TRACE_ALL
 			component::PathTraceable& pt{ ecs::scene::GetComponent<component::PathTraceable>(entity) };
 			renderables.emplace_back(entity, mesh, material, pt); //FIXME: doesn't work with submeshes
 #else
-			renderables.emplace_back(entity, mesh, material); //FIXME: doesn't work with submeshes
+			renderables.emplace_back(entity, mesh, material, false, col); //FIXME: doesn't work with submeshes
 #endif
+		}
+
+		if (mask.test(component::ID<component::Collider>))
+		{
+			component::Collider& collider{ ecs::scene::GetComponent<component::Collider>(entity) };
+			renderables.back().Collider = collider;
+			renderables.back().hasCollider = true;
 		}
 	} // Entities
 
@@ -203,6 +214,13 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 #if RAYTRACING && PATH_TRACE_ALL
 			e.PathTraceable.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(e.Mesh.MeshID);
 #endif
+
+			if (e.hasCollider)
+			{
+				assert(content::IsValid(e.Collider.ShapeAsset));
+				JPH::Ref<JPH::Shape> physicsShape{ physics::shapes::LoadShape(e.Collider.ShapeAsset) };
+				physics::AddStaticBodyFromMesh(physicsShape, e.entity);
+			}
 		}
 	}
 }
@@ -506,7 +524,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		material.MaterialCount = 1;
 		material.MaterialAsset = _materialAssets[i];
 
-		snprintf(name.Name, ecs::component::NAME_LENGTH, "%s", _names[i].c_str());
+		snprintf(name.Name, ecs::component::NAME_LENGTH, "%s", i < _names.size() ? _names[i].c_str() : _names[0].c_str());
 
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child, ecs::component::NameComponent>(
@@ -532,6 +550,8 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		if (_joltMeshShapes[entityIdx].GetPtr() != nullptr)
 		{
 			JPH::BodyID bodyID{ physics::AddStaticBodyFromMesh(_joltMeshShapes[entityIdx], c.entity) };
+			ecs::component::Collider& col{ ecs::scene::GetComponent<ecs::component::Collider>(c.entity) };
+			col.ShapeAsset = _joltShapeAssets[entityIdx];
 		}
 		entityIdx++;
 	}
@@ -610,6 +630,20 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 			//material::EditorMaterial& mat{ _materials[meshIdx] };
 
 			//mat = material::GetDefaultEditorMaterialUntextured();
+		}
+	}
+
+	if (!_joltMeshShapes.empty())
+	{
+		std::filesystem::path shapesBasePath(project::GetMeshDirectory() / "Shapes");
+		_joltShapeAssets.resize(_joltMeshShapes.size());
+		for (u32 i{ 0 }; i < _joltMeshShapes.size(); ++i)
+		{
+			std::filesystem::path savePath{ shapesBasePath };
+			char filename[32]{};
+			snprintf(filename, 32, "%u_%u.ps", _meshAssets[0], i);
+			savePath.append(filename);
+			_joltShapeAssets[i] = physics::shapes::SaveShape(_joltMeshShapes[i], savePath);
 		}
 	}
 }

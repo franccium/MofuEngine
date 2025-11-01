@@ -5,6 +5,7 @@
 #include <Jolt/Core/UnorderedMap.h>
 #include <Jolt/Renderer/DebugRenderer.h>
 #include "Graphics/D3D12/D3D12CommonHeaders.h"
+#include "Graphics/D3D12/D3D12Primitives.h"
 
 namespace mofu::graphics::d3d12::debug {
 class DebugRenderer final : public JPH::DebugRenderer
@@ -44,11 +45,11 @@ private:
         JPH::AABox WorldSpaceBounds;
         f32 LODScaleSq;
     };
+    // a batch of instances that have the same primitive
     struct InstanceBatch
     {
-        Array<Instance> Instances;
-        Array<s32> GeometryStartIndex;
-        Array<s32> LightStartIndex;
+        Vec<Instance> Instances;
+        Vec<u32> GeometryStartIndex; // start index in mInstancesBuffer for each of the LOD, length is one longer than the number of LODs to indicate how many instances the last lod has
     };
     struct Text
     {
@@ -59,11 +60,12 @@ private:
     };
 
     void DrawLines(const D3D12FrameInfo& frameInfo);
-    void DrawTriangles();
-    void DrawText();
+    void DrawTriangles(const D3D12FrameInfo& frameInfo);
+    void DrawTextBuffer(const D3D12FrameInfo& frameInfo);
     void ClearLines();
     void ClearTriangles();
-    void ClearText();
+    void ClearTextBuffer();
+    void DrawInstances(const Geometry* inGeometry, const InstanceBatch& instanceBatch, const D3D12FrameInfo& frameInfo, DXGraphicsCommandList* const cmdList);
 
     JPH::Mutex _primitivesMutex{};
     Batch _emptyBatch{};
@@ -81,12 +83,20 @@ private:
     ID3D12PipelineState* _triangleWireframePSO{ nullptr };
     ID3D12RootSignature* _lineRootSig{ nullptr };
     ID3D12PipelineState* _linePSO{ nullptr };
+
+    using InstanceMap = HashMap<GeometryRef, InstanceBatch>;
+    InstanceMap _wireframePrimitives{};
+    InstanceMap _solidPrimitives{};
+    InstanceMap _tempPrimitives{};
+    InstanceMap _backfacingPrimitives{};
+    u32 _instanceCount{ 0 };
 };
 
 void Initialize();
 void Shutdown();
 void Render(const D3D12FrameInfo& frameInfo);
 void Clear();
+void DrawBodyShape(const JPH::Shape* shape, JPH::RMat44Arg centerOfMassTransform, JPH::Vec3 scale, bool wireframe = true);
 DebugRenderer* const GetDebugRenderer();
 
 }

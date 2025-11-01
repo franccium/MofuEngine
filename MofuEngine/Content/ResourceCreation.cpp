@@ -159,6 +159,15 @@ CreateTextureResource(const void* const blob)
 }
 
 id_t
+CreatePhysicsShapeResource(const void* const blob)
+{
+	assert(false);
+	//assert(blob);
+	//return physics::shapes::AddShape(blob);
+	return id_t{};
+}
+
+id_t
 CreateMaterialResource(const void* const blob)
 {
 	assert(blob);
@@ -181,6 +190,12 @@ DestroyMaterialResource(id_t id)
 
 void
 DestroyTextureResource([[maybe_unused]] id_t id)
+{
+	assert(false);
+}
+
+void
+DestroyPhysicsShapeResource([[maybe_unused]] id_t id)
 {
 	assert(false);
 }
@@ -244,6 +259,7 @@ constexpr std::array<ResourceCreator, AssetType::Count> resourceCreators{
 	CreateUnknown,
 	CreateGeometryResource,
 	CreateTextureResource,
+	CreatePhysicsShapeResource,
 	CreateAnimationResource,
 	CreateAudioResource,
 	CreateMaterialResource,
@@ -255,6 +271,7 @@ constexpr std::array<ResourceDestructor, AssetType::Count> resourceDestructors{
 	DestroyUnknown,
 	DestroyGeometryResource,
 	DestroyTextureResource,
+	DestroyPhysicsShapeResource,
 	DestroyAnimationResource,
 	DestroyAudioResource,
 	DestroyMaterialResource,

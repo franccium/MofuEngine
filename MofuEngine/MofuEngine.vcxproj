@@ -204,6 +204,7 @@
     <ClCompile Include="Physics\BodyInterface.cpp" />
     <ClCompile Include="Physics\DebugRenderer\DebugRenderer.cpp" />
     <ClCompile Include="Physics\PhysicsCore.cpp" />
+    <ClCompile Include="Physics\PhysicsShapes.cpp" />
     <ClCompile Include="Platform\Platform.cpp" />
     <ClCompile Include="Platform\Win32Platform.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
@@ -326,6 +327,7 @@
     <ClInclude Include="Physics\JoltCommon.h" />
     <ClInclude Include="Physics\PhysicsCore.h" />
     <ClInclude Include="Physics\PhysicsLayers.h" />
+    <ClInclude Include="Physics\PhysicsShapes.h" />
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\PlatformWin32.h" />
     <ClInclude Include="Platform\Window.h" />

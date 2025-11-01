@@ -198,6 +198,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_rough.png
   ImportedFilePath: Projects/TestProject\Resources\base_rough.tex
+3672992448312417928:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\Physics\pplanef.fbx
+  ImportedFilePath: ""
 8492039648115338636:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_N.tga.png
@@ -210,6 +214,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_emissive.jpeg
   ImportedFilePath: Projects/TestProject\Resources\default_emissive.tex
+2518528575602889849:
+  Type: 3
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
 680178607655328789:
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest245.mat
@@ -230,18 +238,18 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_nml.png
   ImportedFilePath: Projects/TestProject\Resources\cloth_nml.tex
-11529044991774683043:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest234.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest234.mat
-9043724864732243195:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest79.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest79.mat
 4955251347499960139:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_Metal.tga.png
   ImportedFilePath: Projects/TestProject\Resources\Body_Metal.tex
+9043724864732243195:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest79.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest79.mat
+11529044991774683043:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest234.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest234.mat
 1753554833459391681:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_baseColor.jpeg
@@ -838,6 +846,10 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\characters\Knight_USD_002.fbx
   ImportedFilePath: Projects/TestProject\Resources\Knight_USD_002.mesh
+15452833905802327747:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\textures\rp_nathan_animated_003_mask02.jpg
+  ImportedFilePath: ""
 596440827713944185:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\characters\steel01.fbx
@@ -845,7 +857,7 @@
 17911878038423229607:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\characters\Y Bot.fbx
-  ImportedFilePath: ""
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Y Bot.mesh
 13904810130578851673:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\EngineTextures\gray_placeholder_texture.png
@@ -1102,6 +1114,10 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\fajen.mat
   ImportedFilePath: Projects/TestProject\Resources\fajen.mat
+3214826341176322949:
+  Type: 3
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Shapes\3159774375_1.ps
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Shapes\3159774375_1.ps
 16323034729930313522:
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\sth.mat
@@ -1122,6 +1138,10 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest90.mat
   ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest90.mat
+18325627079132046253:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\rp_nathan_animated_003_walking_A.jpg
+  ImportedFilePath: ""
 13849275450436849121:
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\steel011.mat
@@ -1286,6 +1306,10 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest111.mat
   ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest111.mat
+9988551523576861117:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\rp_nathan_animated_003_walking_u3d.fbx
+  ImportedFilePath: ""
 4686539376006475580:
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\Knight_USD_0023.mat
@@ -1534,6 +1558,10 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\testing\cubes-three.fbx
   ImportedFilePath: Projects/TestProject\Resources\Meshes\cubes-three.mesh
+9712355440176388914:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\textures\rp_nathan_animated_003_norm.jpg
+  ImportedFilePath: ""
 13905473850964664605:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\Models\SunTemple\SunTemple.fbx
@@ -1546,3 +1574,35 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\Models\boxestest.fbx
   ImportedFilePath: Projects/TestProject\Resources\Meshes\boxestest.mesh
+10180840121792339995:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\Physics\pcubeauto.fbx
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\pcubeauto.mesh
+9821286203895536105:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\Physics\psphere.fbx
+  ImportedFilePath: ""
+8159679635593455514:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\rp_nathan_animated_003_walking.fbx
+  ImportedFilePath: ""
+5654460427422018106:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\rp_nathan_animated_003_walking_ue4.fbx
+  ImportedFilePath: ""
+4086004280228548722:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\textures\rp_nathan_animated_003_dif.jpg
+  ImportedFilePath: ""
+5506663472156594018:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\textures\rp_nathan_animated_003_gloss.jpg
+  ImportedFilePath: ""
+14316627586011783903:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\characters\nathan\textures\rp_nathan_animated_003_mask01.jpg
+  ImportedFilePath: ""
+3118102832438341339:
+  Type: 3
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Shapes\3159774375_0.ps
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Shapes\3159774375_0.ps

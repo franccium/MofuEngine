@@ -17,6 +17,7 @@ struct AssetType
 		Unknown = 0,
 		Mesh,
 		Texture,
+		PhysicsShape,
 		Animation,
 		Audio,
 		Material,
@@ -31,6 +32,7 @@ constexpr const char* ASSET_TYPE_TO_STRING[content::AssetType::Count] {
 	"Unknown",
 	"Mesh",
 	"Texture",
+	"PhysicsShape",
 	"Animation",
 	"Audio",
 	"Material",
@@ -41,11 +43,11 @@ constexpr const char* ASSET_TYPE_TO_STRING[content::AssetType::Count] {
 constexpr const char* ASSET_METADATA_EXTENSION{ ".mt" };
 
 const std::unordered_set<std::string_view> ASSET_EXTENSIONS {
-	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".wav", ".mat", 
+	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".ps", ".wav", ".mat", 
 };
 
 const std::unordered_set<std::string_view> ENGINE_ASSET_EXTENSIONS {
-	".mesh", ".tex", ".mat", 
+	".mesh", ".tex", ".ps", ".mat",
 };
 
 struct AssetFlag
@@ -74,7 +76,7 @@ struct Asset
 	std::filesystem::path GetMetadataPath() const { std::filesystem::path p{ ImportedFilePath }; return p.replace_extension(".mt"); }
 
 	Asset(AssetType::type type, const std::filesystem::path& originalPath, const std::filesystem::path& importedPath)
-		: Type{ type }, OriginalFilePath{ originalPath }, ImportedFilePath{ importedPath } 
+		: Type{ type }, OriginalFilePath{ originalPath }, ImportedFilePath{ importedPath }, RelatedCount{ 0 }
 	{
 		Name = OriginalFilePath.stem().string();
 	}
@@ -105,6 +107,7 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtensi
 	{ ".jpg", AssetType::Texture },
 	{ ".jpeg", AssetType::Texture },
 	{ ".bmp", AssetType::Texture },
+	{ ".ps", AssetType::PhysicsShape },
 	{ ".wav", AssetType::Audio },
 	{ ".mat", AssetType::Material },
 };
@@ -112,6 +115,7 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtensi
 const std::unordered_map<std::string_view, AssetType::type> assetTypeFromEngineExtension {
 	{ ".mesh", AssetType::Mesh },
 	{ ".tex", AssetType::Texture },
+	{ ".ps", AssetType::PhysicsShape },
 	{ ".mat", AssetType::Material },
 };
 
@@ -119,6 +123,7 @@ constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET {
 	".mt",
 	".mesh",
 	".tex",
+	".ps",
 	".anim",
 	".aud",
 	".mat",

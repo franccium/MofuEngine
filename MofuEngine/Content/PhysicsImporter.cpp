@@ -3,7 +3,7 @@
 
 namespace mofu::content::physics {
 
-JPH::Ref<JPH::MeshShape>
+JPH::Ref<JPH::Shape>
 CreateJoltMeshFromVertices(Vec<v3>& vertices, const GeometryImportSettings& importSettings)
 {
 	if (!importSettings.IsStatic)
@@ -37,7 +37,7 @@ CreateJoltMeshFromVertices(Vec<v3>& vertices, const GeometryImportSettings& impo
 		return nullptr;
 	}
 
-	return JPH::StaticCast<JPH::MeshShape>(shapeRes.Get());
+	return shapeRes.Get();
 }
 
 }

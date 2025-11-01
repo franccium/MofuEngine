@@ -6,5 +6,5 @@
 #include <Jolt/Physics/Collision/PhysicsMaterial.h>
 
 namespace mofu::content::physics {
-JPH::Ref<JPH::MeshShape> CreateJoltMeshFromVertices(Vec<v3>& vertices, const GeometryImportSettings& importSettings);
+JPH::Ref<JPH::Shape> CreateJoltMeshFromVertices(Vec<v3>& vertices, const GeometryImportSettings& importSettings);
 }

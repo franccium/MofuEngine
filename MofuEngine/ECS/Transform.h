@@ -487,6 +487,7 @@ struct Collider : Component
 	JPH::BodyID BodyID;
 
 #if EDITOR_BUILD
+	content::AssetHandle ShapeAsset;
 	static void RenderFields([[maybe_unused]] Collider& c)
 	{
 		ImGui::TableNextRow();
@@ -596,6 +597,20 @@ inline bool operator>>(const YAML::Node& node, NameComponent& lt)
 {
 	std::string str{ node["Name"].as<std::string>() };
 	snprintf(lt.Name, 16, str.c_str());
+	return true;
+}
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const Collider& c)
+{
+	out << YAML::BeginMap;
+	out << YAML::Key << "Shape" << YAML::Value << c.ShapeAsset;
+	out << YAML::EndMap;
+	return out;
+}
+
+inline bool operator>>(const YAML::Node& node, Collider& c)
+{
+	c.ShapeAsset = node["Shape"].as<u64>();
 	return true;
 }
 
