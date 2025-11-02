@@ -12,6 +12,8 @@
 #include "Graphics/D3D12/D3D12Core.h"
 #include "Project/Project.h"
 
+#include "Physics/DebugRenderer/FontRenderer.h"
+
 namespace mofu::editor::material {
 namespace {
 

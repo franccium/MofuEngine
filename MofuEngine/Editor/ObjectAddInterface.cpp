@@ -11,7 +11,7 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include "Physics/PhysicsCore.h"
 #include "Physics/PhysicsLayers.h"
-#include "Physics/BodyInterface.h"
+#include "Physics/BodyManager.h"
 #include <Jolt/Physics/Body/BodyLock.h>
 #include "ECS/Transform.h"
 #include "ECS/Scene.h"
@@ -40,7 +40,6 @@ constexpr const char* _prefabPaths[Objects::Count] = {
 void AddPhysicsCube(v2 mousePos)
 {
 	ecs::Entity e{ editor::AddPrefab(_prefabPaths[Objects::PhysicsCube]) };
-	ecs::scene::AddComponent<ecs::component::DynamicObject>(e); // TODO: should be in the prefab
 	JPH::BoxShape boxShape{ JPH::Vec3{1.f, 1.f, 1.f} };
 	JPH::Shape* shape{ new JPH::BoxShape{JPH::Vec3{1.f, 1.f, 1.f}} };
 	JPH::BodyID id{ physics::AddDynamicBody(shape, e) };
@@ -79,7 +78,8 @@ RenderObjectAddInterface()
 			ImGui::SetNextWindowFocus();
 		}
 	}
-	
+	if (!_isOpen) return;
+
 	ImGui::Begin("Add Object", &_isOpen, ImGuiWindowFlags_AlwaysAutoResize);
 	for (u32 i{ 0 }; i < Objects::Count; ++i)
 	{

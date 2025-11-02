@@ -44,20 +44,21 @@ struct D3D12Instance : public JPH::RefTarget<D3D12Instance>
 	u32 NumIndexToDraw{ 0 };
 };
 
-u32 AddPrimitive(Primitive::Topology topology);
-void RemovePrimitive(Primitive::Topology topology, u32 primitiveIdx);
-void CreateVertexBuffer(Primitive::Topology topology, u32 primitiveIdx, u32 vertexSize, u32 vertexCount, void* data);
-void CreateIndexBuffer(Primitive::Topology topology, u32 primitiveIdx, u32 indexCount, void* data);
-void LockVertexBuffer(Primitive::Topology topology, u32 primitiveIdx);
-void ReleaseVertexBuffer(Primitive::Topology topology, u32 primitiveIdx);
-void ReleaseIndexBuffer(Primitive::Topology topology, u32 primitiveIdx);
-Primitive* GetPrimitive(Primitive::Topology topology, u32 primitiveIdx);
+u32 AddPrimitive();
+void RemovePrimitive(u32 primitiveIdx);
+void CreateVertexBuffer(u32 primitiveIdx, u32 vertexSize, u32 vertexCount, void* data);
+void CreateIndexBuffer(u32 primitiveIdx, u32 indexCount, void* data);
+void* const MapVertexBuffer(u32 primitiveIdx);
+void* const MapIndexBuffer(u32 primitiveIdx);
+void UnmapVertexBuffer(u32 primitiveIdx);
+void UnmapIndexBuffer(u32 primitiveIdx);
+void ReleaseVertexBuffer(u32 primitiveIdx);
+void ReleaseIndexBuffer(u32 primitiveIdx);
+Primitive* GetPrimitive(u32 primitiveIdx);
 
 D3D12Instance* AddInstance();
 D3D12Instance* const GetInstanceBuffer();
 void* const MapInstanceBuffer(const D3D12Instance* instance);
 void CreateInstanceBuffer(u32 instanceCount, u32 instanceSize, void* data);
 void RemoveInstance();
-
-void DrawPrimitives(Primitive::Topology topology);
 }

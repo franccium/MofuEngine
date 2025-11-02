@@ -1,4 +1,4 @@
-#include "BodyInterface.h"
+#include "BodyManager.h"
 #include <Jolt/Physics/Body/Body.h>
 #include <Jolt/Physics/Body/BodyInterface.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
@@ -22,14 +22,17 @@
 
 namespace mofu::physics {
 JPH::BodyID 
-AddStaticBodyFromMesh(JPH::Ref<JPH::Shape> meshShape, ecs::Entity ownerEntity)
+AddStaticBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity)
 {
     ecs::scene::AddComponents<ecs::component::Collider, ecs::component::StaticObject>(ownerEntity);
 
     const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
-    JPH::BodyCreationSettings bodySettings{ meshShape.GetPtr(), lt.Position.Vec3(), lt.Rotation, 
+    JPH::BodyCreationSettings bodySettings{ shape.GetPtr(), lt.Position.Vec3(), lt.Rotation, 
         JPH::EMotionType::Static, PhysicsLayers::Layer::Static};
     bodySettings.mAllowDynamicOrKinematic = core::settings::CREATE_STATIC_BODIES_AS_CHANGEABLE_TO_MOVABLE;
+    bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+    bodySettings.mMassPropertiesOverride = JPH::MassProperties{ core::settings::DEFAULT_BODY_MASS };
+
     bodySettings.mUserData = ownerEntity;
 
     JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
@@ -45,7 +48,7 @@ AddStaticBodyFromMesh(JPH::Ref<JPH::Shape> meshShape, ecs::Entity ownerEntity)
 JPH::BodyID
 AddDynamicBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity)
 {
-    //TODO_("something with migrating when loading prefab on launch; maybe cause its the last component in registry? or not initialized at the beginning correctly");
+    TODO_("when added as first entity crash in transform hierarchy because migration probably");
     ecs::scene::AddComponents<ecs::component::Collider, ecs::component::DynamicObject>(ownerEntity);
 
     const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };

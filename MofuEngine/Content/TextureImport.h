@@ -95,7 +95,7 @@ struct TextureInfo
 
 struct TextureData
 {
-	constexpr static u32 MAX_MIPS{ 14 }; // we support up to 8k textures
+	constexpr static u32 MAX_MIPS{ 14 }; // up to 8k
 	u8* SubresourceData{ nullptr };
 	u32 SubresourceSize{ 0 };
 	u8* Icon{ nullptr }; // uncompressed top mipmap level for the editor

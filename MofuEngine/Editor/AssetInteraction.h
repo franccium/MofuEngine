@@ -19,6 +19,7 @@ public:
 	void ExtractMaterials();
 
 private:
+	bool _isStaticBody;
 	std::string _name;
 	std::filesystem::path _geometryPath;
 	Vec<material::EditorMaterial> _materials;

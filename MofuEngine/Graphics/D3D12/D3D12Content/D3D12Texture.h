@@ -11,4 +11,21 @@ void GetDescriptorIndices(const id_t* const textureIDs, u32 idCount, u32* const 
 [[nodiscard]] DescriptorHandle GetDescriptorHandle(id_t textureID, u32 arrayIndex, u32 mipLevel, u32 depthIndex, DXGI_FORMAT format, bool isCubemap = false);
 
 [[nodiscard]] id_t AddIcon(const u8* const blob);
+
+
+//TODO: make this universal
+struct GeneratedTextureData
+{
+	constexpr static u32 MAX_MIPS{ 1 };
+	u32 Width;
+	u32 Height;
+	u32 ArraySize;
+	u32 MipLevels;
+	DXGI_FORMAT Format;
+	u8 Stride;
+	u32 Flags;
+	u32 SubresourceSize{ 0 };
+	u8* SubresourceData{ nullptr };
+};
+[[nodiscard]] id_t CreateTextureFromGeneratedData(const GeneratedTextureData& data);
 }

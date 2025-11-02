@@ -25,7 +25,6 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include "Physics/PhysicsCore.h"
 #include "Physics/PhysicsLayers.h"
-#include "Physics/BodyInterface.h"
 #include "ECS/Transform.h"
 #include "ECS/Scene.h"
 

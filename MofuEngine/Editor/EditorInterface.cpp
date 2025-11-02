@@ -13,6 +13,7 @@
 #include "RenderingConsole.h"
 #include "ObjectAddInterface.h"
 #include "ObjectPicker.h"
+#include "Text/FontView.h"
 
 namespace mofu::editor {
 namespace {
@@ -24,12 +25,28 @@ bool
 InitializeEditorGUI()
 {
     object::Initialize();
+    font::Initialize();
     return InitializeSceneEditorView() && material::InitializeMaterialEditor();
 }
 
 void 
 RenderEditorGUI()
 {
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Assets"))
+        {
+            if (ImGui::MenuItem("Font Viewer")) font::OpenFontView();
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Tools"))
+        {
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+
     RenderSceneEditorView();
 	RenderAssetBrowserGUI();
     texture::RenderTextureView();
@@ -38,6 +55,7 @@ RenderEditorGUI()
     assets::RenderImportSummary();
     debug::DrawRenderingConsole();
     object::RenderObjectAddInterface();
+    font::DisplayFontView();
 
     if (input::WasKeyPressed(input::Keys::Z, input::Keys::Control))
     {

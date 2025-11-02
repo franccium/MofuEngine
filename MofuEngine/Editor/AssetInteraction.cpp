@@ -15,7 +15,7 @@
 #include "Content/EditorContentManager.h"
 #include "Material.h"
 #include <stack>
-#include "Physics/BodyInterface.h"
+#include "Physics/BodyManager.h"
 #include "Physics/PhysicsShapes.h"
 #include "Physics/PhysicsCore.h"
 
@@ -234,7 +234,10 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 			{
 				assert(content::IsValid(e.Collider.ShapeAsset));
 				JPH::Ref<JPH::Shape> physicsShape{ physics::shapes::LoadShape(e.Collider.ShapeAsset) };
-				physics::AddStaticBodyFromMesh(physicsShape, e.entity);
+				if(ecs::scene::HasComponent<ecs::component::StaticObject>(e.entity))
+					physics::AddStaticBody(physicsShape, e.entity);
+				else
+					physics::AddDynamicBody(physicsShape, e.entity);
 			}
 		}
 	}
@@ -564,7 +567,10 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		//FIXME: has to be there cause i add entity to transform hierarchy in AddEntityToSceneView() which makes no sense; cant migrate the entity because of that; think of creating some buffer for the new entity before adding it
 		if (_joltMeshShapes[entityIdx].GetPtr() != nullptr)
 		{
-			JPH::BodyID bodyID{ physics::AddStaticBodyFromMesh(_joltMeshShapes[entityIdx], c.entity) };
+			if(_isStaticBody)
+				JPH::BodyID bodyID{ physics::AddStaticBody(_joltMeshShapes[entityIdx], c.entity) };
+			else
+				JPH::BodyID bodyID{ physics::AddDynamicBody(_joltMeshShapes[entityIdx], c.entity) };
 			ecs::component::Collider& col{ ecs::scene::GetComponent<ecs::component::Collider>(c.entity) };
 			col.ShapeAsset = _joltShapeAssets[entityIdx];
 		}
@@ -575,6 +581,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 void
 Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extractMaterials)
 {
+	_isStaticBody = state.ImportSettings.IsStatic;
 	_name = state.OutModelFile.stem().string();
 	_geometryPath = state.OutModelFile;
 	_textureImageFiles = state.ImageFiles;

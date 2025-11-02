@@ -8,6 +8,7 @@
 #include "Project/Project.h"
 #include "Content/EditorContentManager.h"
 #include "PhysicsEditor/PhysicsShapesInterface.h"
+#include "Physics/PhysicsCore.h"
 
 namespace mofu::editor {
 namespace {
@@ -326,10 +327,21 @@ struct SceneHierarchy
                 //TODO: make an iterator or a view
                 const EntityData& entityData{ ecs::scene::GetEntityData(entity) };
                 const EntityBlock* const block{ ecs::scene::GetEntityData(entity).block };
+                ecs::component::LocalTransform oldLT{ ecs::scene::GetComponent<ecs::component::LocalTransform>(entity) };
 
                 ForEachComponent(block, entityData.row, [](ComponentID cid, u8* data) {
                     component::RenderLUT[cid](data);
                     });
+
+                if (ecs::scene::HasComponent<component::Collider>(entity))
+                {
+                    const ecs::component::LocalTransform& newLT{ ecs::scene::GetComponent<ecs::component::LocalTransform>(entity) };
+                    if (memcmp(&oldLT, &newLT, sizeof(ecs::component::LocalTransform)))
+                    {
+                        ecs::component::Collider col{ ecs::scene::GetComponent<ecs::component::Collider>(entity) };
+                        mofu::physics::core::BodyInterface().SetPositionAndRotation(col.BodyID, newLT.Position.Vec3(), newLT.Rotation, JPH::EActivation::Activate);
+                    }
+                }
 
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();

@@ -58,7 +58,7 @@ CopySubresources(const ScratchImage& scratch, TextureData* const data)
 
 	if (subresourceSize > UINT_MAX)
 	{
-		// we support up to 4GB per resource
+		// up to 4GB per resource
 		data->Info.ImportError = ImportError::MaxSizeExceeded;
 		return;
 	}

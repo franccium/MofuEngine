@@ -361,6 +361,60 @@ AddIcon(const u8* const blob)
     return id;
 }
 
+u64
+GetTextureEnginePackedSize()
+{
+    constexpr u64 su32{ (sizeof(u32)) };
+    //TODO: fix this
+    u64 size{ su32 + su32 + su32 + su32 + su32 };
+    size += su32;
+    return size;
+}
+
+id_t 
+CreateTextureFromGeneratedData(const GeneratedTextureData& data)
+{
+    assert(data.SubresourceData && data.SubresourceSize);
+
+    u64 dataSize{ GetTextureEnginePackedSize() };
+    dataSize += data.SubresourceSize;
+    dataSize += data.MipLevels * (sizeof(u32) * 4);
+    u8* blob = new u8[dataSize];
+    util::BlobStreamWriter writer{ blob, dataSize };
+    writer.Write<u32>(data.Width);
+    writer.Write<u32>(data.Height);
+    writer.Write<u32>(data.ArraySize);
+    writer.Write<u32>(data.Flags);
+    writer.Write<u32>(data.MipLevels);
+    writer.Write<u32>(data.Format);
+    u32 width{ data.Width };
+    u32 height{ data.Height };
+    u8* subresourceData{ data.SubresourceData };
+    for (u32 i{ 0 }; i < data.MipLevels; ++i)
+    {
+        // skip width and height
+        const u32 rowPitch{ data.Stride * width };
+        const u32 slicePitch{ rowPitch * height };
+        writer.Write(rowPitch);
+        writer.Write(slicePitch);
+        writer.WriteBytes(subresourceData, slicePitch);
+        width >>= 1;
+        height >>= 1;
+        subresourceData += slicePitch;
+    }
+    assert(subresourceData - data.SubresourceData == data.SubresourceSize);
+
+    D3D12Texture texture{ CreateTextureFromResourceData(blob) };
+    std::lock_guard lock{ textureMutex };
+    const id_t id{ textures.add(std::move(texture)) };
+    descriptorIndices.add(textures[id].SRV().index);
+
+    delete[] data.SubresourceData;
+    delete[] blob;
+
+    return id;
+}
+
 void 
 RemoveTexture(id_t id)
 {

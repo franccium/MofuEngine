@@ -1,7 +1,6 @@
 struct VSConstants
 {
-    float4x4 View;
-    float4x4 Projection;
+    float4x4 ViewProjection;
 };
 ConstantBuffer<VSConstants> Constants : register(b0, space0);
 
@@ -26,8 +25,7 @@ VSOut LineVS(VSIn input)
 {
     VSOut vsout;
     float4 pos = float4(input.Position, 1.f);
-    pos = mul(Constants.View, pos);
-    pos = mul(Constants.Projection, pos);
+    pos = mul(Constants.ViewProjection, pos);
     vsout.HomPosition = pos;
     vsout.Color = float4(input.Color, 1.f);
     return vsout;

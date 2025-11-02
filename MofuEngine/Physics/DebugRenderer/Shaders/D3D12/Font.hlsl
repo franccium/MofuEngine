@@ -1,20 +1,24 @@
 struct VSConstants
 {
-    float4x4 View;
-    float4x4 Projection;
+    float4x4 ViewProjection;
 };
 ConstantBuffer<VSConstants> Constants : register(b0, space0);
+Texture2D Texture : register(t0, space0);
+SamplerState Sampler : register(s0, space0);
 
 struct VSIn
 {
     float3 Position : POSITION;
-    float3 Color : COLOR;
+    float4 Color : COLOR;
+    float2 UV : TEXCOORD0;
+    float2 PAD : PAD;
 };
 
 struct VSOut
 {
     float4 HomPosition : SV_Position;
     float4 Color : COLOR0;
+    float2 UV : TEXCOORD0;
 };
 
 struct PSOut
@@ -26,16 +30,20 @@ VSOut FontVS(VSIn input)
 {
     VSOut vsout;
     float4 pos = float4(input.Position, 1.f);
-    pos = mul(Constants.View, pos);
-    pos = mul(Constants.Projection, pos);
+    pos = mul(Constants.ViewProjection, pos);
     vsout.HomPosition = pos;
-    vsout.Color = float4(input.Color, 1.f);
+    vsout.Color = input.Color;
+    vsout.UV = input.UV;
     return vsout;
 }
 
 PSOut FontPS(VSOut input)
 {
     PSOut psOut;
-    psOut.Color = input.Color;
+    float a = Texture.Sample(Sampler, input.UV).r;
+    if (a < 0.5)
+        discard;
+    
+    psOut.Color = float4(input.Color.rgb, a);
     return psOut;
 }

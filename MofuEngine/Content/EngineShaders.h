@@ -60,8 +60,8 @@ struct DebugShaders
         LinePS,
         TriangleVS,
         TrianglePS,
-        TextVS,
-        TextPS,
+        FontVS,
+        FontPS,
         Count
     };
 };
@@ -82,8 +82,8 @@ constexpr PhysicsShaderInfo SHADER_FILES[]{
     {DebugShaders::LinePS, {"Line.hlsl", "LinePS", ShaderType::Pixel}},
     {DebugShaders::TriangleVS, {"Triangle.hlsl", "TriangleVS", ShaderType::Vertex}},
     {DebugShaders::TrianglePS, {"Triangle.hlsl", "TrianglePS", ShaderType::Pixel}},
-    {DebugShaders::TextVS, {"Font.hlsl", "FontVS", ShaderType::Vertex}},
-    {DebugShaders::TextPS, {"Font.hlsl", "FontPS", ShaderType::Pixel}}
+    {DebugShaders::FontVS, {"Font.hlsl", "FontVS", ShaderType::Vertex}},
+    {DebugShaders::FontPS, {"Font.hlsl", "FontPS", ShaderType::Pixel}}
 };
 static_assert(_countof(SHADER_FILES) == DebugShaders::Count);
 

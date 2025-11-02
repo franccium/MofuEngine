@@ -158,6 +158,7 @@
     <ClCompile Include="Editor\RenderingConsole.cpp" />
     <ClCompile Include="Editor\SceneEditorView.cpp" />
     <ClCompile Include="Editor\TextureView.cpp" />
+    <ClCompile Include="Editor\Text\FontView.cpp" />
     <ClCompile Include="Editor\ValueDisplay.cpp" />
     <ClCompile Include="EngineAPI\ECS\SceneAPI.cpp" />
     <ClCompile Include="External\imgui\backends\imgui_impl_dx12.cpp" />
@@ -202,8 +203,9 @@
     <ClCompile Include="Graphics\UIRenderer.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Input\Win32Input.cpp" />
-    <ClCompile Include="Physics\BodyInterface.cpp" />
+    <ClCompile Include="Physics\BodyManager.cpp" />
     <ClCompile Include="Physics\DebugRenderer\DebugRenderer.cpp" />
+    <ClCompile Include="Physics\DebugRenderer\FontRenderer.cpp" />
     <ClCompile Include="Physics\PhysicsCore.cpp" />
     <ClCompile Include="Physics\PhysicsShapes.cpp" />
     <ClCompile Include="Platform\Platform.cpp" />
@@ -269,6 +271,7 @@
     <ClInclude Include="Editor\RenderingConsole.h" />
     <ClInclude Include="Editor\SceneEditorView.h" />
     <ClInclude Include="Editor\TextureView.h" />
+    <ClInclude Include="Editor\Text\FontView.h" />
     <ClInclude Include="Editor\ValueDisplay.h" />
     <ClInclude Include="EngineAPI\Camera.h" />
     <ClInclude Include="EngineAPI\ECS\SceneAPI.h" />
@@ -284,6 +287,7 @@
     <ClInclude Include="External\imgui\imstb_truetype.h" />
     <ClInclude Include="External\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="External\MikkTSpace\mikktspace.h" />
+    <ClInclude Include="External\text\stb_truetype.h" />
     <ClInclude Include="External\ufbx\ufbx.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12ContentCommon.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Content\D3D12Material.h" />
@@ -322,9 +326,10 @@
     <ClInclude Include="Input\InputState.h" />
     <ClInclude Include="Input\InputSystem.h" />
     <ClInclude Include="Input\Win32Input.h" />
-    <ClInclude Include="Physics\BodyInterface.h" />
+    <ClInclude Include="Physics\BodyManager.h" />
     <ClInclude Include="Physics\BroadPhaseLayerInterface.h" />
     <ClInclude Include="Physics\DebugRenderer\DebugRenderer.h" />
+    <ClInclude Include="Physics\DebugRenderer\FontRenderer.h" />
     <ClInclude Include="Physics\JobSystem.h" />
     <ClInclude Include="Physics\JoltCommon.h" />
     <ClInclude Include="Physics\PhysicsCore.h" />

@@ -6,6 +6,7 @@
 #include <Jolt/Renderer/DebugRenderer.h>
 #include "Graphics/D3D12/D3D12CommonHeaders.h"
 #include "Graphics/D3D12/D3D12Primitives.h"
+#include "FontRenderer.h"
 
 namespace mofu::graphics::d3d12::debug {
 class DebugRenderer final : public JPH::DebugRenderer
@@ -23,11 +24,14 @@ public:
     void DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow) override;
 
     void DrawText3D(JPH::RVec3Arg position, const std::string_view& string, JPH::ColorArg color, f32 height) override;
+    void DrawText3D(JPH::Mat44Arg transform, const std::string_view& string, JPH::ColorArg color);
 
     void DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, f32 LODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode) override;
 
     Batch CreateTriangleBatch(const Triangle* triangles, s32 triangleCount) override;
     Batch CreateTriangleBatch(const Vertex* vertices, s32 vertexCount, const u32* indices, s32 indexCount) override;
+
+    void DrawTestText();
 
 private:
     struct Line
@@ -53,15 +57,27 @@ private:
     };
     struct Text
     {
-        v3 Position;
+        JPH::Vec3 Position;
         f32 Height;
         JPH::Color Color;
         JPH::String String;
+
+        Text(JPH::Vec3Arg pos, f32 height, JPH::ColorArg color, const std::string_view& str) 
+            : Position{ pos }, Height{ height }, Color{ color }, String{ str } {}
+    };
+    struct TextTransformed
+    {
+        JPH::Mat44 Transform;
+        JPH::Color Color;
+        JPH::String String;
+
+        TextTransformed(JPH::Mat44Arg transform, JPH::ColorArg color, const std::string_view& str)
+            : Transform{ transform }, Color{ color }, String{ str } {}
     };
 
-    void DrawLines(const D3D12FrameInfo& frameInfo);
-    void DrawTriangles(const D3D12FrameInfo& frameInfo);
-    void DrawTextBuffer(const D3D12FrameInfo& frameInfo);
+    void DrawLines(const D3D12FrameInfo& frameInfo, D3D12_GPU_VIRTUAL_ADDRESS constants);
+    void DrawTriangles(const D3D12FrameInfo& frameInfo, D3D12_GPU_VIRTUAL_ADDRESS constants);
+    void DrawTextBuffer(const D3D12FrameInfo& frameInfo, D3D12_GPU_VIRTUAL_ADDRESS constants);
     void ClearLines();
     void ClearTriangles();
     void ClearTextBuffer();
@@ -72,6 +88,10 @@ private:
 
     JPH::Mutex _textMutex{};
     Vec<Text> _textArray{};
+    Vec<TextTransformed> _textArrayNonBillboard{};
+
+    Vec<Text> _testText{};
+    
 
     JPH::Mutex _linesMutex{};
     Vec<Line> _lines{};
@@ -90,6 +110,8 @@ private:
     InstanceMap _tempPrimitives{};
     InstanceMap _backfacingPrimitives{};
     u32 _instanceCount{ 0 };
+
+    font::FontRenderer _font{};
 };
 
 void Initialize();

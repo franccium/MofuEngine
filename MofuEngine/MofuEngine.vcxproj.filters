@@ -279,7 +279,7 @@
     <ClCompile Include="Content\PhysicsImporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Physics\BodyInterface.cpp">
+    <ClCompile Include="Physics\BodyManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\D3D12\D3D12Primitives.cpp">
@@ -292,6 +292,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Editor\PhysicsEditor\PhysicsShapesInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics\DebugRenderer\FontRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Text\FontView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -671,7 +677,7 @@
     <ClInclude Include="Physics\JoltCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Physics\BodyInterface.h">
+    <ClInclude Include="Physics\BodyManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\D3D12\D3D12Primitives.h">
@@ -690,6 +696,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\PhysicsEditor\PhysicsShapesInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="External\text\stb_truetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics\DebugRenderer\FontRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Text\FontView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

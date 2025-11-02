@@ -10,7 +10,7 @@
 #include "Utilities/SlabAllocator.h"
 #include "ComponentRegistry.h"
 #include "TransformHierarchy.h"
-#include "Physics/BodyInterface.h"
+#include "Physics/BodyManager.h"
 
 namespace mofu::ecs::scene {
 

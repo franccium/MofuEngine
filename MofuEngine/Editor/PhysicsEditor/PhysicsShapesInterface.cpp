@@ -1,5 +1,5 @@
 #include "PhysicsShapesInterface.h"
-#include "Physics/BodyInterface.h"
+#include "Physics/BodyManager.h"
 #include "imgui.h"
 #include "ECS/Transform.h"
 #include "ECS/Scene.h"

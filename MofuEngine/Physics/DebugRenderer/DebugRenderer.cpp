@@ -18,6 +18,7 @@
 #include "Graphics/D3D12/D3D12GPass.h" // TODO: store the formats in some separate header
 #include "Graphics/D3D12/D3D12Primitives.h"
 #include "Graphics/RenderingDebug.h"
+#include "Graphics/D3D12/D3D12Content/D3D12Texture.h"
 
 //FIXME: TESTING
 #include "ECS/Scene.h"
@@ -28,8 +29,9 @@
 #include "ECS/QueryView.h"
 #include <Jolt/Geometry/OrientedBox.h>
 #include "Physics/PhysicsCore.h"
-#include "Physics/BodyInterface.h"
+#include "Physics/BodyManager.h"
 #include "Graphics/D3D12/D3D12Upload.h"
+#include <random>
 
 namespace mofu::graphics::d3d12::debug {
 namespace {
@@ -47,10 +49,11 @@ struct RootParameterIndices
 mofu::shaders::CompiledShaderPtr _shaders[shaders::physics::DebugShaders::Count]{};
 std::unique_ptr<u8[]> _shadersBlob;
 
+constexpr u32 DEFAULT_FONT_CHAR_HEIGHT{ 24 };
+
 struct VSConstants
 {
-	m4x4a View;
-	m4x4a Projection;
+	m4x4a ViewProjection;
 };
 
 void 
@@ -113,85 +116,154 @@ DebugRenderer::DebugRenderer()
 void 
 DebugRenderer::CreatePSOs()
 {
-	d3dx::D3D12DescriptorRange range
-	{
-		D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND, 0, 0,
-		D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE
-	};
-
-	D3D12_INPUT_ELEMENT_DESC inputElements[]{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA }
-	};
-	D3D12_INPUT_LAYOUT_DESC inputLayout{ inputElements, _countof(inputElements) };
-
-	d3dx::D3D12RootParameter parameters[RootParameterIndices::Count]{};
-	parameters[RootParameterIndices::VSConstants].AsCBV(D3D12_SHADER_VISIBILITY_VERTEX, 0);
-
-	d3dx::D3D12RootSignatureDesc rootSigDesc{ &parameters[0], _countof(parameters), d3dx::D3D12RootSignatureDesc::DEFAULT_FLAGS, nullptr, 0 };
-
-	rootSigDesc.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
-	rootSigDesc.Flags |= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-	_lineRootSig = rootSigDesc.Create();
-	assert(_lineRootSig);
-	NAME_D3D12_OBJECT(_lineRootSig, L"Physics Debug: Line Root Signature");
-
-	D3D12_RT_FORMAT_ARRAY rtfArray{};
-	rtfArray.NumRenderTargets = 1;
-	rtfArray.RTFormats[0] = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
-
 	constexpr u64 alignedStreamSize{ math::AlignUp<sizeof(u64)>(sizeof(d3dx::D3D12PipelineStateSubobjectStream)) };
 	u8* const streamPtr{ (u8*)_alloca(alignedStreamSize) };
 	ZeroMemory(streamPtr, alignedStreamSize);
 	new (streamPtr) d3dx::D3D12PipelineStateSubobjectStream{};
 	d3dx::D3D12PipelineStateSubobjectStream& stream{ *(d3dx::D3D12PipelineStateSubobjectStream* const)streamPtr };
-	stream.rootSignature = _lineRootSig;
-	stream.vs = GetShader(shaders::physics::DebugShaders::LineVS);
-	stream.ps = GetShader(shaders::physics::DebugShaders::LinePS);
-	stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-	stream.renderTargetFormats = rtfArray;
-	stream.rasterizer = d3dx::RasterizerState.BACKFACE_CULLING;
-	stream.blend = d3dx::BlendState.ALPHA_BLEND;
-	stream.inputLayout = inputLayout;
-	stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
-	stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
+	{
+		d3dx::D3D12DescriptorRange range
+		{
+			D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+			D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND, 0, 0,
+			D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE
+		};
 
-	_linePSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
-	NAME_D3D12_OBJECT(_linePSO, L"Physics Debug: Line PSO");
+		D3D12_INPUT_ELEMENT_DESC inputElements[]{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA },
+			{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA }
+		};
+		D3D12_INPUT_LAYOUT_DESC inputLayout{ inputElements, _countof(inputElements) };
 
-	_triangleRootSig = rootSigDesc.Create();
-	assert(_triangleRootSig);
-	NAME_D3D12_OBJECT(_triangleRootSig, L"Physics Debug: Triangle Root Signature");
-	stream.rootSignature = _triangleRootSig;
-	stream.vs = GetShader(shaders::physics::DebugShaders::TriangleVS);
-	stream.ps = GetShader(shaders::physics::DebugShaders::TrianglePS);
-	stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	stream.renderTargetFormats = rtfArray;
-	stream.rasterizer = d3dx::RasterizerState.BACKFACE_CULLING;
-	stream.blend = d3dx::BlendState.ALPHA_BLEND;
-	stream.inputLayout = inputLayout;
-	stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
-	stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
-	_trianglePSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
-	NAME_D3D12_OBJECT(_linePSO, L"Physics Debug: Triangle PSO");
+		d3dx::D3D12RootParameter parameters[RootParameterIndices::Count]{};
+		parameters[RootParameterIndices::VSConstants].AsCBV(D3D12_SHADER_VISIBILITY_VERTEX, 0);
 
-	_triangleWireframeRootSig = rootSigDesc.Create();
-	assert(_triangleWireframeRootSig);
-	NAME_D3D12_OBJECT(_triangleWireframeRootSig, L"Physics Debug: Triangle Wireframe Root Signature");
-	stream.rootSignature = _triangleWireframeRootSig;
-	stream.vs = GetShader(shaders::physics::DebugShaders::TriangleVS);
-	stream.ps = GetShader(shaders::physics::DebugShaders::TrianglePS);
-	stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	stream.renderTargetFormats = rtfArray;
-	stream.rasterizer = d3dx::RasterizerState.WIREFRAME;
-	stream.blend = d3dx::BlendState.ALPHA_BLEND;
-	stream.inputLayout = inputLayout;
-	stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
-	stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
-	_triangleWireframePSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
-	NAME_D3D12_OBJECT(_linePSO, L"Physics Debug: Triangle Wireframe PSO");
+		d3dx::D3D12RootSignatureDesc rootSigDesc{ &parameters[0], _countof(parameters), d3dx::D3D12RootSignatureDesc::DEFAULT_FLAGS, nullptr, 0 };
+
+		rootSigDesc.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
+		rootSigDesc.Flags |= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+		_lineRootSig = rootSigDesc.Create();
+		assert(_lineRootSig);
+		NAME_D3D12_OBJECT(_lineRootSig, L"Debug Renderer: Line Root Signature");
+
+		D3D12_RT_FORMAT_ARRAY rtfArray{};
+		rtfArray.NumRenderTargets = 1;
+		rtfArray.RTFormats[0] = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
+
+		stream.rootSignature = _lineRootSig;
+		stream.vs = GetShader(shaders::physics::DebugShaders::LineVS);
+		stream.ps = GetShader(shaders::physics::DebugShaders::LinePS);
+		stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		stream.renderTargetFormats = rtfArray;
+		stream.rasterizer = d3dx::RasterizerState.BACKFACE_CULLING;
+		stream.blend = d3dx::BlendState.ALPHA_BLEND;
+		stream.inputLayout = inputLayout;
+		stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
+		stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
+
+		_linePSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
+		NAME_D3D12_OBJECT(_linePSO, L"Debug Renderer: Line PSO");
+
+		_triangleRootSig = rootSigDesc.Create();
+		assert(_triangleRootSig);
+		NAME_D3D12_OBJECT(_triangleRootSig, L"Debug Renderer: Triangle Root Signature");
+		stream.rootSignature = _triangleRootSig;
+		stream.vs = GetShader(shaders::physics::DebugShaders::TriangleVS);
+		stream.ps = GetShader(shaders::physics::DebugShaders::TrianglePS);
+		stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		stream.renderTargetFormats = rtfArray;
+		stream.rasterizer = d3dx::RasterizerState.BACKFACE_CULLING;
+		stream.blend = d3dx::BlendState.ALPHA_BLEND;
+		stream.inputLayout = inputLayout;
+		stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
+		stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
+		_trianglePSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
+		NAME_D3D12_OBJECT(_trianglePSO, L"Debug Renderer: Triangle PSO");
+
+		_triangleWireframeRootSig = rootSigDesc.Create();
+		assert(_triangleWireframeRootSig);
+		NAME_D3D12_OBJECT(_triangleWireframeRootSig, L"Debug Renderer: Triangle Wireframe Root Signature");
+		stream.rootSignature = _triangleWireframeRootSig;
+		stream.vs = GetShader(shaders::physics::DebugShaders::TriangleVS);
+		stream.ps = GetShader(shaders::physics::DebugShaders::TrianglePS);
+		stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		stream.renderTargetFormats = rtfArray;
+		stream.rasterizer = d3dx::RasterizerState.WIREFRAME;
+		stream.blend = d3dx::BlendState.ALPHA_BLEND;
+		stream.inputLayout = inputLayout;
+		stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
+		stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
+		_triangleWireframePSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
+		NAME_D3D12_OBJECT(_triangleWireframePSO, L"Debug Renderer: Triangle Wireframe PSO");
+	}
+
+	{
+		_font.Initialize(font::DEFAULT_FONT, DEFAULT_FONT_CHAR_HEIGHT);
+		D3D12_INPUT_ELEMENT_DESC inputElements[]{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA },
+			{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA },
+			{ "PAD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA }
+		};
+		D3D12_INPUT_LAYOUT_DESC inputLayout{ inputElements, _countof(inputElements) };
+		const D3D12_STATIC_SAMPLER_DESC sampler{ d3dx::StaticSampler(d3dx::SamplerState.STATIC_POINT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL), };
+		d3dx::D3D12DescriptorRange range{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0 };
+
+		d3dx::D3D12RootParameter parameters[font::FontRenderer::FontRootParameterIndices::Count]{};
+		parameters[font::FontRenderer::FontRootParameterIndices::VSConstants].AsCBV(D3D12_SHADER_VISIBILITY_VERTEX, 0);
+		parameters[font::FontRenderer::FontRootParameterIndices::FontTexture].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
+
+		d3dx::D3D12RootSignatureDesc rootSigDesc{ &parameters[0], _countof(parameters), d3dx::D3D12RootSignatureDesc::DEFAULT_FLAGS, &sampler, 1 };
+
+		rootSigDesc.Flags &= ~(D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
+		rootSigDesc.Flags |= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+		_font.RootSig = rootSigDesc.Create();
+		assert(_font.RootSig);
+		NAME_D3D12_OBJECT(_font.RootSig, L"Debug Renderer: Font Root Signature");
+
+		D3D12_RT_FORMAT_ARRAY rtfArray{};
+		rtfArray.NumRenderTargets = 1;
+		rtfArray.RTFormats[0] = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
+
+		stream.rootSignature = _font.RootSig;
+		stream.vs = GetShader(shaders::physics::DebugShaders::FontVS);
+		stream.ps = GetShader(shaders::physics::DebugShaders::FontPS);
+		stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		stream.renderTargetFormats = rtfArray;
+		stream.rasterizer = d3dx::RasterizerState.NO_CULLING; // that only works for billboard text
+		stream.blend = d3dx::BlendState.ALPHA_BLEND;
+		stream.inputLayout = inputLayout;
+		stream.depthStencil = d3dx::DepthState.DISABLED;
+		_font.PSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
+		NAME_D3D12_OBJECT(_font.PSO, L"Debug Renderer: Font PSO");
+
+
+		std::random_device rd;
+		std::mt19937 gen{ rd() };
+		std::uniform_real_distribution<f32> dist{ 0.0f, 5.0f };
+
+		const char* texts[]{
+			"TEXT01", "TEXT02", "TEXT03", "TEXT04", "TEXT05",
+			"TEXT06", "TEXT07", "TEXT08", "TEXT09", "TEXT10",
+			"TEXT11", "TEXT12", "TEXT13", "TEXT14", "TEXT15",
+			"TEXT16", "TEXT17", "TEXT18", "TEXT19", "TEXT20"
+		};
+
+		const JPH::Color colors[]{
+			JPH::Color::sDarkGreen, JPH::Color::sDarkOrange, JPH::Color::sPurple,
+			JPH::Color::sRed, JPH::Color::sBlue, JPH::Color::sYellow,
+			JPH::Color::sCyan, JPH::Color::sWhite
+		};
+
+		for (u32 i{ 0 }; i < 20; ++i)
+		{
+			JPH::Vec3 pos{ dist(gen), dist(gen), dist(gen) };
+			f32 height = 0.3f + static_cast<f32>(i % 3) * 0.35f;
+			_testText.emplace_back(pos, height, colors[i % _countof(colors)], texts[i % _countof(texts)]);
+		}
+	}
 
 	JPH::DebugRenderer::Initialize();
 }
@@ -218,6 +290,15 @@ DebugRenderer::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3
 void 
 DebugRenderer::DrawText3D(JPH::RVec3Arg position, const std::string_view& string, JPH::ColorArg color, f32 height)
 {
+	std::lock_guard lock{ _textMutex };
+	_textArray.emplace_back(position, height, color, string);
+}
+
+void 
+DebugRenderer::DrawText3D(JPH::Mat44Arg transform, const std::string_view& string, JPH::ColorArg color)
+{
+	std::lock_guard lock{ _textMutex };
+	_textArrayNonBillboard.emplace_back(transform, color, string);
 }
 
 void 
@@ -245,10 +326,10 @@ DebugRenderer::CreateTriangleBatch(const Triangle* triangles, s32 triangleCount)
 		return _emptyBatch;
 
 	const primitives::Primitive::Topology topology{ primitives::Primitive::Topology::Triangle };
-	u32 primitiveIdx{ primitives::AddPrimitive(topology) };
-	primitives::CreateVertexBuffer(topology, primitiveIdx, sizeof(Vertex), 3 * triangleCount, (void*)triangles);
+	u32 primitiveIdx{ primitives::AddPrimitive() };
+	primitives::CreateVertexBuffer(primitiveIdx, sizeof(Vertex), 3 * triangleCount, (void*)triangles);
 
-	return primitives::GetPrimitive(topology, primitiveIdx);
+	return primitives::GetPrimitive(primitiveIdx);
 }
 
 DebugRenderer::Batch
@@ -258,19 +339,31 @@ DebugRenderer::CreateTriangleBatch(const Vertex* vertices, s32 vertexCount, cons
 		return _emptyBatch;
 
 	const primitives::Primitive::Topology topology{ primitives::Primitive::Topology::Triangle };
-	u32 primitiveIdx{ primitives::AddPrimitive(topology) };
-	primitives::CreateVertexBuffer(topology, primitiveIdx, sizeof(Vertex), vertexCount, (void*)vertices);
-	primitives::CreateIndexBuffer(topology, primitiveIdx, indexCount, (void*)indices);
+	u32 primitiveIdx{ primitives::AddPrimitive() };
+	primitives::CreateVertexBuffer(primitiveIdx, sizeof(Vertex), vertexCount, (void*)vertices);
+	primitives::CreateIndexBuffer(primitiveIdx, indexCount, (void*)indices);
 
-	return primitives::GetPrimitive(topology, primitiveIdx);
+	return primitives::GetPrimitive(primitiveIdx);
+}
+
+void DebugRenderer::DrawTestText()
+{
+	for (auto t : _testText)
+	{
+		DrawText3D(t.Position, t.String, t.Color, t.Height);
+	}
 }
 
 void
 DebugRenderer::Draw(const D3D12FrameInfo& frameInfo)
 {
-	DrawLines(frameInfo);
-	DrawTriangles(frameInfo);
-	DrawTextBuffer(frameInfo);
+	VSConstants* const constants = core::CBuffer().AllocateSpace<VSConstants>();
+	DirectX::XMStoreFloat4x4A(&constants->ViewProjection, frameInfo.Camera->ViewProjection());
+	D3D12_GPU_VIRTUAL_ADDRESS constantsAddr{ core::CBuffer().GpuAddress(constants) };
+
+	DrawLines(frameInfo, constantsAddr);
+	DrawTriangles(frameInfo, constantsAddr);
+	DrawTextBuffer(frameInfo, constantsAddr);
 }
 
 void
@@ -283,24 +376,28 @@ DebugRenderer::Clear()
 }
 
 void 
-DebugRenderer::DrawLines(const D3D12FrameInfo& frameInfo)
+DebugRenderer::DrawLines(const D3D12FrameInfo& frameInfo, D3D12_GPU_VIRTUAL_ADDRESS constants)
 {
 	std::lock_guard lock{ _linesMutex };
 	if (!_lines.empty())
 	{
-		u32 idx{ primitives::AddPrimitive(primitives::Primitive::Topology::Line) };
-		primitives::CreateVertexBuffer(primitives::Primitive::Topology::Line, idx, sizeof(Line) / 2, _lines.size() * 2, &_lines[0]);
-		_linesPrimitivesIndex = idx;
-		DXGraphicsCommandList* const cmdList{ core::GraphicsCommandList() };
+		const u32 totalBufferSize{ sizeof(Line) * (u32)_lines.size() };
+		const u32 vertexCount{ (u32)_lines.size() * 2 };
+		TempStructuredBuffer lineBuffer{ vertexCount, sizeof(Line) / 2, false };
+		lineBuffer.WriteMemory(totalBufferSize, _lines.data());
 
-		VSConstants* constants = core::CBuffer().AllocateSpace<VSConstants>();
-		DirectX::XMStoreFloat4x4A(&constants->View, frameInfo.Camera->View());
-		DirectX::XMStoreFloat4x4A(&constants->Projection, frameInfo.Camera->Projection());
-		
+		DXGraphicsCommandList* const cmdList{ core::GraphicsCommandList() };
 		cmdList->SetGraphicsRootSignature(_lineRootSig);
 		cmdList->SetPipelineState(_linePSO);
-		cmdList->SetGraphicsRootConstantBufferView(RootParameterIndices::VSConstants, core::CBuffer().GpuAddress(constants));
-		primitives::DrawPrimitives(primitives::Primitive::Topology::Line);
+		cmdList->SetGraphicsRootConstantBufferView(RootParameterIndices::VSConstants, constants);
+
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+		D3D12_VERTEX_BUFFER_VIEW vb{};
+		vb.BufferLocation = lineBuffer.GPUAddress;
+		vb.SizeInBytes = totalBufferSize;
+		vb.StrideInBytes = sizeof(Line) / 2;
+		cmdList->IASetVertexBuffers(0, 1, &vb);
+		cmdList->DrawInstanced(vertexCount, 1, 0, 0);
 	}
 }
 
@@ -353,14 +450,14 @@ DebugRenderer::DrawInstances(const Geometry* geometry, const InstanceBatch& inst
 				ib_view.Format = DXGI_FORMAT_R32_UINT;
 				cmdList->IASetIndexBuffer(&ib_view);
 
-				cmdList->DrawIndexedInstanced(primitives->NumVertexToDraw, instanceCount, 0, 0, startIdx);
+				cmdList->DrawIndexedInstanced(primitives->NumIndexToDraw, instanceCount, 0, 0, startIdx);
 			}
 		}
 	}
 }
 
 void
-DebugRenderer::DrawTriangles(const D3D12FrameInfo& frameInfo)
+DebugRenderer::DrawTriangles(const D3D12FrameInfo& frameInfo, D3D12_GPU_VIRTUAL_ADDRESS constants)
 {
 	DXGraphicsCommandList* const cmdList{ core::GraphicsCommandList() };
 	const ecs::component::LocalTransform& camLT{ ecs::scene::GetComponent<ecs::component::LocalTransform>(ecs::scene::GetSingletonEntity(ecs::component::ID<ecs::component::Camera>)) };
@@ -433,13 +530,10 @@ DebugRenderer::DrawTriangles(const D3D12FrameInfo& frameInfo)
 	if (!_wireframePrimitives.empty())
 	{
 		DXGraphicsCommandList* const cmdList{ core::GraphicsCommandList() };
-		VSConstants* constants = core::CBuffer().AllocateSpace<VSConstants>();
-		DirectX::XMStoreFloat4x4A(&constants->View, frameInfo.Camera->View());
-		DirectX::XMStoreFloat4x4A(&constants->Projection, frameInfo.Camera->Projection());
 
 		cmdList->SetGraphicsRootSignature(_triangleWireframeRootSig);
 		cmdList->SetPipelineState(_triangleWireframePSO);
-		cmdList->SetGraphicsRootConstantBufferView(RootParameterIndices::VSConstants, core::CBuffer().GpuAddress(constants));
+		cmdList->SetGraphicsRootConstantBufferView(RootParameterIndices::VSConstants, constants);
 
 		for (InstanceMap::value_type& p : _wireframePrimitives)
 			DrawInstances(p.first, p.second, frameInfo, cmdList);
@@ -447,17 +541,43 @@ DebugRenderer::DrawTriangles(const D3D12FrameInfo& frameInfo)
 }
 
 void 
-DebugRenderer::DrawTextBuffer(const D3D12FrameInfo& frameInfo)
+DebugRenderer::DrawTextBuffer(const D3D12FrameInfo& frameInfo, D3D12_GPU_VIRTUAL_ADDRESS constants)
 {
 	std::lock_guard lock{ _textMutex };
-	_textArray.clear();
+	if (_textArray.empty() && _textArrayNonBillboard.empty()) return;
+
+	DXGraphicsCommandList* const cmdList{ core::GraphicsCommandList() };
+	cmdList->SetGraphicsRootSignature(_font.RootSig);
+	cmdList->SetPipelineState(_font.PSO);
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	cmdList->SetGraphicsRootConstantBufferView(RootParameterIndices::VSConstants, constants);
+	cmdList->SetGraphicsRootDescriptorTable(font::FontRenderer::FontRootParameterIndices::FontTexture, 
+		content::texture::GetDescriptorHandle(_font.TextureID).gpu);
+
+	const ecs::component::LocalTransform& camLT{ ecs::scene::GetComponent<ecs::component::LocalTransform>(ecs::scene::GetSingletonEntity(ecs::component::ID<ecs::component::Camera>)) };
+	JPH::Vec3 camPos{ camLT.Position.Vec3() };
+
+	for (const Text& text : _textArray)
+	{
+		JPH::Vec3 forward{ camLT.Forward };
+		JPH::Vec3 right{ forward.Cross(graphics::GetMainCamera().Up().Vec3().Normalized()) };
+		JPH::Vec3 up{ right.Cross(forward).Normalized() };
+		JPH::Mat44 textTransform{ JPH::Vec4(right, 0.f), JPH::Vec4(up, 0.f), JPH::Vec4(forward, 0.f), JPH::Vec4(text.Position, 1.f)};
+		textTransform = textTransform * JPH::Mat44::sScale(text.Height);
+
+		_font.RenderText(frameInfo, constants, textTransform, text.String, text.Color);
+	}
+
+	for (const TextTransformed& text : _textArrayNonBillboard)
+	{
+		_font.RenderText(frameInfo, constants, text.Transform, text.String, text.Color);
+	}
 }
 
 void
 DebugRenderer::ClearLines()
 {
 	std::lock_guard lock{ _linesMutex };
-	if(_linesPrimitivesIndex != U32_INVALID_ID) primitives::RemovePrimitive(primitives::Primitive::Topology::Line, _linesPrimitivesIndex);
 	_lines.clear();
 }
 
@@ -483,6 +603,7 @@ DebugRenderer::ClearTextBuffer()
 {
 	std::lock_guard lock(_textMutex);
 	_textArray.clear();
+	_textArrayNonBillboard.clear();
 }
 
 void
@@ -502,7 +623,7 @@ Render(const D3D12FrameInfo& frameInfo)
 {
 	if (graphics::debug::RenderingSettings.RenderAllPhysicsShapes)
 	{
-		for (auto [entity, s, lt, wt, col] : ecs::scene::GetRW<ecs::component::StaticObject, ecs::component::LocalTransform,
+		for (auto [entity, lt, wt, col] : ecs::scene::GetRW<ecs::component::LocalTransform,
 			ecs::component::WorldTransform, ecs::component::Collider>())
 		{
 			JPH::BodyLockRead lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), col.BodyID };
@@ -510,6 +631,18 @@ Render(const D3D12FrameInfo& frameInfo)
 			lock.GetBody().GetShape()->Draw(_renderer, physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, lock.GetBody().GetShape()), lt.Scale.Vec3(), JPH::Color::sCyan, false, true);
 		}
 	}
+
+	JPH::Vec3 position{ 0.f, 0.f, 0.f };
+	JPH::Vec3 forward{ v3forward };
+	JPH::Vec3 right{ 1.f, 0.f, 0.f };
+	JPH::Vec3 up{ 0.f, 1.f, 0.f };
+	f32 height{ 3.0f };
+	std::string text{ "EXAMPLE OF A NON-BILLBOARD" };
+	JPH::Mat44 textTransform{ JPH::Vec4(right, 0.f), JPH::Vec4(up, 0.f), JPH::Vec4(forward, 0.f), JPH::Vec4(position, 1.f) };
+	textTransform = textTransform * JPH::Mat44::sScale(height);
+	_renderer->DrawText3D(textTransform, text, JPH::Color::sDarkOrange);
+
+	_renderer->DrawTestText();
 
 	JPH::PhysicsSystem& physicsSystem{ mofu::physics::core::PhysicsSystem() };
 	JPH::BodyManager::DrawSettings settings{};
