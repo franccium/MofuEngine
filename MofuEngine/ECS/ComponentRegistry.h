@@ -208,4 +208,24 @@ constexpr auto MakeDeserializeLUT(std::index_sequence<Is...>)
 
 constexpr auto DeserializeLUT = MakeDeserializeLUT(std::make_index_sequence<ComponentTypeCount>{});
 
+//NOTE: not all components are compile-time constructible (e.g. Collider where JPH::BodyID is not) so cant use apply max
+template<typename... Ts>
+constexpr u32 MaxSize()
+{
+    u32 max{ 0 };
+    ((max = max < sizeof(Ts) ? sizeof(Ts) : max), ...);
+    return max;
+}
+
+template<typename Tuple>
+struct BiggestComponentSize;
+
+template<typename... Ts>
+struct BiggestComponentSize<std::tuple<Ts...>>
+{
+    static constexpr size_t value = MaxSize<Ts...>();
+};
+
+constexpr u32 GET_BIGGEST_COMPONENT_SIZE =
+BiggestComponentSize<ComponentTypes>::value;
 }

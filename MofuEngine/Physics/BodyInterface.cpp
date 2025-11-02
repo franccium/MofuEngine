@@ -8,6 +8,18 @@
 #include "ECS/Transform.h"
 #include "ECS/Scene.h"
 
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/TaperedCylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/PlaneShape.h>
+#include <Jolt/Physics/Collision/Shape/TriangleShape.h>
+#include <Jolt/Physics/Collision/Shape/CompoundShape.h>
+#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
+
 namespace mofu::physics {
 JPH::BodyID 
 AddStaticBodyFromMesh(JPH::Ref<JPH::Shape> meshShape, ecs::Entity ownerEntity)
@@ -17,6 +29,7 @@ AddStaticBodyFromMesh(JPH::Ref<JPH::Shape> meshShape, ecs::Entity ownerEntity)
     const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
     JPH::BodyCreationSettings bodySettings{ meshShape.GetPtr(), lt.Position.Vec3(), lt.Rotation, 
         JPH::EMotionType::Static, PhysicsLayers::Layer::Static};
+    bodySettings.mAllowDynamicOrKinematic = core::settings::CREATE_STATIC_BODIES_AS_CHANGEABLE_TO_MOVABLE;
     bodySettings.mUserData = ownerEntity;
 
     JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
@@ -30,12 +43,13 @@ AddStaticBodyFromMesh(JPH::Ref<JPH::Shape> meshShape, ecs::Entity ownerEntity)
 }
 
 JPH::BodyID
-AddDynamicBody(JPH::Ref<JPH::Shape> meshShape, ecs::Entity ownerEntity)
+AddDynamicBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity)
 {
+    //TODO_("something with migrating when loading prefab on launch; maybe cause its the last component in registry? or not initialized at the beginning correctly");
     ecs::scene::AddComponents<ecs::component::Collider, ecs::component::DynamicObject>(ownerEntity);
 
     const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
-    JPH::BodyCreationSettings bodySettings{ meshShape.GetPtr(), lt.Position.Vec3(), lt.Rotation,
+    JPH::BodyCreationSettings bodySettings{ shape.GetPtr(), lt.Position.Vec3(), lt.Rotation,
         JPH::EMotionType::Dynamic, PhysicsLayers::Layer::Movable };
     bodySettings.mUserData = ownerEntity;
 
@@ -53,7 +67,15 @@ void
 DestroyPhysicsBody(ecs::Entity ownerEntity)
 {
     ecs::component::Collider collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(ownerEntity) };
+    core::BodyInterface().RemoveBody(collider.BodyID);
     core::BodyInterface().DestroyBody(collider.BodyID);
+}
+
+void
+DeactivatePhysicsBody(ecs::Entity ownerEntity)
+{
+    ecs::component::Collider collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(ownerEntity) };
+    core::BodyInterface().DeactivateBody(collider.BodyID);
 }
 
 void
@@ -66,6 +88,135 @@ DestroyPhysicsBodies(const Array<ecs::Entity>& entities)
         ecs::component::Collider collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(entities[i])};
         bodies[i] = collider.BodyID;
     }
+    core::BodyInterface().RemoveBodies(bodies.data(), entityCount);
     core::BodyInterface().DestroyBodies(bodies.data(), entityCount);
 }
+
+void 
+ChangePhysicsShape(ecs::Entity ownerEntity, shapes::PrimitiveShapes::Type shapeType)
+{
+    ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(ownerEntity) };
+    //JPH::BodyLockWrite lock{ core::PhysicsSystem().GetBodyLockInterface(), collider.BodyID };
+    //if (!lock.Succeeded()) return;
+    
+    //JPH::Body& body{ lock.GetBody() };
+
+    const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
+    JPH::Ref<JPH::Shape> newShape{ nullptr };
+
+    switch (shapeType)
+    {
+    case shapes::PrimitiveShapes::Box:
+    {
+        JPH::Vec3 halfExtent(0.5f, 0.5f, 0.5f);
+        newShape = new JPH::BoxShape{ halfExtent };
+        break;
+    }
+
+    case shapes::PrimitiveShapes::Capsule:
+    {
+        float halfHeight{ 1.0f };
+        float radius{ 0.5f };
+        newShape = new JPH::CapsuleShape{ halfHeight, radius };
+        break;
+    }
+
+    case shapes::PrimitiveShapes::Sphere:
+    {
+        float radius{ 0.5f };
+        newShape = new JPH::SphereShape{ radius };
+        break;
+    }
+
+    case shapes::PrimitiveShapes::Cylinder:
+    {
+        float halfHeight{ 1.0f };
+        float radius{ 0.5f };
+        newShape = new JPH::CylinderShape{ halfHeight, radius };
+        break;
+    }
+
+    case shapes::PrimitiveShapes::Plane:
+    {
+        JPH::Vec3 normal{ 0.f, 1.f, 0.f };
+        f32 constant{ 0.f };
+        JPH::Shape::ShapeResult result{};
+        newShape = new JPH::PlaneShape{ JPH::Plane{normal, constant}, result };
+        assert(result.IsValid());
+        break;
+    }
+
+    case shapes::PrimitiveShapes::Triangle:
+    {
+        JPH::Vec3 vertices[]{
+            {-0.5f, 0.f, 0.f},
+            {0.0f, 0.f, -1.f},
+            {0.5f, 0.f, 0.f}
+        };
+        JPH::TriangleShapeSettings settings{ vertices[0], vertices[1], vertices[2] };
+        JPH::Shape::ShapeResult result{};
+        newShape = new JPH::TriangleShape{ settings, result };
+        assert(result.IsValid());
+        break;
+    }
+
+    case shapes::PrimitiveShapes::TaperedCapsule:
+    {
+        float halfHeight{ 1.0f };
+        float topRadius{ 0.3f };
+        float bottomRadius{ 0.5f };
+        JPH::Shape::ShapeResult result{};
+        JPH::TaperedCapsuleShapeSettings settings{ halfHeight, topRadius, bottomRadius };
+        newShape = new JPH::TaperedCapsuleShape{ settings, result };
+        assert(result.IsValid());
+        break;
+    }
+
+    case shapes::PrimitiveShapes::TaperedCylinder:
+    {
+        float halfHeight{ 1.0f };
+        float topRadius{ 0.3f };
+        float bottomRadius{ 0.5f };
+        JPH::Shape::ShapeResult result{};
+        JPH::TaperedCylinderShapeSettings settings{ halfHeight, topRadius, bottomRadius };
+        newShape = new JPH::TaperedCylinderShape{ settings, result };
+        assert(result.IsValid());
+        break;
+    }
+
+    case shapes::PrimitiveShapes::Compound:
+    {
+        assert(false);
+        break;
+    }
+
+    case shapes::PrimitiveShapes::ConvexHull:
+    {
+        JPH::Array<JPH::Vec3> points;
+        points.push_back(JPH::Vec3{ -0.5f, -0.5f, -0.5f });
+        points.push_back(JPH::Vec3{ 0.5f, -0.5f, -0.5f });
+        points.push_back(JPH::Vec3{ -0.5f, 0.5f, -0.5f });
+        points.push_back(JPH::Vec3{ 0.5f, 0.5f, -0.5f });
+        points.push_back(JPH::Vec3{ -0.5f, -0.5f, 0.5f });
+        points.push_back(JPH::Vec3{ 0.5f, -0.5f, 0.5f });
+        points.push_back(JPH::Vec3{ -0.5f, 0.5f, 0.5f });
+        points.push_back(JPH::Vec3{ 0.5f, 0.5f, 0.5f });
+
+        newShape = JPH::ConvexHullShapeSettings(points).Create().Get();
+        break;
+    }
+
+    default:
+        return;
+    }
+
+    if (newShape)
+    {
+        //const JPH::BodyID bodyID{ body.GetID() };
+        core::BodyInterface().SetShape(collider.BodyID, newShape, false, JPH::EActivation::Activate);
+
+        //collider.BodyID = bodyID;
+    }
+}
+
 }

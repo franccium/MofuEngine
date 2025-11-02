@@ -2,7 +2,11 @@
 
 namespace mofu::graphics::d3d12::primitives {
 namespace {
-util::FreeList<Primitive> _primitives[2]{};
+//NOTE: Jolt expects stable pointers as DebugRenderer::Batch for its default shapes
+//NOTE: find out if i ever run into this problem with my own shapes
+//TODO: maybe fork jolt
+constexpr u32 TRIANGLE_PRIMITIVE_BATCHES_COUNT{ 256 }; // jolt needs 26 or sth default
+util::FreeList<Primitive> _primitives[2]{ {0}, {TRIANGLE_PRIMITIVE_BATCHES_COUNT} };
 constexpr u32 JOLT_INDEX_SIZE{ sizeof(u32) };
 constexpr Primitive::Topology INVALID_TOPOLOGY_MARK{ 9 };
 
@@ -103,10 +107,20 @@ CreateInstanceBuffer(u32 instanceCount, u32 instanceSize, void* data)
         instance.InstanceBufferSize = 0;
         instance.InstanceSize = 0;
 
-        instance.InstanceBuffer = d3dx::CreateResourceBuffer(data, newTotalSize, false);
+        instance.InstanceBuffer = d3dx::CreateResourceBuffer(data, newTotalSize, true);
         instance.InstanceBufferSize = newTotalSize;
     }
     instance.InstanceSize = instanceSize;
+}
+
+void* const
+MapInstanceBuffer(const D3D12Instance* instance)
+{
+    const D3D12_RANGE range{};
+    void* cpuAddress{ nullptr };
+    DXCall(instance->InstanceBuffer->Map(0, &range, reinterpret_cast<void**>(&cpuAddress)));
+    assert(cpuAddress);
+    return cpuAddress;
 }
 
 void

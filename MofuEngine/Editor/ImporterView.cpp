@@ -43,6 +43,9 @@ RenderMeshImportSettings()
 {
 	ImGui::TextUnformatted("Mesh Import Settings");
 	ImGui::Checkbox("Static Object", &geometryImportSettings.IsStatic);
+	if (geometryImportSettings.IsStatic)
+		ImGui::Checkbox("Collider from Geometry", &geometryImportSettings.ColliderFromGeometry);
+	else geometryImportSettings.ColliderFromGeometry = false;
 	ImGui::Checkbox("Import Embedded Textures", &geometryImportSettings.ImportEmbeddedTextures);
 	ImGui::Checkbox("Calculate Tangents", &geometryImportSettings.CalculateTangents);
 	ImGui::Checkbox("Calculate Normals", &geometryImportSettings.CalculateNormals);

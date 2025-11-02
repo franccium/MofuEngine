@@ -97,7 +97,11 @@ DrawRenderingConsole()
 		return;
 	}
 
+	ImGui::BeginGroup();
 	ImGui::Checkbox("Enable Physics Debug Render", &graphics::debug::RenderingSettings.EnablePhysicsDebugRendering);
+	ImGui::Checkbox("Draw Physics World Bounds", &graphics::debug::RenderingSettings.DrawPhysicsWorldBounds);
+	ImGui::Checkbox("Render All Physics Shapes", &graphics::debug::RenderingSettings.RenderAllPhysicsShapes);
+	ImGui::EndGroup();
 
 	bool isInDebugPostProcessing{ graphics::debug::IsUsingDebugPostProcessing() };
 	u32 debugPostProcessingOption{ isInDebugPostProcessing ? 1u : 0u };

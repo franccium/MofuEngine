@@ -47,7 +47,7 @@ LoadShape(const std::filesystem::path& path)
 }
 
 content::AssetHandle 
-SaveShape(JPH::Ref<JPH::Shape> shape, const std::filesystem::path& path)
+SaveShape(const JPH::Shape* shape, const std::filesystem::path& path)
 {
 	//TODO: check IsAssetAlreadyRegistered
 	std::ofstream file{ path, std::ios::binary };

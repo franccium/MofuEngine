@@ -55,6 +55,7 @@ Primitive* GetPrimitive(Primitive::Topology topology, u32 primitiveIdx);
 
 D3D12Instance* AddInstance();
 D3D12Instance* const GetInstanceBuffer();
+void* const MapInstanceBuffer(const D3D12Instance* instance);
 void CreateInstanceBuffer(u32 instanceCount, u32 instanceSize, void* data);
 void RemoveInstance();
 

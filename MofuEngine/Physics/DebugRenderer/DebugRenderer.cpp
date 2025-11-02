@@ -113,7 +113,6 @@ DebugRenderer::DebugRenderer()
 void 
 DebugRenderer::CreatePSOs()
 {
-	// Line
 	d3dx::D3D12DescriptorRange range
 	{
 		D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
@@ -263,8 +262,6 @@ DebugRenderer::CreateTriangleBatch(const Vertex* vertices, s32 vertexCount, cons
 	primitives::CreateVertexBuffer(topology, primitiveIdx, sizeof(Vertex), vertexCount, (void*)vertices);
 	primitives::CreateIndexBuffer(topology, primitiveIdx, indexCount, (void*)indices);
 
-	DebugRenderer::Batch batch{ primitives::GetPrimitive(topology, primitiveIdx) };
-
 	return primitives::GetPrimitive(topology, primitiveIdx);
 }
 
@@ -330,6 +327,11 @@ DebugRenderer::DrawInstances(const Geometry* geometry, const InstanceBatch& inst
 				? D3D_PRIMITIVE_TOPOLOGY_LINELIST : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 			D3D12_VERTEX_BUFFER_VIEW vb[2]{};
+			if (!primitives->VertexBuffer)
+			{
+				log::Warn("no vertex buffer");
+				continue;
+			}
 			vb[0].BufferLocation = primitives->VertexBuffer->GetGPUVirtualAddress();
 			vb[0].SizeInBytes = primitives->VertexSize * primitives->VertexCount;
 			vb[0].StrideInBytes = primitives->VertexSize;
@@ -368,9 +370,10 @@ DebugRenderer::DrawTriangles(const D3D12FrameInfo& frameInfo)
 	{
 		primitives::D3D12Instance* const instanceBuffer{ primitives::GetInstanceBuffer() };
 		primitives::CreateInstanceBuffer(2 * _instanceCount, sizeof(Instance), nullptr);
-		u32 size{ (2 * _instanceCount) * sizeof(Instance) };
-		upload::D3D12UploadContext context{ size };
-		Instance* dstInstance{ reinterpret_cast<Instance*>(context.CpuAddress()) };
+		//u32 size{ (2 * _instanceCount) * sizeof(Instance) };
+		//upload::D3D12UploadContext context{ size };
+		//Instance* dstInstance{ reinterpret_cast<Instance*>(context.CpuAddress()) };
+		Instance* const dstInstance{ reinterpret_cast<Instance* const>(primitives::MapInstanceBuffer(instanceBuffer)) };
 
 		for (InstanceMap::value_type& v : _wireframePrimitives)
 		{
@@ -409,8 +412,9 @@ DebugRenderer::DrawTriangles(const D3D12FrameInfo& frameInfo)
 			geometryStartIndices.back() = dstIdx;
 		}
 
-		context.CommandList()->CopyResource(instanceBuffer->InstanceBuffer, context.UploadBuffer());
-		context.EndUpload();
+		/*context.CommandList()->CopyResource(instanceBuffer->InstanceBuffer, context.UploadBuffer());
+		context.EndUpload();*/
+		instanceBuffer->InstanceBuffer->Unmap(0, nullptr);
 	}
 
 	if (_instanceCount > 0 && !_solidPrimitives.empty() || !_tempPrimitives.empty())
@@ -496,36 +500,26 @@ Shutdown()
 void 
 Render(const D3D12FrameInfo& frameInfo)
 {
-	//for (auto [entity, s, lt, wt, col] : ecs::scene::GetRW<ecs::component::StaticObject, ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Collider>())
-	//{
-	//	/*JPH::OrientedBox box{};
-	//	box.mHalfExtents = JPH::Vec3(0.5f, 0.5f, 0.5f);
-	//	box.mOrientation;*/
-	//	auto shape{ physics::core::PhysicsSystem().GetBodyInterface().GetShape(col.BodyID).GetPtr() };
-	//	JPH::AABox box{ shape->GetLocalBounds() };
-	//	JPH::Color color{ JPH::Color{ JPH::Color::sRed } };
-	//	_renderer->DrawWireBox(JPH::RMat44::sRotationTranslation(lt.Rotation, lt.Position.AsJPVec3()) * JPH::Mat44::sScale(JPH::Vec3(1.f, 1.f, 1.f)),
-	//		shape->GetLocalBounds(), color);
-	//}
-
-	for (auto [entity, s, lt, wt, col] : ecs::scene::GetRW<ecs::component::StaticObject, ecs::component::LocalTransform, 
-		ecs::component::WorldTransform, ecs::component::Collider>())
+	if (graphics::debug::RenderingSettings.RenderAllPhysicsShapes)
 	{
-		JPH::BodyLockRead lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), col.BodyID };
+		for (auto [entity, s, lt, wt, col] : ecs::scene::GetRW<ecs::component::StaticObject, ecs::component::LocalTransform,
+			ecs::component::WorldTransform, ecs::component::Collider>())
+		{
+			JPH::BodyLockRead lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), col.BodyID };
 
-		//graphics::d3d12::debug::DrawBodyShape(lock.GetBody().GetShape(), physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, lock.GetBody().GetShape()), lt.Scale.Vec3());
-		//JPH::StaticCast<JPH::MeshShape>(lock.GetBody().GetShape())->Draw(_renderer, physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, lock.GetBody().GetShape()), lt.Scale.Vec3(), JPH::Color::sCyan, false, true);
-		lock.GetBody().GetShape()->Draw(_renderer, physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, lock.GetBody().GetShape()), lt.Scale.Vec3(), JPH::Color::sCyan, false, true);
+			lock.GetBody().GetShape()->Draw(_renderer, physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, lock.GetBody().GetShape()), lt.Scale.Vec3(), JPH::Color::sCyan, false, true);
+		}
 	}
-	
 
 	JPH::PhysicsSystem& physicsSystem{ mofu::physics::core::PhysicsSystem() };
 	JPH::BodyManager::DrawSettings settings{};
+	settings.mDrawShapeWireframe = true;
+	settings.mDrawBoundingBox = true;
 	if(graphics::debug::RenderingSettings.DrawPhysicsWorldBounds) _renderer->DrawWireBox(physicsSystem.GetBounds(), JPH::Color::sGreen);
-	/*physicsSystem.DrawBodies(settings, _renderer, nullptr);
-	physicsSystem.DrawConstraints(_renderer);
-	physicsSystem.DrawConstraintLimits(_renderer);
-	physicsSystem.DrawConstraintReferenceFrame(_renderer);*/
+	//physicsSystem.DrawBodies(settings, _renderer, nullptr);
+	//physicsSystem.DrawConstraints(_renderer);
+	//physicsSystem.DrawConstraintLimits(_renderer);
+	//physicsSystem.DrawConstraintReferenceFrame(_renderer);
 	_renderer->Draw(frameInfo);
 }
 

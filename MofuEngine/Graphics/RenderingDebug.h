@@ -14,7 +14,8 @@ enum DebugMode : u32
 struct Settings
 {
 	bool EnablePhysicsDebugRendering{ true };
-	bool DrawPhysicsWorldBounds{ true };
+	bool DrawPhysicsWorldBounds{ false };
+	bool RenderAllPhysicsShapes{ false };
 };
 extern Settings RenderingSettings;
 

@@ -31,7 +31,9 @@ HashMap<CetMask, Vec<EntityBlock*>> queryToBlockMap;
 Vec<EntityBlock*> blocks{};
 
 // NOTE: entity IDs globally unique, in format generation | index, index goes into entityData, generation is compared
-Vec<EntityData> entityDatas{};
+Vec<EntityData> _entityDatas{};
+// Vec<EntityData> _disabledEntitiesDatas{};
+Vec<bool> _isEntityEnabled{}; // TODO: idk yet
 Deque<u32> _freeEntityIDs; // TODO: recycling, also then do this when unloading the scene
 
 constexpr size_t ENTITY_BLOCK_SIZE{ 32 * 1024 }; // 64 KiB per block
@@ -50,6 +52,7 @@ CreateBlock(const CetLayout& layout)
 	block->Capacity = layout.Capacity;
 	block->CetSize = layout.CetSize;
 	block->EntityCount = 0;
+	block->LastEnabledIdx = MAX_ENTITIES_PER_BLOCK - 1;
 
 	Vec<ComponentID> componentIDs{};
 	for (ComponentID cid = 0; cid < component::ComponentTypeCount; ++cid)
@@ -96,7 +99,9 @@ AddEntity(Vec<EntityBlock*> matchingBlocks, Entity entity)
 	chosenBlock->EntityCount++;
 
 	u32 idx{ id::Index(entity) };
-	entityDatas.emplace_back(chosenBlock, row, id::Generation(entity), entity); // TODO: what to do here
+	_entityDatas.emplace_back(chosenBlock, row, id::Generation(entity), entity); // TODO: what to do here
+	//_disabledEntitiesDatas.emplace_back(); // TODO: idk yet
+	_isEntityEnabled.emplace_back(true); // TODO: idk yet
 }
 
 
@@ -116,6 +121,7 @@ RemoveEntity(EntityBlock* block, Entity entity)
 	}
 
 	const EntityData& data{ GetEntityData(entity) };
+	block->Entities[data.row] = ecs::Entity{ U32_INVALID_ID };
 
 	if (EntityHasComponent<ecs::component::Collider>(entity)) physics::DestroyPhysicsBody(entity);
 
@@ -134,10 +140,11 @@ RemoveEntity(EntityBlock* block, Entity entity)
 			const u32 oldOffset{ block->ComponentOffsets[cid] + componentSize * lastRow };
 			const u32 newOffset{ block->ComponentOffsets[cid] + componentSize * newRow };
 			memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, componentSize);
+			memset(block->ComponentData + oldOffset, 0, component::GetComponentSize(cid));
 		}
 
 		Entity movedEntity{ block->Entities[newRow] };
-		entityDatas[id::Index(movedEntity)].row = newRow;
+		_entityDatas[id::Index(movedEntity)].row = newRow;
 	}
 }
 
@@ -146,8 +153,8 @@ void
 MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlock)
 {
 	const Entity entity{ entityData.id };
-	const u32 oldRow{ entityData.row };
-	const u32 newRow{ newBlock->EntityCount };
+	const u16 oldRow{ entityData.row };
+	const u16 newRow{ newBlock->EntityCount };
 
 	// copy over component values
 	for (ComponentID cid : oldBlock->GetComponentView())
@@ -158,6 +165,7 @@ MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlo
 			const u32 oldOffset{ oldBlock->ComponentOffsets[cid] + componentSize * oldRow };
 			const u32 newOffset{ newBlock->ComponentOffsets[cid] + componentSize * newRow };
 			memcpy(newBlock->ComponentData + newOffset, oldBlock->ComponentData + oldOffset, component::GetComponentSize(cid));
+			memset(newBlock->ComponentData + oldOffset, 0, component::GetComponentSize(cid));
 		}
 	}
 
@@ -190,7 +198,7 @@ GetBlocksFromCet(const CetMask& querySignature)
 	Vec<EntityBlock*> result;
 	for (auto block : blocks)
 	{
-		if ((block->Signature & querySignature) == querySignature)
+		if ((block->Signature & querySignature) == querySignature && block->EntityCount > 0)
 		{
 			result.push_back(block);
 		}
@@ -204,12 +212,12 @@ GetEntityData(Entity id)
 {
 	assert(IsEntityAlive(id));
 	u32 entityIdx{ id::Index(id) };
-	assert(entityIdx < entityDatas.size());
-	return entityDatas[entityIdx];
+	assert(entityIdx < _entityDatas.size());
+	return _entityDatas[entityIdx];
 }
 const Vec<EntityData>& GetAllEntityData()
 {
-	return entityDatas;
+	return _entityDatas;
 }
 
 EntityData&
@@ -232,8 +240,8 @@ CreateEntity(const CetMask& signature)
 		matchingBlocks.emplace_back(b);
 	}
 
-	AddEntity(matchingBlocks, Entity{ (u32)entityDatas.size() }); // create a new entity with the next ID
-	return entityDatas.back();
+	AddEntity(matchingBlocks, Entity{ (u32)_entityDatas.size() }); // create a new entity with the next ID
+	return _entityDatas.back();
 }
 
 const Scene& 
@@ -312,6 +320,27 @@ GetSingleton(ecs::ComponentID withComponent)
 
 void
 AddComponents(EntityData& data, const CetMask& newSignature, EntityBlock* oldBlock)
+{
+	for (EntityBlock* b : blocks)
+	{
+		if (newSignature == b->Signature && b->EntityCount < b->Capacity) // match the whole signature not just a part of it
+		{
+			// move entity
+			//TODO: IMPLEMENT THIS
+			MigrateEntity(data, oldBlock, b);
+			return;
+		}
+	}
+
+	// if no matching block found, create a new one
+	EntityBlock* newBlock{ CreateBlock(GenerateCetLayout(newSignature)) };
+	Vec<EntityBlock*> b{};
+	b.emplace_back(newBlock);
+	MigrateEntity(data, oldBlock, newBlock);
+}
+
+void
+RemoveComponents(EntityData& data, const CetMask& newSignature, EntityBlock* oldBlock)
 {
 	for (EntityBlock* b : blocks)
 	{
@@ -428,12 +457,116 @@ bool
 IsEntityAlive(Entity id)
 {
 	// if the generation doesn't match, the entity had to die/never exist
-	return id::IsValid(id) && id::Generation(entityDatas[id::Index(id)].id) == id::Generation(id);
+	return id::IsValid(id) && id::Generation(_entityDatas[id::Index(id)].id) == id::Generation(id);
+}
+
+bool
+IsEntityEnabledIn(Entity entity)
+{
+	return _isEntityEnabled[id::Index(entity)];
 }
 
 void 
+EnableEntityIn(Entity entity)
+{
+	EntityData& data{ _entityDatas[id::Index(entity)] };
+	EntityBlock* const block{ data.block };
+	// move the entity to the last existing entity index
+	const u16 oldRow{ data.row };
+	const u16 newRow{ block->EntityCount };
+
+	if (oldRow != newRow)
+	{
+		assert(!id::IsValid(block->Entities[newRow]));
+		for (ComponentID cid : block->GetComponentView())
+		{
+			const u32 componentSize{ component::GetComponentSize(cid) };
+			const u32 oldOffset{ block->ComponentOffsets[cid] + componentSize * oldRow };
+			const u32 newOffset{ block->ComponentOffsets[cid] + componentSize * newRow };
+			memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, component::GetComponentSize(cid));
+			memset(block->ComponentData + oldOffset, 0, component::GetComponentSize(cid));
+		}
+		data.row = newRow;
+		block->Entities[newRow] = entity;
+	}
+
+	// remove from cache; not very elegant here might want to do sth
+	if (EntityHasComponent<component::RenderMesh>(entity))
+	{
+		ecs::component::RenderMesh& mesh{ GetEntityComponent<component::RenderMesh>(entity) };
+		const ecs::component::RenderMaterial& mat{ GetEntityComponent<component::RenderMaterial>(entity) };
+		mesh.RenderItemID = graphics::AddRenderItem(entity, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
+	}
+
+	block->LastEnabledIdx++;
+	block->EntityCount++;
+	assert(block->LastEnabledIdx < MAX_ENTITIES_PER_BLOCK);
+	_isEntityEnabled[id::Index(entity)] = true;
+}
+
+void 
+DisableEntityIn(Entity entity)
+{
+	EntityData& data{ _entityDatas[id::Index(entity)] };
+	EntityBlock* const block{ data.block };
+	// move the entity to the end of the block
+	const u16 oldRow{ data.row };
+	const u16 newRow{ block->LastEnabledIdx };
+	const u16 lastEntityRow{ block->EntityCount - 1u };
+
+	// remove from cache; not very elegant here might want to do sth
+	if (EntityHasComponent<component::RenderMesh>(entity))
+		graphics::RemoveRenderItem(GetEntityComponent<component::RenderMesh>(entity).RenderItemID);
+
+	if (oldRow < lastEntityRow)
+	{
+		// swap component values
+		const u32 componentBufferSize{ ecs::component::GET_BIGGEST_COMPONENT_SIZE };
+		u8* componentTempBuffer{ (u8*)_alloca(componentBufferSize) };
+
+		for (ComponentID cid : block->GetComponentView())
+		{
+			const u32 componentSize{ component::GetComponentSize(cid) };
+			const u32 e1Offset{ block->ComponentOffsets[cid] + componentSize * oldRow };
+			const u32 e2Offset{ block->ComponentOffsets[cid] + componentSize * lastEntityRow };
+			const u32 disabledOffset{ block->ComponentOffsets[cid] + componentSize * newRow };
+			memcpy(componentTempBuffer, block->ComponentData + e1Offset, component::GetComponentSize(cid));
+			memcpy(block->ComponentData + e1Offset, block->ComponentData + e2Offset, component::GetComponentSize(cid));
+			memcpy(block->ComponentData + disabledOffset, componentTempBuffer, component::GetComponentSize(cid));
+			memset(block->ComponentData + e2Offset, 0, component::GetComponentSize(cid));
+		}
+		ecs::Entity swappedEntity{ block->Entities[lastEntityRow] };
+		_entityDatas[id::Index(swappedEntity)].row = oldRow;
+		block->Entities[oldRow] = swappedEntity;
+		block->Entities[lastEntityRow] = ecs::Entity{ U32_INVALID_ID };
+	}
+	else
+	{
+		// the entity is last so don't need to swap, just move to disabled
+		for (ComponentID cid : block->GetComponentView())
+		{
+			const u32 componentSize{ component::GetComponentSize(cid) };
+			const u32 oldOffset{ block->ComponentOffsets[cid] + componentSize * oldRow };
+			const u32 newOffset{ block->ComponentOffsets[cid] + componentSize * newRow };
+			memcpy(block->ComponentData + newOffset, block->ComponentData + oldOffset, component::GetComponentSize(cid));
+			memset(block->ComponentData + oldOffset, 0, component::GetComponentSize(cid));
+		}
+		block->Entities[oldRow] = ecs::Entity{ U32_INVALID_ID };
+	}
+
+	data.row = newRow;
+	block->Entities[newRow] = entity;
+	assert(block->LastEnabledIdx > 0);
+	block->LastEnabledIdx--;
+	block->EntityCount--;
+	//_disabledEntitiesDatas.emplace_back(data);
+	_isEntityEnabled[id::Index(entity)] = false;
+}
+
+void
 RemoveEntity(Entity entity)
 {
+	TODO_("call the one with block");
 	assert(IsEntityAlive(entity));
 	u32 entityIdx{ id::Index(entity) };
 	//TODO:
@@ -445,7 +578,9 @@ UnloadScene()
 	transform::DeleteHierarchy();
 	for (EntityBlock* b : blocks) delete b;
 	blocks.clear();
-	entityDatas.clear();
+	_entityDatas.clear();
+	//_disabledEntityDatas.clear();
+	_isEntityEnabled.clear();
 	//TODO: for now its just an incremental id
 	scenes.emplace_back(Scene{ (u32)scenes.size() });
 	currentSceneIndex = (u32)scenes.size() - 1;

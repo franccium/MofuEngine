@@ -46,11 +46,26 @@ CetMask PreviewCetMaskPlusComponent(CetMask signature)
 	return signature;
 }
 
+template<IsComponent C>
+CetMask PreviewCetMaskMinusComponent(CetMask signature)
+{
+	signature.reset(component::ID<C>);
+	return signature;
+}
+
 template<IsComponent... C>
 CetMask PreviewCetMaskPlusComponents(CetMask signature)
 {
 	//TODO: AddComponents and AddComponent merged or not 
 	(signature.set(component::ID<C>), ...);
+	return signature;
+}
+
+template<IsComponent... C>
+CetMask PreviewCetMaskMinusComponents(CetMask signature)
+{
+	//TODO: AddComponents and AddComponent merged or not 
+	(signature.reset(component::ID<C>), ...);
 	return signature;
 }
 
@@ -84,6 +99,7 @@ EntityHasComponent(Entity e)
 }
 
 void AddComponents(EntityData& data, const CetMask& newSignature, EntityBlock* oldBlock);
+void RemoveComponents(EntityData& data, const CetMask& newSignature, EntityBlock* oldBlock);
 
 template<IsComponent... C>
 void
@@ -100,6 +116,23 @@ AddComponents(Entity entity)
 	};
 	
 	AddComponents(data, newSignature, oldBlock);
+}
+
+template<IsComponent... C>
+void
+RemoveComponents(Entity entity)
+{
+	assert(IsEntityAlive(entity));
+	EntityData& data{ GetEntityData(entity) };
+	EntityBlock* oldBlock{ data.block };
+	CetMask newSignature{ PreviewCetMaskMinusComponents<C...>(oldBlock->Signature) };
+	if (newSignature == oldBlock->Signature)
+	{
+		log::Info("ecs::scene::RemoveComponents: Entity didn't have these components");
+		return;
+	};
+
+	RemoveComponents(data, newSignature, oldBlock);
 }
 
 template<IsComponent C>
@@ -131,6 +164,10 @@ u32 GetEntityCount()
 	}
 	return count;
 }
+
+bool IsEntityEnabledIn(Entity entity);
+void EnableEntityIn(Entity entity);
+void DisableEntityIn(Entity entity);
 
 void RemoveEntity(Entity entity);
 void UnloadScene();

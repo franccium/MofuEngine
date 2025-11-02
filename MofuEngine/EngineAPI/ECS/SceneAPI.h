@@ -41,6 +41,27 @@ void AddComponent(Entity e)
 	AddEntityComponent<C>(e);
 }
 
+template<IsComponent C>
+void RemoveComponent(Entity e)
+{
+	RemoveComponents<C>(e);
+}
+
+inline bool IsEntityEnabled(Entity entity)
+{
+	return IsEntityEnabledIn(entity);
+}
+
+inline void EnableEntity(Entity e)
+{
+	EnableEntityIn(e);
+}
+
+inline void DisableEntity(Entity e)
+{
+	DisableEntityIn(e);
+}
+
 // NOTE: sometimes component list is known at compile time, like when spawning from the gamecode
 template<IsComponent... C>
 //void SpawnEntity(component::InitInfo* infos) // TODO: or whatever, maybe instead just a list of components but idk if that would work

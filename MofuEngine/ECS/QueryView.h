@@ -37,7 +37,7 @@ public:
 		Iterator& operator++()
 		{
 			++_index;
-			while (_currentBlock != _lastBlock && _index == (*_currentBlock)->EntityCount)
+			while (_currentBlock != _lastBlock && (_index == (*_currentBlock)->EntityCount || _index > (*_currentBlock)->LastEnabledIdx))
 			{
 				++_currentBlock;
 				_index = 0;

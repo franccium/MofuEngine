@@ -7,6 +7,7 @@
 #include "AssetInteraction.h"
 #include "Project/Project.h"
 #include "Content/EditorContentManager.h"
+#include "PhysicsEditor/PhysicsShapesInterface.h"
 
 namespace mofu::editor {
 namespace {
@@ -77,6 +78,10 @@ PrepareAddedComponent(ecs::ComponentID cid, ecs::Entity entity)
         material.MaterialID = content::GetDefaultMaterial();
         material.MaterialAsset = content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE;
         mat = material;
+        break;
+    }
+    case ecs::component::ID<ecs::component::Collider>:
+    {
         break;
     }
     default:
@@ -304,8 +309,9 @@ struct SceneHierarchy
         EntityTreeNode* node = selectedNode;
         if (node)
         {
-            ImGui::Text("%s", node->Name);
             ecs::Entity entity{ node->ID };
+            bool isEntityEnabled{ ecs::scene::IsEntityEnabled(entity) };
+            ImGui::Text("%s", node->Name);
             ImGui::TextDisabled("UID: 0x%08X", entity);
             ImGui::Separator();
 
@@ -327,6 +333,11 @@ struct SceneHierarchy
 
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
+                if (ImGui::Checkbox("Enabled", &isEntityEnabled))
+                {
+                    if (isEntityEnabled) ecs::scene::EnableEntity(entity);
+                    else ecs::scene::DisableEntity(entity);
+                }
                 if (ImGui::Button("+ Add Component"))
                     ImGui::OpenPopup("AddComponentPopup");
 
@@ -394,6 +405,13 @@ struct SceneHierarchy
                         ImGui::EndPopup();
                     }
                 }
+                if (ecs::scene::HasComponent<ecs::component::Collider>(entity))
+                {
+                    //TODO: move this somewhere 
+                    physics::shapes::DisplayMotionTypeOptions(entity);
+                    physics::shapes::DisplayColliderOptions(entity);
+                    physics::shapes::DisplayColliderEditor(entity);
+                }
 
                 if (ecs::scene::HasComponent<ecs::component::Parent>(entity))
                 {
@@ -456,19 +474,27 @@ struct SceneHierarchy
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         ImGui::PushID(node->ID);
-        ImGuiTreeNodeFlags tree_flags = ImGuiTreeNodeFlags_None;
-        tree_flags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-        tree_flags |= ImGuiTreeNodeFlags_NavLeftJumpsBackHere; // Left arrow support
-        tree_flags |= ImGuiTreeNodeFlags_SpanFullWidth; // Span full width for easier mouse reach
-        tree_flags |= ImGuiTreeNodeFlags_DrawLinesToNodes; // Always draw hierarchy outlines
+        ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_None;
+        treeFlags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+        treeFlags |= ImGuiTreeNodeFlags_NavLeftJumpsBackHere; // Left arrow support
+        treeFlags |= ImGuiTreeNodeFlags_SpanFullWidth; // Span full width for easier mouse reach
+        treeFlags |= ImGuiTreeNodeFlags_DrawLinesToNodes; // Always draw hierarchy outlines
         if (node == selectedNode)
-            tree_flags |= ImGuiTreeNodeFlags_Selected;
+            treeFlags |= ImGuiTreeNodeFlags_Selected;
         if (node->Children.Size == 0)
-            tree_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
-        bool node_open{ ImGui::TreeNodeEx("", tree_flags, "%s", node->Name) };
+            treeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
+
+        // make disabled entities names gray
+        const bool isEntityEnabled{ ecs::scene::IsEntityEnabled(node->ID) };
+        ImGui::PushStyleColor(ImGuiCol_Text, isEntityEnabled ? ImGui::GetStyleColorVec4(ImGuiCol_Text) : ImVec4{ 0.5f, 0.5f, 0.5f, 1.f });
+
+        const bool isNodeOpen{ ImGui::TreeNodeEx("", treeFlags, "%s", node->Name) };
+
+        ImGui::PopStyleColor();
         if (ImGui::IsItemFocused())
             selectedNode = node;
-        if (node_open)
+
+        if (isNodeOpen)
         {
             for (EntityTreeNode* child : node->Children)
                 DrawTreeNode(child);

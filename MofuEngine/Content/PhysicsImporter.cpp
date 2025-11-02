@@ -6,7 +6,7 @@ namespace mofu::content::physics {
 JPH::Ref<JPH::Shape>
 CreateJoltMeshFromVertices(Vec<v3>& vertices, const GeometryImportSettings& importSettings)
 {
-	if (!importSettings.IsStatic)
+	if (!importSettings.IsStatic || !importSettings.ColliderFromGeometry)
 	{
 		return nullptr;
 	}

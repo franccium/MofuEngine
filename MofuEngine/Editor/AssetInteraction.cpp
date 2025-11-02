@@ -17,6 +17,7 @@
 #include <stack>
 #include "Physics/BodyInterface.h"
 #include "Physics/PhysicsShapes.h"
+#include "Physics/PhysicsCore.h"
 
 namespace mofu::editor::assets {
 namespace {
@@ -24,6 +25,20 @@ void
 SerializeEntityHierarchy(YAML::Emitter& out, const Vec<ecs::Entity>& entities)
 {
 	ecs::Entity parent{ entities.front() };
+
+	//FIXME: test
+	if (ecs::scene::HasComponent<ecs::component::Collider>(parent))
+	{
+		TODO_("");
+		ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(parent) };
+		auto current{ content::assets::GetAsset(collider.ShapeAsset) };
+		const JPH::BodyID bodyId{ collider.BodyID };
+		JPH::BodyLockRead lock{ mofu::physics::core::PhysicsSystem().GetBodyLockInterface(), bodyId };
+		const JPH::Shape* shape{ lock.GetBody().GetShape() };
+		content::AssetHandle a{ physics::shapes::SaveShape(shape, current->ImportedFilePath) };
+		collider.ShapeAsset = a;
+	}
+
 	assert(ecs::scene::HasComponent<ecs::component::Parent>(parent));
 	//TODO: can use sth better for sure
 	std::stack<std::pair<id_t, u32>> lastParent{}; // pairs parent id to his index for deserialization

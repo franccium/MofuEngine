@@ -291,6 +291,9 @@
     <ClCompile Include="Physics\PhysicsShapes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\PhysicsEditor\PhysicsShapesInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -684,6 +687,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Physics\PhysicsShapes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\PhysicsEditor\PhysicsShapesInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

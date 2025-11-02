@@ -1008,8 +1008,6 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         }
     }
 
-
-
     // Editor UI
     {
         TracyD3D12ZoneC(tracyQueueContext, cmdListFXSetup, "Editor UI", tracy::Color::LightSkyBlue3);

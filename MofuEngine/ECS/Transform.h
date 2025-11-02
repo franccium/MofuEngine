@@ -97,6 +97,8 @@ struct StaticObject : Component // NOTE: for static mesh render optimisation, no
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] StaticObject& c)
 	{
+		ImGui::TableNextRow();
+		editor::ui::DisplayLabelT("Static Object");
 	}
 #endif
 };
@@ -106,6 +108,8 @@ struct DynamicObject : Component
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] DynamicObject& c)
 	{
+		ImGui::TableNextRow();
+		editor::ui::DisplayLabelT("Dynamic Object");
 	}
 #endif
 };

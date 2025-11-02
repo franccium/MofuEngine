@@ -29,10 +29,11 @@ struct CetLayout
 struct EntityBlock
 {
 	CetMask Signature;
+	u32 CetSize{ 0 };
 	u16 EntityCount{ 0 };
 	u16 Capacity{ 0 }; // up to 128, maybe less based on component size
-	u32 CetSize{ 0 };
 	u16 ComponentCount{};
+	u16 LastEnabledIdx{ MAX_ENTITIES_PER_BLOCK - 1 }; // disabling entities puts them at the end of the block, when processing entities, only process up to this index
 	ComponentID* ComponentIDs{};
 	Entity* Entities; // the first array in ComponentData
 	//id::generation_t* Generations;
@@ -62,7 +63,7 @@ struct EntityBlock
 struct EntityData
 {
 	EntityBlock* block{ nullptr };
-	u32 row{ 0 }; // row in the block
+	u16 row{ 0 }; // row in the block
 	u32 generation{ 0 };
 	Entity id{ id::INVALID_ID };
 };

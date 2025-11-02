@@ -23,7 +23,7 @@ JPH::BodyID _pickedBody{};
 ecs::Entity _cameraEntity{ U32_INVALID_ID };
 
 bool
-CastProbe(f32 probeLength, f32& outFraction, JPH::RVec3& outPos, JPH::BodyID& outBodyID)
+CastProbe(f32 probeLength, f32& outFraction, JPH::RVec3& outPos, JPH::BodyID& outBodyID, bool interacted)
 {
 	if(!ecs::scene::IsEntityAlive(_cameraEntity))
 		_cameraEntity = ecs::scene::GetSingletonEntity(ecs::component::ID<ecs::component::Camera>);
@@ -48,12 +48,30 @@ CastProbe(f32 probeLength, f32& outFraction, JPH::RVec3& outPos, JPH::BodyID& ou
 	outBodyID = res.mBodyID;
 	if (hit)
 	{
-		graphics::d3d12::debug::GetDebugRenderer()->DrawMarker(outPos, JPH::Color::sYellow, 0.1f);
-		JPH::BodyLockRead lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), outBodyID};
-		_pickedEntity = (ecs::Entity)lock.GetBody().GetUserData();
 
-		//const ecs::component::LocalTransform& lt{ ecs::scene::GetComponent<ecs::component::LocalTransform>(_pickedEntity) };
-		//graphics::d3d12::debug::DrawBodyShape(lock.GetBody().GetShape(), physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, lock.GetBody().GetShape()), lt.Scale.Vec3());
+		auto renderer{ graphics::d3d12::debug::GetDebugRenderer() };
+		//renderer->DrawMarker(outPos, JPH::Color::sYellow, 0.1f);
+		JPH::BodyLockRead lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), outBodyID};
+		if (lock.Succeeded())
+		{
+			const JPH::Body& hitBody{ lock.GetBody() };
+			if (interacted)
+			{
+				_pickedEntity = (ecs::Entity)hitBody.GetUserData();
+			}
+
+			JPH::Vec3 normal{ hitBody.GetWorldSpaceSurfaceNormal(res.mSubShapeID2, outPos) };
+			renderer->DrawArrow(outPos, outPos + normal, JPH::Color::sDarkBlue, 0.01f);
+			JPH::Vec3 tangent{ normal.GetNormalizedPerpendicular() };
+			JPH::Vec3 bitangent{ normal.Cross(tangent) };
+
+			renderer->DrawLine(outPos - 0.1f * tangent, outPos + 0.1f * tangent, JPH::Color::sRed);
+			renderer->DrawLine(outPos - 0.1f * bitangent, outPos + 0.1f * bitangent, JPH::Color::sYellow);
+
+			JPH::Shape::SupportingFace supportingFace;
+			hitBody.GetTransformedShape().GetSupportingFace(res.mSubShapeID2, -normal, JPH::Vec3::sZero(), supportingFace);
+			renderer->DrawWirePolygon(JPH::RMat44::sZero(), supportingFace, JPH::Color::sDarkOrange, 0.01f);
+		}
 	}
 	else
 	{
@@ -67,28 +85,23 @@ CastProbe(f32 probeLength, f32& outFraction, JPH::RVec3& outPos, JPH::BodyID& ou
 void 
 UpdateObjectPickerProbe()
 {
-	if (input::WasKeyPressed(input::Keybinds::Editor.PickObject))
-	{
-		JPH::RVec3 hitPos{};
-		JPH::BodyID body{};
-		f32 fraction{};
-		f32 probeLength{ 100.f };
-		if (CastProbe(probeLength, fraction, hitPos, body))
-		{
-			log::Info("Hit Body: %u", body.GetIndex());
-		}
-	}
+	const bool interacted{ input::WasKeyPressed(input::Keybinds::Editor.PickObject) };
+	JPH::RVec3 hitPos{};
+	JPH::BodyID body{};
+	f32 fraction{};
+	f32 probeLength{ 100.f };
+	CastProbe(probeLength, fraction, hitPos, body, interacted);
 
 	if (ecs::scene::IsEntityAlive(_pickedEntity))
 	{
-		/*const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(_pickedEntity) };
-		ecs::component::Collider col{ ecs::scene::GetEntityComponent<ecs::component::Collider>(_pickedEntity) };
-		auto shape{ physics::core::PhysicsSystem().GetBodyInterface().GetShape(col.BodyID).GetPtr() };
-		JPH::AABox box{ shape->GetLocalBounds() };
-		JPH::Color color{ JPH::Color{ JPH::Color::sRed } };
-		graphics::d3d12::debug::GetDebugRenderer()->DrawWireBox(
-			JPH::RMat44::sRotationTranslation(lt.Rotation, lt.Position.Vec3()) * JPH::Mat44::sScale(lt.Scale.Vec3()),
-			shape->GetLocalBounds(), color);*/
+		const ecs::component::LocalTransform& lt{ ecs::scene::GetComponent<ecs::component::LocalTransform>(_pickedEntity) };
+		assert(ecs::scene::HasComponent<ecs::component::Collider>(_pickedEntity));
+		JPH::BodyLockRead lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), ecs::scene::GetComponent<ecs::component::Collider>(_pickedEntity).BodyID };
+		if (lock.Succeeded())
+		{
+			const JPH::Shape* const shape{ lock.GetBody().GetShape() };
+			//graphics::d3d12::debug::DrawBodyShape(shape, physics::GetCenterOfMassTransform(lt.Position.Vec3(), lt.Rotation, shape), lt.Scale.Vec3());
+		}
 	}
 }
 

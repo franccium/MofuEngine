@@ -309,6 +309,8 @@ GetSrvGPUDescriptorHandle()
 	return renderTexture.SRV().gpu;
 }
 
+D3D12_CPU_DESCRIPTOR_HANDLE GetPostProcessSurfaceRTV() { return renderTexture.RTV(0); }
+
 void
 ResetShaders(bool debug)
 {
