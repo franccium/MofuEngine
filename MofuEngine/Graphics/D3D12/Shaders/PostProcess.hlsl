@@ -1,5 +1,6 @@
 
 #include "Common.hlsli"
+#include "PostProcessing/TonemapGT7.hlsl"
 
 #ifdef DEBUG
 struct DebugConstants
@@ -29,6 +30,29 @@ ConstantBuffer<DebugConstants> DebugOptions : register(b2, space0);
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
 
+// sRGB OETF
+float3 LinearToSRGB(float3 x)
+{
+    return select((x <= 0.0031308f), x * 12.92f, 1.055f * pow(x, 1.0f / 2.4f) - 0.055f);
+}
+// PQ inverse EOTF
+float3 LinearToPQ(float3 lin)
+{
+    const float m1 = 0.1593017578125f;
+    const float m2 = 78.84375f * EXPONENT_SCALE_FACTOR;
+    const float c1 = 0.8359375f;
+    const float c2 = 18.8515625f;
+    const float c3 = 18.6875f;
+    const float pqC = 10000.0f;
+
+    float3 physical = FrameBufferValueToPhysical(lin);
+    float3 y = physical / pqC;
+    float3 ym = pow(y, m1);
+    float3 num = c1 * c2 * ym;
+    float3 den = 1.f + c3 * ym;
+    return exp2(m2 * (log2(num) - log2(den)));
+}
+
 #if RAYTRACING
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
@@ -43,6 +67,7 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
     Texture2D gpassDepth = ResourceDescriptorHeap[ShaderParams.GPassDepthBufferIndex];
+    float3 color;
     float depth = gpassDepth[Position.xy].r;
     if (depth > 0.f)
     {
@@ -70,7 +95,6 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
             color = texture[Position.xy].aaa;
         }
         color = saturate(color);
-        return float4(color, 1.f);
 #else
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
         return float4(gpassMain[Position.xy].rgb, 1.f);
@@ -81,8 +105,19 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         float4 clip = float4(2.f * UV.x - 1.f, -2.f * UV.y + 1.f, 0.f, 1.f);
         float3 view = mul(GlobalData.InvProjection, clip).xyz;
         float3 direction = mul(view, (float3x3) GlobalData.View); // we swap the order or operations so the view matrix is transposed, since rotation is orthogonal, this makes it inverse view
-        return TextureCube( ResourceDescriptorHeap[GlobalData.AmbientLight.DiffuseSrvIndex])
-            .SampleLevel(LinearSampler, direction, 0.1f) * GlobalData.AmbientLight.Intensity;
+        color = TextureCube( ResourceDescriptorHeap[GlobalData.SkyboxSrvIndex])
+            .SampleLevel(LinearSampler, direction, 0.1f).xyz * GlobalData.AmbientLight.Intensity;
     }
+    
+#if APPLY_TONEMAPPING
+    color = ApplyTonemap(color);
+#if HDR
+    color = LinearToPQ(color);
+#else
+    color = LinearToSRGB(Color);
+#endif
+#endif
+    
+    return float4(color, 1.f);
 }
 #endif

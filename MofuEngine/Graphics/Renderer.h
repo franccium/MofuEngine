@@ -207,7 +207,7 @@ struct AmbientLightInitInfo
 	id_t DiffuseTextureID{ id::INVALID_ID };
 	id_t SpecularTextureID{ id::INVALID_ID };
 	id_t BRDFLutTextureID{ id::INVALID_ID };
-	u32 LightSetIdx{ id::INVALID_ID };
+	id_t SkyboxTextureID{ id::INVALID_ID };
 };
 
 void SetCurrentFrameInfo(FrameInfo info);

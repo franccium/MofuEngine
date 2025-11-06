@@ -19,6 +19,15 @@ struct D3D12FrameInfo
 	f32 DeltaTime{ 16.7f };
 };
 
+namespace info {
+struct DisplayInfo
+{
+	DXGI_COLOR_SPACE_TYPE ColorSpaceType;
+	f32 MinLuminance;
+	f32 MaxLuminance;
+};
+}
+
 }
 
 namespace mofu::graphics::d3d12::core {
@@ -81,4 +90,6 @@ u32 SurfaceWidth(surface_id id);
 u32 SurfaceHeight(surface_id id);
 
 void OnShadersRecompiled(EngineShader::ID shaderID);
+
+info::DisplayInfo GetDisplayInfo();
 }

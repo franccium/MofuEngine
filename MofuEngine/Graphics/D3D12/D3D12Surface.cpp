@@ -18,7 +18,8 @@ D3D12Surface::CreateSwapChain(DXGIFactory* factory, ID3D12CommandQueue* cmdQueue
 {
     assert(factory && cmdQueue);
     Release();
-
+    constexpr bool VSYNC_ENABLED{ false };
+    
     if (SUCCEEDED(factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &_allowTearing, sizeof(BOOL))))
         _presentFlags = DXGI_PRESENT_ALLOW_TEARING;
 

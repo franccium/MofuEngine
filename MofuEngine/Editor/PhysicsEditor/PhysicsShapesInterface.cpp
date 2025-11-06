@@ -148,6 +148,7 @@ DisplayColliderEditor(ecs::Entity entity)
     }
     JPH::BodyLockRead lock{ mofu::physics::core::PhysicsSystem().GetBodyLockInterface(), bodyId };
     const JPH::Shape* shape{ lock.GetBody().GetShape() };
+    JPH::Shape::Stats stats{ shape->GetStats() };
 
     switch (shape->GetSubType())
     {

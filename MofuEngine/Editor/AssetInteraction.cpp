@@ -565,7 +565,7 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		mesh.RenderItemID = graphics::AddRenderItem(c.entity, c.Mesh.MeshID, c.Material.MaterialCount, c.Material.MaterialID);
 		editor::AddEntityToSceneView(c.entity);
 		//FIXME: has to be there cause i add entity to transform hierarchy in AddEntityToSceneView() which makes no sense; cant migrate the entity because of that; think of creating some buffer for the new entity before adding it
-		if (_joltMeshShapes[entityIdx].GetPtr() != nullptr)
+		if (!_joltMeshShapes.empty() && _joltMeshShapes[entityIdx].GetPtr() != nullptr)
 		{
 			if(_isStaticBody)
 				JPH::BodyID bodyID{ physics::AddStaticBody(_joltMeshShapes[entityIdx], c.entity) };
@@ -661,9 +661,14 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 		_joltShapeAssets.resize(_joltMeshShapes.size());
 		for (u32 i{ 0 }; i < _joltMeshShapes.size(); ++i)
 		{
+			if (!_joltMeshShapes[i])
+			{
+				_joltShapeAssets[i] = content::INVALID_HANDLE;
+				continue;
+			}
 			std::filesystem::path savePath{ shapesBasePath };
 			char filename[32]{};
-			snprintf(filename, 32, "%u_%u.ps", _meshAssets[0], i);
+			snprintf(filename, 32, "%lu_col%u.ps", _names[0], i);
 			savePath.append(filename);
 			_joltShapeAssets[i] = physics::shapes::SaveShape(_joltMeshShapes[i], savePath);
 		}

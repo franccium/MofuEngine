@@ -17,6 +17,7 @@ struct FXRootParameterIndices
 	{
 		GlobalShaderData = 0,
 		RootConstants,
+		GTTonemapCurve,
 		//DescriptorTable,
 
 		Count
@@ -46,6 +47,38 @@ ID3D12PipelineState* fxPSO{ nullptr };
 u32v2 currentDimensions{ 0, 0 };
 D3D12RenderTexture renderTexture{};
 constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
+
+struct GT7ToneMapCurve
+{
+	float PeakIntensity;
+	float Alpha;
+	float MidPoint;
+	float LinearSection;
+	float ToeStrength;
+	float kA;
+	float kB;
+	float kC;
+
+	void Initialize(float monitorIntensity, float alpha, float grayPoint, float linearSection, float toeStrength)
+	{
+		PeakIntensity = monitorIntensity;
+		Alpha = alpha;
+		MidPoint = grayPoint;
+		LinearSection = linearSection;
+		ToeStrength = toeStrength;
+
+		float k = (linearSection - 1.f) / (alpha - 1.f);
+		kA = PeakIntensity * linearSection + PeakIntensity * k;
+		kB = -PeakIntensity * k * std::expf(linearSection / k);
+		kC = -1.0f / (k * PeakIntensity);
+	}
+};
+GT7ToneMapCurve _tonemapCurve{};
+#define HDR 0
+constexpr f32 GRAN_TURISMO_SDR_PAPER_WHITE{ 250.0f };
+constexpr f32 REFERENCE_LUMINANCE{ 100.0f };
+constexpr f32 PhysicalToFrameBufferValue(f32 v) { return v / REFERENCE_LUMINANCE; }
+
 
 void
 CreateDebugRootSignature()
@@ -124,6 +157,7 @@ CreateRootSignature()
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices::Count]{};
 	parameters[FXRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
 	parameters[FXRootParameterIndices::RootConstants].AsConstants(4, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
 	struct D3D12_STATIC_SAMPLER_DESC samplers[]
@@ -200,6 +234,17 @@ CreateImGuiPresentableSRV(u32v2 dimensions)
 	NAME_D3D12_OBJECT(renderTexture.Resource(), L"Post Processing Buffer");
 }
 
+void 
+InitializeEffects()
+{
+#if HDR
+	info::DisplayInfo displayInfo{ core::GetDisplayInfo() };
+	_tonemapCurve.Initialize(PhysicalToFrameBufferValue(displayInfo.MaxLuminance), 0.25f, 0.538f, 0.444f, 1.280f);
+#else
+	_tonemapCurve.Initialize(PhysicalToFrameBufferValue(GRAN_TURISMO_SDR_PAPER_WHITE), 0.25f, 0.538f, 0.444f, 1.280f);
+#endif
+}
+
 } // anonymous namespace
 
 void
@@ -217,6 +262,7 @@ SetBufferSize(u32v2 size)
 bool 
 Initialize()
 {
+	InitializeEffects();
 	if constexpr (CREATE_DEBUG_PSO_AT_LAUNCH)
 	{
 		CreateDebugRootSignature();
@@ -271,6 +317,9 @@ AddTransitionsPostPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 
 void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, D3D12_CPU_DESCRIPTOR_HANDLE rtv)
 {
+	GT7ToneMapCurve* curveData{ core::CBuffer().AllocateSpace<GT7ToneMapCurve>() };
+	memcpy(curveData, &_tonemapCurve, sizeof(GT7ToneMapCurve));
+
 	cmdList->SetGraphicsRootSignature(fxRootSig);
 	cmdList->SetPipelineState(fxPSO);
 
@@ -286,6 +335,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, 1);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, 2);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, 3);
+	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
 #endif
 	if (fxRootSig == fxRootSig_Debug)
 	{

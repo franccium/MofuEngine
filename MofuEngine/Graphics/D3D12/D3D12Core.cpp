@@ -50,6 +50,8 @@ u64 _currentGPUFrame{ 0 };
 bool _rtUpdateRequested{ false };
 bool _physicsCleared{ false };
 
+info::DisplayInfo _displayInfo{};
+
 class D3D12Command
 {
 public:
@@ -410,7 +412,8 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
     data.DeltaTime = deltaTime;
     data.DirectionalLightsCount = graphics::light::GetDirectionalLightsCount(info.LightSetIdx);
     data.AmbientLight = graphics::light::GetAmbientLight(info.LightSetIdx);
-    
+    data.SkyboxSrvIndex = graphics::light::GetLightSet(info.LightSetIdx).SkyboxSrvIndex;
+
     hlsl::GlobalShaderData* const shaderData{ cbuffer.AllocateSpace<hlsl::GlobalShaderData>() };
     memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
 
@@ -497,6 +500,24 @@ Initialize()
         new (&constantBuffers[i]) ConstantBuffer(ConstantBuffer::DefaultInitInfo(CONSTANT_BUFFER_SIZE));
         NAME_D3D12_OBJECT_INDEXED(constantBuffers[i].Buffer(), i, L"Global Constant Buffer");
         if (!constantBuffers[i].Buffer()) return InitializeFailed();
+    }
+
+    ComPtr<IDXGIOutput> output;
+    ComPtr<IDXGIOutput6> output6;
+    DXGI_OUTPUT_DESC1 outputDesc{};
+    for (u32 i{ 0 }; mainAdapter->EnumOutputs(i, &output) != DXGI_ERROR_NOT_FOUND; ++i)
+    {
+        HRESULT hr = output->QueryInterface(IID_PPV_ARGS(&output6));
+        if (SUCCEEDED(hr))
+        {
+            hr = output6->GetDesc1(&outputDesc);
+            if (SUCCEEDED(hr))
+            {
+                _displayInfo.ColorSpaceType = outputDesc.ColorSpace;
+                _displayInfo.MinLuminance = outputDesc.MinLuminance;
+                _displayInfo.MaxLuminance = outputDesc.MaxLuminance;
+            }
+        }
     }
 
     if (!InitializeModules()) return InitializeFailed();
@@ -1113,5 +1134,7 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
             break;
     }
 }
+
+info::DisplayInfo GetDisplayInfo() { return _displayInfo; }
 
 }

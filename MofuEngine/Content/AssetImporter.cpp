@@ -493,7 +493,8 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 			}
 		}
 
-		state.JoltMeshShapes.emplace_back(physics::CreateJoltMeshFromVertices(vertexPositions, state.ImportSettings));
+		if(state.ImportSettings.ColliderFromGeometry) 
+			state.JoltMeshShapes.emplace_back(physics::CreateJoltMeshFromVertices(vertexPositions, state.ImportSettings));
 
 		if (m->vertex_tangent.exists && !state.ImportSettings.CalculateTangents)
 		{

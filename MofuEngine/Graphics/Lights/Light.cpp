@@ -289,10 +289,11 @@ AddLightToLightSet(u32 lightSetIdx, ecs::Entity lightEntity, LightType::Type typ
 void 
 AddAmbientLight(u32 lightSetIdx, AmbientLightInitInfo ambientInfo)
 {
-	u32 textureIndices[3]{};
-	graphics::GetDescriptorIndices(&ambientInfo.DiffuseTextureID, 3, &textureIndices[0]);
+	u32 textureIndices[4]{};
+	graphics::GetDescriptorIndices(&ambientInfo.DiffuseTextureID, 4, &textureIndices[0]);
 	LightSet& set{ lightSets[lightSetIdx] };
 	set.AmbientLight = { ambientInfo.Intensity, textureIndices[0], textureIndices[1], textureIndices[2] };
+	set.SkyboxSrvIndex = textureIndices[3];
 }
 
 const LightSet&

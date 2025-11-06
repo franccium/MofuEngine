@@ -238,10 +238,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_nml.png
   ImportedFilePath: Projects/TestProject\Resources\cloth_nml.tex
-1753554833459391681:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_baseColor.jpeg
-  ImportedFilePath: Projects/TestProject\Resources\default_baseColor.tex
+5497584479707962376:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel018.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel018.mat
 4955251347499960139:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\textures\Body_Metal.tga.png
@@ -254,6 +254,10 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest234.mat
   ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest234.mat
+1753554833459391681:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_baseColor.jpeg
+  ImportedFilePath: Projects/TestProject\Resources\default_baseColor.tex
 4626754421643682255:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\trim_nml.png
@@ -722,6 +726,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg_tex\Eye_N.tga.png
   ImportedFilePath: ""
+3685096603576579786:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel016.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel016.mat
 7452648747218902323:
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest34.mat
@@ -1078,6 +1086,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\table\wooden_picnic_table_top_diff_1k.png
   ImportedFilePath: ""
+13285145552624930184:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel011.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel011.mat
 16513922048355501179:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\table\wooden_picnic_table_top_metal_1k.png
@@ -1266,6 +1278,10 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\momon_cloth.mat
   ImportedFilePath: Projects/TestProject\Resources\momon_cloth.mat
+624719893213618970:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel013.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel013.mat
 3452767978133987451:
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\Knight_USD_0024.mat
@@ -1610,3 +1626,31 @@
   Type: 3
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
+1764144365702082788:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\LakesideSky.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Textures\LakesideSky.tex
+11635240773568221503:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\amomonha\steel01.fbx
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\steel01.mesh
+1128775828606740038:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel010.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel010.mat
+16995270494225679114:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel012.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel012.mat
+5239986272468344222:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel014.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel014.mat
+17050319042746405501:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel015.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel015.mat
+10528337484916005916:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Materials\steel017.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\steel017.mat

@@ -135,6 +135,7 @@ Vec<id_t> loadedMaterialIDs{};
 u64 diffuseIBLHandle{ 2947166161171442696 };
 u64 specularIBLHandle{ 15753239102389846408 };
 u64 brdfLutHandle{ 6591591707561885939 };
+u64 skyboxHandle{ 1764144365702082788 };
 
 constexpr f32 INV_RAND_MAX{ 1.f / RAND_MAX };
 f32 Random(f32 min = 0.f) { return std::max(min, rand() * INV_RAND_MAX); }
@@ -267,7 +268,8 @@ AddLights()
 	id_t diffuseIBL{ content::assets::CreateResourceFromHandle(diffuseIBLHandle) };
 	id_t specularIBL{ content::assets::CreateResourceFromHandle(specularIBLHandle) };
 	id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(brdfLutHandle) };
-	graphics::light::AddAmbientLight(lightSetOne, { ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL });
+	id_t SkyboxHandle{ content::assets::CreateResourceFromHandle(skyboxHandle) };
+	graphics::light::AddAmbientLight(lightSetOne, { ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL, SkyboxHandle });
 
 	ecs::component::LocalTransform lt{};
 	ecs::component::WorldTransform wt{};

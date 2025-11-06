@@ -23,6 +23,7 @@ struct GlobalShaderData
     float ViewHeight;
     
     AmbientLightParameters AmbientLight;
+    uint SkyboxSrvIndex;
     uint DirectionalLightsCount;
     
     float DeltaTime;
