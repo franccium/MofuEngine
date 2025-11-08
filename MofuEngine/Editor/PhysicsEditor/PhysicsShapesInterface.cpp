@@ -147,6 +147,11 @@ DisplayColliderEditor(ecs::Entity entity)
         TODO_("Make writable etc");
     }
     JPH::BodyLockRead lock{ mofu::physics::core::PhysicsSystem().GetBodyLockInterface(), bodyId };
+    if (!lock.Succeeded())
+    {
+        ImGui::Text("Can't lock the body for reading");
+        return;
+    }
     const JPH::Shape* shape{ lock.GetBody().GetShape() };
     JPH::Shape::Stats stats{ shape->GetStats() };
 

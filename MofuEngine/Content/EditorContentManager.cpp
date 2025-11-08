@@ -226,8 +226,13 @@ GetResourceFromAsset(AssetHandle handle, AssetType::type type, bool createIfNotF
 		id_t id{ result->second };
 		return id;
 	}
-	log::Warn("No existing resource for handle %u, creating one...", handle.id);
-	return createIfNotFound ? CreateResourceFromHandle(handle) : id::INVALID_ID;
+
+	if (createIfNotFound)
+	{
+		log::Warn("No existing resource for handle %u, creating one...", handle.id);
+		return CreateResourceFromHandle(handle);
+	}
+	return id::INVALID_ID;
 }
 
 Vec<id_t>
@@ -243,6 +248,10 @@ CreateResourceFromHandle(AssetHandle handle)
 {
 	AssetPtr asset{ GetAsset(handle) };
 	assert(asset);
+	const AssetType::type type{ asset->Type };
+	id_t existingResource{ GetResourceFromAsset(handle, type, false) };
+	if (id::IsValid(existingResource)) return existingResource;
+
 	if (!std::filesystem::exists(asset->ImportedFilePath))
 	{
 		log::Error("CreateResourceFromHandle: Asset not imported");
@@ -252,7 +261,6 @@ CreateResourceFromHandle(AssetHandle handle)
 
 	std::unique_ptr<u8[]> buffer{};
 	u64 size{};
-	AssetType::type type{ asset->Type };
 	content::ReadAssetFileNoVersion(asset->ImportedFilePath, buffer, size, type);
 	assert(buffer.get());
 
@@ -430,6 +438,23 @@ GetTextureMetadata(const std::filesystem::path& path, u64& outTextureSize, std::
 	file.read(reinterpret_cast<char*>(textureBuffer.get()), outTextureSize);
 }
 
+void 
+GetGeometryRelatedTextures(AssetHandle geometryHandle, Vec<AssetHandle>& outHandles)
+{
+	assert(IsValid(geometryHandle));
+	AssetPtr geometryAsset{ GetAsset(geometryHandle) };
+	assert(std::filesystem::exists(geometryAsset->GetMetadataPath()));
+	u64 size{};
+	std::unique_ptr<u8[]> buffer{};
+	ReadFileToByteBuffer(geometryAsset->GetMetadataPath(), buffer, size);
+
+	util::BlobStreamReader reader{ buffer.get() };
+	while (reader.Offset() < size)
+	{
+		outHandles.emplace_back(reader.Read<u64>());
+	}
+	assert(reader.Offset() == size);
+}
 
 void
 LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh& mesh, ecs::component::RenderMaterial& material)

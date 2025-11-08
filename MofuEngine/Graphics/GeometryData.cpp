@@ -618,6 +618,7 @@ PackGeometryDataForEditor(const MeshGroup& group, MeshGroupData& data, std::file
 	assert(blob.Offset() == groupSize);
 	//TODO: refactor
 	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
+	assert(file);
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);

@@ -131,6 +131,16 @@ constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET {
 	".sk",
 };
 
+constexpr std::array GET_ALLOWED_TEXTURE_EXTENSIONS{ ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".dds", ".hdr" };
+constexpr bool IsAllowedTextureExtension(std::string_view e) 
+{ 
+	for (const char* c : GET_ALLOWED_TEXTURE_EXTENSIONS)
+	{
+		if (e == c) return true;
+	}
+	return false;
+}
+
 constexpr const char* PREFAB_FILE_EXTENSION{ ".pre" };
 constexpr const char* SCENE_FILE_EXTENSION{ ".sc" };
 

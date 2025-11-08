@@ -37,6 +37,20 @@ struct FXRootParameterIndices_Debug
 	};
 };
 
+struct PostProcessRootConstants
+{
+	enum : u32
+	{
+		GPassMainBufferIndex,
+		GPassDepthBufferIndex,
+		NormalBufferIndex,
+		RTBufferIndex,
+
+		DoTonemap,
+		Count
+	};
+};
+
 ID3D12RootSignature* fxRootSig_Default{ nullptr };
 ID3D12PipelineState* fxPSO_Default{ nullptr };
 ID3D12RootSignature* fxRootSig_Debug{ nullptr };
@@ -94,7 +108,7 @@ CreateDebugRootSignature()
 
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices_Debug::Count]{};
 	parameters[FXRootParameterIndices_Debug::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-	parameters[FXRootParameterIndices_Debug::RootConstants].AsConstants(4, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices_Debug::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	parameters[FXRootParameterIndices_Debug::DebugConstants].AsConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
@@ -156,7 +170,7 @@ CreateRootSignature()
 
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices::Count]{};
 	parameters[FXRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-	parameters[FXRootParameterIndices::RootConstants].AsConstants(4, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
@@ -335,6 +349,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, 1);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, 2);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, 3);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, 4);
 	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
 #endif
 	if (fxRootSig == fxRootSig_Debug)

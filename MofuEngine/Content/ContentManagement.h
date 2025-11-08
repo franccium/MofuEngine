@@ -50,5 +50,5 @@ void SaveGeometry(const MeshGroupData& data, std::filesystem::path path);
 
 [[nodiscard]] id_t CreateResourceFromAsset(std::filesystem::path path, AssetType::type assetType);
 
-[[nodiscard]] id_t CreateMaterial(graphics::MaterialInitInfo initInfo);
+[[nodiscard]] id_t CreateMaterial(graphics::MaterialInitInfo initInfo, AssetHandle handle);
 }

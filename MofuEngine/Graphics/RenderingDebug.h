@@ -13,6 +13,8 @@ enum DebugMode : u32
 };
 struct Settings
 {
+	//TODO: should have a bindless constant buffer with all settings relevant to shaders
+	bool ApplyTonemap{ false };
 	bool EnablePhysicsDebugRendering{ true };
 	bool DrawPhysicsWorldBounds{ false };
 	bool RenderAllPhysicsShapes{ false };

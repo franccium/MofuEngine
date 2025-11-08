@@ -84,6 +84,7 @@ toWstring(const char* cstr)
 inline void
 ListFilesByExtension(const char* extension, const std::filesystem::path fromFolder, Vec<std::string>& outFiles)
 {
+	assert(std::filesystem::exists(fromFolder));
 	outFiles.clear();
 	for (auto& entry : std::filesystem::directory_iterator(fromFolder))
 	{
@@ -97,6 +98,7 @@ ListFilesByExtension(const char* extension, const std::filesystem::path fromFold
 inline void
 ListFilesByExtensionRec(const char* extension, const std::filesystem::path fromFolder, Vec<std::string>& outFiles)
 {
+	assert(std::filesystem::exists(fromFolder));
 	outFiles.clear();
 	for (auto& entry : std::filesystem::recursive_directory_iterator(fromFolder))
 	{
@@ -110,6 +112,7 @@ ListFilesByExtensionRec(const char* extension, const std::filesystem::path fromF
 inline bool
 ReadFileToByteBuffer(std::filesystem::path path, std::unique_ptr<u8[]>& outData, u64& outFileSize)
 {
+	assert(std::filesystem::exists(path));
 	if (!std::filesystem::exists(path)) return false;
 	outFileSize = std::filesystem::file_size(path);
 	assert(outFileSize != 0);
@@ -127,6 +130,7 @@ ReadFileToByteBuffer(std::filesystem::path path, std::unique_ptr<u8[]>& outData,
 inline std::filesystem::path
 CreateUniqueDuplicateName(const std::filesystem::path& originalPath)
 {
+	assert(std::filesystem::exists(originalPath));
 	std::filesystem::path duplicatePath{ originalPath };
 	std::string stem{ duplicatePath.stem().string() };
 	std::string extension{ duplicatePath.extension().string() };

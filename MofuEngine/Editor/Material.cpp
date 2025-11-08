@@ -66,6 +66,7 @@ PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& t
 
 	assert(targetPath.extension() == ".mat");
 	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
+	assert(file);
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
@@ -74,10 +75,11 @@ PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& t
 void
 LoadMaterialAsset(EditorMaterial& outMaterial, const std::filesystem::path& path)
 {
+	assert(std::filesystem::exists(path));
 	std::unique_ptr<u8[]> buffer{};
 	u64 size{};
 	content::ReadAssetFileNoVersion(path, buffer, size, content::AssetType::Material);
-	assert(buffer.get());
+	assert(buffer.get() && size);
 
 	util::BlobStreamReader reader{ buffer.get() };
 

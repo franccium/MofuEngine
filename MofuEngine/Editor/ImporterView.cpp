@@ -172,7 +172,7 @@ RenderImportSummary()
 
 	ImGui::Begin("FBX Import Summary", &isOpen);
 
-	ImGui::Text("File: %s", fbxState.FbxFile.data());
+	ImGui::Text("File: %s", fbxState.ModelResourcePath.string().data());
 	if (fbxState.Errors)
 	{
 		ui::PushTextColor(ui::Color::RED);

@@ -19,6 +19,7 @@ public:
 	void ExtractMaterials();
 
 private:
+	std::filesystem::path _resourceBasePath;
 	bool _isStaticBody;
 	std::string _name;
 	std::filesystem::path _geometryPath;

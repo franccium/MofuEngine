@@ -28,7 +28,9 @@ struct FBXImportState
 	};
 	u32 Errors;
 
-	std::string FbxFile;
+	std::filesystem::path ModelResourcePath;
+	std::filesystem::path ModelSourcePath;
+	std::string Name;
 	std::filesystem::path OutModelFile;
 	Vec<LodGroup> LodGroups;
 	Vec<editor::material::EditorMaterial> Materials;
@@ -37,9 +39,10 @@ struct FBXImportState
 	Vec<std::string> ImageFiles;
 	Vec<std::string> MeshNames;
 	Vec<JPH::Ref<JPH::Shape>> JoltMeshShapes;
+	Vec<AssetHandle> AllTextureHandles;
 };
 
-void ImportAsset(std::filesystem::path path);
+[[nodiscard]] AssetHandle ImportAsset(std::filesystem::path path, const std::filesystem::path& resourcePath);
 void ImportAsset(AssetHandle handle);
 void ReimportTexture(texture::TextureData& data, std::filesystem::path originalPath);
 

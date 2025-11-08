@@ -110,6 +110,7 @@ PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPat
 	}
 
 	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
+	assert(file);
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
@@ -128,6 +129,7 @@ SaveIcon(texture::TextureData& data, std::filesystem::path targetPath)
 	writer.WriteBytes(icon, iconSize);
 
 	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
+	assert(file);
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);
@@ -190,6 +192,7 @@ PackTextureForEngine(texture::TextureData& data, std::filesystem::path targetPat
     }
 
 	std::ofstream file{ targetPath, std::ios::out | std::ios::binary };
+	assert(file);
 	if (!file) return;
 
 	file.write(reinterpret_cast<const char*>(buffer), bufferSize);

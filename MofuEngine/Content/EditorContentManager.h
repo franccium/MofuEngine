@@ -34,6 +34,8 @@ void GetTextureMetadata(const std::filesystem::path& path, u64& outTextureSize, 
 	u64& outIconSize, std::unique_ptr<u8[]>& iconBuffer);
 void GetTextureIconData(const std::filesystem::path& path, u64& outIconSize, std::unique_ptr<u8[]>& iconBuffer);
 
+void GetGeometryRelatedTextures(AssetHandle geometryHandle, Vec<AssetHandle>& outHandles);
+
 void ParseMetadata(AssetPtr asset);
 
 void LoadMeshAsset(AssetHandle asset, ecs::Entity entity, ecs::component::RenderMesh& mesh, ecs::component::RenderMaterial& material);

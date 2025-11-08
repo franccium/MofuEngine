@@ -201,9 +201,9 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 
 	if (!renderables.empty())
 	{
-		content::AssetHandle parentGeometryHandle{ renderables[0].Mesh.MeshAsset };
+		const content::AssetHandle parentGeometryHandle{ renderables[0].Mesh.MeshAsset };
 		id_t geometry{ content::assets::CreateResourceFromHandle(parentGeometryHandle) };
-		content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
+		const content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
 		assert(uploadedGeometryInfo.SubmeshCount == renderables.size()); //TODO: for now thats true
 		u32 i{ 0 };
 		for (auto& e : renderables)
@@ -215,16 +215,17 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 				e.Material.MaterialID = content::assets::GetResourceFromAsset(e.Material.MaterialAsset, content::AssetType::Material, false);
 				if (!id::IsValid(e.Material.MaterialID))
 				{
+					// load a new material
 					graphics::MaterialInitInfo mat{};
 					material::LoadMaterialDataFromAsset(mat, e.Material.MaterialAsset);
-					e.Material.MaterialID = content::CreateResourceFromBlob(&mat, content::AssetType::Material);
+					e.Material.MaterialID = content::CreateMaterial(mat, e.Material.MaterialAsset);
 				}
 			}
 			else
 			{
 				e.Material.MaterialID = content::GetDefaultMaterial();
+				e.Material.MaterialAsset = content::assets::GetAssetFromResource(e.Material.MaterialID, content::AssetType::Material);
 			}
-			e.Material.MaterialAsset = content::assets::GetAssetFromResource(e.Material.MaterialID, content::AssetType::Material);
 			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialID);
 #if RAYTRACING && PATH_TRACE_ALL
 			e.PathTraceable.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(e.Mesh.MeshID);
@@ -240,6 +241,8 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 					physics::AddDynamicBody(physicsShape, e.entity);
 			}
 		}
+		// TODO: needed for materials, force this somewhere
+		content::assets::PairAssetWithResource(parentGeometryHandle, uploadedGeometryInfo.GeometryContentID, content::AssetType::Mesh);
 	}
 }
 } // anonymous namespace
@@ -360,6 +363,7 @@ AddFBXImportedModelToScene(const content::FBXImportState& state, bool extractMat
 	if (extractMaterials)
 	{
 		prefab.ExtractMaterials();
+		content::assets::SaveAssetRegistry();
 		prefab.Instantiate(mofu::ecs::scene::GetCurrentScene());
 	}
 	else
@@ -478,14 +482,15 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 			id_t matId{ content::assets::GetResourceFromAsset(_materialAssets[i], content::AssetType::Material, false) };
 			if (id::IsValid(matId))
 			{
+				// if the material is already loaded, reuse it
 				materialIDs[i] = matId;
 			}
 			else
 			{
+				// load a new material
 				graphics::MaterialInitInfo mat{};
 				material::LoadMaterialDataFromAsset(mat, _materialAssets[i]);
-				materialIDs[i] = content::CreateMaterial(mat);
-				content::assets::PairAssetWithResource(_materialAssets[i], materialIDs[i], content::AssetType::Material);
+				materialIDs[i] = content::CreateMaterial(mat, _materialAssets[i]);
 			}
 		}
 		else
@@ -576,11 +581,15 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		}
 		entityIdx++;
 	}
+
+	// TODO: needed for materials, force this somewhere
+	content::assets::PairAssetWithResource(_meshAssets[0], uploadedGeometryInfo.GeometryContentID, content::AssetType::Mesh);
 }
 
 void
 Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extractMaterials)
 {
+	_resourceBasePath = state.ModelResourcePath;
 	_isStaticBody = state.ImportSettings.IsStatic;
 	_name = state.OutModelFile.stem().string();
 	_geometryPath = state.OutModelFile;
@@ -602,45 +611,50 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 		for (u32 meshIdx{ 0 }; meshIdx < meshCount; ++meshIdx)
 		{
 			content::Mesh mesh{ state.LodGroups[0].Meshes[meshIdx] };
-			material::EditorMaterial& mat{ _materials[meshIdx] };
 			graphics::MaterialInitInfo& info{ _materialInfos[meshIdx] };
 
 			const id_t materialIdx{ mesh.MaterialIndices[0] };
-			if (id::IsValid(materialIdx))
+			bool hasValidMaterial{ id::IsValid(materialIdx) };
+			if (hasValidMaterial)
 			{
-				mat = state.Materials[materialIdx];
+				_materials[meshIdx] = state.Materials[materialIdx];
 			}
 			else
 			{
 				// default material
-				mat = material::GetDefaultEditorMaterial();
+				_materials[meshIdx] = material::GetDefaultEditorMaterial();
 			}
 			log::Info("Mesh Index: %u; Material Index: %u ", meshIdx, materialIdx);
 
-			info.TextureCount = material::TextureUsage::Count;
-			mat.TextureCount = material::TextureUsage::Count;
-			info.TextureIDs = new id_t[material::TextureUsage::Count];
-
-			for (u32 texIdx{ 0 }; texIdx < material::TextureUsage::Count; ++texIdx)
+			if (hasValidMaterial)
 			{
-				if (id::IsValid(mat.TextureIDs[texIdx]))
-				{
-					info.TextureIDs[texIdx] = mat.TextureIDs[texIdx];
-				}
-				else
-				{
-					info.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
-					mat.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
-				}
-			}
+				material::EditorMaterial& mat{ _materials[meshIdx] };
 
-			info.Surface = mat.Surface;
-			info.Type = mat.Type;
-			std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
-			info.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
-			info.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
-			mat.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
-			mat.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
+				info.TextureCount = material::TextureUsage::Count;
+				mat.TextureCount = material::TextureUsage::Count;
+				info.TextureIDs = new id_t[material::TextureUsage::Count];
+
+				for (u32 texIdx{ 0 }; texIdx < material::TextureUsage::Count; ++texIdx)
+				{
+					if (id::IsValid(mat.TextureIDs[texIdx]))
+					{
+						info.TextureIDs[texIdx] = mat.TextureIDs[texIdx];
+					}
+					else
+					{
+						info.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
+						mat.TextureIDs[texIdx] = material::GetDefaultTextureID((material::TextureUsage::Usage)texIdx);
+					}
+				}
+
+				info.Surface = mat.Surface;
+				info.Type = mat.Type;
+				std::pair<id_t, id_t> vsps{ content::GetDefaultPsVsShadersTextured() };
+				info.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
+				info.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
+				mat.ShaderIDs[shaders::ShaderType::Vertex] = vsps.first;
+				mat.ShaderIDs[shaders::ShaderType::Pixel] = vsps.second;
+			}
 		}
 	}
 	else
@@ -657,7 +671,7 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 
 	if (!_joltMeshShapes.empty())
 	{
-		std::filesystem::path shapesBasePath(project::GetMeshDirectory() / "Shapes");
+		std::filesystem::path shapesBasePath{ state.ModelResourcePath / "Shapes" };
 		_joltShapeAssets.resize(_joltMeshShapes.size());
 		for (u32 i{ 0 }; i < _joltMeshShapes.size(); ++i)
 		{
@@ -668,7 +682,7 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 			}
 			std::filesystem::path savePath{ shapesBasePath };
 			char filename[32]{};
-			snprintf(filename, 32, "%lu_col%u.ps", _names[0], i);
+			snprintf(filename, 32, "col%u.ps", i);
 			savePath.append(filename);
 			_joltShapeAssets[i] = physics::shapes::SaveShape(_joltMeshShapes[i], savePath);
 		}
@@ -678,7 +692,8 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 void
 Prefab::ExtractMaterials()
 {
-	std::filesystem::path materialBasePath{ project::GetResourceDirectory() / "Materials" };
+	std::filesystem::path materialBasePath{ _resourceBasePath / "Materials" };
+	if (!std::filesystem::exists(materialBasePath)) std::filesystem::create_directory(materialBasePath);
 
 	u32 materialCount{ (u32)_materials.size() };
 	for (u32 matIdx{ 0 }; matIdx < materialCount; ++matIdx)
@@ -688,13 +703,13 @@ Prefab::ExtractMaterials()
 
 		std::filesystem::path matPath{ materialBasePath };
 		char filename[32];
-		snprintf(filename, 32, "%s%u.mat", _name.c_str(), matIdx);
+		snprintf(filename, 32, "%s_%u.mat", _name.c_str(), matIdx);
 		matPath.append(filename);
 		material::PackMaterialAsset(mat, matPath);
-		material::CreateMaterialAsset(matPath);
+		content::AssetHandle handle{ material::CreateMaterialAsset(matPath) };
 		log::Info("Extracted material: %s", filename);
 
-		content::AssetHandle handle{ content::assets::GetHandleFromImportedPath(matPath) };
+		assert(handle != content::INVALID_HANDLE);
 		_materialAssets.emplace_back(handle);
 	}
 }

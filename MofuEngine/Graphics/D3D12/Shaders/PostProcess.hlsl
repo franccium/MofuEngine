@@ -2,6 +2,8 @@
 #include "Common.hlsli"
 #include "PostProcessing/TonemapGT7.hlsl"
 
+#define APPLY_TONEMAPPING 0
+
 #ifdef DEBUG
 struct DebugConstants
 {
@@ -20,6 +22,8 @@ struct PostProcessConstants
     uint GPassDepthBufferIndex;
     uint NormalBufferIndex;
     uint RTBufferIndex;
+    
+    uint DoTonemap;
 };
 
 ConstantBuffer<GlobalShaderData> GlobalData : register(b0, space0);
@@ -109,14 +113,15 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
             .SampleLevel(LinearSampler, direction, 0.1f).xyz * GlobalData.AmbientLight.Intensity;
     }
     
-#if APPLY_TONEMAPPING
-    color = ApplyTonemap(color);
+    if(ShaderParams.DoTonemap)
+    {
+        color = ApplyTonemap(color);
 #if HDR
-    color = LinearToPQ(color);
+        color = LinearToPQ(color);
 #else
-    color = LinearToSRGB(Color);
+        color = LinearToSRGB(color);
 #endif
-#endif
+    }
     
     return float4(color, 1.f);
 }

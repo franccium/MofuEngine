@@ -1,6 +1,7 @@
 #include "MaterialEditor.h"
 #include "Content/ContentManagement.h"
 #include "imgui.h"
+#include "EditorStyle.h"
 #include "Graphics/Renderer.h"
 #include "Graphics/UIRenderer.h"
 #include "TextureView.h"
@@ -76,6 +77,12 @@ char nameBuffer[MAX_NAME_LENGTH]{};
 
 StandardMaterial standardMaterial{};
 
+constexpr bool DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA{ false };
+constexpr bool DISPLAY_TEXTURES_FROM_GEOMETRY_PATH{ true };
+// TODO: this won't work if the child isn't the same geometry, fix whenever that will be possible; needed cause i just fetch the MeshID to get geometry asset handle
+ecs::Entity _lastRelatedTexturesEntity{};
+Vec<content::AssetHandle> _relatedTextures{};
+
 void
 GenerateStandardMaterial(const StandardMaterial& mat, Vec<const wchar_t*>& extraArgs)
 {
@@ -127,23 +134,45 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 	constexpr ImVec2 imageSize{ 64,64 };
 
 	ImGui::Text(label); ImGui::SameLine();
-	if (id::IsValid(editorMaterial.TextureIDs[texUse]))
+	const u32 texID{ editorMaterial.TextureIDs[texUse] };
+	if (id::IsValid(texID))
 	{
-		if (ImGui::ImageButton(id, graphics::ui::GetImTextureID(editorMaterial.TextureIDs[texUse]), imageSize))
+		content::AssetHandle texAsset{ content::assets::GetAssetFromResource(texID, content::AssetType::Texture) };
+		if(content::IsValid(texAsset))
+		{ 
+			const std::filesystem::path& texPath{ content::assets::GetAsset(texAsset)->ImportedFilePath };
+			ImGui::TextUnformatted(texPath.stem().string().c_str());
+		}
+		else
+		{
+			ui::TextColored(ui::Color::RED, "Invalid texture asset handle");
+		}
+		if (ImGui::ImageButton(id, graphics::ui::GetImTextureID(texID), imageSize))
 		{
 			if (isBrowserOpen)
 			{
 				ImGui::CloseCurrentPopup();
 			}
-			texFiles.clear();
-			content::ListFilesByExtension(".tex", project::GetResourceDirectory() / "Textures", texFiles);
+			if constexpr (DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA)
+			{
+				log::Error("DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA not implemented");
+			}
+			else if constexpr (DISPLAY_TEXTURES_FROM_GEOMETRY_PATH)
+			{
+
+			}
+			else
+			{
+				texFiles.clear();
+				content::ListFilesByExtension(".tex", project::GetResourceDirectory() / "Textures", texFiles);
+			}
 			ImGui::OpenPopup("SelectTexturePopup");
 			isBrowserOpen = true;
 			textureBeingChanged = texUse;
 		}
 		if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 		{
-			texture::OpenTextureView(editorMaterial.TextureIDs[texUse]);
+			texture::OpenTextureView(texID);
 		}
 	}
 	else
@@ -357,6 +386,37 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 	currentMaterialAsset = mat.MaterialAsset;
 
 	isOpen = true;
+
+	//TODO: which one is better
+	if constexpr (DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA)
+	{
+		id_t geometryID{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entityID).MeshID };
+		content::AssetHandle geometryHandle{ content::assets::GetAssetFromResource(geometryID, content::AssetType::Mesh) };
+		content::assets::GetGeometryRelatedTextures(geometryHandle, _relatedTextures);
+	}
+	if constexpr (DISPLAY_TEXTURES_FROM_GEOMETRY_PATH)
+	{
+		const bool hasParent{ ecs::scene::HasComponent<ecs::component::Child>(entityID) };
+		if (!hasParent || _lastRelatedTexturesEntity != ecs::scene::GetComponent<ecs::component::Child>(entityID).ParentEntity)
+		{
+			id_t geometryID{};
+			if (!hasParent)
+			{
+				geometryID = ecs::scene::GetComponent<ecs::component::RenderMesh>(entityID).MeshID;
+				_lastRelatedTexturesEntity = entityID;
+			}
+			else 
+			{
+				// could pick one of the children without first editing the parent
+				geometryID = ecs::scene::GetComponent<ecs::component::RenderMesh>
+					(ecs::scene::GetComponent<ecs::component::Child>(entityID).ParentEntity).MeshID;
+			}
+
+			content::AssetHandle geometryHandle{ content::assets::GetAssetFromResource(geometryID, content::AssetType::Mesh) };
+			content::AssetPtr geometryAsset{ content::assets::GetAsset(geometryHandle) };
+			content::ListFilesByExtension(".tex", geometryAsset->ImportedFilePath.parent_path() / "Textures", texFiles);
+		}
+	}
 }
 
 void 
@@ -448,7 +508,7 @@ RenderMaterialEditor()
 		}
 		//TODO: or edit the material texture data itself
 		UpdateMaterialInitInfo();
-		id_t newMaterialID{ content::CreateMaterial(materialInitInfo) };
+		id_t newMaterialID{ content::CreateMaterial(materialInitInfo, content::INVALID_HANDLE) };
 		//TODO: formal way
 		ecs::component::RenderMaterial& mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(materialOwner) };
 		ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(materialOwner) };

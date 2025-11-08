@@ -8,6 +8,7 @@
 #include "Content/ShaderCompilation.h"
 #include "AssetImporter.h"
 #include "Editor/Project/Project.h"
+#include "EditorContentManager.h"
 
 // TODO: file system
 #include <fstream>
@@ -82,6 +83,7 @@ CreateDefaultMaterial()
     info.ShaderIDs[shaders::ShaderType::Pixel] = defaultPSID;
     info.Type = graphics::MaterialType::Opaque;
     defaultMaterialID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
+    assets::PairAssetWithResource(assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE, defaultMaterialID, content::AssetType::Material);
 }
 
 } // anonymous namespace
@@ -221,21 +223,33 @@ SaveGeometry(const MeshGroupData& data, std::filesystem::path path)
 id_t 
 CreateResourceFromAsset(std::filesystem::path path, AssetType::type assetType)
 {
+    AssetHandle handle{ assets::GetHandleFromImportedPath(path) };
+    assert(content::IsValid(handle));
+    if (!content::IsValid(handle)) handle = {};
+    id_t existingID{ assets::GetResourceFromAsset(handle, assetType, false) };
+    if (id::IsValid(existingID))
+    {
+        return existingID;
+    }
+
     std::unique_ptr<u8[]> buffer;
     u64 size{ 0 };
     assert(std::filesystem::exists(path));
     content::ReadAssetFileNoVersion(path, buffer, size, assetType);
     assert(buffer.get());
 
-    id_t assetID{ content::CreateResourceFromBlob(buffer.get(), assetType) };
-    assert(id::IsValid(assetID));
-    return assetID;
+    id_t resourceID{ content::CreateResourceFromBlob(buffer.get(), assetType) };
+    assert(id::IsValid(resourceID));
+    assets::PairAssetWithResource(handle, resourceID, assetType);
+    return resourceID;
 }
 
 id_t 
-CreateMaterial(graphics::MaterialInitInfo initInfo)
+CreateMaterial(graphics::MaterialInitInfo initInfo, AssetHandle handle)
 {
-    return content::CreateResourceFromBlob(&initInfo, content::AssetType::Material);
+    id_t matID{ content::CreateResourceFromBlob(&initInfo, content::AssetType::Material) };
+    if(content::IsValid(handle)) assets::PairAssetWithResource(handle, matID, content::AssetType::Material);
+    return matID;
 }
 
 void
