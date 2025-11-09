@@ -44,8 +44,8 @@ constexpr struct
         0,                                          // DepthBiasClamp
         0,                                          // SlopeScaledDepthBias
         1,                                          // DepthClipEnable
-        0,                                          // MultisampleEnable
-        0,                                          // AntialiasedLineEnable
+        MSAA_ENABLED,                               // MultisampleEnable
+        MSAA_ENABLED,                               // AntialiasedLineEnable
         0,                                          // ForcesSampleCount
         D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF   // ConservativeRasterization
     };
@@ -59,8 +59,8 @@ constexpr struct
         0,                                          // DepthBiasClamp
         0,                                          // SlopeScaledDepthBias
         1,                                          // DepthClipEnable
-        0,                                          // MultisampleEnable
-        0,                                          // AntialiasedLineEnable
+        MSAA_ENABLED,                               // MultisampleEnable
+        MSAA_ENABLED,                               // AntialiasedLineEnable
         0,                                          // ForcesSampleCount
         D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF   // ConservativeRasterization
     };
@@ -74,8 +74,8 @@ constexpr struct
         0,                                          // DepthBiasClamp
         0,                                          // SlopeScaledDepthBias
         1,                                          // DepthClipEnable
-        0,                                          // MultisampleEnable
-        0,                                          // AntialiasedLineEnable
+        MSAA_ENABLED,                               // MultisampleEnable
+        MSAA_ENABLED,                               // AntialiasedLineEnable
         0,                                          // ForcesSampleCount
         D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF   // ConservativeRasterization
     };
@@ -89,8 +89,8 @@ constexpr struct
         0,                                          // DepthBiasClamp
         0,                                          // SlopeScaledDepthBias
         1,                                          // DepthClipEnable
-        0,                                          // MultisampleEnable
-        0,                                          // AntialiasedLineEnable
+        MSAA_ENABLED,                               // MultisampleEnable
+        MSAA_ENABLED,                               // AntialiasedLineEnable
         0,                                          // ForcesSampleCount
         D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF   // ConservativeRasterization
     };
@@ -168,7 +168,7 @@ constexpr struct
 {
     const D3D12_BLEND_DESC DISABLED
     {
-        0,                                          // AlphaToCoverageEnable
+        MSAA_ENABLED,                               // AlphaToCoverageEnable
         0,                                          // IndependentBlendState
         {                                           // D3D12_RENDER_TARGET_BLEND_DESC
             {
@@ -189,7 +189,7 @@ constexpr struct
 
     const D3D12_BLEND_DESC ALPHA_BLEND
     {
-        0,                                          // AlphaToCoverageEnable
+        MSAA_ENABLED,                               // AlphaToCoverageEnable
         0,                                          // IndependentBlendState
         {                                           // D3D12_RENDER_TARGET_BLEND_DESC
             {
@@ -208,9 +208,30 @@ constexpr struct
         }
     };
 
+    const D3D12_BLEND_DESC MSAA
+    {
+        1,                                          // AlphaToCoverageEnable
+        0,                                          // IndependentBlendState
+        {                                           // D3D12_RENDER_TARGET_BLEND_DESC
+            {
+                1,                                  // BlendEnable;
+                0,                                  // LogicOpEnable;
+                D3D12_BLEND_ONE,                    // SrcBlend;
+                D3D12_BLEND_ZERO,                   // DestBlend;
+                D3D12_BLEND_OP_ADD,                 // BlendOp;
+                D3D12_BLEND_ONE,                    // SrcBlendAlpha;
+                D3D12_BLEND_ZERO,                   // DestBlendAlpha;
+                D3D12_BLEND_OP_ADD,                 // BlendOpAlpha;
+                D3D12_LOGIC_OP_NOOP,                // LogicOp
+                D3D12_COLOR_WRITE_ENABLE_ALL        // RenderTargetWriteMask;
+            },
+            {},{},{},{},{},{},{}
+        }
+    };
+
     const D3D12_BLEND_DESC ADDITIVE
     {
-        0,                                          // AlphaToCoverageEnable
+        MSAA_ENABLED,                               // AlphaToCoverageEnable
         0,                                          // IndependentBlendState
         {                                           // D3D12_RENDER_TARGET_BLEND_DESC
             {
@@ -231,7 +252,7 @@ constexpr struct
 
     const D3D12_BLEND_DESC PREMULTIPLIED
     {
-        0,                                          // AlphaToCoverageEnable
+        MSAA_ENABLED,                               // AlphaToCoverageEnable
         0,                                          // IndependentBlendState
         {                                           // D3D12_RENDER_TARGET_BLEND_DESC
             {

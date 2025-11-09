@@ -117,9 +117,10 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 
 		materialFlags = material.MaterialFlags();
 		D3D12_RT_FORMAT_ARRAY rtArray{};
-		rtArray.NumRenderTargets = 2;
+		rtArray.NumRenderTargets = 3;
 		rtArray.RTFormats[0] = gpass::MAIN_BUFFER_FORMAT;
 		rtArray.RTFormats[1] = gpass::NORMAL_BUFFER_FORMAT;
+		rtArray.RTFormats[2] = gpass::MOTION_VEC_BUFFER_FORMAT;
 
 		stream.rootSignature = rootSignatures[material.RootSignatureID()];
 		stream.renderTargetFormats = rtArray;

@@ -53,6 +53,8 @@ D3D12Surface::CreateSwapChain(DXGIFactory* factory, ID3D12CommandQueue* cmdQueue
     }
 
     Finalize();
+    CreateDepthBuffer();
+    CreateMSAAResources();
 
     assert(!id::IsValid(_lightCullingID));
     _lightCullingID = light::AddLightCuller();
@@ -83,7 +85,159 @@ D3D12Surface::Resize(u32 width, u32 height)
     DXCall(_swapChain->ResizeBuffers(BUFFER_COUNT, width, height, DXGI_FORMAT_UNKNOWN, flags));
     _currentBackBufferIndex = _swapChain->GetCurrentBackBufferIndex();
     Finalize();
+    CreateDepthBuffer();
+    CreateMSAAResources();
     DEBUG_LOG("D3D12Surface resized\n");
+}
+
+void 
+D3D12Surface::SetMSAA(u32 sampleCount, u32 sampleQuality)
+{
+    if (sampleCount == _sampleCount && sampleQuality == _sampleQuality) return;
+    
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS qualityLevels{};
+    qualityLevels.Format = _format;
+    qualityLevels.SampleCount = sampleCount;
+    qualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+
+    if (FAILED(core::Device()->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, 
+        &qualityLevels, sizeof(D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS))) || qualityLevels.NumQualityLevels == 0)
+    {
+        DEBUG_LOG("[ERROR]: D3D12Surface: Given MSAA sample count is not supported");
+        sampleCount = 1;
+        sampleQuality = 0;
+    }
+
+    _sampleCount = sampleCount;
+    _sampleQuality = sampleQuality;
+
+    if (_swapChain)
+    {
+        for (u32 i{ 0 }; i < BUFFER_COUNT; ++i)
+        {
+            MSAAResource& msaaResource{ _msaaResources[i] };
+            core::Release(msaaResource.Texture);
+            core::RtvHeap().FreeDescriptor(msaaResource.Rtv);
+        }
+        CreateMSAAResources();
+    }
+}
+
+void 
+D3D12Surface::ResolveMSAA(DXGraphicsCommandList* const cmdList) const
+{
+    if (_sampleCount <= 1) return;
+
+    DXResource* msaaTarget{ _msaaResources[_currentBackBufferIndex].Texture };
+    DXResource* backBuffer{ _renderTargetData[_currentBackBufferIndex].backBuffer };
+
+    d3dx::D3D12ResourceBarrierList barriers{};
+    barriers.AddTransitionBarrier(msaaTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+    barriers.AddTransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RESOLVE_DEST);
+    barriers.ApplyBarriers(cmdList);
+
+    cmdList->ResolveSubresource(backBuffer, 0, msaaTarget, 0, _format);
+
+    barriers.AddTransitionBarrier(msaaTarget, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    barriers.AddTransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PRESENT);
+    barriers.ApplyBarriers(cmdList);
+}
+
+void 
+D3D12Surface::CreateDepthBuffer()
+{
+    //auto device = core::Device();
+    //const u32 width = Width();
+    //const u32 height = Height();
+
+    //// Create depth buffer
+    //D3D12_HEAP_PROPERTIES heapProps = {};
+    //heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+    //heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    //heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+    //D3D12_RESOURCE_DESC depthDesc = {};
+    //depthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    //depthDesc.Alignment = 0;
+    //depthDesc.Width = width;
+    //depthDesc.Height = height;
+    //depthDesc.DepthOrArraySize = 1;
+    //depthDesc.MipLevels = 1;
+    //depthDesc.Format = DEFAULT_DEPTH_FORMAT;
+    //depthDesc.SampleDesc.Count = _sampleCount;
+    //depthDesc.SampleDesc.Quality = _sampleQuality;
+    //depthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    //depthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    //D3D12_CLEAR_VALUE depthClearValue = {};
+    //depthClearValue.Format = DEFAULT_DEPTH_FORMAT;
+    //depthClearValue.DepthStencil.Depth = 1.0f;
+    //depthClearValue.DepthStencil.Stencil = 0;
+
+    //DXCall(device->CreateCommittedResource(
+    //    &heapProps,
+    //    D3D12_HEAP_FLAG_NONE,
+    //    &depthDesc,
+    //    D3D12_RESOURCE_STATE_DEPTH_WRITE,
+    //    &depthClearValue,
+    //    IID_PPV_ARGS(&_depthBuffer.texture)
+    //));
+
+    //// Create DSV
+    //_depthBuffer.dsv = core::DsvHeap().AllocateDescriptor();
+
+    //D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    //dsvDesc.Format = DEFAULT_DEPTH_FORMAT;
+    //dsvDesc.ViewDimension = (_sampleCount > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
+    //dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+    //device->CreateDepthStencilView(_depthBuffer.texture, &dsvDesc, _depthBuffer.dsv.cpu);
+}
+
+void 
+D3D12Surface::CreateMSAAResources()
+{
+    if (_sampleCount <= 1) return;
+
+    DXDevice* const device{ core::Device() };
+    const u32 width{ Width()};
+    const u32 height{ Height() };
+
+    for (u32 i = 0; i < BUFFER_COUNT; ++i)
+    {
+        MSAAResource& msaaResource{ _msaaResources[i] };
+
+        D3D12_HEAP_PROPERTIES heapProperties{};
+        heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+        heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+        D3D12_RESOURCE_DESC desc{};
+        desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        desc.Alignment = 0;
+        desc.Width = width;
+        desc.Height = height;
+        desc.DepthOrArraySize = 1;
+        desc.MipLevels = 1;
+        desc.Format = _format;
+        desc.SampleDesc.Count = _sampleCount;
+        desc.SampleDesc.Quality = _sampleQuality;
+        desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+        D3D12_CLEAR_VALUE clearValue{};
+        clearValue.Format = _format;
+        clearValue.Color[0] = 0.f; clearValue.Color[1] = 0.f; clearValue.Color[2] = 0.f; clearValue.Color[3] = 1.f;
+
+        DXCall(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &desc, 
+            D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue, IID_PPV_ARGS(&msaaResource.Texture)));
+        msaaResource.Rtv = core::RtvHeap().AllocateDescriptor();
+        NAME_D3D12_OBJECT_INDEXED(msaaResource.Texture, i, "MSAA Texture: frame ");
+
+        D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+        rtvDesc.Format = _format;
+        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+        device->CreateRenderTargetView(msaaResource.Texture, &rtvDesc, msaaResource.Rtv.cpu);
+    }
 }
 
 void 
@@ -96,7 +250,14 @@ D3D12Surface::Release()
         RenderTargetData& data{ _renderTargetData[i] };
         core::Release(data.backBuffer);
         core::RtvHeap().FreeDescriptor(data.rtv);
+
+        MSAAResource& msaaResource{ _msaaResources[i] };
+        core::Release(msaaResource.Texture);
+        core::RtvHeap().FreeDescriptor(msaaResource.Rtv);
     }
+    core::Release(_depthBuffer.Texture);
+    core::DsvHeap().FreeDescriptor(_depthBuffer.Rtv);
+
     core::Release(_swapChain);
 }
 

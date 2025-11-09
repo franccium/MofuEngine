@@ -169,12 +169,15 @@ D3D12RenderTexture::D3D12RenderTexture(D3D12TextureInitInfo info)
 	//FIXME: temporary fix for embedding into a dockable ImGUI window
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Format = info.clearValue.Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.ViewDimension = !info.MSAAEnabled ? D3D12_SRV_DIMENSION_TEXTURE2D : D3D12_SRV_DIMENSION_TEXTURE2DMS;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Texture2D.MipLevels = 1;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.PlaneSlice = 0;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.f;
+	if (!info.MSAAEnabled)
+	{
+		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.PlaneSlice = 0;
+		srvDesc.Texture2D.ResourceMinLODClamp = 0.f;
+	}
 	assert(!info.srvDesc && !info.resource);
 	info.srvDesc = &srvDesc;
 	_texture = D3D12Texture{ info };
@@ -185,8 +188,11 @@ D3D12RenderTexture::D3D12RenderTexture(D3D12TextureInitInfo info)
 	DescriptorHeap& heap{ core::RtvHeap() };
 	D3D12_RENDER_TARGET_VIEW_DESC desc{};
 	desc.Format = info.desc->Format;
-	desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	desc.Texture2D.MipSlice = 0;
+	desc.ViewDimension = !info.MSAAEnabled ? D3D12_RTV_DIMENSION_TEXTURE2D : D3D12_RTV_DIMENSION_TEXTURE2DMS;
+	if (!info.MSAAEnabled)
+	{
+		desc.Texture2D.MipSlice = 0;
+	}
 
 	DXDevice* const device{ core::Device() };
 	for (u32 i{ 0 }; i < _mipCount; ++i)

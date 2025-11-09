@@ -183,8 +183,7 @@ D3D12Camera::D3D12Camera(CameraInitInfo info)
 	_projectionType{ info.Type },
     _entityID{ info.EntityID },
 	_nearZ{ info.NearZ },
-	_farZ{ info.FarZ },
-	_isDirty{ true }
+	_farZ{ info.FarZ }
 {
     assert(id::IsValid(_entityID));
 
@@ -207,12 +206,12 @@ D3D12Camera::Update()
 
 	_view = XMMatrixLookToRH(_position, _direction, _up);
     _inverseView = XMMatrixInverse(nullptr, _view);
-        // NOTE: here _far_z and _near_z are swapped, because we are using reversed depth
-		_projection = (_projectionType == graphics::Camera::Type::Perspective) ?
-			XMMatrixPerspectiveFovRH(_fieldOfView * XM_PI, _aspectRatio, _farZ, _nearZ) :
-			XMMatrixOrthographicRH(_viewWidth, _viewHeight, _farZ, _nearZ);
-        _inverseProjection = XMMatrixInverse(nullptr, _projection);
-        _isDirty = false;
+    // NOTE: here _far_z and _near_z are swapped, because we are using reversed depth
+	_projection = (_projectionType == graphics::Camera::Type::Perspective) ?
+		XMMatrixPerspectiveFovRH(_fieldOfView * XM_PI, _aspectRatio, _farZ, _nearZ) :
+		XMMatrixOrthographicRH(_viewWidth, _viewHeight, _farZ, _nearZ);
+    _inverseProjection = XMMatrixInverse(nullptr, _projection);
+	_prevViewProjection = _viewProjection;
 	_viewProjection = XMMatrixMultiply(_view, _projection);
 	_inverseViewProjection = XMMatrixInverse(nullptr, _viewProjection);
 }
@@ -221,49 +220,42 @@ void
 D3D12Camera::Up(v3 up)
 {
 	_up = DirectX::XMLoadFloat3(&up);
-	_isDirty = true;
 }
 
 constexpr void 
 D3D12Camera::FieldOfView(f32 fov)
 {
 	_fieldOfView = fov;
-	_isDirty = true;
 }
 
 constexpr void 
 D3D12Camera::AspectRatio(f32 aspectRatio)
 {
 	_aspectRatio = aspectRatio;
-	_isDirty = true;
 }
 
 constexpr void 
 D3D12Camera::ViewWidth(f32 width)
 {
 	_viewWidth = width;
-	_isDirty = true;
 }
 
 constexpr void 
 D3D12Camera::ViewHeight(f32 height)
 {
 	_viewHeight = height;
-	_isDirty = true;
 }
 
 constexpr void 
 D3D12Camera::NearZ(f32 nearZ)
 {
 	_nearZ = nearZ;
-	_isDirty = true;    
 }
 
 constexpr void 
 D3D12Camera::FarZ(f32 farZ)
 {
     _farZ = farZ;
-	_isDirty = true;
 }
 
 graphics::Camera 

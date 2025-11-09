@@ -8,6 +8,7 @@ enum DebugMode : u32
 	Depth,
 	Normals,
 	MaterialIDs,
+	MotionVectors,
 
 	Count
 };

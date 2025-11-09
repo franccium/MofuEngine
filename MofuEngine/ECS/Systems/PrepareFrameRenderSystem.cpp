@@ -19,6 +19,7 @@
 #include "Graphics/D3D12/D3D12RayTracing.h"
 
 #include "ECS/Transform.h"
+#include "ECS/TransformHierarchy.h"
 #include "Utilities/Logger.h"
 
 #include "tracy/Tracy.hpp"
@@ -26,8 +27,8 @@
 namespace mofu::graphics::d3d12 {
 	struct PrepareFrameRenderSystem : ecs::system::System<PrepareFrameRenderSystem>
 	{
-		void FillPerObjectData(hlsl::PerObjectData* data, ecs::component::WorldTransform& transform,
-			const MaterialSurface* const materialSurface, id_t materialID, xmmat cameraVP)
+		void FillPerObjectData(ecs::Entity entity, hlsl::PerObjectData* data, ecs::component::WorldTransform& transform,
+			const MaterialSurface* const materialSurface, id_t materialID, const xmmat& cameraVP, const xmmat& cameraPrevVP)
 		{
 			using namespace DirectX;
 
@@ -39,7 +40,10 @@ namespace mofu::graphics::d3d12 {
 
 			xmmat world{ XMLoadFloat4x4(&data->World) };
 			xmmat wvp{ XMMatrixMultiply(world, cameraVP) };
+			xmmat prevWorld{ XMLoadFloat4x4(ecs::transform::GetPreviousTransform(entity)) };
+			xmmat prevWVP{ XMMatrixMultiply(prevWorld, cameraPrevVP) };
 			XMStoreFloat4x4(&data->WorldViewProjection, wvp);
+			XMStoreFloat4x4(&data->PrevWorldViewProjection, prevWVP);
 
 			memcpy(&data->BaseColor, materialSurface, sizeof(MaterialSurface));
 			data->MaterialID = materialID;
@@ -95,6 +99,8 @@ namespace mofu::graphics::d3d12 {
 			hlsl::PerObjectData* currentDataPtr{ nullptr };
 
 			renderItemIndex = 0;
+			const xmmat camVP{ frameInfo.Camera->ViewProjection() };
+			const xmmat camPrevVP{ frameInfo.Camera->PrevViewProjection() };
 			for (auto e : visible)
 			{
 				auto& wt{ ecs::scene::GetComponent<ecs::component::WorldTransform>(e) };
@@ -102,7 +108,8 @@ namespace mofu::graphics::d3d12 {
 				{
 					currentDataPtr = cbuffer.AllocateSpace<hlsl::PerObjectData>();
 					//FillPerObjectData(data, transform, *material.MaterialSurface, cameraVP);
-					FillPerObjectData(currentDataPtr, wt, materialsCache.MaterialSurfaces[renderItemIndex], frameCache.MaterialIDs[renderItemIndex], frameInfo.Camera->ViewProjection());
+					FillPerObjectData(e, currentDataPtr, wt, materialsCache.MaterialSurfaces[renderItemIndex], 
+						frameCache.MaterialIDs[renderItemIndex], camVP, camPrevVP);
 					//}
 					assert(currentDataPtr);
 					frameCache.PerObjectData[renderItemIndex] = cbuffer.GpuAddress(currentDataPtr);

@@ -499,6 +499,7 @@ struct D3D12TextureInitInfo
 	D3D12_RESOURCE_ALLOCATION_INFO1* allocationInfo{ nullptr };
 	D3D12_RESOURCE_STATES initialState{};
 	D3D12_CLEAR_VALUE clearValue{};
+	bool MSAAEnabled{ MSAA_ENABLED };
 	bool CreateUAV{ false };
 };
 

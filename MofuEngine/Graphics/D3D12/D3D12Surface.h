@@ -14,11 +14,19 @@ public:
 	void CreateSwapChain(DXGIFactory* factory, ID3D12CommandQueue* cmdQueue, DXGI_FORMAT format = DEFAULT_BACK_BUFFER_FORMAT);
 	void Present() const;
 	void Resize(u32 width, u32 height);
+	
+	void SetMSAA(u32 sampleCount, u32 sampleQuality);
+	void ResolveMSAA(DXGraphicsCommandList* const cmdList) const;
+	void CreateDepthBuffer();
+	void CreateMSAAResources();
 
+	[[nodiscard]] constexpr bool IsMSAA() const { return _sampleCount > 1; }
 	[[nodiscard]] constexpr u32 Width() const { return (u32)_viewport.Width; }
 	[[nodiscard]] constexpr u32 Height() const { return (u32)_viewport.Height; }
 	[[nodiscard]] constexpr DXResource* const BackBuffer() const { return _renderTargetData[_currentBackBufferIndex].backBuffer; }
 	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE RTV() const { return _renderTargetData[_currentBackBufferIndex].rtv.cpu; }
+	[[nodiscard]] constexpr DXResource* const MsaaTexture() const { return _msaaResources[_currentBackBufferIndex].Texture; }
+	[[nodiscard]] constexpr D3D12_CPU_DESCRIPTOR_HANDLE MsaaRTV() const { return _msaaResources[_currentBackBufferIndex].Rtv.cpu; }
 	[[nodiscard]] constexpr const D3D12_VIEWPORT* Viewport() const { return &_viewport; }
 	[[nodiscard]] constexpr const D3D12_RECT* ScissorRect() const { return &_scissorRect; }
 	[[nodiscard]] constexpr const id_t LightCullingID() const { return _lightCullingID; }
@@ -33,15 +41,31 @@ private:
 		DescriptorHandle rtv{};
 	};
 
+	struct MSAAResource
+	{
+		DXResource* Texture{ nullptr };
+		DescriptorHandle Rtv{};
+	};
+
+	struct DepthBuffer
+	{
+		DXResource* Texture{ nullptr };
+		DescriptorHandle Rtv{};
+	};
+
 	platform::Window _window{};
 	D3D12_VIEWPORT _viewport;
 	D3D12_RECT _scissorRect{};
 	DXSwapChain* _swapChain{ nullptr };
 	RenderTargetData _renderTargetData[BUFFER_COUNT];
+	MSAAResource _msaaResources[BUFFER_COUNT];
+	DepthBuffer _depthBuffer{};
 	DXGI_FORMAT _format{ DEFAULT_BACK_BUFFER_FORMAT };
 	mutable u32 _currentBackBufferIndex{ 0 };
 	u32 _allowTearing{ 0 };
 	u32 _presentFlags{ 0 };
+	u32 _sampleCount{ 1 };
+	u32 _sampleQuality{ 0 };
 	id_t _lightCullingID{ id::INVALID_ID };
 };
 

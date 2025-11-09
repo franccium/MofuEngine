@@ -134,7 +134,7 @@ DrawRenderingConsole()
 	if (ImGui::CollapsingHeader("Debug Rendering", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::BeginDisabled(!isInDebugPostProcessing);
-		constexpr const char* DEBUG_MODES[]{ "Default", "Depth", "Normals", "Material IDs" };
+		constexpr const char* DEBUG_MODES[]{ "Default", "Depth", "Normals", "Material IDs", "Motion Vectors"};
 		u32 chosenMode{ graphics::debug::GetDebugMode() };
 		ImGui::TextUnformatted("Mode: ", DEBUG_MODES[chosenMode]);
 		for (u32 i{ 0 }; i < _countof(DEBUG_MODES); ++i)

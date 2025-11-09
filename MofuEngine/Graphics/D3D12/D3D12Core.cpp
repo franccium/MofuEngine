@@ -403,7 +403,7 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
     XMStoreFloat4x4A(&data.View, camera.View());
 	XMStoreFloat4x4A(&data.Projection, camera.Projection());
 	XMStoreFloat4x4A(&data.InvProjection, camera.InverseProjection());
-	XMStoreFloat4x4A(&data.ViewProjection, camera.ViewProjection());    
+	XMStoreFloat4x4A(&data.ViewProjection, camera.ViewProjection());
 	XMStoreFloat4x4A(&data.InvViewProjection, camera.InverseViewProjection());    
     XMStoreFloat3(&data.CameraPosition, camera.Position());
 	XMStoreFloat3(&data.CameraDirection, camera.Direction());
@@ -1081,6 +1081,7 @@ CreateSurface(platform::Window window)
 {
     surface_id id{ surfaces.add(window) };
     surfaces[id].CreateSwapChain(dxgiFactory, gfxCommand.CommandQueue());
+    surfaces[id].SetMSAA(MSAA_SAMPLE_COUNT, MSAA_SAMPLE_QUALITY);
     return Surface{ id };
 }
 

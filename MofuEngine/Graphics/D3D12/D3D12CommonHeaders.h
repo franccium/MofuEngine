@@ -67,6 +67,10 @@ namespace mofu::graphics::d3d12 {
 
 constexpr u32 FRAME_BUFFER_COUNT{ 3 };
 
+constexpr u32 MSAA_SAMPLE_COUNT{ 1 };
+constexpr u32 MSAA_SAMPLE_QUALITY{ 0 };
+constexpr bool MSAA_ENABLED{ MSAA_SAMPLE_COUNT > 1 };
+
 #define MT 0
 
 #if MT

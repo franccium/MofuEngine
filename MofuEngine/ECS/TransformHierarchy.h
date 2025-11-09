@@ -24,4 +24,6 @@ void UpdateHierarchy(); // NOTE: called at the end of the frame, after all local
 
 // when unloading a scene
 void DeleteHierarchy();
+
+const m4x4* const GetPreviousTransform(Entity entity);
 }

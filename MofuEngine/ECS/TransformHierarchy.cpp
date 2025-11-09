@@ -12,7 +12,12 @@ namespace {
 * Vec[1] = with one parent
 * ...
 */
+//NOTE: for now, im assuming that every entity needs a WorldTransform, which is not true
 Vec<Vec<EntityFinalTRS>> finalTransforms{};
+
+// this could be more packed cause it's only needed for motion vectors so for entities that have a WorldTransform; 
+// unless i find some nice other usage for previous transforms
+Vec<m4x4> _previousTransforms{};
 
 //TODO: when i stack all added entities to add them at the end i should just have one sort instead of inserting in the right place immediately
 constexpr bool SORT_DEFERRED{ false };
@@ -63,6 +68,10 @@ AddEntityToHierarchy(Entity entity)
 	assert(ecs::scene::EntityHasComponent<ecs::component::LocalTransform>(entity));
 	finalTRS.WorldTransform = &ecs::scene::GetEntityComponent<ecs::component::WorldTransform>(entity);
 	finalTRS.LocalTransform = &ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(entity);
+
+	_previousTransforms.emplace_back();
+	assert(id::Index(entity) < _previousTransforms.size());
+	_previousTransforms[id::Index(entity)] = {};
 
 	if constexpr (SORT_DEFERRED)
 	{
@@ -119,10 +128,10 @@ UpdateHierarchy()
 	if (finalTransforms.empty()) return;
 	bool transformChanged{ false };
 
-	for (auto& rootEntities : finalTransforms[0])
+	for (auto& rootTransform : finalTransforms[0])
 	{
-		component::LocalTransform* lt{ rootEntities.LocalTransform };
-		component::WorldTransform* wt{ rootEntities.WorldTransform };
+		component::LocalTransform* lt{ rootTransform.LocalTransform };
+		component::WorldTransform* wt{ rootTransform.WorldTransform };
 
 		xmm scale{ XMLoadFloat3(&lt->Scale) };
 		xmm rot{ XMLoadFloat4(&lt->Rotation) };
@@ -130,8 +139,14 @@ UpdateHierarchy()
 		xmm dir{ 0.f, 0.f, 1.f, 0.f };
 		XMStoreFloat3(&lt->Forward, XMVector3Normalize(XMVector3Rotate(dir, rot))); //TODO: this belong to local transform updates
 
+		memcpy(&_previousTransforms[id::Index(rootTransform.Entity)], &wt->TRS, sizeof(m4x4));
 		xmmat trs{XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
 		XMStoreFloat4x4(&wt->TRS, trs);
+
+		if (_previousTransforms[id::Index(rootTransform.Entity)]._41 != wt->TRS._41)
+		{
+			log::Info("Change");
+		}
 	}
 
 	for (u32 level{ 1 }; level < finalTransforms.size(); ++level)
@@ -152,6 +167,7 @@ UpdateHierarchy()
 			xmm dir{ 0.f, 0.f, 1.f, 0.f };
 			XMStoreFloat3(&lt->Forward, XMVector3Normalize(XMVector3Rotate(dir, rot))); //TODO: this belong to local transform updates
 
+			memcpy(&_previousTransforms[id::Index(finalTRS.Entity)], &wt->TRS, sizeof(m4x4));
 			xmmat trs{XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
 			xmmat parentTrs{ XMLoadFloat4x4(&parentWt->TRS) };
 			trs = XMMatrixMultiply(parentTrs, trs);
@@ -167,5 +183,13 @@ DeleteHierarchy()
 {
 	finalTransforms.clear();
 }
+
+const m4x4* const
+GetPreviousTransform(Entity entity)
+{
+	assert(id::Index(entity) < _previousTransforms.size());
+	return &_previousTransforms[id::Index(entity)];
+}
+
 
 }

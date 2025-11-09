@@ -14,14 +14,16 @@ struct DebugConstants
 #define DEBUG_DEPTH 1
 #define DEBUG_NORMALS 2
 #define DEBUG_MATERIAL_IDS 3
+#define DEBUG_MOTION_VECTORS 4
 #endif
 
 struct PostProcessConstants
 {
     uint GPassMainBufferIndex;
     uint GPassDepthBufferIndex;
-    uint NormalBufferIndex;
     uint RTBufferIndex;
+    uint NormalBufferIndex;
+    uint MotionVectorsBufferIndex;
     
     uint DoTonemap;
 };
@@ -85,8 +87,7 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         }
         else if (DebugOptions.DebugMode == DEBUG_DEPTH)
         {
-            texture = ResourceDescriptorHeap[ShaderParams.GPassDepthBufferIndex];
-            color = texture[Position.xy].rrr * 150.f;
+            color = gpassDepth[Position.xy].rrr * 150.f;
         }
         else if (DebugOptions.DebugMode == DEBUG_NORMALS)
         {
@@ -98,10 +99,15 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
             texture = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
             color = texture[Position.xy].aaa;
         }
+        else if (DebugOptions.DebugMode == DEBUG_MOTION_VECTORS)
+        {
+            texture = ResourceDescriptorHeap[ShaderParams.MotionVectorsBufferIndex];
+            color = float3(texture[Position.xy].xy * 0.5f + 0.5f, 0.f);
+        }
         color = saturate(color);
 #else
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-        return float4(gpassMain[Position.xy].rgb, 1.f);
+        color = gpassMain[Position.xy].rgb;
 #endif
     }
     else

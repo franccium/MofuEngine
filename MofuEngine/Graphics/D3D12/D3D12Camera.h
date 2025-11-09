@@ -18,12 +18,12 @@ public:
 	constexpr void NearZ(f32 nearZ);
 	constexpr void FarZ(f32 farZ);
 
-	[[nodiscard]] constexpr bool WasUpdated() const { return _isDirty; }
 	[[nodiscard]] constexpr xmmat View() const { return _view; }
 	[[nodiscard]] constexpr xmmat Projection() const { return _projection; }
 	[[nodiscard]] constexpr xmmat InverseProjection() const { return _inverseProjection; }
 	[[nodiscard]] constexpr xmmat InverseView() const { return _inverseView; }
 	[[nodiscard]] constexpr xmmat ViewProjection() const { return _viewProjection; }
+	[[nodiscard]] constexpr xmmat PrevViewProjection() const { return _prevViewProjection; }
 	[[nodiscard]] constexpr xmmat InverseViewProjection() const { return _inverseViewProjection; }
 	[[nodiscard]] constexpr xmm Up() const { return _up; }
 	[[nodiscard]] constexpr xmm Position() const { return _position; }
@@ -43,6 +43,7 @@ private:
 	xmmat _projection;
 	xmmat _inverseProjection;
 	xmmat _viewProjection;
+	xmmat _prevViewProjection;
 	xmmat _inverseViewProjection;
 	xmm _up;
 	xmm _position;
@@ -55,7 +56,6 @@ private:
 	f32 _fieldOfView;
 	graphics::Camera::Type _projectionType;
 	id_t _entityID{ id::INVALID_ID };
-	bool _isDirty;
 };
 
 graphics::Camera CreateCamera(CameraInitInfo info);

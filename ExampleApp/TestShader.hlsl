@@ -3,7 +3,8 @@
 
 struct VertexOut
 {
-    float4 HomogenousPositon : SV_POSITION;
+    float4 HomogeneousPositon : SV_POSITION;
+    float4 PrevHomogeneousPositon : TEXCOORD0;
     float3 WorldPosition : POSITION;
     float3 WorldNormal : NORMAL;
     float4 WorldTangent : TANGENT; // z - handedness
@@ -14,6 +15,7 @@ struct PixelOut
 {
     float4 Color : SV_Target0;
     float4 Normal : SV_Target1;
+    float2 MotionVectors : SV_Target2;
 };
 
 struct Surface
@@ -153,7 +155,8 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     float2 nXY = element.Normal * InvIntervals - 1.f;
     float3 normal = float3(nXY, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
     
-    vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+    vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+    vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
     vsOut.WorldPosition = worldPosition.xyz;
     vsOut.WorldNormal = mul(float4(normal, 0.f), PerObjectBuffer.InvWorld).xyz;
     vsOut.WorldTangent = 0.f;
@@ -175,14 +178,16 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     float3 tangent = float3(tXY, sqrt(saturate(1.f - dot(tXY, tXY))) * tSign);
     tangent = tangent - normal * dot(normal, tangent); // use Gram-Schmidt orthogonalization to restore orthogonality
     
-    vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+    vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+    vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
     vsOut.WorldPosition = worldPosition.xyz;
     vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
     vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), handSign);
     vsOut.UV = element.UV;
 #else
 #undef ELEMENTS_TYPE
-    vsOut.HomogenousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+    vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+    vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
     vsOut.WorldPosition = worldPosition.xyz;
     vsOut.WorldNormal = 0.f;
     vsOut.WorldTangent = 0.f;
@@ -401,6 +406,13 @@ PixelOut TestShaderPS(in VertexOut psIn)
     return psOut;
 #else
     PixelOut psOut;
+    float2 viewport = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
+    float2 currNDC = (psIn.HomogeneousPositon.xy / viewport) * 2.f - 1.f;
+    float2 prevNDC = psIn.PrevHomogeneousPositon.xy / psIn.PrevHomogeneousPositon.w;
+    prevNDC.y *= -1.0f;
+    float2 mv = currNDC - prevNDC;
+    psOut.MotionVectors = mv;
+    
     float3 normal = normalize(psIn.WorldNormal);
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
     float3 color = 0;
@@ -432,7 +444,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     //    color += CalculateSpotLight(S, psIn.WorldPosition, sLight);
     //}
     
-    const uint gridIndex = GetGridIndex(psIn.HomogenousPositon.xy, GlobalData.ViewWidth);
+    const uint gridIndex = GetGridIndex(psIn.HomogeneousPositon.xy, GlobalData.ViewWidth);
     const uint lightStartIndex = LightGrid[gridIndex].x;
     const uint lightCount = LightGrid[gridIndex].y;
     const uint maxPointLight = lightStartIndex + (lightCount >> 16);

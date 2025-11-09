@@ -34,6 +34,7 @@ struct PerObjectData
     float4x4 World;
     float4x4 InvWorld;
     float4x4 WorldViewProjection;
+    float4x4 PrevWorldViewProjection;
     
     float4 BaseColor;
     float3 Emissive;
