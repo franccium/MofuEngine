@@ -148,6 +148,7 @@ struct MaterialFlags
 		BlendAdditive = (1u << 3),
 		PremultipliedAlpha = (1u << 4),
 		DepthBufferDisabled = (1u << 5),
+		AlphaTest = (1u << 6),
 	};
 };
 
@@ -171,6 +172,8 @@ struct MaterialType
 	enum type : u32
 	{
 		Opaque,
+		AlphaTested,
+		AlphaBlended,
 
 		Count
 	};

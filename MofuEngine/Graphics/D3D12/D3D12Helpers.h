@@ -199,7 +199,7 @@ constexpr struct
                 D3D12_BLEND_INV_SRC_ALPHA,          // DestBlend;
                 D3D12_BLEND_OP_ADD,                 // BlendOp;
                 D3D12_BLEND_ONE,                    // SrcBlendAlpha;
-                D3D12_BLEND_ONE,                    // DestBlendAlpha;
+                D3D12_BLEND_INV_SRC_ALPHA,          // DestBlendAlpha;
                 D3D12_BLEND_OP_ADD,                 // BlendOpAlpha;
                 D3D12_LOGIC_OP_NOOP,                // LogicOp
                 D3D12_COLOR_WRITE_ENABLE_ALL        // RenderTargetWriteMask;
@@ -262,7 +262,7 @@ constexpr struct
                 D3D12_BLEND_INV_SRC_ALPHA,          // DestBlend;
                 D3D12_BLEND_OP_ADD,                 // BlendOp;
                 D3D12_BLEND_ONE,                    // SrcBlendAlpha;
-                D3D12_BLEND_ONE,                    // DestBlendAlpha;
+                D3D12_BLEND_INV_SRC_ALPHA,          // DestBlendAlpha;
                 D3D12_BLEND_OP_ADD,                 // BlendOpAlpha;
                 D3D12_LOGIC_OP_NOOP,                // LogicOp
                 D3D12_COLOR_WRITE_ENABLE_ALL        // RenderTargetWriteMask;

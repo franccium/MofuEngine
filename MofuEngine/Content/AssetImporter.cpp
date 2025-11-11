@@ -647,11 +647,17 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 //	... todo
 //	All Texture Handles (till the end of the file or assume count * TextureUsage::Count?)
 void
-CreateGeometryMetadata(const FBXImportState& state, const std::filesystem::path& metadataPath)
+CreateGeometryMetadata(AssetPtr asset, const FBXImportState& state, const std::filesystem::path& metadataPath)
 {
 	assert(metadataPath.extension().string() == ASSET_METADATA_EXTENSION);
 
 	const u32 textureCount{ (u32)state.AllTextureHandles.size() };
+	if (textureCount == 0)
+	{
+		log::Warn("No textures found, couldn't generate metadata");
+		return;
+	}
+
 	const u32 metadataSize{ textureCount * sizeof(u64) };
 	u8* buffer{ new u8[metadataSize] };
 	util::BlobStreamWriter blob{ buffer, metadataSize };
@@ -666,6 +672,8 @@ CreateGeometryMetadata(const FBXImportState& state, const std::filesystem::path&
 	assert(file);
 	if (!file) return;
 	file.write(reinterpret_cast<const char*>(buffer), metadataSize);
+
+	asset->RelatedCount++;
 }
 
 void
@@ -762,7 +770,7 @@ ImportFBX(std::filesystem::path path, AssetPtr asset, const std::filesystem::pat
 
 	std::filesystem::path mtPath{ importedAssetPath };
 	mtPath.replace_extension(ASSET_METADATA_EXTENSION);
-	CreateGeometryMetadata(state, mtPath);
+	CreateGeometryMetadata(asset, state, mtPath);
 	
 	editor::assets::ViewFBXImportSummary(state);
 

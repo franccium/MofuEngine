@@ -35,6 +35,9 @@ struct Surface
     float3 SpecularColor;
     float NoV;
     float SpecularStrength;
+#if (ALPHA_TEST | ALPHA_BLEND)
+    float Alpha;
+#endif
 };
 
 #define ElementsTypeStaticNormal 0x01
@@ -233,7 +236,13 @@ Surface GetSurface(VertexOut psIn, float3 V)
 #if TEXTURED_MTL
     float2 uv = psIn.UV;
     S.AmbientOcclusion = Sample(SrvIndices[4], LinearSampler, uv).r;
+#if (ALPHA_TEST | ALPHA_BLEND)
+    float4 colorA = Sample(SrvIndices[0], LinearSampler, uv).rgba;
+    S.BaseColor = colorA.rgb;
+    S.Alpha = colorA.a;
+#else
     S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb;
+#endif
     S.EmissiveColor = Sample(SrvIndices[3], LinearSampler, uv).rgb;
     float2 metalRough = Sample(SrvIndices[2], LinearSampler, uv).rg;
     S.Metallic = metalRough.r;
@@ -429,6 +438,12 @@ PixelOut TestShaderPS(in VertexOut psIn)
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
     float3 color = 0;
     Surface S = GetSurface(psIn, viewDir);
+#if ALPHA_TEST
+    clip(S.Alpha - 0.8);
+#endif
+#if ALPHA_BLEND
+    const float alpha = S.Alpha;
+#endif
             
     float3 diffuseColor = float3(1.0, 0.8, 0.8);
     float3 specularColor = float3(0.9, 0.9, 0.9);
@@ -488,7 +503,11 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     color += EvaluateIBL(S);
     
+#if ALPHA_BLEND
+    psOut.Color = float4(color, alpha);
+#else
     psOut.Color = float4(color, 1.f);
+#endif
     
     psOut.Normal.rgb = S.Normal;
     // NOTE: now assuming we have max 2^16 materials

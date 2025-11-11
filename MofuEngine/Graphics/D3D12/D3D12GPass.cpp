@@ -202,6 +202,14 @@ SetRootParametersDepth(DXGraphicsCommandList* cmdList, u32 cacheItemIndex)
 		//TODO: might want to avoid using element buffer in the vertex shader
 		cmdList->SetGraphicsRootShaderResourceView(params::ElementBuffer, cache.ElementBuffers[cacheItemIndex]);
 	}
+	case MaterialType::AlphaTested:
+	{
+		using params = AlphaTestedRootParameters;
+		cmdList->SetGraphicsRootConstantBufferView(params::PerObjectData, cache.PerObjectData[cacheItemIndex]);
+		cmdList->SetGraphicsRootShaderResourceView(params::PositionBuffer, cache.PositionBuffers[cacheItemIndex]);
+		//TODO: might want to avoid using element buffer in the vertex shader
+		cmdList->SetGraphicsRootShaderResourceView(params::ElementBuffer, cache.ElementBuffers[cacheItemIndex]);
+	}
 	break;
 	}
 }

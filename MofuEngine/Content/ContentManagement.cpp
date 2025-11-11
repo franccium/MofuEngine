@@ -40,7 +40,7 @@ CreateDefaultShaders()
     Vec<std::wstring> extraArgs{};
     Vec<std::unique_ptr<u8[]>> vertexShaders{};
     Vec<const u8*> vertexShaderPtrs{};
-    for (u32 i{ 0 }; i < _countof(defines); ++i)
+    for (u32 i{ 0 }; i < keys.size(); ++i)
     {
         extraArgs.clear();
         extraArgs.emplace_back(L"-D");
@@ -57,20 +57,39 @@ CreateDefaultShaders()
     extraArgs.clear();
     pixelShaders.emplace_back(std::move((shaders::CompileShader(info, shaderPath, extraArgs))));
     assert(pixelShaders.back().get());
-    const u8* pixelShaderPtrs[]{ pixelShaders[0].get() };
+    Vec<const u8*> psShaderPtrs{};
 
     extraArgs.clear();
-    defines[0] = L"TEXTURED_MTL=1";
-    extraArgs.emplace_back(L"-D");
-    extraArgs.emplace_back(defines[0]);
-    pixelShaders.emplace_back(std::move(shaders::CompileShader(info, shaderPath, extraArgs)));
+    std::vector<std::vector<std::wstring>> psDefines{
+        {L"TEXTURED_MTL=1"},
+        {L"TEXTURED_MTL=1", L"ALPHA_TEST=1"},
+        {L"TEXTURED_MTL=1", L"ALPHA_BLEND=1"},
+    };
+    Vec<u32> psKeys{};
+    psKeys.emplace_back((u32)graphics::MaterialType::Opaque);
+    psKeys.emplace_back((u32)graphics::MaterialType::AlphaTested);
+    psKeys.emplace_back((u32)graphics::MaterialType::AlphaBlended);
+    for (u32 i{ 0 }; i < psKeys.size(); ++i)
+    {
+        extraArgs.clear();
+        for (auto& s : psDefines[i])
+        {
+            extraArgs.emplace_back(L"-D");
+            extraArgs.emplace_back(s);
+        }
+
+        pixelShaders.emplace_back(std::move(shaders::CompileShader(info, shaderPath, extraArgs)));
+        assert(pixelShaders.back().get());
+        psShaderPtrs.emplace_back(pixelShaders.back().get());
+    }
     assert(pixelShaders.back().get());
 
+    const u8* untexturedPSPtr{ pixelShaders[0].get() };
+    const u32 untexturedKey{ (u32)graphics::MaterialType::Opaque };
     defaultVSID = content::AddShaderGroup(vertexShaderPtrs.data(), (u32)vertexShaderPtrs.size(), keys.data());
-    defaultPSID = content::AddShaderGroup(pixelShaderPtrs, 1, &U32_INVALID_ID);
+    defaultPSID = content::AddShaderGroup(&untexturedPSPtr, 1, &untexturedKey);
 
-    pixelShaderPtrs[0] = pixelShaders[1].get();
-    defaultTexturedPSID = content::AddShaderGroup(pixelShaderPtrs, 1, &U32_INVALID_ID);
+    defaultTexturedPSID = content::AddShaderGroup(psShaderPtrs.data(), (u32)psShaderPtrs.size(), psKeys.data());
 }
 
 void
@@ -166,8 +185,6 @@ LoadDebugEngineShaders(Array<std::unique_ptr<u8[]>>& shaders, u64& size)
         bool readShader{ ReadFileToByteBuffer(path, shaders[i], size) };
         if (!readShader) return false;
     }
-    CreateDefaultShaders();
-    CreateDefaultMaterial();
     return true;
 }
 

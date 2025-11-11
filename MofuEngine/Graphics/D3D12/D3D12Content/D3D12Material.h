@@ -35,7 +35,14 @@ public:
             if (id::IsValid(info.ShaderIDs[i]))
             {
                 ++shaderCount;
-                shaderFlags |= (1 << i);
+                shaderFlags |= (1u << i);
+            }
+        }
+        for (u32 i{ 0 }; i < 32; ++i)
+        {
+            if (info.MaterialFlags & (1u << i))
+            {
+                materialFlags |= (1u << i);
             }
         }
         assert(shaderCount && shaderFlags);

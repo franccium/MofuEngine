@@ -112,11 +112,15 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 	new (streamPtr) d3dx::D3D12PipelineStateSubobjectStream{};
 	d3dx::D3D12PipelineStateSubobjectStream& stream{ *(d3dx::D3D12PipelineStateSubobjectStream* const)streamPtr };
 	MaterialFlags::Flags materialFlags;
+	MaterialType::type materialType{ MaterialType::Opaque };
 	{
 		std::lock_guard lock{ materialMutex };
 		const material::D3D12MaterialStream material{ materials[materialID].get() };
-
 		materialFlags = material.MaterialFlags();
+
+		if (materialFlags & MaterialFlags::AlphaTest) materialType = MaterialType::AlphaTested;
+		else if (materialFlags & MaterialFlags::BlendAlpha) materialType = MaterialType::AlphaBlended;
+
 		D3D12_RT_FORMAT_ARRAY rtArray{};
 		rtArray.NumRenderTargets = 3;
 		rtArray.RTFormats[0] = gpass::MAIN_BUFFER_FORMAT;
@@ -138,9 +142,11 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 		{
 			if (shaderFlags & (1u << i))
 			{
-				// NOTE: each type of shader may have keys that are generated from submesh
-				// or material properties, for now, only vertex shaders have different variations, depending on the elementType
-				const u32 key{ GetShaderType(shaderFlags & (1u << i)) == shaders::ShaderType::Vertex ? elementType : U32_INVALID_ID };
+				u32 key{ U32_INVALID_ID };
+				const ShaderFlags::Flags shaderType{ GetShaderType(shaderFlags & (1u << i)) + 1u };
+				if (shaderType == ShaderFlags::Vertex) key = elementType;
+				else if (shaderType == ShaderFlags::Pixel) key = materialType;
+
 				shaders::CompiledShaderPtr shader{ mofu::content::GetShader(material.ShaderIDs()[shaderIndex], key) };
 				assert(shader);
 				shaders[i].pShaderBytecode = shader->Bytecode();
@@ -164,8 +170,19 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 	idPair.GPassPsoID = CreatePSOIfNeeded(streamPtr, alignedStreamSize, false);
 
 	// disable the pixel shader for depth prepass
-	stream.ps = D3D12_SHADER_BYTECODE{};
-	stream.depthStencil = !(materialFlags & MaterialFlags::DepthBufferDisabled) ? d3dx::DepthState.REVERSED : d3dx::DepthState.DISABLED;
+	stream.ps = D3D12_SHADER_BYTECODE{};;
+	if (materialFlags & MaterialFlags::DepthBufferDisabled)
+	{
+		stream.depthStencil = d3dx::DepthState.DISABLED;
+	}
+	else if (!(materialFlags & (MaterialFlags::BlendAlpha | MaterialFlags::AlphaTest)))
+	{
+		stream.depthStencil = d3dx::DepthState.REVERSED;
+	}
+	else
+	{
+		stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
+	}
 	idPair.DepthPsoID = CreatePSOIfNeeded(streamPtr, alignedStreamSize, true);
 
 	return idPair;
@@ -262,6 +279,69 @@ CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFl
 		}.Create();
 	}
 	break;
+	case MaterialType::AlphaTested:
+	{
+		using params = gpass::AlphaTestedRootParameters;
+		d3dx::D3D12RootParameter parameters[params::Count]{};
+		parameters[params::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_ALL, 0);
+
+		D3D12_SHADER_VISIBILITY bufferVisibility{};
+		D3D12_SHADER_VISIBILITY dataVisibility{};
+
+		if (shaderFlags & ShaderFlags::Vertex)
+		{
+			bufferVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+			dataVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		}
+		else if (shaderFlags & ShaderFlags::Mesh)
+		{
+			bufferVisibility = D3D12_SHADER_VISIBILITY_MESH;
+			dataVisibility = D3D12_SHADER_VISIBILITY_MESH;
+		}
+
+		if ((shaderFlags & ShaderFlags::Hull) || (shaderFlags & ShaderFlags::Geometry) || (shaderFlags & ShaderFlags::Amplification))
+		{
+			bufferVisibility = D3D12_SHADER_VISIBILITY_ALL;
+			dataVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		}
+
+		if ((shaderFlags & ShaderFlags::Pixel) || (shaderFlags & ShaderFlags::Compute))
+		{
+			dataVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		}
+
+		parameters[params::PerObjectData].AsCBV(dataVisibility, 1);
+		parameters[params::PositionBuffer].AsSRV(bufferVisibility, 0);
+		parameters[params::ElementBuffer].AsSRV(bufferVisibility, 1);
+		parameters[params::SrvIndices].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 2); // TODO: needs to be visible to any stage that has to sample textures
+		parameters[params::DirectionalLights].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 3);
+		parameters[params::CullableLights].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 4);
+		parameters[params::LightGrid].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5);
+		parameters[params::LightIndexList].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6);
+
+		D3D12_STATIC_SAMPLER_DESC samplers[]
+		{
+			d3dx::StaticSampler(d3dx::SamplerState.STATIC_POINT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+			d3dx::StaticSampler(d3dx::SamplerState.STATIC_LINEAR, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+			d3dx::StaticSampler(d3dx::SamplerState.STATIC_ANISOTROPIC, 2, 0, D3D12_SHADER_VISIBILITY_PIXEL),
+		};
+#if IS_DLSS_ENABLED
+		for (u32 i{ 0 }; i < _countof(samplers); ++i)
+		{
+			//samplers[i].MipLODBias = d3dx::SamplerState.MIP_LOD_BIAS
+			//	+ std::log2((f32)dlss::GetOptimalResolution().x / (f32)graphics::DEFAULT_WIDTH) - 1.0f + math::EPSILON;
+			samplers[i].MipLODBias = d3dx::SamplerState.MIP_LOD_BIAS
+				+ std::log2((f32)dlss::DLSS_OPTIMAL_RESOLUTION_X / (f32)graphics::DEFAULT_WIDTH) - 1.0f + math::EPSILON;
+		}
+#endif
+
+		rootSignature = d3dx::D3D12RootSignatureDesc
+		{
+			&parameters[0], params::Count, GetRootSignatureFlags(shaderFlags),
+			&samplers[0], _countof(samplers)
+		}.Create();
+	}
+	break;
 	}
 
 	assert(rootSignature);
@@ -279,20 +359,22 @@ MaterialInitInfo
 GetMaterialReflection(id_t materialID)
 {
 	assert(id::IsValid(materialID));
-	u8* const buffer{ materials[materialID].get() };
-	MaterialType::type materialType{ *(MaterialType::type*)buffer };
-	ShaderFlags::Flags flags{ *(ShaderFlags::Flags*)&buffer[D3D12MaterialStream::SHADER_FLAGS_INDEX] };
-	[[maybe_unused]] id_t rootSignatureID{ *(id_t*)&buffer[D3D12MaterialStream::ROOT_SIGNATURE_INDEX] };
-	u32 textureCount{ *(u32*)&buffer[D3D12MaterialStream::TEXTURE_COUNT_INDEX] };
-	MaterialSurface surface{ *(MaterialSurface*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX] };
-	id_t* shaderIDs{ (id_t*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX + sizeof(MaterialSurface)] };
-	id_t* textureIDs{ textureCount ? &shaderIDs[_mm_popcnt_u32(flags)] : nullptr };
+	const u8* const buffer{ materials[materialID].get() };
+	const MaterialType::type materialType{ *(MaterialType::type*)buffer };
+	const ShaderFlags::Flags flags{ *(ShaderFlags::Flags*)&buffer[D3D12MaterialStream::SHADER_FLAGS_INDEX] };
+	const MaterialFlags::Flags materialFlags{ *(MaterialFlags::Flags*)&buffer[D3D12MaterialStream::MATERIAL_FLAGS_INDEX] };
+	const [[maybe_unused]] id_t rootSignatureID{ *(id_t*)&buffer[D3D12MaterialStream::ROOT_SIGNATURE_INDEX] };
+	const u32 textureCount{ *(u32*)&buffer[D3D12MaterialStream::TEXTURE_COUNT_INDEX] };
+	const MaterialSurface surface{ *(MaterialSurface*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX] };
+	const id_t* shaderIDs{ (id_t*)&buffer[D3D12MaterialStream::MATERIAL_SURFACE_INDEX + sizeof(MaterialSurface)] };
+	const id_t* textureIDs{ textureCount ? &shaderIDs[_mm_popcnt_u32(flags)] : nullptr };
 	u32* descriptorIndices{ textureCount ? (u32*)&textureIDs[textureCount] : nullptr };
 	
 	MaterialInitInfo info{};
 	info.Type = materialType;
 	info.TextureCount = textureCount;
 	info.Surface = surface;
+	info.MaterialFlags = materialFlags;
 	//TODO: this doesnt reflect which shader types these are
 	memcpy(info.ShaderIDs, shaderIDs, _mm_popcnt_u32(flags) * sizeof(id_t));
 	if(textureCount)

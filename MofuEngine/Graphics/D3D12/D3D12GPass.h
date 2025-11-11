@@ -31,6 +31,24 @@ struct OpaqueRootParameters
 	};
 };
 
+struct AlphaTestedRootParameters
+{
+	enum Parameter : u32
+	{
+		GlobalShaderData,
+		PerObjectData,
+		PositionBuffer,
+		ElementBuffer,
+		SrvIndices,
+		DirectionalLights,
+		CullableLights,
+		LightGrid,
+		LightIndexList,
+
+		Count
+	};
+};
+
 bool Initialize();
 void Shutdown();
 

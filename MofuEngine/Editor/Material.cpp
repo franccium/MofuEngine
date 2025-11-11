@@ -145,6 +145,7 @@ LoadMaterialDataFromAsset(graphics::MaterialInitInfo& outMaterial, content::Asse
 	outMaterial.Type = mat.Type;
 	outMaterial.Surface = mat.Surface;
 	outMaterial.TextureCount = mat.TextureCount;
+	outMaterial.MaterialFlags = (graphics::MaterialFlags::Flags)mat.Flags;
 	memcpy(outMaterial.ShaderIDs, mat.ShaderIDs, shaders::ShaderType::Count * sizeof(id_t));
 	outMaterial.TextureIDs = new id_t[mat.TextureCount];
 	memcpy(outMaterial.TextureIDs, mat.TextureIDs, mat.TextureCount * sizeof(id_t));

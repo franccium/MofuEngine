@@ -69,7 +69,7 @@ struct Asset
 	id_t AdditionalData{ id::INVALID_ID };
 	union
 	{
-		u32 RelatedCount;
+		u32 RelatedCount; // for textures, its the icon, for geometry, it determines whether it has metadata
 		u32 AdditionalData2;
 	};
 

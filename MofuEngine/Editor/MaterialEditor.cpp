@@ -78,10 +78,10 @@ char nameBuffer[MAX_NAME_LENGTH]{};
 StandardMaterial standardMaterial{};
 
 constexpr bool DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA{ false };
-constexpr bool DISPLAY_TEXTURES_FROM_GEOMETRY_PATH{ true };
 // TODO: this won't work if the child isn't the same geometry, fix whenever that will be possible; needed cause i just fetch the MeshID to get geometry asset handle
 ecs::Entity _lastRelatedTexturesEntity{};
 Vec<content::AssetHandle> _relatedTextures{};
+bool _displayTexturesFromGeometryPath{ false };
 
 void
 GenerateStandardMaterial(const StandardMaterial& mat, Vec<const wchar_t*>& extraArgs)
@@ -157,11 +157,7 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 			{
 				log::Error("DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA not implemented");
 			}
-			else if constexpr (DISPLAY_TEXTURES_FROM_GEOMETRY_PATH)
-			{
-
-			}
-			else
+			else if(!_displayTexturesFromGeometryPath)
 			{
 				texFiles.clear();
 				content::ListFilesByExtension(".tex", project::GetResourceDirectory() / "Textures", texFiles);
@@ -184,8 +180,15 @@ DisplayTexture(TextureUsage::Usage texUse, const char* label, const char* id)
 			{
 				ImGui::CloseCurrentPopup();
 			}
-			texFiles.clear();
-			content::ListFilesByExtension(".tex", project::GetResourceDirectory() / "Textures", texFiles);
+			if constexpr (DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA)
+			{
+				log::Error("DISPLAY_TEXTURES_FROM_GEOMETRY_METADATA not implemented");
+			}
+			else if (!_displayTexturesFromGeometryPath)
+			{
+				texFiles.clear();
+				content::ListFilesByExtension(".tex", project::GetResourceDirectory() / "Textures", texFiles);
+			}
 			ImGui::OpenPopup("SelectTexturePopup");
 			isBrowserOpen = true;
 			textureBeingChanged = texUse;
@@ -342,15 +345,20 @@ DisplayMaterialFlags()
 	ImGui::TextUnformatted("Flags:");
 	ImGui::CheckboxFlags("Texture Repeat", &editorMaterial.Flags, graphics::MaterialFlags::TextureRepeat);
 	ImGui::CheckboxFlags("No Face Culling", &editorMaterial.Flags, graphics::MaterialFlags::NoFaceCulling);
+	ImGui::CheckboxFlags("Alpha Cutout", &editorMaterial.Flags, graphics::MaterialFlags::AlphaTest);
 	ImGui::TextUnformatted("Blend State:");
 	//ImGui::Indent();
-	constexpr const char* BLEND_MODE_OPTIONS[]{ "Alpha", "Additive", "Premultiplied Alpha" };
+	constexpr const char* BLEND_MODE_OPTIONS[]{ "None", "Alpha", "Additive", "Premultiplied Alpha" };
 	static i32 blendOpt{ 0 };
 	if (ImGui::ListBox("Blend Mode", &blendOpt, BLEND_MODE_OPTIONS, _countof(BLEND_MODE_OPTIONS)))
 	{
 		editorMaterial.Flags &= !(graphics::MaterialFlags::BlendAlpha | graphics::MaterialFlags::BlendAdditive | graphics::MaterialFlags::PremultipliedAlpha);
-		editorMaterial.Flags |= (1u << (graphics::MaterialFlags::BlendAlpha + (u32)blendOpt));
+		if (blendOpt != 0)
+		{
+			editorMaterial.Flags |= (1u << (2u + ((u32)blendOpt - 1u)));
+		}
 	}
+
 	//ImGui::Unindent();
 	ImGui::CheckboxFlags("Depth Buffer Disabled", &editorMaterial.Flags, graphics::MaterialFlags::DepthBufferDisabled);
 	ImGui::Text("value: %u", editorMaterial.Flags);
@@ -371,6 +379,8 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 	//TODO: could also just use mat.MaterialAsset and call UpdateMaterialInitInfo();
 	materialInitInfo = graphics::GetMaterialReflection(mat.MaterialID);
 	editorMaterial.TextureCount = materialInitInfo.TextureCount;
+	editorMaterial.Flags = materialInitInfo.MaterialFlags;
+	editorMaterial.Surface = materialInitInfo.Surface;
 	// TODO: figure out which texture is for what usage
 	memcpy(editorMaterial.TextureIDs, materialInitInfo.TextureIDs, sizeof(id_t) * materialInitInfo.TextureCount);
 	bool textured{ materialInitInfo.TextureCount != 0 };
@@ -381,8 +391,6 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 	{
 		editorMaterial.ShaderIDs[i] = materialInitInfo.ShaderIDs[i];
 	}
-	editorMaterial.Surface = materialInitInfo.Surface;
-	editorMaterial.TextureCount = materialInitInfo.TextureCount;
 	currentMaterialAsset = mat.MaterialAsset;
 
 	isOpen = true;
@@ -394,7 +402,7 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 		content::AssetHandle geometryHandle{ content::assets::GetAssetFromResource(geometryID, content::AssetType::Mesh) };
 		content::assets::GetGeometryRelatedTextures(geometryHandle, _relatedTextures);
 	}
-	if constexpr (DISPLAY_TEXTURES_FROM_GEOMETRY_PATH)
+	else
 	{
 		const bool hasParent{ ecs::scene::HasComponent<ecs::component::Child>(entityID) };
 		if (!hasParent || _lastRelatedTexturesEntity != ecs::scene::GetComponent<ecs::component::Child>(entityID).ParentEntity)
@@ -414,7 +422,15 @@ OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
 
 			content::AssetHandle geometryHandle{ content::assets::GetAssetFromResource(geometryID, content::AssetType::Mesh) };
 			content::AssetPtr geometryAsset{ content::assets::GetAsset(geometryHandle) };
-			content::ListFilesByExtension(".tex", geometryAsset->ImportedFilePath.parent_path() / "Textures", texFiles);
+			if (geometryAsset->RelatedCount != 0)
+			{
+				content::ListFilesByExtension(".tex", geometryAsset->ImportedFilePath.parent_path() / "Textures", texFiles);
+				_displayTexturesFromGeometryPath = true;
+			}
+			else
+			{
+				_displayTexturesFromGeometryPath = false;
+			}
 		}
 	}
 }
@@ -542,6 +558,18 @@ RenderMaterialEditor()
 			ecs::component::RenderMesh& mesh{ ecs::scene::GetComponent<ecs::component::RenderMesh>(materialOwner) };
 			graphics::RemoveRenderItem(mesh.RenderItemID);
 			mesh.RenderItemID = graphics::AddRenderItem(materialOwner, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
+		}
+
+		if (materialInitInfo.MaterialFlags & (graphics::MaterialFlags::AlphaTest | graphics::MaterialFlags::BlendAlpha))
+		{
+			if (!ecs::scene::HasComponent<ecs::component::TransparentObject>(materialOwner))
+			{
+				ecs::scene::AddComponent<ecs::component::TransparentObject>(materialOwner);
+			}
+		}
+		else if (ecs::scene::HasComponent<ecs::component::TransparentObject>(materialOwner))
+		{
+			ecs::scene::RemoveComponent<ecs::component::TransparentObject>(materialOwner);
 		}
 	}
 	static bool saving{ false };

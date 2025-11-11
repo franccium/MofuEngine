@@ -504,6 +504,17 @@ struct Collider : Component
 #endif
 };
 
+struct TransparentObject : Component
+{
+#if EDITOR_BUILD
+	static void RenderFields([[maybe_unused]] TransparentObject& c)
+	{
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("TransparentObject");
+	}
+#endif
+};
+
 #if EDITOR_BUILD
 inline YAML::Emitter& operator<<(YAML::Emitter& out, const LocalTransform& lt)
 {
