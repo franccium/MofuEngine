@@ -12,7 +12,7 @@ f32 mouseWheelDelta{};
 v2
 GetMousePosition(LPARAM lParam)
 {
-    return { (f32)((s16)(lParam & 0x0000ffff)), (f32)((s16)(lParam >> 16)) };
+    return { (f32)((i16)(lParam & 0x0000ffff)), (f32)((i16)(lParam >> 16)) };
 }
 
 }

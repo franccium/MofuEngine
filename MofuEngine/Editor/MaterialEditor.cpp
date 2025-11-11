@@ -105,7 +105,7 @@ DisplayStandardMaterialEdit(StandardMaterial& mat)
 		ImGui::TextUnformatted("Flags:");
 
 		constexpr const char* DIFFUSE_OPTIONS[]{ "Burley", "Lambert" };
-		static s32 diffOpt{ 0 };
+		static i32 diffOpt{ 0 };
 		if (ImGui::ListBox("Diffuse", &diffOpt, DIFFUSE_OPTIONS, _countof(DIFFUSE_OPTIONS)))
 		{
 			mat.Flags |= (diffOpt & StandardMaterial::Flags::DiffuseLambert);
@@ -345,7 +345,7 @@ DisplayMaterialFlags()
 	ImGui::TextUnformatted("Blend State:");
 	//ImGui::Indent();
 	constexpr const char* BLEND_MODE_OPTIONS[]{ "Alpha", "Additive", "Premultiplied Alpha" };
-	static s32 blendOpt{ 0 };
+	static i32 blendOpt{ 0 };
 	if (ImGui::ListBox("Blend Mode", &blendOpt, BLEND_MODE_OPTIONS, _countof(BLEND_MODE_OPTIONS)))
 	{
 		editorMaterial.Flags &= !(graphics::MaterialFlags::BlendAlpha | graphics::MaterialFlags::BlendAdditive | graphics::MaterialFlags::PremultipliedAlpha);

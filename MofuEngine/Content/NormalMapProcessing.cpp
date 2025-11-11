@@ -30,7 +30,7 @@ SamplePixelBGR(const u8* const px)
 	return c * INV_255;
 }
 
-s32
+i32
 EvaluateColor(Color c)
 {
 	if (c.IsBlack() || c.IsTransparent()) return 0;
@@ -58,7 +58,7 @@ IsImageNormalMap(const Image* const image, Sampler sample)
 	while (offset < imageSize)
 	{
 		const Color c{ sample(&pixels[offset]) };
-		const s32 result{ EvaluateColor(c) };
+		const i32 result{ EvaluateColor(c) };
 		if (result < 0)
 		{
 			++rejectedSamples;

@@ -142,11 +142,6 @@ UpdateHierarchy()
 		memcpy(&_previousTransforms[id::Index(rootTransform.Entity)], &wt->TRS, sizeof(m4x4));
 		xmmat trs{XMMatrixAffineTransformation(scale, g_XMZero, rot, pos) };
 		XMStoreFloat4x4(&wt->TRS, trs);
-
-		if (_previousTransforms[id::Index(rootTransform.Entity)]._41 != wt->TRS._41)
-		{
-			log::Info("Change");
-		}
 	}
 
 	for (u32 level{ 1 }; level < finalTransforms.size(); ++level)

@@ -172,6 +172,20 @@ constexpr GetFunction GET[CameraProperty::Count]
     GetEntityId
 };
 
+#if IS_DLSS_ENABLED
+constexpr u32 HALTON_SEQUENCE_SAMPLE_COUNT{ 8 };
+constexpr v2 HALTON_SEQUENCE[HALTON_SEQUENCE_SAMPLE_COUNT]{
+    { 0.0f, 0.0f },
+    { -0.25f, 0.25f },
+    { 0.25f, -0.25f },
+    { -0.125f, -0.375f },
+    { 0.375f, 0.125f },
+    { -0.375f, 0.375f },
+    { 0.125f, -0.125f },
+    { -0.25f, -0.25f }
+};
+#endif
+
 } // anonymous namespace
 
 D3D12Camera::D3D12Camera(CameraInitInfo info)
@@ -192,26 +206,42 @@ D3D12Camera::D3D12Camera(CameraInitInfo info)
 	v3 initialDir{ 0.f, 0.f, 1.f };
 	_direction = DirectX::XMLoadFloat3(&initialDir);    
 
-    Update();
+    _projection = DirectX::XMLoadFloat4x4(&_prevProjection);
+    _viewProjection = DirectX::XMLoadFloat4x4(&_prevViewProjection);
+
+    Update(0);
 }
 
 void 
-D3D12Camera::Update()
+D3D12Camera::Update(u32 frameIndex)
 {
 	using namespace DirectX;
+
     //TODO: take this out of there
-    ecs::component::LocalTransform& lt = ecs::scene::GetComponent<ecs::component::LocalTransform>(ecs::Entity{ _entityID });
+    ecs::component::LocalTransform& lt = ecs::scene::GetComponent<ecs::component::LocalTransform>(_entityID);
     _position = XMLoadFloat3(&lt.Position);
     _direction = XMLoadFloat3(&lt.Forward);
 
 	_view = XMMatrixLookToRH(_position, _direction, _up);
     _inverseView = XMMatrixInverse(nullptr, _view);
+
     // NOTE: here _far_z and _near_z are swapped, because we are using reversed depth
+    XMStoreFloat4x4(&_prevProjection, _projection);
+    XMStoreFloat4x4(&_prevViewProjection, _viewProjection);
 	_projection = (_projectionType == graphics::Camera::Type::Perspective) ?
 		XMMatrixPerspectiveFovRH(_fieldOfView * XM_PI, _aspectRatio, _farZ, _nearZ) :
 		XMMatrixOrthographicRH(_viewWidth, _viewHeight, _farZ, _nearZ);
+#if IS_DLSS_ENABLED
+    _prevJitter = _jitter;
+    _jitter = HALTON_SEQUENCE[frameIndex % HALTON_SEQUENCE_SAMPLE_COUNT];
+    v2 jitter_NDC{ (2.f * _jitter.x) / graphics::DEFAULT_WIDTH, (-2.f * _jitter.y) / graphics::DEFAULT_HEIGHT };
+    XMMATRIX jitterMat = XMMatrixIdentity();
+    jitterMat.r[2].m128_f32[0] = jitter_NDC.x;
+    jitterMat.r[2].m128_f32[1] = jitter_NDC.y;
+    _projection = XMMatrixMultiply(jitterMat, _projection);
+#endif
+
     _inverseProjection = XMMatrixInverse(nullptr, _projection);
-	_prevViewProjection = _viewProjection;
 	_viewProjection = XMMatrixMultiply(_view, _projection);
 	_inverseViewProjection = XMMatrixInverse(nullptr, _viewProjection);
 }

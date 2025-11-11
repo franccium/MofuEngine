@@ -4,7 +4,9 @@
 struct VertexOut
 {
     float4 HomogeneousPositon : SV_POSITION;
+#if IS_DLSS_ENABLED
     float4 PrevHomogeneousPositon : TEXCOORD0;
+#endif
     float3 WorldPosition : POSITION;
     float3 WorldNormal : NORMAL;
     float4 WorldTangent : TANGENT; // z - handedness
@@ -156,7 +158,9 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     float3 normal = float3(nXY, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
     
     vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+#if IS_DLSS_ENABLED
     vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
+#endif
     vsOut.WorldPosition = worldPosition.xyz;
     vsOut.WorldNormal = mul(float4(normal, 0.f), PerObjectBuffer.InvWorld).xyz;
     vsOut.WorldTangent = 0.f;
@@ -179,7 +183,9 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     tangent = tangent - normal * dot(normal, tangent); // use Gram-Schmidt orthogonalization to restore orthogonality
     
     vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+#if IS_DLSS_ENABLED
     vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
+#endif
     vsOut.WorldPosition = worldPosition.xyz;
     vsOut.WorldNormal = normalize(mul(normal, (float3x3)PerObjectBuffer.InvWorld));
     vsOut.WorldTangent = float4(normalize(mul(tangent, (float3x3)PerObjectBuffer.InvWorld)), handSign);
@@ -187,7 +193,9 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
 #else
 #undef ELEMENTS_TYPE
     vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
+#if IS_DLSS_ENABLED
     vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
+#endif
     vsOut.WorldPosition = worldPosition.xyz;
     vsOut.WorldNormal = 0.f;
     vsOut.WorldTangent = 0.f;
@@ -406,12 +414,16 @@ PixelOut TestShaderPS(in VertexOut psIn)
     return psOut;
 #else
     PixelOut psOut;
+#if IS_DLSS_ENABLED
     float2 viewport = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
     float2 currNDC = (psIn.HomogeneousPositon.xy / viewport) * 2.f - 1.f;
     float2 prevNDC = psIn.PrevHomogeneousPositon.xy / psIn.PrevHomogeneousPositon.w;
     prevNDC.y *= -1.0f;
     float2 mv = currNDC - prevNDC;
     psOut.MotionVectors = mv;
+#else
+    psOut.MotionVectors = float2(0.f, 0.f);
+#endif
     
     float3 normal = normalize(psIn.WorldNormal);
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);

@@ -59,6 +59,8 @@ float3 LinearToPQ(float3 lin)
     return exp2(m2 * (log2(num) - log2(den)));
 }
 
+#define RENDER_SKYBOX 1
+
 #if RAYTRACING
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
@@ -74,7 +76,18 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 {
     Texture2D gpassDepth = ResourceDescriptorHeap[ShaderParams.GPassDepthBufferIndex];
     float3 color;
-    float depth = gpassDepth[Position.xy].r;
+    
+#if IS_DLSS_ENABLED
+    const float2 targetRes = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
+    const float2 renderRes = GlobalData.DLSSInputResolution;
+    const float2 uvScale = renderRes / targetRes;
+    const float2 uvScaled = UV * uvScale;
+    const float depth = gpassDepth.SampleLevel(PointSampler, UV, 0).r;
+#else
+    float depth = gpassDepth.SampleLevel(PointSampler, UV, 0).r;
+#endif
+
+#if RENDER_SKYBOX
     if (depth > 0.f)
     {
 #ifdef DEBUG
@@ -106,8 +119,14 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         }
         color = saturate(color);
 #else
+        //Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.MotionVectorsBufferIndex];
+#if IS_DLSS_ENABLED
+        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
+#else
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
+#endif
         color = gpassMain[Position.xy].rgb;
+        //color = float3(texture[Position.xy].xy * 0.5f + 0.5f, 0.f);
 #endif
     }
     else
@@ -115,9 +134,12 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         float4 clip = float4(2.f * UV.x - 1.f, -2.f * UV.y + 1.f, 0.f, 1.f);
         float3 view = mul(GlobalData.InvProjection, clip).xyz;
         float3 direction = mul(view, (float3x3) GlobalData.View); // we swap the order or operations so the view matrix is transposed, since rotation is orthogonal, this makes it inverse view
-        color = TextureCube( ResourceDescriptorHeap[GlobalData.SkyboxSrvIndex])
-            .SampleLevel(LinearSampler, direction, 0.1f).xyz * GlobalData.AmbientLight.Intensity;
+        color = TextureCube( ResourceDescriptorHeap[GlobalData.SkyboxSrvIndex]).SampleLevel(LinearSampler, direction, 0.1f).xyz * GlobalData.AmbientLight.Intensity;
     }
+#else
+    Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
+    color = gpassMain[Position.xy].rgb;
+#endif
     
     if(ShaderParams.DoTonemap)
     {

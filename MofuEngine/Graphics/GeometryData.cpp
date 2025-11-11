@@ -101,22 +101,22 @@ ProcessNormals(Mesh& m, f32 smoothingAngle)
 }
 
 
-s32
+i32
 MikkGetNumFaces(const SMikkTSpaceContext* context)
 {
 	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
-	return (s32)m.Indices.size() / 3; // we only use triangle meshes
+	return (i32)m.Indices.size() / 3; // we only use triangle meshes
 }
 
-s32
-MikkGetNumVerticesOfFace([[maybe_unused]] const SMikkTSpaceContext* context, [[maybe_unused]] s32 faceIdx)
+i32
+MikkGetNumVerticesOfFace([[maybe_unused]] const SMikkTSpaceContext* context, [[maybe_unused]] i32 faceIdx)
 {
 	// we only use triangle meshes
 	return 3;
 }
 
 void
-MikkGetPosition(const SMikkTSpaceContext* context, f32 position[3], s32 faceIdx, s32 vertexIdx)
+MikkGetPosition(const SMikkTSpaceContext* context, f32 position[3], i32 faceIdx, i32 vertexIdx)
 {
 	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
 	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };
@@ -127,7 +127,7 @@ MikkGetPosition(const SMikkTSpaceContext* context, f32 position[3], s32 faceIdx,
 }
 
 void
-MikkGetNormal(const SMikkTSpaceContext* context, f32 normal[3], s32 faceIdx, s32 vertexIdx)
+MikkGetNormal(const SMikkTSpaceContext* context, f32 normal[3], i32 faceIdx, i32 vertexIdx)
 {
 	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
 	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };
@@ -138,7 +138,7 @@ MikkGetNormal(const SMikkTSpaceContext* context, f32 normal[3], s32 faceIdx, s32
 }
 
 void
-MikkGetTexCoord(const SMikkTSpaceContext* context, f32 tex_coords[2], s32 faceIdx, s32 vertexIdx)
+MikkGetTexCoord(const SMikkTSpaceContext* context, f32 tex_coords[2], i32 faceIdx, i32 vertexIdx)
 {
 	const Mesh& m{ *(Mesh*)(context->m_pUserData) };
 	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };
@@ -148,7 +148,7 @@ MikkGetTexCoord(const SMikkTSpaceContext* context, f32 tex_coords[2], s32 faceId
 }
 
 void
-MikkSetTSpaceBasic(const SMikkTSpaceContext* context, const f32 tangent[3], f32 sign, s32 faceIdx, s32 vertexIdx)
+MikkSetTSpaceBasic(const SMikkTSpaceContext* context, const f32 tangent[3], f32 sign, i32 faceIdx, i32 vertexIdx)
 {
 	Mesh& m{ *(Mesh*)(context->m_pUserData) };
 	const u32 index{ m.Indices[faceIdx * 3 + vertexIdx] };

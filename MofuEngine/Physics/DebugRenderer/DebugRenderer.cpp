@@ -19,6 +19,7 @@
 #include "Graphics/D3D12/D3D12Primitives.h"
 #include "Graphics/RenderingDebug.h"
 #include "Graphics/D3D12/D3D12Content/D3D12Texture.h"
+#include "Graphics/D3D12/NGX/D3D12DLSS.h"
 
 //FIXME: TESTING
 #include "ECS/Scene.h"
@@ -207,7 +208,13 @@ DebugRenderer::CreatePSOs()
 			{ "PAD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA }
 		};
 		D3D12_INPUT_LAYOUT_DESC inputLayout{ inputElements, _countof(inputElements) };
-		const D3D12_STATIC_SAMPLER_DESC sampler{ d3dx::StaticSampler(d3dx::SamplerState.STATIC_POINT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL), };
+		D3D12_STATIC_SAMPLER_DESC sampler{ d3dx::StaticSampler(d3dx::SamplerState.STATIC_POINT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL), };
+#if IS_DLSS_ENABLED
+		//sampler.MipLODBias = d3dx::SamplerState.MIP_LOD_BIAS
+		//	+ std::log2((f32)dlss::GetOptimalResolution().x / (f32)graphics::DEFAULT_WIDTH) - 1.0f + math::EPSILON;
+		sampler.MipLODBias = d3dx::SamplerState.MIP_LOD_BIAS
+			+ std::log2((f32)dlss::DLSS_OPTIMAL_RESOLUTION_X / (f32)graphics::DEFAULT_WIDTH) - 1.0f + math::EPSILON;
+#endif
 		d3dx::D3D12DescriptorRange range{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0 };
 
 		d3dx::D3D12RootParameter parameters[font::FontRenderer::FontRootParameterIndices::Count]{};
@@ -320,7 +327,7 @@ DebugRenderer::DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldS
 }
 
 DebugRenderer::Batch
-DebugRenderer::CreateTriangleBatch(const Triangle* triangles, s32 triangleCount)
+DebugRenderer::CreateTriangleBatch(const Triangle* triangles, i32 triangleCount)
 {
 	if (triangles == nullptr || triangleCount == 0)
 		return _emptyBatch;
@@ -333,7 +340,7 @@ DebugRenderer::CreateTriangleBatch(const Triangle* triangles, s32 triangleCount)
 }
 
 DebugRenderer::Batch
-DebugRenderer::CreateTriangleBatch(const Vertex* vertices, s32 vertexCount, const u32* indices, s32 indexCount)
+DebugRenderer::CreateTriangleBatch(const Vertex* vertices, i32 vertexCount, const u32* indices, i32 indexCount)
 {
 	if (vertices == nullptr || vertexCount == 0)
 		return _emptyBatch;

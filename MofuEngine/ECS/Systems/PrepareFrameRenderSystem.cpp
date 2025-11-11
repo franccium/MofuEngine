@@ -40,10 +40,12 @@ namespace mofu::graphics::d3d12 {
 
 			xmmat world{ XMLoadFloat4x4(&data->World) };
 			xmmat wvp{ XMMatrixMultiply(world, cameraVP) };
+			XMStoreFloat4x4(&data->WorldViewProjection, wvp);
+#if IS_DLSS_ENABLED
 			xmmat prevWorld{ XMLoadFloat4x4(ecs::transform::GetPreviousTransform(entity)) };
 			xmmat prevWVP{ XMMatrixMultiply(prevWorld, cameraPrevVP) };
-			XMStoreFloat4x4(&data->WorldViewProjection, wvp);
 			XMStoreFloat4x4(&data->PrevWorldViewProjection, prevWVP);
+#endif
 
 			memcpy(&data->BaseColor, materialSurface, sizeof(MaterialSurface));
 			data->MaterialID = materialID;
@@ -100,7 +102,8 @@ namespace mofu::graphics::d3d12 {
 
 			renderItemIndex = 0;
 			const xmmat camVP{ frameInfo.Camera->ViewProjection() };
-			const xmmat camPrevVP{ frameInfo.Camera->PrevViewProjection() };
+			const m4x4 prevVP{ frameInfo.Camera->PrevViewProjection() };
+			const xmmat camPrevVP{ DirectX::XMLoadFloat4x4(&prevVP) };
 			for (auto e : visible)
 			{
 				auto& wt{ ecs::scene::GetComponent<ecs::component::WorldTransform>(e) };

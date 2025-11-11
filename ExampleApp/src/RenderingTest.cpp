@@ -345,18 +345,18 @@ AddLights()
 
 	srand(17);
 
-	constexpr s32 startZ = 0;
-	constexpr s32 startX = 0;
-	constexpr s32 startY = 0;
+	constexpr i32 startZ = 0;
+	constexpr i32 startX = 0;
+	constexpr i32 startY = 0;
 
 	constexpr f32 scatterScale{ 5.0f };
 	constexpr v3 scale{ 1.f * scatterScale, 0.2f * scatterScale, 1.f * scatterScale };
-	constexpr s32 dim{ 4 };
-	for (s32 x{ -dim + startX }; x < dim + startX; ++x)
+	constexpr i32 dim{ 4 };
+	for (i32 x{ -dim + startX }; x < dim + startX; ++x)
 	{
-		for (s32 y{ startY }; y < 10; ++y)
+		for (i32 y{ startY }; y < 10; ++y)
 		{
-			for (s32 z{ startZ }; z < dim + 5 + startZ; ++z)
+			for (i32 z{ startZ }; z < dim + 5 + startZ; ++z)
 			{
 				v3 pos{ (f32)x * scale.x, (f32)y, (f32)z * scale.z };
 				v3 rotEuler{ 3.14f, Random(), 0.f };

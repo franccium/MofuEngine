@@ -35,9 +35,9 @@ FontRenderer::Initialize(const char* fontName, u32 charHeight)
 	if (!stbtt_InitFont(&font, fontData.get(), stbtt_GetFontOffsetForIndex(fontData.get(), 0))) return false;
 
 	f32 scale{ stbtt_ScaleForPixelHeight(&font, (f32)CharHeight) };
-	s32 ascent;
+	i32 ascent;
 	stbtt_GetFontVMetrics(&font, &ascent, nullptr, nullptr);
-	s32 baseline = s32(ascent * scale);
+	i32 baseline = i32(ascent * scale);
 
 	content::texture::GeneratedTextureData textureData{};
 	textureData.ArraySize = 1;
@@ -58,18 +58,18 @@ FontRenderer::Initialize(const char* fontName, u32 charHeight)
 		textureData.SubresourceData = new u8[textureData.SubresourceSize];
 		memset(textureData.SubresourceData, 0, textureData.SubresourceSize);
 
-		s32 x{ 0 };
-		s32 y{ 0 };
+		i32 x{ 0 };
+		i32 y{ 0 };
 		for (u8 c{ FIRST_PRINTABLE_CHAR + 1 }; c < LAST_PRINTABLE_CHAR; ++c)
 		{
 			const u8 charIndex{ u8(c - FIRST_PRINTABLE_CHAR) };
 
-			s32 w, h, xoff, yoff;
+			i32 w, h, xoff, yoff;
 			unsigned char* bitmap{ stbtt_GetCodepointBitmap(&font, 0, scale, c, &w, &h, &xoff, &yoff) };
 			yoff += baseline;
 
 			// check for room in the line
-			if (s32(x + xoff + w + charHorizontalSpacing) > HorizontalTexelCount)
+			if (i32(x + xoff + w + charHorizontalSpacing) > HorizontalTexelCount)
 			{
 				// go to the next line
 				x = 0;
@@ -97,7 +97,7 @@ FontRenderer::Initialize(const char* fontName, u32 charHeight)
 			StartV[charIndex] = (u16)y;
 			CharWidths[charIndex] = (u8)w + 1u;
 
-			for (s32 y2{ 0 }; y2 < h; ++y2)
+			for (i32 y2{ 0 }; y2 < h; ++y2)
 			{
 				u8* const src{ bitmap + y2 * w };
 				u8* const dst{ &textureData.SubresourceData[(y + yoff + y2) * textureRowPitch] + x + xoff };
@@ -116,9 +116,9 @@ FontRenderer::Initialize(const char* fontName, u32 charHeight)
 		{
 			u8 c1{ u8(FIRST_PRINTABLE_CHAR + cidx1) };
 			u8 c2{ u8(FIRST_PRINTABLE_CHAR + cidx2) };
-			s32 advance;
+			i32 advance;
 			stbtt_GetCodepointHMetrics(&font, c1, &advance, nullptr);
-			s32 spacing{ math::Clamp(s32(scale * (advance + stbtt_GetCodepointKernAdvance(&font, c1, c2))), 0, 0xFF) };
+			i32 spacing{ math::Clamp(i32(scale * (advance + stbtt_GetCodepointKernAdvance(&font, c1, c2))), 0, 0xFF) };
 			Spacing[cidx1][cidx2] = (u8)spacing;
 		}
 	}
@@ -210,7 +210,7 @@ FontRenderer::RenderText(const D3D12FrameInfo& frameInfo, D3D12_GPU_VIRTUAL_ADDR
 		else if (i + 1 < text.size())
 		{
 			u8 c1{ u8(c - FIRST_PRINTABLE_CHAR) };
-			s16 c2{ s16((u8)text[i + 1] - FIRST_PRINTABLE_CHAR) };
+			i16 c2{ i16((u8)text[i + 1] - FIRST_PRINTABLE_CHAR) };
 			if (c2 >= 0 && c2 < PRINTABLE_CHAR_COUNT)
 			{
 				xPos += f32(Spacing[c1][c2]) / CharHeight;

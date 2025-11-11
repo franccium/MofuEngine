@@ -26,6 +26,12 @@ struct GlobalShaderData
     uint SkyboxSrvIndex;
     uint DirectionalLightsCount;
     
+#if IS_DLSS_ENABLED
+    float2 DLSSInputResolution;
+    float2 Jitter;
+    float2 PrevJitter;
+#endif
+    
     float DeltaTime;
 };
 
@@ -34,7 +40,9 @@ struct PerObjectData
     float4x4 World;
     float4x4 InvWorld;
     float4x4 WorldViewProjection;
+#if IS_DLSS_ENABLED
     float4x4 PrevWorldViewProjection;
+#endif
     
     float4 BaseColor;
     float3 Emissive;

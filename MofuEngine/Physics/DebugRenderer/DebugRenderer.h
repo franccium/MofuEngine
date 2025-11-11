@@ -28,8 +28,8 @@ public:
 
     void DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, f32 LODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode) override;
 
-    Batch CreateTriangleBatch(const Triangle* triangles, s32 triangleCount) override;
-    Batch CreateTriangleBatch(const Vertex* vertices, s32 vertexCount, const u32* indices, s32 indexCount) override;
+    Batch CreateTriangleBatch(const Triangle* triangles, i32 triangleCount) override;
+    Batch CreateTriangleBatch(const Vertex* vertices, i32 vertexCount, const u32* indices, i32 indexCount) override;
 
     void DrawTestText();
 

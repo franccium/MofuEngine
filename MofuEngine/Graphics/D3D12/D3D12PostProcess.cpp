@@ -5,6 +5,7 @@
 #include "D3D12GPass.h"
 #include "Graphics/RenderingDebug.h"
 #include "D3D12RayTracing.h"
+#include "NGX/D3D12DLSS.h"
 
 namespace mofu::graphics::d3d12::fx {
 namespace {
@@ -363,7 +364,11 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 #else
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::GPassMainBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, PostProcessRootConstants::GPassDepthBufferIndex);
+#if IS_DLSS_ENABLED
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, dlss::GetOutputBufferSRV().index, PostProcessRootConstants::RTBufferIndex);
+#else
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::RTBufferIndex); // dummy
+#endif
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);

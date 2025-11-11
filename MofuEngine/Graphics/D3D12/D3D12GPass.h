@@ -51,6 +51,9 @@ void AddTransitionsForDepthPrepass(d3dx::D3D12ResourceBarrierList& barriers);
 void AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers);
 void AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers);
 
+void AddTransitionsForDLSS(d3dx::D3D12ResourceBarrierList& barriers);
+void AddTransitionsAfterPostProcess(d3dx::D3D12ResourceBarrierList& barriers);
+
 void ClearDepthStencilView(DXGraphicsCommandList* cmdList);
 void ClearMainBufferView(DXGraphicsCommandList* cmdList);
 void SetRenderTargetsForDepthPrepass(DXGraphicsCommandList* cmdList);

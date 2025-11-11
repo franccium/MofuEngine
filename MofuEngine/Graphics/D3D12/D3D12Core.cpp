@@ -18,6 +18,7 @@
 #include "Graphics/RTSettings.h"
 #include "Graphics/RenderingDebug.h"
 #include "Content/EngineShaders.h"
+#include "NGX/D3D12DLSS.h"
 #include "Graphics/RTSettings.h"
 #include "Physics/DebugRenderer/DebugRenderer.h"
 
@@ -227,6 +228,38 @@ public:
             _cmdFrames[i].Release();
     }
 
+    void EndFrameNoPresent()
+    {
+        ZoneScopedN("EndFrame CPU");
+
+        for (u32 i{ FIRST_DEPTH_WORKER }; i < COMMAND_LIST_WORKERS; ++i)
+        {
+            DXCall(_cmdLists[i]->Close());
+        }
+
+        _cmdQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&_cmdLists[DEPTH_SETUP_LIST]);
+
+        ++_currentCPUFrame;
+
+        CommandFrame& frame{ _cmdFrames[_frameIndex] };
+        frame.fenceValue = _currentCPUFrame;
+        // if frame.fenceValue < signaled fence value, the GPU is done executing 
+        // the commands for this frame and we can reuse the frame for new commands
+        DXCall(_cmdQueue->Signal(_fence, _currentCPUFrame));
+
+        // wait for the GPU if it's lagging behind
+        const u64 gpuBehind{ _currentCPUFrame - _currentGPUFrame };
+        assert(gpuBehind <= FRAME_BUFFER_COUNT);
+        if (gpuBehind >= FRAME_BUFFER_COUNT)
+        {
+            frame.fenceValue = _currentGPUFrame + 1;
+            frame.Wait(_fenceEvent, _fence);
+            ++_currentGPUFrame;
+        }
+
+        _frameIndex = (_frameIndex + 1) % FRAME_BUFFER_COUNT;
+    }
+
     [[nodiscard]] constexpr ID3D12CommandQueue* const CommandQueue() const { return _cmdQueue; }
     [[nodiscard]] constexpr DXGraphicsCommandList* const CommandList(u32 workerIdx) const { return _cmdLists[workerIdx]; }
     [[nodiscard]] constexpr DXGraphicsCommandList* const* CommandLists() const { return _cmdLists; } 
@@ -311,7 +344,14 @@ bool
 InitializeModules()
 {
     graphics::rt::settings::Initialize();
-    return upload::Initialize() && content::Initialize() && shaders::Initialize() && gpass::Initialize() && fx::Initialize() && light::InitializeLightCulling();
+    bool success{ upload::Initialize() && content::Initialize() && shaders::Initialize() }; 
+    //if (!dlss::Initialize({graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT}))
+    //{
+    //    assert(false);
+    //    DEBUG_LOG("Can't initialize DLSS");
+    //}
+    success &= (gpass::Initialize() && fx::Initialize() && light::InitializeLightCulling());
+    return success;
 }
 
 bool 
@@ -395,7 +435,7 @@ D3D12FrameInfo
 GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Surface& surface, u32 frameIndex, f32 deltaTime)
 {
     camera::D3D12Camera& camera{ camera::GetCamera(info.CameraID) };
-    camera.Update();
+    camera.Update(frameIndex);
     
     // fill out the global shader data
     using namespace DirectX;
@@ -413,6 +453,11 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
     data.DirectionalLightsCount = graphics::light::GetDirectionalLightsCount(info.LightSetIdx);
     data.AmbientLight = graphics::light::GetAmbientLight(info.LightSetIdx);
     data.SkyboxSrvIndex = graphics::light::GetLightSet(info.LightSetIdx).SkyboxSrvIndex;
+#if IS_DLSS_ENABLED
+    data.DLSSInputResolution = { (f32)dlss::GetOptimalResolution().x, (f32)dlss::GetOptimalResolution().y };
+    data.Jitter = camera.CurrentJitter();
+    data.Jitter = camera.PrevJitter();
+#endif
 
     hlsl::GlobalShaderData* const shaderData{ cbuffer.AllocateSpace<hlsl::GlobalShaderData>() };
     memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
@@ -520,7 +565,10 @@ Initialize()
         }
     }
 
-    if (!InitializeModules()) return InitializeFailed();
+    if constexpr (DLSS_ENABLED) 
+    {
+
+    }
 
 #if ENABLE_DEBUG_LAYER
     {
@@ -541,9 +589,11 @@ Initialize()
     }
 #endif
 
+    if (!InitializeModules()) return InitializeFailed();
+    if (!ui::Initialize(gfxCommand.CommandQueue())) return InitializeFailed();
+
     tracyQueueContext = TracyD3D12Context(mainDevice, gfxCommand.CommandQueue());
 
-    if (!ui::Initialize(gfxCommand.CommandQueue())) return InitializeFailed();
 
 #if PHYSICS_DEBUG_RENDER_ENABLED
     graphics::d3d12::debug::Initialize();
@@ -557,6 +607,9 @@ Shutdown()
 {
     gfxCommand.FlushAndRelease();
 
+#if IS_DLSS_ENABLED
+    dlss::Shutdown();
+#endif
     gpass::Shutdown();
     fx::Shutdown();
     light::ShutdownLightCulling();
@@ -861,6 +914,14 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         ProcessDeferredReleases(frameIndex);
     }
 
+#if IS_DLSS_ENABLED
+    if (!dlss::Initialize())
+    {
+        assert(false && "Failed to initialize DLSS");
+        DEBUG_LOG("Can't initialize DLSS");
+    }
+#endif
+
     const D3D12Surface& surface{ surfaces[id] };
     DXResource* const currentBackBuffer{ surface.BackBuffer() };
 
@@ -871,8 +932,15 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     gpass::StartNewFrame(d3d12FrameInfo);
 
-    gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
-    fx::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
+#if IS_DLSS_ENABLED
+    {
+        gpass::SetBufferSize(dlss::GetOptimalResolution());
+        dlss::SetTargetResolution({ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT });
+    }
+#else
+    gpass::SetBufferSize({ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT });
+#endif
+    fx::SetBufferSize({ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT });
 
     ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
 
@@ -965,6 +1033,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             // the first command list has to setup the depth buffer to be read from, but can do it only after the others finished their work on depth;
             // transitions and clears the main buffer
             
+            //gpass::AddTransitionsForGPass(barriers);
             gpass::AddTransitionsForGPass(barriers);
             barriers.ApplyBarriers(cmdListGPassSetup);
             gpass::ClearMainBufferView(cmdListGPassSetup);
@@ -1013,6 +1082,24 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         graphics::d3d12::debug::Render(d3d12FrameInfo);
 #endif
 
+
+#if IS_DLSS_ENABLED
+    // DLSS
+    {
+        gpass::AddTransitionsForDLSS(barriers);
+        dlss::ApplyBarriersBeforeDLSS(barriers);
+        barriers.ApplyBarriers(cmdListFXSetup);
+        dlss::DoDLSSPass(gpass::MainBuffer().Resource(), nullptr, camera::GetCamera(frameInfo.CameraID), cmdListFXSetup);
+        dlss::ApplyBarriersAfterDLSS(barriers);
+    }
+#endif
+
+    for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
+    {
+        DXGraphicsCommandList* const cmdList{ cmdLists[i] };
+        cmdList->SetDescriptorHeaps(1, &heaps[0]);
+    }
+
     // Post Processing
     {
         TracyD3D12ZoneC(tracyQueueContext, cmdListFXSetup, "Post Processing", tracy::Color::Blue2);
@@ -1025,6 +1112,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
             fx::DoPostProcessing(cmdListFXSetup, d3d12FrameInfo, surface.RTV());
             fx::AddTransitionsPostPostProcess(barriers);
+            gpass::AddTransitionsAfterPostProcess(barriers);
             barriers.ApplyBarriers(cmdListFXSetup);
         }
     }
@@ -1053,6 +1141,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     }
 
     d3dx::TransitionResource(currentBackBuffer, cmdListFXSetup, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    //d3dx::TransitionResource(currentBackBuffer, cmdListFXSetup, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
     gfxCommand.EndFrame(surface);
 	srvDescHeap.EndFrame(frameIndex);

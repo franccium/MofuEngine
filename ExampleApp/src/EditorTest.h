@@ -116,7 +116,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			PostMessage(hwnd, WM_CLOSE, 0, 0);
 			return 0;
 		}
-		else if (wparam == VK_F11)
+		else if (wparam == VK_F10)
 		{
 			isRestarting = true;
 			MofuShutdown();
@@ -176,7 +176,7 @@ bool MofuInitialize()
 
 	platform::WindowInitInfo info[]
 	{
-		{&WindowProc, nullptr, L"MofuEngine", 100, 50, 1600, 900},
+		{&WindowProc, nullptr, L"MofuEngine", 100, 50, graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT},
 		//{&WindowProc, nullptr, L"TestW2", 600, 100, 800, 600},
 		//{&WindowProc, nullptr, L"TestW3", 300, 600, 200, 600},
 		//{&WindowProc, nullptr, L"TestW4", 400, 800, 1300, 200},

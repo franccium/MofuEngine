@@ -300,6 +300,9 @@
     <ClCompile Include="Editor\Text\FontView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\D3D12\NGX\D3D12DLSS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -705,6 +708,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Text\FontView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\NGX\D3D12DLSS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

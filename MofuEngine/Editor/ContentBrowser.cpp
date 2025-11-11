@@ -374,8 +374,8 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         const bool displayLabel = (LayoutItemSize.x >= ImGui::CalcTextSize("999").x);
 
         const u32 columnCount = LayoutColumnCount;
-        s32 drawnItemCount{ 0 };
-        s32 discardedItemCount{ 0 };
+        i32 drawnItemCount{ 0 };
+        i32 discardedItemCount{ 0 };
         ImGuiListClipper clipper;
         clipper.Begin(LayoutLineCount, LayoutItemStep.y);
         if (itemCurrentIdxToFocus != -1)
@@ -427,7 +427,7 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                         }
 
                         ImU32 labelColor = ImGui::GetColorU32(itemIsSelected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
-                        s32 textOffset{ drawnItemCount % 2 ? 16 : 0 };
+                        i32 textOffset{ drawnItemCount % 2 ? 16 : 0 };
                         drawList->AddText(ImVec2(boxMin.x, boxMax.y - ImGui::GetFontSize() + textOffset), labelColor, node->Name.c_str());
 
                         ImGui::PopID();
@@ -570,7 +570,7 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                         {
                             ImU32 labelColor = ImGui::GetColorU32(itemIsSelected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
                             char label[32];
-                            s32 textOffset{ drawnItemCount % 2 ? 16 : 0 };
+                            i32 textOffset{ drawnItemCount % 2 ? 16 : 0 };
                             snprintf(label, 32, "%s", item.second->Name.data());
                             bool isImported{ std::filesystem::exists(content::assets::GetAsset(handle)->ImportedFilePath) };
                             drawList->AddText(ImVec2(boxMin.x, boxMax.y - ImGui::GetFontSize() + textOffset), labelColor, label);

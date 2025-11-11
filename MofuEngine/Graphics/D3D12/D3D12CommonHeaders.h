@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonHeaders.h"
+#include "Shaders/CommonDefines.hlsli"
 #include "Graphics/Renderer.h"
 
 #ifndef NOMINMAX
@@ -70,6 +71,8 @@ constexpr u32 FRAME_BUFFER_COUNT{ 3 };
 constexpr u32 MSAA_SAMPLE_COUNT{ 1 };
 constexpr u32 MSAA_SAMPLE_QUALITY{ 0 };
 constexpr bool MSAA_ENABLED{ MSAA_SAMPLE_COUNT > 1 };
+
+constexpr bool DLSS_ENABLED{ IS_DLSS_ENABLED };
 
 #define MT 0
 

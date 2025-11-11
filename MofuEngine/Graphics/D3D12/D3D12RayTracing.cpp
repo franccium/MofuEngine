@@ -16,6 +16,7 @@
 #include "Graphics/D3D12/D3D12Content/D3D12Material.h"
 #include "Graphics/D3D12/D3D12Content/D3D12Texture.h"
 #include "Editor/RenderingConsole.h"
+#include "NGX/D3D12DLSS.h"
 
 namespace mofu::graphics::d3d12::rt {
 namespace {
@@ -724,6 +725,13 @@ bool CreateRootSignature()
 		d3dx::StaticSampler(d3dx::SamplerState.STATIC_ANISOTROPIC, 0, 0, D3D12_SHADER_VISIBILITY_ALL),
 		d3dx::StaticSampler(d3dx::SamplerState.STATIC_LINEAR, 1, 0, D3D12_SHADER_VISIBILITY_ALL),
 	};
+#if IS_DLSS_ENABLED
+	for (u32 i{ 0 }; i < _countof(samplers); ++i)
+	{
+		samplers[1].MipLODBias = d3dx::SamplerState.MIP_LOD_BIAS
+			+ math::log2(dlss::GetOptimalResolution().x / graphics::DEFAULT_WIDTH) - 1.0 + math::EPSILON;
+	}
+#endif
 
 	d3dx::D3D12RootSignatureDesc rootSigDesc{ &parameters[0], RTRootParameters::Count, D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED, &samplers[0], _countof(samplers) };
 

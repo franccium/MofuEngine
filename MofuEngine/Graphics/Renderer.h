@@ -21,6 +21,9 @@ struct FrameInfo
 	id_t* RenderItemIDs{ nullptr };
 };
 
+constexpr u32 DEFAULT_WIDTH{ 1600 };
+constexpr u32 DEFAULT_HEIGHT{ 900 };
+
 DEFINE_TYPED_ID(surface_id)
 class Surface
 {

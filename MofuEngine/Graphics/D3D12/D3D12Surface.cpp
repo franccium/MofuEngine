@@ -290,7 +290,7 @@ D3D12Surface::Finalize()
     _viewport.MinDepth = 0.f;
     _viewport.MaxDepth = 1.f;
 
-    _scissorRect = { 0, 0, (s32)width, (s32)height };
+    _scissorRect = { 0, 0, (i32)width, (i32)height };
 }
 
 }

@@ -14,6 +14,7 @@ ExampleApp/Assets/*
 ExampleApp/shaders/*
 ExampleApp/Projects/*
 ExampleApp/External/tracy/
+MofuEngine/External/DLSS
 MofuEngine/Content/EngineAssets/
 
 bin/*
@@ -42,6 +43,7 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+build
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -370,10 +372,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/ExampleApp/shaders
-/ExampleApp/Assets/characters/cyborg_tex
-/ExampleApp/Assets/characters
-/ExampleApp/Assets/furtniture
-/ExampleApp/Assets/nature
-/ExampleApp/Assets/Sponza.fbx
-/ExampleApp/Projects/TestProject/Resources
+

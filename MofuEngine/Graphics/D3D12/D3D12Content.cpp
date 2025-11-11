@@ -6,6 +6,7 @@
 #include "D3D12Content/D3D12ContentCommon.h"
 #include "D3D12GPass.h"
 #include "ECS/Entity.h"
+#include "NGX/D3D12DLSS.h"
 
 namespace mofu::graphics::d3d12::content {
 namespace {
@@ -238,12 +239,21 @@ CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFl
 		parameters[params::LightGrid].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5);
 		parameters[params::LightIndexList].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6);
 
-		const D3D12_STATIC_SAMPLER_DESC samplers[]
+		D3D12_STATIC_SAMPLER_DESC samplers[]
 		{
 			d3dx::StaticSampler(d3dx::SamplerState.STATIC_POINT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
 			d3dx::StaticSampler(d3dx::SamplerState.STATIC_LINEAR, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL),
 			d3dx::StaticSampler(d3dx::SamplerState.STATIC_ANISOTROPIC, 2, 0, D3D12_SHADER_VISIBILITY_PIXEL),
 		};
+#if IS_DLSS_ENABLED
+		for (u32 i{ 0 }; i < _countof(samplers); ++i)
+		{
+			//samplers[i].MipLODBias = d3dx::SamplerState.MIP_LOD_BIAS
+			//	+ std::log2((f32)dlss::GetOptimalResolution().x / (f32)graphics::DEFAULT_WIDTH) - 1.0f + math::EPSILON;
+			samplers[i].MipLODBias = d3dx::SamplerState.MIP_LOD_BIAS
+				+ std::log2((f32)dlss::DLSS_OPTIMAL_RESOLUTION_X / (f32)graphics::DEFAULT_WIDTH) - 1.0f + math::EPSILON;
+		}
+#endif
 
 		rootSignature = d3dx::D3D12RootSignatureDesc
 		{

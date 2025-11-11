@@ -1,6 +1,7 @@
 #pragma once
 #include "D3D12CommonHeaders.h"
 #include "EngineAPI/Camera.h"
+#include "ECS/Entity.h"
 
 namespace mofu::graphics::d3d12::camera {
 class D3D12Camera
@@ -8,7 +9,7 @@ class D3D12Camera
 public:
 	explicit D3D12Camera(CameraInitInfo info);
 
-	void Update();
+	void Update(u32 frameIndex);
 	
 	void Up(v3 up);
 	constexpr void FieldOfView(f32 fov);
@@ -23,7 +24,6 @@ public:
 	[[nodiscard]] constexpr xmmat InverseProjection() const { return _inverseProjection; }
 	[[nodiscard]] constexpr xmmat InverseView() const { return _inverseView; }
 	[[nodiscard]] constexpr xmmat ViewProjection() const { return _viewProjection; }
-	[[nodiscard]] constexpr xmmat PrevViewProjection() const { return _prevViewProjection; }
 	[[nodiscard]] constexpr xmmat InverseViewProjection() const { return _inverseViewProjection; }
 	[[nodiscard]] constexpr xmm Up() const { return _up; }
 	[[nodiscard]] constexpr xmm Position() const { return _position; }
@@ -36,6 +36,9 @@ public:
 	[[nodiscard]] constexpr f32 FieldOfView() const { return _fieldOfView; }
 	[[nodiscard]] constexpr graphics::Camera::Type ProjectionType() const { return _projectionType; }
 	[[nodiscard]] constexpr id_t EntityID() const { return _entityID; }
+	[[nodiscard]] constexpr v2 CurrentJitter() const { return _jitter; }
+	[[nodiscard]] constexpr v2 PrevJitter() const { return _prevJitter; }
+	[[nodiscard]] constexpr m4x4 PrevViewProjection() const { return _prevViewProjection; }
 
 private:
 	xmmat _view;
@@ -43,7 +46,6 @@ private:
 	xmmat _projection;
 	xmmat _inverseProjection;
 	xmmat _viewProjection;
-	xmmat _prevViewProjection;
 	xmmat _inverseViewProjection;
 	xmm _up;
 	xmm _position;
@@ -55,7 +57,11 @@ private:
 	f32 _viewHeight;
 	f32 _fieldOfView;
 	graphics::Camera::Type _projectionType;
-	id_t _entityID{ id::INVALID_ID };
+	ecs::Entity _entityID{ id::INVALID_ID };
+	v2 _jitter;
+	v2 _prevJitter{ 0.f, 0.f };
+	m4x4 _prevProjection{};
+	m4x4 _prevViewProjection{};
 };
 
 graphics::Camera CreateCamera(CameraInitInfo info);

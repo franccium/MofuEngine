@@ -85,8 +85,8 @@ InternalWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 void ResizeWindow(const WindowInfo& info, RECT area)
 {
     AdjustWindowRect(&area, info.style, FALSE);
-    const s32 width{ area.right - area.left };
-    const s32 height{ area.bottom - area.top };
+    const i32 width{ area.right - area.left };
+    const i32 height{ area.bottom - area.top };
     MoveWindow(info.hwnd, info.topLeft.x, info.topLeft.y, width, height, true);
 }
 
@@ -199,10 +199,10 @@ ConcoctWindow(const WindowInitInfo* const initInfo)
     AdjustWindowRect(&rc, info.style, FALSE);
 
     const wchar_t* caption{ (initInfo && initInfo->caption ? initInfo->caption : L"Game") };
-    const s32 left{ initInfo ? initInfo->left : info.topLeft.x };
-    const s32 top{ initInfo ? initInfo->top : info.topLeft.y };
-    const s32 width{ rc.right - rc.left };
-    const s32 height{ rc.bottom - rc.top };
+    const i32 left{ initInfo ? initInfo->left : info.topLeft.x };
+    const i32 top{ initInfo ? initInfo->top : info.topLeft.y };
+    const i32 width{ rc.right - rc.left };
+    const i32 height{ rc.bottom - rc.top };
 
     info.hwnd = CreateWindowEx(
         0, wc.lpszClassName, caption, info.style, left, top, width, height, parent, NULL, NULL, NULL

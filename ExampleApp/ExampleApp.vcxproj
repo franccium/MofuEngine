@@ -59,7 +59,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;TRACY_ENABLE;YAML_CPP_STATIC_DEFINE;JPH_DEBUG_RENDERER;JPH_OBJECT_STREAM;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\ExampleApp\External\tracy\public;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine\Common;$(SolutionDir)MofuEngine/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS;C:\mofuengine\MofuEngine\ExampleApp\External\tracy\public;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine\Common;$(SolutionDir)MofuEngine/</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -77,7 +77,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS\lib;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>yaml-cppd.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
