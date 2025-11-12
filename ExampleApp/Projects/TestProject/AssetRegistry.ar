@@ -238,10 +238,6 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_rough.png
   ImportedFilePath: Projects/TestProject\Resources\base_rough.tex
-2518528575602889849:
-  Type: 3
-  OriginalFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
 5073820861732076315:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\cloth_diff.png
@@ -250,14 +246,18 @@
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest245.mat
   ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest245.mat
-6367594233100196883:
-  Type: 1
-  OriginalFilePath: Projects/TestProject\Assets\nature\Pebbles01.fbx
-  ImportedFilePath: ""
+2518528575602889849:
+  Type: 3
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Shapes\2121932827_0.ps
 10437869203332709708:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ba\textures\default_emissive.jpeg
   ImportedFilePath: Projects/TestProject\Resources\default_emissive.tex
+6367594233100196883:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\nature\Pebbles01.fbx
+  ImportedFilePath: ""
 3672992448312417928:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\Physics\pplanef.fbx
@@ -2158,6 +2158,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\Materials\steel01_8.mat
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\Materials\steel01_8.mat
+6394369362296516313:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\testing\bigsecretbox.fbx
+  ImportedFilePath: ""
 8708818384244121230:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\nature\fern\fern_02_1k.fbx
@@ -2226,3 +2230,7 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\potted_plant_02_1k\Materials\potted_plant_02_1k_2.mat
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\potted_plant_02_1k\Materials\potted_plant_02_1k_2.mat
+2204069555185920182:
+  Type: 7
+  OriginalFilePath: Projects/TestProject\Shaders\TestMaterialShader.hlsl
+  ImportedFilePath: Projects/TestProject\Resources\Shaders\TestMaterialShader.sd

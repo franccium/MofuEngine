@@ -307,6 +307,13 @@ struct Camera : Component
 		editor::ui::DisplayEditableFloat(&c.RotationSpeed, "RotationSpeed", 0.9f, 2.0f);
 		ImGui::TableNextRow();
 		editor::ui::DisplayEditableFloat(&c.SlerpFactor, "SlerpFactor", 0.1f, 0.99f);
+		ImGui::TableNextRow();
+
+		static f32 farZ{1000.f};
+		if (editor::ui::DisplayEditableFloat(&farZ, "FarZ", 10.f, 8000.f))
+		{
+			graphics::GetMainCamera().Range(0.1f, farZ);
+		}
 	}
 #endif
 };

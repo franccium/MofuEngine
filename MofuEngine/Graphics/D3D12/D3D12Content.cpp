@@ -131,7 +131,7 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 		stream.renderTargetFormats = rtArray;
 		stream.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPES[primitiveTopology];
 		stream.rasterizer = !(materialFlags & MaterialFlags::NoFaceCulling) ? d3dx::RasterizerState.BACKFACE_CULLING : d3dx::RasterizerState.NO_CULLING;
-		stream.depthStencil = !(materialFlags & MaterialFlags::DepthBufferDisabled) ? d3dx::DepthState.REVERSED_READONLY : d3dx::DepthState.DISABLED;
+		stream.depthStencil = !(materialFlags & MaterialFlags::DepthBufferDisabled) ? d3dx::DepthState.REVERSED_READONLY_STENCIL_TEST : d3dx::DepthState.DISABLED;
 		stream.depthStencilFormat = gpass::DEPTH_BUFFER_FORMAT;
 		stream.blend = d3dx::BlendStateFromFlags(materialFlags);
 
@@ -177,11 +177,11 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 	}
 	else if (!(materialFlags & (MaterialFlags::BlendAlpha | MaterialFlags::AlphaTest)))
 	{
-		stream.depthStencil = d3dx::DepthState.REVERSED;
+		stream.depthStencil = d3dx::DepthState.REVERSED_WRITE_STENCIL_WRITE;
 	}
 	else
 	{
-		stream.depthStencil = d3dx::DepthState.REVERSED_READONLY;
+		stream.depthStencil = d3dx::DepthState.REVERSED_READONLY_STENCIL_TEST;
 	}
 	idPair.DepthPsoID = CreatePSOIfNeeded(streamPtr, alignedStreamSize, true);
 

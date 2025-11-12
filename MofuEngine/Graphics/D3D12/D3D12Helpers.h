@@ -137,7 +137,7 @@ constexpr struct
         0                                           // DepthBoundsTestEnable
     };
 
-    const D3D12_DEPTH_STENCIL_DESC1 REVERSED
+    const D3D12_DEPTH_STENCIL_DESC1 REVERSED_WRITE
     {
         1,                                          // DepthEnable
         D3D12_DEPTH_WRITE_MASK_ALL,                 // DepthWriteMask
@@ -161,6 +161,52 @@ constexpr struct
         {},                                         // FrontFace
         {},                                         // BackFace
         0                                           // DepthBoundsTestEnable
+    };
+
+    const D3D12_DEPTH_STENCIL_DESC1 REVERSED_WRITE_STENCIL_WRITE
+    {
+        1,                                              // DepthEnable
+        D3D12_DEPTH_WRITE_MASK_ALL,                     // DepthWriteMask
+        D3D12_COMPARISON_FUNC_GREATER_EQUAL,            // DepthFunc
+        1,                                              // StencilEnable
+        0xFF,                                           // StencilReadMask
+        0xFF,                                           // StencilWriteMask
+        {                                               // FrontFace
+            .StencilFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilPassOp = D3D12_STENCIL_OP_REPLACE,
+            .StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+        },
+        {                                               // BackFace
+            .StencilFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilPassOp = D3D12_STENCIL_OP_REPLACE,
+            .StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS
+        },
+        0                                               // DepthBoundsTestEnable
+    };
+
+    const D3D12_DEPTH_STENCIL_DESC1 REVERSED_READONLY_STENCIL_TEST
+    {
+        1,                                              // DepthEnable
+        D3D12_DEPTH_WRITE_MASK_ZERO,                    // DepthWriteMask
+        D3D12_COMPARISON_FUNC_GREATER_EQUAL,            // DepthFunc
+        1,                                              // StencilEnable
+        0xFF,                                           // StencilReadMask
+        0x00,                                           // StencilWriteMask
+        {                                               // FrontFace
+            .StencilFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilPassOp = D3D12_STENCIL_OP_REPLACE,
+            .StencilFunc = D3D12_COMPARISON_FUNC_EQUAL
+        },
+        {                                               // BackFace
+            .StencilFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+            .StencilPassOp = D3D12_STENCIL_OP_REPLACE,
+            .StencilFunc = D3D12_COMPARISON_FUNC_EQUAL
+        },
+        0                                               // DepthBoundsTestEnable
     };
 } DepthState;
 
@@ -204,7 +250,31 @@ constexpr struct
                 D3D12_LOGIC_OP_NOOP,                // LogicOp
                 D3D12_COLOR_WRITE_ENABLE_ALL        // RenderTargetWriteMask;
             },
-            {},{},{},{},{},{},{}
+        {
+                1,                                  // BlendEnable;
+                0,                                  // LogicOpEnable;
+                D3D12_BLEND_SRC_ALPHA,              // SrcBlend;
+                D3D12_BLEND_INV_SRC_ALPHA,          // DestBlend;
+                D3D12_BLEND_OP_ADD,                 // BlendOp;
+                D3D12_BLEND_ONE,                    // SrcBlendAlpha;
+                D3D12_BLEND_INV_SRC_ALPHA,          // DestBlendAlpha;
+                D3D12_BLEND_OP_ADD,                 // BlendOpAlpha;
+                D3D12_LOGIC_OP_NOOP,                // LogicOp
+                D3D12_COLOR_WRITE_ENABLE_ALL        // RenderTargetWriteMask;
+            },
+        {
+                1,                                  // BlendEnable;
+                0,                                  // LogicOpEnable;
+                D3D12_BLEND_SRC_ALPHA,              // SrcBlend;
+                D3D12_BLEND_INV_SRC_ALPHA,          // DestBlend;
+                D3D12_BLEND_OP_ADD,                 // BlendOp;
+                D3D12_BLEND_ONE,                    // SrcBlendAlpha;
+                D3D12_BLEND_INV_SRC_ALPHA,          // DestBlendAlpha;
+                D3D12_BLEND_OP_ADD,                 // BlendOpAlpha;
+                D3D12_LOGIC_OP_NOOP,                // LogicOp
+                D3D12_COLOR_WRITE_ENABLE_ALL        // RenderTargetWriteMask;
+            },
+            {},{},{},{},{}
         }
     };
 

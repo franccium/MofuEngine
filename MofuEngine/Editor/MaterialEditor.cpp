@@ -71,6 +71,7 @@ TextureUsage::Usage textureBeingChanged{};
 
 Vec<std::string> texFiles{};
 Vec<std::string> matFiles{};
+Vec<std::string> shaderFiles{};
 
 constexpr u32 MAX_NAME_LENGTH{ 16 };
 char nameBuffer[MAX_NAME_LENGTH]{};
@@ -656,6 +657,42 @@ RenderMaterialEditor()
 	if (ImGui::Button("Duplicate Material"))
 	{
 		DuplicateCurrentMaterial();
+	}
+
+	//NOTE: need big refactor; and for now assuming that its always just vertex and pixel shader in one file
+	if (ImGui::Button("Shaders"))
+	{
+		ImGui::OpenPopup("LoadShaderPopup");
+	}
+	if (ImGui::BeginPopup("LoadShaderPopup"))
+	{
+		shaderFiles.clear();
+		content::ListFilesByExtensionRec(graphics::GetShaderFileExtension(), project::GetShaderDirectory(), shaderFiles);
+
+		for (std::string_view path : shaderFiles)
+		{
+			if (ImGui::Selectable(path.data()))
+			{
+				content::AssetHandle assetHandle{ content::assets::GetHandleFromPath(path) };
+				if (assetHandle != content::INVALID_HANDLE)
+				{
+					content::AssetPtr asset{ content::assets::GetAsset(assetHandle) };
+					id_t vsShaderGroupID{ asset->AdditionalData };
+					id_t psShaderGroupID{ asset->AdditionalData2 };
+					assert(id::IsValid(vsShaderGroupID) && id::IsValid(psShaderGroupID));
+					//NOTE: the keys are the same as normally for now, they will be figured out from the material flags
+					editorMaterial.ShaderIDs[shaders::ShaderType::Vertex] = vsShaderGroupID;
+					editorMaterial.ShaderIDs[shaders::ShaderType::Pixel] = psShaderGroupID;
+					editorMaterial.ShaderHandle = assetHandle;
+				}
+				else
+				{
+					log::Warn("Can't find Shader assetHandle from path");
+				}
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		ImGui::EndPopup();
 	}
 
 	if (isBrowserOpen) RenderTextureBrowser();

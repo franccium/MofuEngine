@@ -43,11 +43,11 @@ constexpr const char* ASSET_TYPE_TO_STRING[content::AssetType::Count] {
 constexpr const char* ASSET_METADATA_EXTENSION{ ".mt" };
 
 const std::unordered_set<std::string_view> ASSET_EXTENSIONS {
-	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".ps", ".wav", ".mat", 
+	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".ps", ".wav", ".mat", ".sd", ".hlsl"
 };
 
 const std::unordered_set<std::string_view> ENGINE_ASSET_EXTENSIONS {
-	".mesh", ".tex", ".ps", ".mat",
+	".mesh", ".tex", ".ps", ".mat", ".sd", 
 };
 
 struct AssetFlag
@@ -110,6 +110,8 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtensi
 	{ ".ps", AssetType::PhysicsShape },
 	{ ".wav", AssetType::Audio },
 	{ ".mat", AssetType::Material },
+	{ ".sd", AssetType::Shader },
+	{ ".hlsl", AssetType::Shader},
 };
 
 const std::unordered_map<std::string_view, AssetType::type> assetTypeFromEngineExtension {
@@ -117,6 +119,7 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromEngineE
 	{ ".tex", AssetType::Texture },
 	{ ".ps", AssetType::PhysicsShape },
 	{ ".mat", AssetType::Material },
+	{ ".sd", AssetType::Shader },
 };
 
 constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET {

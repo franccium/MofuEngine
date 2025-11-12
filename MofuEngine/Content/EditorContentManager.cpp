@@ -100,6 +100,33 @@ RegisterAllAssetsInProject()
 	}
 }
 
+//TODO: adhoc to make shaders visible in the content browser
+void
+RegisterShaders()
+{
+	std::filesystem::path shaderBaseDirectory{ editor::project::GetShaderDirectory() };
+	for (const auto& dirEntry : std::filesystem::recursive_directory_iterator{ shaderBaseDirectory })
+	{
+		if (!dirEntry.is_regular_file()) continue;
+
+		const std::filesystem::path& path{ dirEntry.path() };
+		std::string extension{ path.extension().string() };
+		if (extension != graphics::GetShaderFileExtension()) continue;
+
+		if (!IsAssetAlreadyRegistered(path))
+		{
+			AssetHandle handle{ ImportAsset(path, {}) };
+			AssetPtr asset{ GetAsset(handle) };
+			PairAssetWithResource(handle, asset->AdditionalData, AssetType::Shader);
+			PairAssetWithResource(handle, asset->AdditionalData2, AssetType::Shader);
+
+			content::AssetHandle handle1{ content::assets::GetAssetFromResource(asset->AdditionalData, content::AssetType::Shader) };
+			content::AssetHandle handle2{ content::assets::GetAssetFromResource(asset->AdditionalData2, content::AssetType::Shader) };
+			assert(handle1 == handle2);
+		}
+	}
+}
+
 } // anonymous namespace
 
 bool
@@ -337,6 +364,7 @@ InitializeAssetRegistry()
 	DeserializeRegistry();
 
 	RegisterAllAssetsInProject();
+	RegisterShaders();
 
 	LoadEditorAssets();
 }

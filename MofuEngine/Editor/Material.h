@@ -27,6 +27,7 @@ struct EditorMaterial
 	graphics::MaterialType::type Type{ graphics::MaterialType::Opaque };
 	u32 TextureCount{ 0 };
 	id_t ShaderIDs[shaders::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
+	content::AssetHandle ShaderHandle{ content::INVALID_HANDLE };
 	u32 Flags{ graphics::MaterialFlags::None };
 };
 

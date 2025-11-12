@@ -60,6 +60,7 @@ void InitializeProjectProperties()
 	const char* TEXTURE_DIRECTORY_NAME{ "Textures" };
 	const char* MESH_DIRECTORY_NAME{ "Meshes" };
 	const char* PREFABS_DIRECTORY_NAME{ "Prefabs" };
+	const char* SHADERS_DIRECTORY_NAME{ "Shaders" };
 	ProjectProperties& properties{ activeProject.Properties };
 	properties.AssetDirectory = activeProject.ProjectDirectory / ASSET_DIRECTORY_NAME;
 	properties.ResourceDirectory = activeProject.ProjectDirectory / RESOURCE_DIRECTORY_NAME;
@@ -69,6 +70,7 @@ void InitializeProjectProperties()
 	properties.TextureDirectory = properties.ResourceDirectory / TEXTURE_DIRECTORY_NAME;
 	properties.MeshDirectory = properties.ResourceDirectory / MESH_DIRECTORY_NAME;
 	properties.PrefabDirectory = properties.ResourceDirectory / PREFABS_DIRECTORY_NAME;
+	properties.ShaderDirectory = activeProject.ProjectDirectory / SHADERS_DIRECTORY_NAME;
 }
 
 void CreateProjectDirectories(const ProjectProperties& properties)
@@ -166,6 +168,12 @@ const std::filesystem::path&
 GetAssetDirectory()
 {
 	return activeProject.Properties.AssetDirectory;
+}
+
+const std::filesystem::path&
+GetShaderDirectory()
+{
+	return activeProject.Properties.ShaderDirectory;
 }
 
 const std::filesystem::path&

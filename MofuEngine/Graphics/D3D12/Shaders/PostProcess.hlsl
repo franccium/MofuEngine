@@ -60,6 +60,8 @@ float3 LinearToPQ(float3 lin)
 }
 
 #define RENDER_SKYBOX 1
+// testing for materials that don't write to the depth buffer, assumes there is a big opaque cube with materialID == 0, but won't work cause that cube would need to be skybox textured anyways
+#define MATERIAL_SKYBOX_TEST 1 
 
 #if RAYTRACING
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
@@ -87,8 +89,16 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     float depth = gpassDepth.SampleLevel(PointSampler, UV, 0).r;
 #endif
 
+    
 #if RENDER_SKYBOX
-    if (depth > 0.f)
+#if MATERIAL_SKYBOX_TEST
+    Texture2D normalBuffer = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
+    const float mat = normalBuffer[Position.xy].a;
+    const float unpackedMatLow = (mat * 255.0f);
+    if (unpackedMatLow > 0.1f)
+#else
+    if (depth > 0.0f)
+#endif
     {
 #ifdef DEBUG
         Texture2D texture;
@@ -110,7 +120,7 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         else if (DebugOptions.DebugMode == DEBUG_MATERIAL_IDS)
         {
             texture = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-            color = texture[Position.xy].aaa;
+            color = texture[Position.xy].aaa * 2.f;
         }
         else if (DebugOptions.DebugMode == DEBUG_MOTION_VECTORS)
         {

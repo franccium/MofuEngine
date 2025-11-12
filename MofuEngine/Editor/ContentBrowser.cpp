@@ -276,6 +276,10 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
         {
             Selected.clear();
         }
+        if (ImGui::Button("Save Assets"))
+        {
+            content::assets::SaveAssetRegistry();
+        }
         DrawAssetTypeFilter();
 
         if (ImGui::BeginMenu("File"))
@@ -318,10 +322,6 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
             ImGui::Checkbox("Stretch Spacing", &StretchSpacing);
             ImGui::PopItemWidth();
             ImGui::EndMenu();
-        }
-        if (ImGui::Button("Save Assets"))
-        {
-            content::assets::SaveAssetRegistry();
         }
         ImGui::EndMenuBar();
     }

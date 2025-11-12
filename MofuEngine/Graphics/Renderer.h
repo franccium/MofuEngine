@@ -236,6 +236,7 @@ const char* const GetEngineShadersPath(GraphicsPlatform platform);
 const char* const GetDebugEngineShadersPath();
 const char* const GetDebugEngineShadersPath(GraphicsPlatform platform);
 void OnShadersRecompiled(EngineShader::ID shaderID);
+const char* const GetShaderFileExtension();
 
 id_t AddSubmesh(const u8*& data);
 void RemoveSubmesh(id_t id);

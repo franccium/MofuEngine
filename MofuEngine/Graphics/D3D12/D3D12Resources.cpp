@@ -229,6 +229,11 @@ D3D12DepthBuffer::D3D12DepthBuffer(D3D12TextureInitInfo info)
 		info.desc->Format = DXGI_FORMAT_R32_TYPELESS;
 		srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
 	}
+	if (info.desc->Format == DXGI_FORMAT_D32_FLOAT_S8X24_UINT)
+	{
+		info.desc->Format = DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
+		srvDesc.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+	}
 
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

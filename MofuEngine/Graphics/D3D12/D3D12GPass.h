@@ -1,5 +1,6 @@
 #pragma once
 #include "D3D12CommonHeaders.h"
+#define USE_STENCIL 0
 
 namespace mofu::graphics::d3d12 {
 struct D3D12FrameInfo;
@@ -9,7 +10,11 @@ namespace mofu::graphics::d3d12::gpass {
 struct GPassCache;
 
 constexpr DXGI_FORMAT MAIN_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT };
+#if USE_STENCIL
+constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT{ DXGI_FORMAT_D32_FLOAT_S8X24_UINT };
+#else
 constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT{ DXGI_FORMAT_D32_FLOAT };
+#endif
 constexpr DXGI_FORMAT NORMAL_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT };
 constexpr DXGI_FORMAT MOTION_VEC_BUFFER_FORMAT{ DXGI_FORMAT_R16G16_FLOAT };
 

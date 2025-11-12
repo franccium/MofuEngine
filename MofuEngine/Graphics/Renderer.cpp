@@ -26,10 +26,14 @@ constexpr const char* ENGINE_DEBUG_SHADERS_PATHS[][EngineDebugShader::Count]{
         ".\\shaders\\d3d12\\PostProcess_d.bin",
     }
 };
+constexpr const char* SHADER_FILE_EXTENSIONS[(u32)GraphicsPlatform::Count]{
+    ".hlsl",
+};
 
 PlatformInterface gfxInterface;
 FrameInfo frameInfo{};
 Vec<ecs::Entity> visibleEntities{};
+GraphicsPlatform _platform;
 
 bool SetupPlatformInterface(GraphicsPlatform platform)
 {
@@ -61,10 +65,11 @@ const FrameInfo& GetCurrentFrameInfo()
 bool
 Initialize(GraphicsPlatform platform)
 {
+    _platform = platform;
     return SetupPlatformInterface(platform) && gfxInterface.initialize() && ui::Initialize(&gfxInterface);
 }
 
-void 
+void
 Shutdown()
 {
     if (gfxInterface.platform != (GraphicsPlatform)-1) gfxInterface.shutdown();
@@ -83,20 +88,20 @@ RemoveSurface(surface_id id)
 }
 
 Camera cam{};
-Camera 
+Camera
 CreateCamera(CameraInitInfo info)
 {
     cam = gfxInterface.camera.create(info);
-	return cam;
+    return cam;
 }
 
-void 
+void
 RemoveCamera(camera_id id)
 {
-	gfxInterface.camera.remove(id);
+    gfxInterface.camera.remove(id);
 }
 
-const 
+const
 Camera& GetMainCamera()
 {
     return cam;
@@ -117,16 +122,16 @@ GetEngineShadersPath()
 const char* const
 GetEngineShaderPath(EngineShader::ID shaderID)
 {
-    return ENGINE_SHADERS_PATHS[(u32)GraphicsPlatform::Direct3D12][shaderID];
+    return ENGINE_SHADERS_PATHS[(u32)_platform][shaderID];
 }
 
 const char* const
 GetDebugEngineShaderPath(EngineDebugShader::ID shaderID)
 {
-    return ENGINE_DEBUG_SHADERS_PATHS[(u32)GraphicsPlatform::Direct3D12][shaderID];
+    return ENGINE_DEBUG_SHADERS_PATHS[(u32)_platform][shaderID];
 }
 
-const char*  const
+const char* const
 GetDebugEngineShadersPath()
 {
     return ENGINE_DEBUG_SHADERS_BLOB_PATHS[(u32)gfxInterface.platform];
@@ -144,10 +149,15 @@ GetDebugEngineShadersPath(GraphicsPlatform platform)
     return ENGINE_DEBUG_SHADERS_BLOB_PATHS[(u32)platform];
 }
 
-void 
+void
 OnShadersRecompiled(EngineShader::ID shaderID)
 {
-	gfxInterface.shaders.onShadersRecompiled(shaderID);
+    gfxInterface.shaders.onShadersRecompiled(shaderID);
+}
+
+const char* const GetShaderFileExtension()
+{
+    return SHADER_FILE_EXTENSIONS[(u32)_platform];
 }
 
 void 

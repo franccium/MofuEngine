@@ -51,7 +51,7 @@ struct PerObjectData
     float Metallic;
     float Roughness;
     
-    uint MaterialID;
+    uint16_t MaterialID;
 };
 
 struct RTObjectMatrices

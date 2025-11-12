@@ -48,7 +48,7 @@ namespace mofu::graphics::d3d12 {
 #endif
 
 			memcpy(&data->BaseColor, materialSurface, sizeof(MaterialSurface));
-			data->MaterialID = materialID;
+			data->MaterialID = (u16)materialID;
 		}
 
 

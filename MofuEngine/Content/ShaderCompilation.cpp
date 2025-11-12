@@ -471,6 +471,7 @@ CompileShader(ShaderFileInfo info, const char* path, Vec<std::wstring>& extraArg
 
 	std::filesystem::path fullPath{ path };
 	fullPath += info.File;
+    assert(std::filesystem::exists(fullPath));
 	if (!std::filesystem::exists(fullPath)) return {};
 
     return PackShader(ShaderCompiler{}.Compile(info, fullPath, extraArgs, debug), includeErrorsAndDisassembly);
@@ -685,6 +686,26 @@ CompileContentProcessingShaders()
     }
 
     return SaveCompiledShaders(shaders, content::CONTENT_SHADERS_COMPILED_PATH);
+}
+
+bool 
+SaveCompiledShader(const DxcCompiledShader& shader, const std::filesystem::path& savePath)
+{
+    assert(shader.bytecode && shader.bytecode->GetBufferPointer() && shader.bytecode->GetBufferSize());
+    if (!shader.bytecode || !shader.bytecode->GetBufferPointer() || !shader.bytecode->GetBufferSize()) return false;
+
+    std::ofstream file(savePath, std::ios::out | std::ios::binary);
+    if (!file)
+    {
+        return false;
+    }
+
+    void* const bytecode{ shader.bytecode->GetBufferPointer() };
+    const u64 bytecodeLength{ shader.bytecode->GetBufferSize() };
+    file.write(reinterpret_cast<const char*>(&bytecodeLength), sizeof(bytecodeLength));
+    file.write(reinterpret_cast<const char*>(shader.hash.HashDigest), sizeof(shader.hash.HashDigest));
+    file.write(reinterpret_cast<const char*>(bytecode), bytecodeLength);
+    return true;
 }
 
 void 

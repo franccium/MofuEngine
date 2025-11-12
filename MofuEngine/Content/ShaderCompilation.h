@@ -1,6 +1,7 @@
 #pragma once
 #include "CommonHeaders.h"
 #include "Shaders/ShaderData.h"
+#include <filesystem>
 
 namespace mofu::shaders {
 std::unique_ptr<u8[]> CompileShader(ShaderFileInfo info, u8* code, 

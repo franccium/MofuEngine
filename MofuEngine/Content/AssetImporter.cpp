@@ -13,6 +13,7 @@
 #include "Editor/Project/Project.h"
 #include "EditorContentManager.h"
 #include "PhysicsImporter.h"
+#include "Content/ShaderCompilation.h"
 
 namespace mofu::content {
 namespace {
@@ -784,6 +785,75 @@ ImportPhysicsShape([[maybe_unused]] std::filesystem::path path, [[maybe_unused]]
 	return {};
 }
 
+const std::filesystem::path
+ImportShader([[maybe_unused]] std::filesystem::path path, [[maybe_unused]] AssetPtr asset, [[maybe_unused]] const std::filesystem::path& importedPath)
+{
+	assert(std::filesystem::exists(path));
+	shaders::ShaderFileInfo info{};
+	const std::string basePathStr{ path.parent_path().append("").string()};
+	const std::string filename{ path.filename().string() };
+	info.File = filename.c_str();
+	info.EntryPoint = "VS";
+	info.Type = shaders::ShaderType::Vertex;
+	const char* shaderBasePath{ basePathStr.c_str() };
+
+	std::wstring defines[]{ L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
+	Vec<u32> keys{};
+	keys.emplace_back((u32)content::ElementType::StaticNormal);
+	keys.emplace_back((u32)content::ElementType::StaticNormalTexture);
+
+	Vec<std::wstring> extraArgs{};
+	Vec<std::unique_ptr<u8[]>> vertexShaders{};
+	Vec<const u8*> vertexShaderPtrs{};
+	for (u32 i{ 0 }; i < keys.size(); ++i)
+	{
+		extraArgs.clear();
+		extraArgs.emplace_back(L"-D");
+		extraArgs.emplace_back(defines[i]);
+		vertexShaders.emplace_back(std::move(shaders::CompileShader(info, shaderBasePath, extraArgs)));
+		assert(vertexShaders.back().get());
+		vertexShaderPtrs.emplace_back(vertexShaders.back().get());
+	}
+
+	info.EntryPoint = "PS";
+	info.Type = shaders::ShaderType::Pixel;
+	Vec<std::unique_ptr<u8[]>> pixelShaders{};
+	Vec<const u8*> psShaderPtrs{};
+	extraArgs.clear();
+	std::vector<std::vector<std::wstring>> psDefines{
+		{L"TEXTURED_MTL=1"},
+		{L"TEXTURED_MTL=1", L"ALPHA_TEST=1"},
+		{L"TEXTURED_MTL=1", L"ALPHA_BLEND=1"},
+	};
+	Vec<u32> psKeys{};
+	psKeys.emplace_back((u32)graphics::MaterialType::Opaque);
+	psKeys.emplace_back((u32)graphics::MaterialType::AlphaTested);
+	psKeys.emplace_back((u32)graphics::MaterialType::AlphaBlended);
+	for (u32 i{ 0 }; i < psKeys.size(); ++i)
+	{
+		extraArgs.clear();
+		for (auto& s : psDefines[i])
+		{
+			extraArgs.emplace_back(L"-D");
+			extraArgs.emplace_back(s);
+		}
+
+		pixelShaders.emplace_back(std::move(shaders::CompileShader(info, shaderBasePath, extraArgs)));
+		assert(pixelShaders.back().get());
+		psShaderPtrs.emplace_back(pixelShaders.back().get());
+	}
+	assert(pixelShaders.back().get());
+
+	asset->AdditionalData = content::AddShaderGroup(vertexShaderPtrs.data(), (u32)vertexShaderPtrs.size(), keys.data());
+	asset->AdditionalData2 = content::AddShaderGroup(psShaderPtrs.data(), (u32)psShaderPtrs.size(), psKeys.data());
+	asset->OriginalFilePath = path;
+	std::filesystem::path compiledPath{ editor::project::GetResourceDirectory() / "Shaders" / filename };
+	compiledPath.replace_extension(".sd");
+	//TODO: shaders::SaveCompiledShader();
+	asset->ImportedFilePath = compiledPath;
+	return compiledPath;
+}
+
 using AssetImporter = const std::filesystem::path(*)(std::filesystem::path path, AssetPtr asset, const std::filesystem::path& importedPath);
 constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
@@ -793,6 +863,7 @@ constexpr std::array<AssetImporter, AssetType::Count> assetImporters {
 	ImportUnknown,
 	ImportUnknown,
 	ImportUnknown,
+	ImportShader,
 	ImportUnknown
 };
 

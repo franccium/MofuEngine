@@ -404,6 +404,7 @@ DepthPrepassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameIn
 
 		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
 		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
+		cmdList->OMSetStencilRef(1);
 		cmdList->IASetIndexBuffer(&ibv);
 		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
 		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);

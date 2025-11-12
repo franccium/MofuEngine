@@ -491,6 +491,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);
     //color += ambientColor;
+    color += EvaluateIBL(S);
     color = saturate(color);
     
 #if TEXTURED_MTL
@@ -501,7 +502,6 @@ PixelOut TestShaderPS(in VertexOut psIn)
     S.EmissiveColor = max(VoN4 * VoN4, 0.1f) * e * e;
 #endif
     
-    color += EvaluateIBL(S);
     
 #if ALPHA_BLEND
     psOut.Color = float4(color, alpha);
@@ -511,7 +511,14 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     psOut.Normal.rgb = S.Normal;
     // NOTE: now assuming we have max 2^16 materials
-    psOut.Normal.a = f16tof32(PerObjectBuffer.MaterialID);
+    uint16_t materialID = PerObjectBuffer.MaterialID;
+    float materialIDHigh = float((materialID >> 8) & 0xFF) / 255.0f;
+    float materialIDLow = float(materialID & 0xFF) / 255.0f;
+#if ALPHA_BLEND
+    psOut.Normal.a = materialIDLow * alpha; //FIXME: this is not a skybox solution at all cause i can't do non 0-alpha blended materials
+#else
+    psOut.Normal.a = materialIDLow;
+#endif
     
     return psOut;
 #endif

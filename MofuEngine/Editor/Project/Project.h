@@ -17,6 +17,7 @@ struct ProjectProperties
 	std::filesystem::path TextureDirectory;
 	std::filesystem::path MeshDirectory;
 	std::filesystem::path PrefabDirectory;
+	std::filesystem::path ShaderDirectory;
 
 	u32 StartScene{ 0 };
 };
@@ -46,5 +47,6 @@ const std::filesystem::path& GetScriptDirectory();
 const std::filesystem::path& GetTextureDirectory();
 const std::filesystem::path& GetMeshDirectory();
 const std::filesystem::path& GetPrefabDirectory();
+const std::filesystem::path& GetShaderDirectory();
 
 }
