@@ -208,31 +208,10 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     return vsOut;
 }
 
+#define NORMALS_RECONSTRUCT_Z 1
 Surface GetSurface(VertexOut psIn, float3 V)
 {
     Surface S;
-
-#if 0
-    float2 uv = psIn.UV;
-    S.AmbientOcclusion = 0.1f;
-    S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb;
-    S.EmissiveColor = 0.3f;
-    float2 metalRough = float2(0.3f, 0.7f);
-    S.Metallic = metalRough.r;
-    S.PerceptualRoughness = metalRough.g;
-    S.EmissiveIntensity = 1.f;
-    
-    float3 n = Sample(SrvIndices[1], LinearSampler, uv).rgb;
-    n = n * 2.f - 1.f;
-    n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
-    
-    const float3 N = psIn.WorldNormal;
-    const float3 T = psIn.WorldTangent.xyz;
-    const float3 B = cross(N, T) * psIn.WorldTangent.w;
-    const float3x3 TBN = float3x3(T, B, N);
-    // transform from tangent-space to world-space
-    S.Normal = normalize(mul(n, TBN));
-#else
 #if TEXTURED_MTL
     float2 uv = psIn.UV;
     S.AmbientOcclusion = Sample(SrvIndices[4], LinearSampler, uv).r;
@@ -251,23 +230,22 @@ Surface GetSurface(VertexOut psIn, float3 V)
     
     float3 n = Sample(SrvIndices[1], LinearSampler, uv).rgb;
     n = n * 2.f - 1.f;
+#if NORMALS_RECONSTRUCT_Z
+    //n.y *= -1.f;
     n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
+#endif
     
-    const float3 N = psIn.WorldNormal;
-    const float3 T = psIn.WorldTangent.xyz;
+    const float3 N = normalize(psIn.WorldNormal);
+    const float3 T = normalize(psIn.WorldTangent.xyz);
+    //const float3 B = cross(T, N) * psIn.WorldTangent.w;
     const float3 B = cross(N, T) * psIn.WorldTangent.w;
     const float3x3 TBN = float3x3(T, B, N);
     // transform from tangent-space to world-space
     S.Normal = normalize(mul(n, TBN));
+#if !NORMALS_RECONSTRUCT_Z
+    S.Normal *= -1.f.xxx;
+#endif
 #else
-/*
-    S.BaseColor = 1.f;
-    S.Metallic = 0.f;
-    S.Normal = normalize(psIn.WorldNormal);
-    S.PerceptualRoughness = 1.f;
-    S.EmissiveColor = 0.f;
-    S.EmissiveIntensity = 1.f;
-    S.AmbientOcclusion = 1.f;*/
     S.BaseColor = PerObjectBuffer.BaseColor.rgb;
     S.Metallic = PerObjectBuffer.Metallic;
     S.Normal = normalize(psIn.WorldNormal);
@@ -276,7 +254,6 @@ Surface GetSurface(VertexOut psIn, float3 V)
     S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
     S.AmbientOcclusion = PerObjectBuffer.AmbientOcclusion;
 #endif
-    #endif
     S.V = V;
     S.PerceptualRoughness = max(S.PerceptualRoughness, 0.045f); // we limit the minimum to 0.045 to avoid artifacts caused by the a2 term being too small
     const float roughness = S.PerceptualRoughness * S.PerceptualRoughness;
@@ -500,6 +477,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     float VoN4 = VoN2 * VoN2;
     float3 e = S.EmissiveColor;
     S.EmissiveColor = max(VoN4 * VoN4, 0.1f) * e * e;
+    color += S.EmissiveColor * S.EmissiveIntensity;
 #endif
     
     

@@ -21,4 +21,5 @@ id_t GetDefaultTextureID(TextureUsage::Usage usage);
 graphics::MaterialInitInfo GetDefaultMaterialInitInfo();
 EditorMaterial GetDefaultEditorMaterial();
 EditorMaterial GetDefaultEditorMaterialUntextured();
+void RefreshMaterials();
 }

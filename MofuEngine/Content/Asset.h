@@ -43,7 +43,7 @@ constexpr const char* ASSET_TYPE_TO_STRING[content::AssetType::Count] {
 constexpr const char* ASSET_METADATA_EXTENSION{ ".mt" };
 
 const std::unordered_set<std::string_view> ASSET_EXTENSIONS {
-	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".hdr", ".jpg", ".jpeg", ".bmp", ".ps", ".wav", ".mat", ".sd", ".hlsl"
+	".mesh", ".tex", ".fbx", ".png", ".tga", ".tiff", ".tif", ".dds", ".exr", ".hdr", ".jpg", ".jpeg", ".bmp", ".ps", ".wav", ".mat", ".sd", ".hlsl"
 };
 
 const std::unordered_set<std::string_view> ENGINE_ASSET_EXTENSIONS {
@@ -103,6 +103,7 @@ const std::unordered_map<std::string_view, AssetType::type> assetTypeFromExtensi
 	{ ".tiff", AssetType::Texture },
 	{ ".tif", AssetType::Texture },
 	{ ".dds", AssetType::Texture },
+	{ ".exr", AssetType::Texture },
 	{ ".hdr", AssetType::Texture },
 	{ ".jpg", AssetType::Texture },
 	{ ".jpeg", AssetType::Texture },
@@ -134,7 +135,7 @@ constexpr std::array<const char*, AssetType::Count> EXTENSION_FOR_ENGINE_ASSET {
 	".sk",
 };
 
-constexpr std::array GET_ALLOWED_TEXTURE_EXTENSIONS{ ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".dds", ".hdr" };
+constexpr std::array GET_ALLOWED_TEXTURE_EXTENSIONS{ ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".dds", ".exr", ".hdr" };
 constexpr bool IsAllowedTextureExtension(std::string_view e) 
 { 
 	for (const char* c : GET_ALLOWED_TEXTURE_EXTENSIONS)

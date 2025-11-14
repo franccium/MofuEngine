@@ -178,6 +178,7 @@ struct GeometryImportSettings
 	bool CalculateTangents{ true };
 	bool ReverseHandedness{ false };
 	bool ImportEmbeddedTextures{ false };
+	bool FindAllTextureFiles{ false };
 	bool ImportAnimations{ false };
 	bool MergeMeshes{ false };
 };

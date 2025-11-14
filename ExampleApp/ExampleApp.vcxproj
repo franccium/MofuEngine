@@ -107,7 +107,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>yaml-cpp.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Release;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS\lib;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Release;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

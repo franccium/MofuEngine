@@ -314,7 +314,9 @@ FindAllTextureFiles(FBXImportState& state)
 	{
 		log::Info("Found %u texture files (%s)", (u32)textureFiles.size(), texExtension);
 	}
-	std::filesystem::path textureResourceBasePath{ state.ModelResourcePath.append("Textures") };
+	std::filesystem::path textureResourceBasePath{ state.ModelResourcePath };
+	textureResourceBasePath.append("Textures");
+	std::filesystem::create_directory(textureResourceBasePath);
 
 	const u32 textureCount{ (u32)textureFiles.size() };
 	state.AllTextureHandles.resize(textureCount);
@@ -330,7 +332,7 @@ FindAllTextureFiles(FBXImportState& state)
 void
 ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImportState& state)
 {
-	FindAllTextureFiles(state);
+	if(state.ImportSettings.FindAllTextureFiles) FindAllTextureFiles(state);
 
 	state.Textures.resize(fbxScene->texture_files.count);
 	state.SourceImages.resize(fbxScene->texture_files.count);

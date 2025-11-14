@@ -47,6 +47,7 @@ RenderMeshImportSettings()
 		ImGui::Checkbox("Collider from Geometry", &geometryImportSettings.ColliderFromGeometry);
 	else geometryImportSettings.ColliderFromGeometry = false;
 	ImGui::Checkbox("Import Embedded Textures", &geometryImportSettings.ImportEmbeddedTextures);
+	ImGui::Checkbox("Find All Texture Files", &geometryImportSettings.FindAllTextureFiles);
 	ImGui::Checkbox("Calculate Tangents", &geometryImportSettings.CalculateTangents);
 	ImGui::Checkbox("Calculate Normals", &geometryImportSettings.CalculateNormals);
 	ImGui::Checkbox("Import Animations", &geometryImportSettings.ImportAnimations);

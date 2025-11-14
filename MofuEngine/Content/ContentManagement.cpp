@@ -22,6 +22,7 @@ id_t defaultMaterialID{};
 id_t defaultVSID{};
 id_t defaultPSID{};
 id_t defaultTexturedPSID{};
+id_t skyboxMaterialID{};
 
 void
 CreateDefaultShaders()
@@ -98,6 +99,11 @@ CreateDefaultMaterial()
     assert(id::IsValid(defaultVSID) && id::IsValid(defaultPSID));
 
     graphics::MaterialInitInfo info{};
+    info.ShaderIDs[shaders::ShaderType::Vertex] = defaultVSID;
+    info.ShaderIDs[shaders::ShaderType::Pixel] = defaultPSID;
+    info.Type = graphics::MaterialType::Opaque;
+    skyboxMaterialID = content::CreateResourceFromBlob(&info, content::AssetType::Material);
+
     info.ShaderIDs[shaders::ShaderType::Vertex] = defaultVSID;
     info.ShaderIDs[shaders::ShaderType::Pixel] = defaultPSID;
     info.Type = graphics::MaterialType::Opaque;
@@ -325,6 +331,75 @@ ReadAssetFileNoVersion(std::filesystem::path path, std::unique_ptr<u8[]>& dataOu
 
     dataOut = std::make_unique<u8[]>(sizeOut);
     file.read(reinterpret_cast<char*>(dataOut.get()), sizeOut);
+}
+
+bool
+RecompileDefaultShaders()
+{
+    shaders::ShaderFileInfo info{};
+    info.File = "TestShader.hlsl";
+    info.EntryPoint = "TestShaderVS";
+    info.Type = shaders::ShaderType::Vertex;
+    const char* shaderPath{ "..\\ExampleApp\\" };
+
+    std::wstring defines[]{ L"ELEMENTS_TYPE=1", L"ELEMENTS_TYPE=3" };
+    Vec<u32> keys{};
+    keys.emplace_back((u32)content::ElementType::StaticNormal);
+    keys.emplace_back((u32)content::ElementType::StaticNormalTexture);
+
+    Vec<std::wstring> extraArgs{};
+    Vec<std::unique_ptr<u8[]>> vertexShaders{};
+    Vec<const u8*> vertexShaderPtrs{};
+    for (u32 i{ 0 }; i < keys.size(); ++i)
+    {
+        extraArgs.clear();
+        extraArgs.emplace_back(L"-D");
+        extraArgs.emplace_back(defines[i]);
+        vertexShaders.emplace_back(std::move(shaders::CompileShader(info, shaderPath, extraArgs)));
+        if (!vertexShaders.back().get()) return false;
+        vertexShaderPtrs.emplace_back(vertexShaders.back().get());
+    }
+
+    info.EntryPoint = "TestShaderPS";
+    info.Type = shaders::ShaderType::Pixel;
+    Vec<std::unique_ptr<u8[]>> pixelShaders{};
+
+    extraArgs.clear();
+    pixelShaders.emplace_back(std::move((shaders::CompileShader(info, shaderPath, extraArgs))));
+    assert(pixelShaders.back().get());
+    Vec<const u8*> psShaderPtrs{};
+
+    extraArgs.clear();
+    std::vector<std::vector<std::wstring>> psDefines{
+        {L"TEXTURED_MTL=1"},
+        {L"TEXTURED_MTL=1", L"ALPHA_TEST=1"},
+        {L"TEXTURED_MTL=1", L"ALPHA_BLEND=1"},
+    };
+    Vec<u32> psKeys{};
+    psKeys.emplace_back((u32)graphics::MaterialType::Opaque);
+    psKeys.emplace_back((u32)graphics::MaterialType::AlphaTested);
+    psKeys.emplace_back((u32)graphics::MaterialType::AlphaBlended);
+    for (u32 i{ 0 }; i < psKeys.size(); ++i)
+    {
+        extraArgs.clear();
+        for (auto& s : psDefines[i])
+        {
+            extraArgs.emplace_back(L"-D");
+            extraArgs.emplace_back(s);
+        }
+
+        pixelShaders.emplace_back(std::move(shaders::CompileShader(info, shaderPath, extraArgs)));
+        if (!pixelShaders.back().get()) return false;
+        psShaderPtrs.emplace_back(pixelShaders.back().get());
+    }
+
+    const u8* untexturedPSPtr{ pixelShaders[0].get() };
+    const u32 untexturedKey{ (u32)graphics::MaterialType::Opaque };
+    content::UpdateShaderGroup(defaultVSID, vertexShaderPtrs.data(), (u32)vertexShaderPtrs.size(), keys.data());
+    content::UpdateShaderGroup(defaultPSID, &untexturedPSPtr, 1, &untexturedKey);
+
+    content::UpdateShaderGroup(defaultTexturedPSID, psShaderPtrs.data(), (u32)psShaderPtrs.size(), psKeys.data());
+    return true;
 }
 
 }

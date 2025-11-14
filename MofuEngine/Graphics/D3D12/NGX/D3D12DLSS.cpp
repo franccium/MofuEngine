@@ -222,7 +222,9 @@ DoDLSSPass(DXResource* colorBuffer, DXResource* outputBuffer, const camera::D3D1
 	evalParams.InReset = shouldResetDLSS;
 	evalParams.InMVScaleX = _outputBuffer.TargetResolution.x;
 	evalParams.InMVScaleY = _outputBuffer.TargetResolution.y;
-
+#ifndef _DEBUG
+	TODO_("Relase build memory exceptions");
+#endif
 	NVSDK_NGX_Result result{ NGX_D3D12_EVALUATE_DLSS_EXT(cmdList, _dlssHandle, _ngxParameters, &evalParams) };
 }
 

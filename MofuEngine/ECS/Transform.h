@@ -511,6 +511,17 @@ struct Collider : Component
 #endif
 };
 
+struct OpaqueObject : Component
+{
+#if EDITOR_BUILD
+	static void RenderFields([[maybe_unused]] OpaqueObject& c)
+	{
+		ImGui::TableNextRow();
+		ImGui::TextUnformatted("OpaqueObject");
+	}
+#endif
+};
+
 struct TransparentObject : Component
 {
 #if EDITOR_BUILD

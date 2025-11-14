@@ -40,6 +40,7 @@ void DestroyResource(id_t resourceId, AssetType::type resourceType);
 void GetLODOffsets(const id_t* const geometryIDs, const f32* const thresholds, u32 idCount, Vec<LodOffset>& offsets);
 
 id_t AddShaderGroup(const u8* const* shaders, u32 shaderCount, const u32* const keys);
+void UpdateShaderGroup(id_t groupID, const u8* const* shaders, u32 shaderCount, const u32* const keys);
 void RemoveShaderGroup(id_t id);
 shaders::CompiledShaderPtr GetShader(id_t groupID, u32 shaderKey);
 

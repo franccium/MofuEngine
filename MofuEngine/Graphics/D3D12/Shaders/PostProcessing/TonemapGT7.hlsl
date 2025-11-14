@@ -2,7 +2,7 @@
 
 #define TONE_MAPPING_UCS_ICTCP  0
 #define TONE_MAPPING_UCS_JZAZBZ 1
-#define TONE_MAPPING_UCS        TONE_MAPPING_UCS_ICTCP
+#define TONE_MAPPING_UCS TONE_MAPPING_UCS_ICTCP
 #define HDR 0
 
 // -----------------------------------------------------------------------------

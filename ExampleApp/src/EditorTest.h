@@ -29,6 +29,8 @@
 #include "Physics/PhysicsLayers.h"
 #include "Physics/DebugRenderer/DebugRenderer.h"
 #include "Editor/ObjectPicker.h"
+#include "Content/ContentManagement.h"
+#include "Editor/MaterialEditor.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -233,6 +235,17 @@ void MofuUpdate()
 #if SHADER_HOT_RELOAD_ENABLED
 	// autosave is problematic so keybind only for now
 	if (input::WasKeyPressed(input::Keybinds::Editor.ShaderReload)) shaders::UpdateHotReload();
+	if (input::WasKeyPressed(input::Keys::Home))
+	{
+		if (content::RecompileDefaultShaders())
+		{
+			editor::material::RefreshMaterials();
+		}
+		else
+		{
+			log::Error("Couldn't recompile shaders");
+		}
+	}
 #endif
 
 	editor::object::UpdateObjectPickerProbe();

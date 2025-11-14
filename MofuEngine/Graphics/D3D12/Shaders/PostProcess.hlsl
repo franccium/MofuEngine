@@ -39,7 +39,7 @@ SamplerState LinearSampler : register(s1, space0);
 // sRGB OETF
 float3 LinearToSRGB(float3 x)
 {
-    return select((x <= 0.0031308f), x * 12.92f, 1.055f * pow(x, 1.0f / 2.4f) - 0.055f);
+    return select((x <= 0.0031308f), x * 12.92f, 1.055f * pow(x, 0.416666666f) - 0.055f);
 }
 // PQ inverse EOTF
 float3 LinearToPQ(float3 lin)
@@ -61,7 +61,7 @@ float3 LinearToPQ(float3 lin)
 
 #define RENDER_SKYBOX 1
 // testing for materials that don't write to the depth buffer, assumes there is a big opaque cube with materialID == 0, but won't work cause that cube would need to be skybox textured anyways
-#define MATERIAL_SKYBOX_TEST 1 
+#define MATERIAL_SKYBOX_TEST 0
 
 #if RAYTRACING
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
@@ -134,6 +134,7 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
 #else
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
+        //Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
 #endif
         color = gpassMain[Position.xy].rgb;
         //color = float3(texture[Position.xy].xy * 0.5f + 0.5f, 0.f);

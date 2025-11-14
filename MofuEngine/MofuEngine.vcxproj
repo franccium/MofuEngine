@@ -110,7 +110,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>yaml-cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>yaml-cpp.lib;nvsdk_ngx_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS\lib;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Release</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>

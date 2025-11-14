@@ -34,6 +34,7 @@ using ComponentTypes = std::tuple<
     Collider,
     StaticObject,
     DynamicObject,
+    OpaqueObject,
     TransparentObject
     //NOTE: dont put a , after the last item
 >;
@@ -74,6 +75,7 @@ constexpr std::array<u32, ComponentTypeCount> ComponentSizes {
     sizeof(Collider),
     sizeof(StaticObject),
     sizeof(DynamicObject),
+    sizeof(OpaqueObject),
     sizeof(TransparentObject),
 };
 
@@ -123,6 +125,7 @@ constexpr std::array<const char*, ComponentTypeCount> ComponentNames {
 	"Collider",
     "StaticObject",
     "DynamicObject",
+    "OpaqueObject",
     "TransparentObject",
 };
 

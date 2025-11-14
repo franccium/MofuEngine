@@ -700,7 +700,20 @@ RenderMaterialEditor()
 	ImGui::End();
 }
 
+void 
+RefreshMaterials()
+{
+	for (auto [e, mat, mesh] : ecs::scene::GetRW<ecs::component::RenderMaterial, ecs::component::RenderMesh>())
+	{
+		const graphics::MaterialInitInfo initInfo{ graphics::GetMaterialReflection(mat.MaterialID) };
 
+		id_t newMaterialID{ content::CreateMaterial(initInfo, content::INVALID_HANDLE) };
+		mat.MaterialID = newMaterialID;
+
+		graphics::RemoveRenderItem(mesh.RenderItemID);
+		mesh.RenderItemID = graphics::AddRenderItem(e, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
+	}
+}
 
 
 }

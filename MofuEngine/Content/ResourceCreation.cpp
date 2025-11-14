@@ -336,6 +336,28 @@ AddShaderGroup(const u8* const* shaders, u32 shaderCount, const u32* const keys)
 	return shaderGroups.add(std::move(shaderGroup));
 }
 
+// NOTE: expects shaders to be an array of pointers to compiled shaders
+// NOTE: the editor is responsible for making sure there aren't any duplicate shaders
+void
+UpdateShaderGroup(id_t groupID, const u8* const* shaders, u32 shaderCount, const u32* const keys)
+{
+	assert(shaders && shaderCount && keys);
+	std::unordered_map<u32, std::unique_ptr<u8[]>> shaderGroup;
+	for (u32 i{ 0 }; i < shaderCount; ++i)
+	{
+		assert(shaders[i]);
+		const shaders::CompiledShaderPtr shaderPtr{ (const shaders::CompiledShaderPtr)shaders[i] };
+		const u64 size{ shaderPtr->GetBufferSize() };
+		std::unique_ptr<u8[]> shader{ std::make_unique<u8[]>(size) };
+		memcpy(shader.get(), shaderPtr, size);
+		shaderGroup[keys[i]] = std::move(shader);
+	}
+
+	std::lock_guard lock{ shaderMutex };
+	assert(shaderGroups.size() > groupID);
+	shaderGroups[groupID] = std::move(shaderGroup);
+}
+
 void
 RemoveShaderGroup(id_t groupID)
 {
