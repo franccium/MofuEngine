@@ -137,6 +137,12 @@ u64 specularIBLHandle{ 15753239102389846408 };
 u64 brdfLutHandle{ 6591591707561885939 };
 u64 skyboxHandle{ 1764144365702082788 };
 
+// meadow
+//u64 diffuseIBLHandle{ 3375815875843134095 };
+//u64 specularIBLHandle{ 2879393416251087236 };
+//u64 brdfLutHandle{ 6591591707561885939 };
+//u64 skyboxHandle{ 1764144365702082788 };
+
 constexpr f32 INV_RAND_MAX{ 1.f / RAND_MAX };
 f32 Random(f32 min = 0.f) { return std::max(min, rand() * INV_RAND_MAX); }
 

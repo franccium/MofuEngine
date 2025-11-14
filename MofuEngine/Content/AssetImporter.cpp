@@ -260,7 +260,9 @@ ImportImageFromBytes(const u8* const bytes, u64 size, const char* fileExtension,
 	if (data.Info.ImportError != texture::ImportError::Succeeded)
 	{
 		log::Error("Texture import error: %s", texture::TEXTURE_IMPORT_ERROR_STRING[data.Info.ImportError]);
+		return;
 	}
+	assert(data.SubresourceSize && data.SubresourceData);
 
 	std::filesystem::path texturePath{ targetPath };
 	texturePath.replace_extension(".tex");

@@ -695,6 +695,8 @@ Prefab::ExtractMaterials()
 	std::filesystem::path materialBasePath{ _resourceBasePath / "Materials" };
 	if (!std::filesystem::exists(materialBasePath)) std::filesystem::create_directory(materialBasePath);
 
+	std::string meshNameTrimmed{ _name.substr(0, 24) };
+
 	u32 materialCount{ (u32)_materials.size() };
 	for (u32 matIdx{ 0 }; matIdx < materialCount; ++matIdx)
 	{
@@ -703,7 +705,7 @@ Prefab::ExtractMaterials()
 
 		std::filesystem::path matPath{ materialBasePath };
 		char filename[32];
-		snprintf(filename, 32, "%s_%u.mat", _name.c_str(), matIdx);
+		snprintf(filename, 32, "%s_%u.mat", meshNameTrimmed.c_str(), matIdx);
 		matPath.append(filename);
 		material::PackMaterialAsset(mat, matPath);
 		content::AssetHandle handle{ material::CreateMaterialAsset(matPath) };

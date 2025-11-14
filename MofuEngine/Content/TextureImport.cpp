@@ -2,6 +2,7 @@
 #include "Content/ResourceCreation.h"
 #include "Utilities/IOStream.h"
 #include <DirectXTex.h>
+#include "Auxiliary/DirectXTexEXR.h"
 #include "NormalMapProcessing.h"
 #include "EnvironmentMapProcessing.h"
 #include "D3D12EnvironmentMapProcessing.h"
@@ -482,24 +483,22 @@ LoadFromBytes(TextureData* data, const u8* const bytes, u32 size)
 
 	ScratchImage scratch;
 
-	// try one of WIC formats first (BPM, JPEG, PNG, etc.)
+	// try one of WIC formats first (BPM, JPEG, PNG, etc.),
+	// then try TGA, HDR, DDS and EXR
 	wicFlags |= WIC_FLAGS_FORCE_RGB;
 	HRESULT hr{ LoadFromWICMemory(bytes, size, wicFlags, nullptr, scratch) };
 
-	// if it wasn't a WIC format, try TGA
 	if (FAILED(hr))
 	{
 		hr = LoadFromTGAMemory(bytes, size, tgaFlags, nullptr, scratch);
 	}
 
-	// if not TGA try HDR format
 	if (FAILED(hr))
 	{
 		hr = LoadFromHDRMemory(bytes, size, nullptr, scratch);
 		if (SUCCEEDED(hr)) data->Info.Flags |= TextureFlags::IsHdr;
 	}
 
-	// if not HDR try DDS
 	if (FAILED(hr))
 	{
 		hr = LoadFromDDSMemory(bytes, size, DDS_FLAGS_FORCE_RGB, nullptr, scratch);
@@ -516,6 +515,27 @@ LoadFromBytes(TextureData* data, const u8* const bytes, u32 size)
 				}
 			}
 		}
+	}
+
+	if (FAILED(hr))
+	{
+		std::filesystem::path tempFile{ std::filesystem::temp_directory_path() / "temp.exr" };
+		{
+			std::ofstream file{ tempFile, std::ios::binary };
+			if (!file.write(reinterpret_cast<const char*>(bytes), size))
+			{
+				std::filesystem::remove(tempFile);
+				return scratch;
+			}
+		}
+
+		std::string filename{ tempFile.string() };
+		const std::wstring wfile{ toWstring(filename.c_str()) };
+		const wchar_t* const exrFile{ wfile.c_str() };
+
+		hr = LoadFromEXRFile(exrFile, nullptr, scratch);
+
+		std::filesystem::remove(tempFile);
 	}
 
 	if (SUCCEEDED(hr))
@@ -551,24 +571,22 @@ LoadFromFile(TextureData* const data, const char* fileName)
 	const wchar_t* const file{ wfile.c_str() };
 	ScratchImage scratch;
 
-	// try one of WIC formats first (BPM, JPEG, PNG, etc.)
+	// try one of WIC formats first (BPM, JPEG, PNG, etc.),
+	// then try TGA, HDR, DDS and EXR
 	wicFlags |= WIC_FLAGS_FORCE_RGB;
 	HRESULT hr{ LoadFromWICFile(file, wicFlags, nullptr, scratch) };
 
-	// if it wasn't a WIC format, try TGA
 	if (FAILED(hr))
 	{
 		hr = LoadFromTGAFile(file, tgaFlags, nullptr, scratch);
 	}
 
-	// if not TGA try HDR format
 	if (FAILED(hr))
 	{
 		hr = LoadFromHDRFile(file, nullptr, scratch);
 		if (SUCCEEDED(hr)) data->Info.Flags |= TextureFlags::IsHdr;
 	}
 
-	// if not HDR try DDS
 	if (FAILED(hr))
 	{
 		hr = LoadFromDDSFile(file, DDS_FLAGS_FORCE_RGB, nullptr, scratch);
@@ -585,6 +603,11 @@ LoadFromFile(TextureData* const data, const char* fileName)
 				}
 			}
 		}
+	}
+
+	if (FAILED(hr))
+	{
+		hr = LoadFromEXRFile(file, nullptr, scratch);
 	}
 
 	if (SUCCEEDED(hr))

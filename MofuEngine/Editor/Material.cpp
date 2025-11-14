@@ -25,7 +25,6 @@ GetMaterialEnginePackedSize(const EditorMaterial& material)
 void
 PackMaterialAsset(const EditorMaterial& material, const std::filesystem::path& targetPath)
 {
-	assert(std::filesystem::exists(targetPath));
 	const u64 dataSize{ GetMaterialEnginePackedSize(material) };
 	u8* buffer{ new u8[dataSize] };
 	u32 bufferSize{ (u32)dataSize };

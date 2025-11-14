@@ -303,6 +303,9 @@
     <ClCompile Include="Graphics\D3D12\NGX\D3D12DLSS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Content\Auxiliary\DirectXTexEXR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -711,6 +714,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\D3D12\NGX\D3D12DLSS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Auxiliary\DirectXTexEXR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Auxiliary\DirectXTexP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Auxiliary\scoped.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

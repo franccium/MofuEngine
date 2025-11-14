@@ -8,10 +8,10 @@ using namespace Microsoft::WRL;
 namespace mofu::content::texture {
 namespace {
 
-constexpr u32 PREFILTERED_DIFFUSE_CUBEMAP_SIZE{ 1024 };
-constexpr u32 PREFILTERED_SPECULAR_CUBEMAP_SIZE{ 256 };
+constexpr u32 PREFILTERED_DIFFUSE_CUBEMAP_SIZE{ 2048 };
+constexpr u32 PREFILTERED_SPECULAR_CUBEMAP_SIZE{ 512 };
 constexpr u32 ROUGHNESS_MIP_LEVELS{ 6 };
-constexpr u32 BRDF_INTEGRATION_LUT_SIZE{ 256 };
+constexpr u32 BRDF_INTEGRATION_LUT_SIZE{ 512 };
 
 #include "Shaders/out/EnvMapProcessingCS_EquirectangularToCubeMapCS.inc"
 #include "Shaders/out/EnvMapProcessingCS_PrefilterDiffuseEnvMapCS.inc"
@@ -231,7 +231,6 @@ HRESULT
 EquirectangularToCubemap(const Image* envMaps, u32 envMapCount, u32 cubemapSize, 
 	bool usePrefilteredSize, bool isSpecular, bool mirrorCubemap, ScratchImage& outCubemaps, ID3D11Device* const device)
 {
-	if (usePrefilteredSize) cubemapSize = isSpecular ? PREFILTERED_SPECULAR_CUBEMAP_SIZE : PREFILTERED_DIFFUSE_CUBEMAP_SIZE;
 	assert(envMaps && envMapCount);
 
 	const DXGI_FORMAT format{ envMaps[0].format };
@@ -244,6 +243,7 @@ EquirectangularToCubemap(const Image* envMaps, u32 envMapCount, u32 cubemapSize,
 
 	ComPtr<ID3D11Texture2D> cubemaps{};
 	ComPtr<ID3D11Texture2D> cubemapsCPU{};
+	if (usePrefilteredSize) cubemapSize = isSpecular ? PREFILTERED_SPECULAR_CUBEMAP_SIZE : PREFILTERED_DIFFUSE_CUBEMAP_SIZE;
 	{
 		D3D11_TEXTURE2D_DESC desc{};
 		desc.Width = desc.Height = cubemapSize;
