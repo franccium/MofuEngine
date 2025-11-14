@@ -6,6 +6,15 @@
 #include "ECS/Transform.h"
 
 namespace mofu::content::assets {
+struct AmbientLightHandles
+{
+	AssetHandle SkyboxHandle;
+	AssetHandle DiffuseHandle;
+	AssetHandle SpecularHandle;
+	AssetHandle BrdfLutHandle;
+};
+AmbientLightHandles GetAmbientLightHandles(AssetHandle skyboxHandle);
+
 bool IsAssetAlreadyRegistered(const std::filesystem::path& path);
 bool IsHandleValid(AssetHandle handle);
 [[nodiscard]] AssetHandle GetHandleFromPath(const std::filesystem::path& path);
@@ -13,6 +22,7 @@ bool IsHandleValid(AssetHandle handle);
 [[nodiscard]] AssetPtr GetAsset(AssetHandle handle);
 AssetHandle RegisterAsset(AssetPtr asset);
 AssetHandle RegisterAsset(AssetPtr asset, u64 id);
+void DeregisterAsset(AssetHandle handle);
 
 void PairAssetWithResource(AssetHandle handle, id_t resourceID, AssetType::type type);
 [[nodiscard]] AssetHandle GetAssetFromResource(id_t resourceID, AssetType::type type);
@@ -33,6 +43,7 @@ void ShutdownAssetRegistry();
 void GetTextureMetadata(const std::filesystem::path& path, u64& outTextureSize, std::unique_ptr<u8[]>& textureBuffer,
 	u64& outIconSize, std::unique_ptr<u8[]>& iconBuffer);
 void GetTextureIconData(const std::filesystem::path& path, u64& outIconSize, std::unique_ptr<u8[]>& iconBuffer);
+AssetHandle GetIBLRelatedHandle(AssetHandle cubemapHandle);
 
 void GetGeometryRelatedTextures(AssetHandle geometryHandle, Vec<AssetHandle>& outHandles);
 

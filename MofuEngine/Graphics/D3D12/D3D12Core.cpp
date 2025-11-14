@@ -317,6 +317,7 @@ constexpr D3D_FEATURE_LEVEL MINIMUM_FEATURE_LEVEL{ D3D_FEATURE_LEVEL_11_0 };
 DXDevice* mainDevice{ nullptr };
 DXGIFactory* dxgiFactory{ nullptr };
 D3D12Command gfxCommand;
+D3D12Command computeCommand;
 
 util::FreeList<D3D12Surface> surfaces{};
 
@@ -539,6 +540,8 @@ Initialize()
 
     new (&gfxCommand) D3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
     if (!gfxCommand.CommandQueue()) return InitializeFailed();
+    new (&computeCommand) D3D12Command(mainDevice, D3D12_COMMAND_LIST_TYPE_COMPUTE);
+    if (!computeCommand.CommandQueue()) return InitializeFailed();
 
     for (u32 i{ 0 }; i < FRAME_BUFFER_COUNT; ++i)
     {
@@ -606,6 +609,7 @@ void
 Shutdown()
 {
     gfxCommand.FlushAndRelease();
+    computeCommand.FlushAndRelease();
 
 #if IS_DLSS_ENABLED
     dlss::Shutdown();
@@ -675,6 +679,7 @@ DescriptorHeap& UavHeap() { return uavDescHeap; }
 ConstantBuffer& CBuffer() { return constantBuffers[CurrentFrameIndex()]; }
 
 DXGraphicsCommandList* const GraphicsCommandList() { return gfxCommand.CommandList(0); }
+DXGraphicsCommandList* const ComputeCommandList() { return computeCommand.CommandList(0); }
 
 u32 CurrentFrameIndex() { return gfxCommand.FrameIndex(); }
 
@@ -1226,5 +1231,17 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
 }
 
 info::DisplayInfo GetDisplayInfo() { return _displayInfo; }
+
+void StartCompute()
+{
+    computeCommand.BeginFrame();
+    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
+    ComputeCommandList()->SetDescriptorHeaps(1, &heaps[0]);
+}
+
+void ExecuteCompute()
+{
+    computeCommand.EndFrameNoPresent();
+}
 
 }

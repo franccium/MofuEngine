@@ -129,6 +129,17 @@ RegisterShaders()
 
 } // anonymous namespace
 
+AmbientLightHandles 
+GetAmbientLightHandles(AssetHandle skyboxHandle)
+{
+	AmbientLightHandles handles{};
+	handles.SkyboxHandle = skyboxHandle;
+	handles.DiffuseHandle = content::assets::GetIBLRelatedHandle(skyboxHandle);
+	handles.SpecularHandle = content::assets::GetIBLRelatedHandle(handles.DiffuseHandle);
+	handles.BrdfLutHandle = content::assets::GetIBLRelatedHandle(handles.SpecularHandle);
+	return handles;
+}
+
 bool
 IsAssetAlreadyRegistered(const std::filesystem::path& path)
 {
@@ -200,6 +211,15 @@ RegisterAsset(AssetPtr asset, u64 id)
 	assetRegistry.emplace(handle, asset);
 	editor::AddRegisteredAsset(handle, asset);
 	return handle;
+}
+
+void 
+DeregisterAsset(AssetHandle handle)
+{
+	log::Warn("DeregisterAsset called with an invalid handle");
+	if (!IsValid(handle)) return;
+	assetRegistry.erase(handle);
+	editor::RemoveRegisteredAsset(handle);
 }
 
 void
@@ -357,7 +377,7 @@ void
 InitializeAssetRegistry()
 {
 	shaders::content::Initialize();
-	//texture::InitializeEnvironmentProcessing();
+	texture::InitializeEnvironmentProcessing();
 
 	editor::InitializeAssetBrowserGUI();
 
@@ -408,6 +428,41 @@ GetTextureIconData(const std::filesystem::path& path, u64& outIconSize, std::uni
 	file.read(reinterpret_cast<char*>(iconBuffer.get()), iconSize);
 }
 
+AssetHandle 
+GetIBLRelatedHandle(AssetHandle cubemapHandle)
+{
+	if (!IsValid(cubemapHandle))
+	{
+		log::Warn("GetIBLRelatedHandle called with an invalid handle");
+		return INVALID_HANDLE;
+	}
+	AssetPtr asset{ GetAsset(cubemapHandle) };
+	if (!asset)
+	{
+		return INVALID_HANDLE;
+	}
+	std::filesystem::path metadataPath{ asset->GetMetadataPath() };
+	assert(std::filesystem::exists(metadataPath) && metadataPath.extension().string() == ASSET_METADATA_EXTENSION);
+	if (std::filesystem::exists(metadataPath))
+	{
+		std::unique_ptr<u8[]> buffer{};
+		u64 bufferSize;
+		ReadFileToByteBuffer(metadataPath, buffer, bufferSize);
+		assert(buffer.get() && bufferSize);
+
+		util::BlobStreamReader reader{ buffer.get() };
+		const u32 iconSize{ reader.Read<u32>() };
+		reader.Skip(iconSize);
+		reader.Skip(reader.Read<u32>()); // name
+		reader.Skip(sizeof(u32) * 6 + sizeof(u8) * 4 + sizeof(u32) * 6);
+		u64 iblPairID{ reader.Read<u64>() };
+		asset->AdditionalData2 = iblPairID;
+		return AssetHandle{ iblPairID };
+	}
+	log::Error("GetIBLRelatedHandle: metadata not found");
+	return INVALID_HANDLE;
+}
+
 void 
 ParseMetadata(AssetPtr asset)
 {
@@ -417,7 +472,7 @@ ParseMetadata(AssetPtr asset)
 	case content::AssetType::Texture:
 	{
 		std::filesystem::path metadataPath{ asset->GetMetadataPath() };
-		if (std::filesystem::exists(metadataPath) && !id::IsValid(asset->AdditionalData))
+		if (std::filesystem::exists(metadataPath) && !id::IsValid(asset->AdditionalData)) //FIXME: 0 is a valid id
 		{
 			std::unique_ptr<u8[]> iconBuffer{};
 			u64 iconSize{};

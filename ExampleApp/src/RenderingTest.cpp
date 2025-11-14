@@ -137,6 +137,14 @@ u64 specularIBLHandle{ 15753239102389846408 };
 u64 brdfLutHandle{ 6591591707561885939 };
 u64 skyboxHandle{ 1764144365702082788 };
 
+
+//u64 diffuseIBLHandle{ 4366106093611776610 };
+//u64 specularIBLHandle{ 10035983706911181120 };
+//u64 brdfLutHandle{ 10865738213553409319 };
+//u64 skyboxHandle{ 11277431815226102038 };
+
+u64 skySkyboxHandle{ 7424433726636195600 };
+
 // meadow
 //u64 diffuseIBLHandle{ 3375815875843134095 };
 //u64 specularIBLHandle{ 2879393416251087236 };
@@ -270,12 +278,46 @@ AddLights()
 {
 	u32 lightSetOne{ graphics::light::CreateLightSet() };
 
-	f32 ambientLightIntensity{ 1.f };
-	id_t diffuseIBL{ content::assets::CreateResourceFromHandle(diffuseIBLHandle) };
-	id_t specularIBL{ content::assets::CreateResourceFromHandle(specularIBLHandle) };
-	id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(brdfLutHandle) };
-	id_t SkyboxHandle{ content::assets::CreateResourceFromHandle(skyboxHandle) };
-	graphics::light::AddAmbientLight(lightSetOne, { ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL, SkyboxHandle });
+	bool createFromHandles{ false };
+	if (createFromHandles)
+	{
+		content::AssetHandle skyboxHandle{ skySkyboxHandle };
+		content::AssetPtr skybox{ content::assets::GetAsset(skyboxHandle) };
+		content::assets::AmbientLightHandles handles{ content::assets::GetAmbientLightHandles(skyboxHandle) };
+		//assert(content::IsValid(skybox->AdditionalData2));
+		content::AssetHandle diffuseHandle{ content::assets::GetIBLRelatedHandle(skyboxHandle) };
+		content::AssetHandle specularHandle{ content::assets::GetIBLRelatedHandle(diffuseHandle) };
+		content::AssetHandle brdfLUTHandle{ content::assets::GetIBLRelatedHandle(specularHandle) };
+		
+		
+		////content::AssetHandle diffuseHandle{ skybox->AdditionalData2 };
+		//content::AssetPtr diffuseAsset{ content::assets::GetAsset(diffuseHandle) };
+		//assert(diffuseAsset);
+		////content::AssetHandle specularHandle{ diffuseAsset->AdditionalData2 };
+		//content::AssetPtr specularAsset{ content::assets::GetAsset(specularHandle) };
+		//assert(specularAsset);
+		////content::AssetHandle brdfLUTHandle{ specularAsset->AdditionalData2 };
+		//content::AssetPtr brdfLUTAsset{ content::assets::GetAsset(brdfLUTHandle) };
+		//assert(brdfLUTAsset);
+
+		f32 ambientLightIntensity{ 1.f };
+		id_t diffuseIBL{ content::assets::CreateResourceFromHandle(handles.DiffuseHandle) };
+		id_t specularIBL{ content::assets::CreateResourceFromHandle(handles.SpecularHandle) };
+		id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(handles.BrdfLutHandle) };
+		id_t SkyboxHandle{ content::assets::CreateResourceFromHandle(skyboxHandle) };
+		graphics::light::AddAmbientLight(lightSetOne, { ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL, SkyboxHandle });
+	}
+	else
+	{
+		f32 ambientLightIntensity{ 1.f };
+		id_t diffuseIBL{ content::assets::CreateResourceFromHandle(diffuseIBLHandle) };
+		id_t specularIBL{ content::assets::CreateResourceFromHandle(specularIBLHandle) };
+		id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(brdfLutHandle) };
+		id_t SkyboxHandle{ content::assets::CreateResourceFromHandle(skyboxHandle) };
+		graphics::light::AddAmbientLight(lightSetOne, { ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL, SkyboxHandle });
+	}
+
+	
 
 	ecs::component::LocalTransform lt{};
 	ecs::component::WorldTransform wt{};

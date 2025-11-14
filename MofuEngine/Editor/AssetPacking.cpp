@@ -6,7 +6,7 @@
 namespace mofu::content {
 namespace {
 u64
-GetTextureEditorPackedSize(texture::TextureData& data)
+GetTextureEditorPackedSize(const texture::TextureData& data)
 {
 	constexpr u64 su32{ (sizeof(u32)) };
 	u64 size{ 0 };
@@ -34,7 +34,7 @@ GetTextureEditorPackedSize(texture::TextureData& data)
 }
 
 u64 
-GetTextureEnginePackedSize(texture::TextureData& data)
+GetTextureEnginePackedSize(const texture::TextureData& data)
 {
 	constexpr u64 su32{ (sizeof(u32)) };
 	//TODO: fix this
@@ -54,7 +54,7 @@ GetTextureEnginePackedSize(texture::TextureData& data)
 //		imagesData
 // } texture;
 void
-PackTextureForEditor(texture::TextureData& data, std::filesystem::path targetPath)
+PackTextureForEditor(const texture::TextureData& data, std::filesystem::path targetPath)
 {
 	const u64 textureDataSize{ GetTextureEditorPackedSize(data) };
 	u8* buffer{ new u8[textureDataSize] };
@@ -157,7 +157,7 @@ SaveIcon(texture::TextureData& data, std::filesystem::path targetPath)
 	}
 */
 void
-PackTextureForEngine(texture::TextureData& data, std::filesystem::path targetPath)
+PackTextureForEngine(const texture::TextureData& data, std::filesystem::path targetPath)
 {
 	const u64 textureDataSize{ GetTextureEnginePackedSize(data) };
 	u8* buffer{ new u8[textureDataSize] };

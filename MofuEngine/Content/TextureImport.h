@@ -76,6 +76,7 @@ struct TextureImportSettings
 	u8 MirrorCubemap{ false };
 
 	bool IsByteArray{ false };
+	bool IsSpecularCubemap{ false };
 	const char* FileExtension{};
 	u32 ImageBytesSize{ 0 };
 	const u8* ImageBytes{ nullptr };

@@ -73,6 +73,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE CreateTemporaryDescriptorTable(const D3D12_CPU_DESCR
 [[nodiscard]] ConstantBuffer& CBuffer();
 
 [[nodiscard]] DXGraphicsCommandList* const GraphicsCommandList();
+[[nodiscard]] DXGraphicsCommandList* const ComputeCommandList();
 
 [[nodiscard]] u32 CurrentFrameIndex();
 [[nodiscard]] u64 CurrentCPUFrame();
@@ -92,4 +93,6 @@ u32 SurfaceHeight(surface_id id);
 void OnShadersRecompiled(EngineShader::ID shaderID);
 
 info::DisplayInfo GetDisplayInfo();
+void StartCompute();
+void ExecuteCompute();
 }

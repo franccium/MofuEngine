@@ -208,7 +208,7 @@ private:
     constexpr static u8 DEFAULT_COMPILER_ARGS_COUNT{ 13 };
     Vec<std::wstring> GetCompilerArgs(const ShaderFileInfo& info, Vec<std::wstring>& extraArgs, bool debug)
     {
-        Vec<std::wstring> args((u64)DEFAULT_COMPILER_ARGS_COUNT + extraArgs.size());
+        Vec<std::wstring> args{};
         if (info.File) args.emplace_back(c_to_wstring(info.File));
         if (info.Type != ShaderType::Library)
         {
@@ -245,7 +245,7 @@ private:
 
     Vec<std::wstring> GetContentProcessingCompilerArgs(const ShaderFileInfo& info, Vec<std::wstring>& extraArgs)
     {
-        Vec<std::wstring> args((u64)DEFAULT_COMPILER_ARGS_COUNT + extraArgs.size());
+        Vec<std::wstring> args{};
         if (info.File) args.emplace_back(c_to_wstring(info.File));
         args.emplace_back(L"-E");
         args.emplace_back(c_to_wstring(info.EntryPoint));
@@ -675,6 +675,7 @@ CompileContentProcessingShaders()
         extraArgs.emplace_back(c_to_wstring(content::CONTENT_SHADERS_SOURCE_PATH));
 
         DxcCompiledShader compiledShader{ compiler.Compile(file.Info, path, extraArgs, false) };
+        //DxcCompiledShader compiledShader{ compiler.CompileD3D11(file.Info, path, extraArgs) };
         if (compiledShader.bytecode && compiledShader.bytecode->GetBufferPointer() && compiledShader.bytecode->GetBufferSize())
         {
             shaders[i] = compiledShader;

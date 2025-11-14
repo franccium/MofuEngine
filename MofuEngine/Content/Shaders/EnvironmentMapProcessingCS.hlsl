@@ -1,3 +1,4 @@
+
 #include "ContentTypes.hlsli"
 
 static const float PI = 3.14159265f;
@@ -220,7 +221,8 @@ void EquirectangularToCubeMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, ui
 
     uint pixelIdx = DispatchThreadID.x + DispatchThreadID.y * size;
     uint faceOffset = face * size * size;
-    Output[pixelIdx + faceOffset] = envMapSample;
+    uint elIdx = (pixelIdx + faceOffset);
+    Output[elIdx] = envMapSample;
 }
 
 [numthreads(16, 16, 1)]

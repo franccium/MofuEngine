@@ -11,10 +11,10 @@ cbuffer Constants : register(b0)
     float g_Roughness;
 }
 
-Texture2D<float4> EnvMap : register(t0);
-TextureCube<float4> CubeMapIn : register(t0);
-RWTexture2DArray<float4> Output : register(u0);
 SamplerState LinearSampler : register(s0);
+TextureCube<float4> CubeMapIn : register(t0);
+Texture2D<float4> EnvMap : register(t1);
+RWTexture2DArray<float4> Output : register(u0);
 
 float2 Hammersley(uint i, uint N)
 {
@@ -324,9 +324,9 @@ void PrefilterDiffuseEnvMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
     float2 uv = (float2(DispatchThreadID.xy) + SAMPLE_OFFSET) / size;
     float2 pos = 2.f * uv - 1.f;
     float3 sampleDir = GetSampleDirCubemap(face, pos.x, pos.y);
-    float3 irradiance = SampleHemisphereBrute(sampleDir);
+    //float3 irradiance = SampleHemisphereBrute(sampleDir);
     //float3 irradiance = SampleHemisphereDiscrete(sampleDir);
-    //float3 irradiance = SampleHemisphereRandom(sampleDir);
+    float3 irradiance = SampleHemisphereRandom(sampleDir);
 
     Output[uint3(DispatchThreadID.x, DispatchThreadID.y, face)] = float4(irradiance, 1.f);
 }

@@ -70,7 +70,7 @@ struct Asset
 	union
 	{
 		u32 RelatedCount; // for textures, its the icon, for geometry, it determines whether it has metadata
-		u32 AdditionalData2;
+		u32 AdditionalData2; // for ibl - skybox marks diffuse, diffuse marks specular, specular marks the brdflut
 	};
 
 	std::filesystem::path GetMetadataPath() const { std::filesystem::path p{ ImportedFilePath }; return p.replace_extension(".mt"); }

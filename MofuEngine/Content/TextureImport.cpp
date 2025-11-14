@@ -670,9 +670,7 @@ InitializeFromImages(TextureData* const data, const Vec<Image>& images)
 			if (math::IsEqual((f32)image.width / (f32)image.height, 2.f))
 			{
 				// is an equirectangular image
-				//hr = EquirectangularToCubemapD3D12(images.data(), arraySize, settings.CubemapSize,
-					//settings.PrefilterCubemap, false, settings.MirrorCubemap, workingScratch);
-				if (!RunOnGpu([&](ID3D11Device* device)
+				/*if (!RunOnGpu([&](ID3D11Device* device)
 					{
 						hr = EquirectangularToCubemap(images.data(), arraySize, settings.CubemapSize,
 							settings.PrefilterCubemap, false, settings.MirrorCubemap, workingScratch, device);
@@ -681,7 +679,9 @@ InitializeFromImages(TextureData* const data, const Vec<Image>& images)
 				{
 					hr = EquirectangularToCubemap(images.data(), arraySize, settings.CubemapSize,
 						settings.PrefilterCubemap, false, settings.MirrorCubemap, workingScratch);
-				}
+				}*/
+				EquirectangularToCubemapD3D12(images.data(), arraySize, settings.CubemapSize,
+					settings.PrefilterCubemap, false, settings.MirrorCubemap, workingScratch);
 			}
 			else if (arraySize % 6 != 0 || image.width != image.height)
 			{
@@ -910,7 +910,7 @@ void
 ComputeBRDFIntegrationLUT(TextureData* const data)
 {
 	assert(data);
-	constexpr u32 sampleCount{ 1024 };
+	constexpr u32 sampleCount{ SAMPLE_COUNT_RANDOM };
 	HRESULT hr{ S_OK };
 	ScratchImage brdfLut{};
 

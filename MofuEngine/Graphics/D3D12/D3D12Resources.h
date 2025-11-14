@@ -649,7 +649,7 @@ private:
 struct TempStructuredBuffer
 {
 	DISABLE_COPY_AND_MOVE(TempStructuredBuffer);
-	TempStructuredBuffer(u32 elementCount, u32 stride, bool makeDescriptor);
+	TempStructuredBuffer(u32 elementCount, u32 stride, bool makeDescriptor, const D3D12_SHADER_RESOURCE_VIEW_DESC* const srvDesc = nullptr);
 
 	void WriteMemory(u32 size, void* data);
 

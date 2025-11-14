@@ -25,6 +25,8 @@ std::filesystem::path prefabsDirectory;
 
 std::bitset<content::AssetType::Count> itemTypeFilter{};
 
+constexpr u32 TOOLTIP_FILENAME_LENGTH{ 96 };
+
 struct Selection : ImGuiSelectionBasicStorage
 {
     // Find which item should be Focused after deletion.
@@ -615,8 +617,8 @@ AssetBrowser::Draw(const char* title, bool* pOpen)
                         }
                         if (itemIsHovered)
                         {
-                            char label[64];
-                            snprintf(label, 64, "%s", item.second->Name.data());
+                            char label[TOOLTIP_FILENAME_LENGTH];
+                            snprintf(label, TOOLTIP_FILENAME_LENGTH, "%s", item.second->Name.data());
                             if(ImGui::BeginTooltip())
                                 ImGui::TextUnformatted(label);
                             ImGui::EndTooltip();
@@ -923,9 +925,17 @@ AddRegisteredAsset(content::AssetHandle handle, content::AssetPtr asset)
 }
 
 void
+RemoveRegisteredAsset(content::AssetHandle handle)
+{
+    log::Info("RemoveRegisterAsset todo");
+}
+
+void
 DeleteRegisteredAsset(content::AssetHandle handle)
 {
     //TODO:
+    RemoveRegisteredAsset(handle);
+    content::assets::DeregisterAsset(handle);
 }
 
 }

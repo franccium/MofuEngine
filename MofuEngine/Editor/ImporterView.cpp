@@ -119,7 +119,13 @@ RenderTextureImportSettings()
 
 	ImGui::Checkbox("Prefer BC7", (bool*)&textureImportSettings.PreferBC7);
 	ImGui::Checkbox("Compress", (bool*)&textureImportSettings.Compress);
+
 	ImGui::Checkbox("Prefilter Cubemap", (bool*)&textureImportSettings.PrefilterCubemap);
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip("if need prefiltered, import using PrefilterCubemap first, then reimport the cubemap with Prefilter off and some chosen size");
+	}
+
 	ImGui::Checkbox("Mirror Cubemap", (bool*)&textureImportSettings.MirrorCubemap);
 
 	if (ImGui::Button("Restore Defaults")) textureImportSettings = {};

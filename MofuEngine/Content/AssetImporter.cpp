@@ -33,7 +33,7 @@ ImportUnknown([[maybe_unused]] std::filesystem::path path, [[maybe_unused]] Asse
 	return {};
 }
 
-void
+AssetHandle
 CreateBRDFLut(const texture::TextureData& data, std::filesystem::path targetPath)
 {
 	texture::TextureData lutData{};
@@ -45,8 +45,8 @@ CreateBRDFLut(const texture::TextureData& data, std::filesystem::path targetPath
 
 	if (lutData.Info.ImportError != texture::ImportError::Succeeded)
 	{
-		log::Error("BRDF LUT creation error: %s", texture::TEXTURE_IMPORT_ERROR_STRING[data.Info.ImportError]);
-		return;
+		log::Error("BRDF LUT creation error: %s", texture::TEXTURE_IMPORT_ERROR_STRING[lutData.Info.ImportError]);
+		return INVALID_HANDLE;
 	}
 
 	PackTextureForEngine(lutData, targetPath);
@@ -55,7 +55,7 @@ CreateBRDFLut(const texture::TextureData& data, std::filesystem::path targetPath
 	std::filesystem::path metadataPath{ targetPath.replace_extension(ASSET_METADATA_EXTENSION) };
 	PackTextureForEditor(lutData, metadataPath);
 
-	assets::RegisterAsset(asset);
+	AssetHandle handle{ assets::RegisterAsset(asset) };
 
 	std::unique_ptr<u8[]> iconBuffer{};
 	u64 iconSize{};
@@ -68,6 +68,7 @@ CreateBRDFLut(const texture::TextureData& data, std::filesystem::path targetPath
 
 	delete[] lutData.SubresourceData;
 	if (lutData.Icon) delete[] lutData.Icon;
+	return handle;
 }
 
 void
@@ -110,75 +111,115 @@ ImportTexture(std::filesystem::path path, AssetPtr asset, const std::filesystem:
 		return {};
 	}
 
-	//Texture diffuseIBLCubemap = null;
-	if (data.ImportSettings.PrefilterCubemap && data.Info.Flags & TextureFlags::IsCubeMap)
+	const bool isCubemap{ (data.Info.Flags & TextureFlags::IsCubeMap) != 0 };
+	auto path_str = importedPath.string();
+	std::filesystem::path texturePath{ path_str };
+	const std::string originalFilename{ path.stem().string() };
+	const bool isReimporting{ !importedPath.empty() };
+	//NOTE: should be scratched, as a new handle might be registered if called using (path, importedPath)
+	const AssetHandle existingHandle{ isReimporting ? assets::GetHandleFromImportedPath(importedPath) : INVALID_HANDLE };
+
+	if (!isReimporting)
 	{
-		texture::TextureData diffuseData{};
-		diffuseData.SubresourceData = new u8[data.SubresourceSize];
-		memcpy(diffuseData.SubresourceData, data.SubresourceData, data.SubresourceSize);
-		diffuseData.SubresourceSize = data.SubresourceSize;
-		diffuseData.Icon = new u8[data.IconSize];
-		memcpy(diffuseData.Icon, data.Icon, data.IconSize);
-		diffuseData.IconSize = data.IconSize;
-		diffuseData.Info = data.Info;
-		diffuseData.ImportSettings = data.ImportSettings;
-			
+		texturePath = !isCubemap ? editor::project::GetTextureDirectory() : editor::project::GetResourceDirectory() / "Cubemaps";
+		texturePath.append(originalFilename + "_sky" + ".tex");
+	}
+	else if (isCubemap)
+	{
+		assert(IsValid(existingHandle));
+		// if we are reimporting cubemap without prefiltering, preserve any existing connections to prefiltered cubemaps
+		data.Info.IBLPair = assets::GetIBLRelatedHandle(existingHandle);
+	}
+
+	if (isCubemap && data.ImportSettings.PrefilterCubemap)
+	{
+		auto cloneData{ [](const texture::TextureData& srcData) {
+			texture::TextureData newData;
+			newData.SubresourceData = new u8[srcData.SubresourceSize];
+			memcpy(newData.SubresourceData, srcData.SubresourceData, srcData.SubresourceSize);
+			newData.SubresourceSize = srcData.SubresourceSize;
+			newData.Icon = new u8[srcData.IconSize];
+			memcpy(newData.Icon, srcData.Icon, srcData.IconSize);
+			newData.IconSize = srcData.IconSize;
+			newData.Info = srcData.Info;
+			newData.ImportSettings = srcData.ImportSettings;
+			return newData;
+		} };
+
+		texture::TextureData diffuseData{ cloneData(data) };
 		texture::PrefilterDiffuseIBL(&diffuseData);
-		texture::PrefilterSpecularIBL(&data);
-
-		
-		std::filesystem::path texturePath{ importedPath.empty() ? editor::project::GetResourceDirectory() / "Cubemaps" : importedPath };
-		texturePath = texturePath.parent_path(); //TODO: reimporting a pair, but have to still validate it in the reimporter
-		std::filesystem::path diffPath{ texturePath };
-		diffPath.append(path.stem().string() + ".tex");
-		asset->ImportedFilePath = diffPath;
-		asset->RelatedCount = diffuseData.ImportSettings.FileCount;
-
-		std::filesystem::path specPath{ texturePath };
-		specPath.append(path.stem().string() + "spec.tex");
-		Asset* specularAsset = new Asset{ content::AssetType::Texture, path, {} };
-		specularAsset->ImportedFilePath = specPath;
-		specularAsset->RelatedCount = diffuseData.ImportSettings.FileCount;
-		content::AssetHandle specularHandle{ assets::RegisterAsset(specularAsset) };
-		diffuseData.Info.IBLPair = specularHandle;
-
-		//TODO: somehow get the iblpair saved for the specular metadata
-		PackTextureForEngine(diffuseData, diffPath);
-		std::filesystem::path metadataPath{ diffPath.replace_extension(ASSET_METADATA_EXTENSION) };
-		PackTextureForEditor(diffuseData, metadataPath);
-
-		PackTextureForEngine(data, specPath);
-		std::filesystem::path specMetadataPath{ specPath.replace_extension(ASSET_METADATA_EXTENSION) };
-		PackTextureForEditor(data, specMetadataPath);
-
-		std::filesystem::path brdfLutPath{ diffPath.replace_filename(diffPath.stem().string() + "brdf_lut.tex") };
-		CreateBRDFLut(diffuseData, brdfLutPath);
-
-		std::unique_ptr<u8[]> iconBuffer{};
-		u64 iconSize{};
-		content::assets::GetTextureIconData(metadataPath, iconSize, iconBuffer);
-		if (iconSize != 0)
+		if (diffuseData.Info.ImportError != texture::ImportError::Succeeded)
 		{
-			id_t iconId{ graphics::ui::AddIcon(iconBuffer.get()) };
-			asset->AdditionalData = iconId;
+			log::Error("Texture import error when creating Diffuse IBL: %s", texture::TEXTURE_IMPORT_ERROR_STRING[diffuseData.Info.ImportError]);
+			return {};
 		}
 
+		texture::TextureData specularData{ cloneData(data) };
+		specularData.ImportSettings.IsSpecularCubemap = true;
+		texture::PrefilterSpecularIBL(&specularData);
+		if (specularData.Info.ImportError != texture::ImportError::Succeeded)
+		{
+			log::Error("Texture import error when creating Specular IBL: %s", texture::TEXTURE_IMPORT_ERROR_STRING[specularData.Info.ImportError]);
+			return {};
+		}
+
+		if (isReimporting)
+		{
+			assets::AmbientLightHandles handles{ assets::GetAmbientLightHandles(existingHandle) };
+			// delete the assets from registry to avoid fetching old versions by path
+			if (id::IsValid(handles.DiffuseHandle))
+			{
+				assets::DeregisterAsset(handles.DiffuseHandle);
+				assets::DeregisterAsset(handles.SpecularHandle);
+				assets::DeregisterAsset(handles.BrdfLutHandle);
+			}
+		}
+
+		std::filesystem::path diffusePath{ texturePath };
+		diffusePath.replace_filename(originalFilename + "_diff" + ".tex");
+		Asset* diffuseAsset = new Asset{ content::AssetType::Texture, path, diffusePath };
+		diffuseAsset->RelatedCount = diffuseData.ImportSettings.FileCount;
+		const content::AssetHandle diffuseHandle{ assets::RegisterAsset(diffuseAsset) };
+
+		std::filesystem::path specPath{ diffusePath };
+		specPath.replace_filename(originalFilename + "_spec" + ".tex");
+		Asset* specularAsset = new Asset{ content::AssetType::Texture, path, specPath };
+		specularAsset->RelatedCount = diffuseData.ImportSettings.FileCount;
+		const content::AssetHandle specularHandle{ assets::RegisterAsset(specularAsset) };
+		data.Info.IBLPair = diffuseHandle;
+		asset->AdditionalData2 = diffuseHandle;
+		diffuseData.Info.IBLPair = specularHandle;
+		diffuseAsset->AdditionalData2 = specularHandle;
+
+
+		PackTextureForEngine(diffuseData, diffusePath);
+		std::filesystem::path metadataPath{ diffusePath.replace_extension(ASSET_METADATA_EXTENSION) };
+		PackTextureForEditor(diffuseData, metadataPath);
+
+		std::filesystem::path brdfLutPath{ diffusePath.replace_filename(originalFilename + "_brdflut.tex") };
+		const AssetHandle brdfLUTHandle{ CreateBRDFLut(diffuseData, brdfLutPath) };
+		assert(IsValid(brdfLUTHandle));
+		if (IsValid(brdfLUTHandle))
+		{
+			specularAsset->AdditionalData2 = brdfLUTHandle;
+			specularData.Info.IBLPair = brdfLUTHandle;
+		}
+
+		PackTextureForEngine(specularData, specPath);
+		std::filesystem::path specMetadataPath{ specPath.replace_extension(ASSET_METADATA_EXTENSION) };
+		PackTextureForEditor(specularData, specMetadataPath);
+
+		/*AssetHandle diffuseHandle{ asset->AdditionalData2 };
+		AssetHandle specularHandle{ load from diffuse asset texture data };
+		AssetHandle brdfLUTHandle{ diffuseAsset->AdditionalData2 };*/
+
 		delete[] diffuseData.SubresourceData;
-		delete[] data.SubresourceData;
+		delete[] specularData.SubresourceData;
 		delete[] diffuseData.Icon;
-		delete[] data.Icon;
-
-		return asset->ImportedFilePath;
+		delete[] specularData.Icon;
 	}
 
-	auto path_str = importedPath.string(); // Get a copy of the string
-	std::filesystem::path texturePath{ path_str }; // Construct from the copy
-	//std::filesystem::path texturePath{ importedPath };
-	if (importedPath.empty())
-	{
-		texturePath = editor::project::GetTextureDirectory();
-		texturePath.append(path.stem().string() + ".tex");
-	}
+	
 	asset->ImportedFilePath = texturePath;
 	asset->RelatedCount = data.ImportSettings.FileCount;
 	PackTextureForEngine(data, texturePath);
@@ -730,8 +771,10 @@ ImportFBX(std::filesystem::path path, AssetPtr asset, const std::filesystem::pat
 {
 	log::Info("Importing mesh: %s", path.string().c_str());
 
+	const std::string originalFilename{ path.stem().string() };
+
 	FBXImportState state{};
-	state.Name = path.filename().stem().string();
+	state.Name = originalFilename;
 	state.ModelResourcePath = importedPath.empty() ? editor::project::GetResourceDirectory() / "ImportedScenes" / state.Name : importedPath.parent_path();
 	state.ModelSourcePath = path.parent_path();
 	std::filesystem::create_directory(state.ModelResourcePath);
@@ -894,6 +937,14 @@ ImportAsset(std::filesystem::path path, const std::filesystem::path& importedPat
 			std::string filePath{ path.string() };
 			log::Error("Error importing asset [%s]", filePath.data());
 		}
+
+		const bool isReimporting{ !importedPath.empty() };
+		if (isReimporting)
+		{
+			AssetHandle handle{ assets::GetHandleFromImportedPath(importedPath) };
+			assets::DeregisterAsset(handle);
+		}
+
 		return assets::RegisterAsset(asset);
 	}
 
@@ -901,6 +952,7 @@ ImportAsset(std::filesystem::path path, const std::filesystem::path& importedPat
 	return content::INVALID_HANDLE;
 }
 
+// if the asset has ImportedFilePath, reimporting occurs
 void
 ImportAsset(AssetHandle handle)
 {

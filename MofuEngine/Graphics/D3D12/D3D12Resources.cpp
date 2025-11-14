@@ -649,7 +649,7 @@ RawBuffer::SRVDesc(u32 bufferIdx) const
 	return srvDesc;
 }
 
-TempStructuredBuffer::TempStructuredBuffer(u32 elementCount, u32 stride, bool makeDescriptor)
+TempStructuredBuffer::TempStructuredBuffer(u32 elementCount, u32 stride, bool makeDescriptor, const D3D12_SHADER_RESOURCE_VIEW_DESC* const srvDesc)
 {
 	assert(elementCount && stride);
 
@@ -662,15 +662,22 @@ TempStructuredBuffer::TempStructuredBuffer(u32 elementCount, u32 stride, bool ma
 	if (makeDescriptor)
 	{
 		TempDescriptorAllocation alloc = core::SrvHeap().AllocateTemporary(1);
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-		srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Buffer.FirstElement = mem.ResourceOffset / stride;
-		srvDesc.Buffer.NumElements = elementCount;
-		srvDesc.Buffer.StructureByteStride = stride;
-		srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-		core::Device()->CreateShaderResourceView(mem.Resource, &srvDesc, alloc.CPUStartHandle);
+		if (!srvDesc)
+		{
+			D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
+			desc.Format = DXGI_FORMAT_UNKNOWN;
+			desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+			desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			desc.Buffer.FirstElement = mem.ResourceOffset / stride;
+			desc.Buffer.NumElements = elementCount;
+			desc.Buffer.StructureByteStride = stride;
+			desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+			core::Device()->CreateShaderResourceView(mem.Resource, &desc, alloc.CPUStartHandle);
+		}
+		else
+		{
+			core::Device()->CreateShaderResourceView(mem.Resource, srvDesc, alloc.CPUStartHandle);
+		}
 		DescriptorIndex = alloc.StartIndex;
 	}
 }

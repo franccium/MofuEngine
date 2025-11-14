@@ -16,5 +16,6 @@ bool InitializeAssetBrowserGUI();
 void RenderAssetBrowserGUI();
 
 void AddRegisteredAsset(content::AssetHandle handle, content::AssetPtr asset);
+void RemoveRegisteredAsset(content::AssetHandle hadle);
 void DeleteRegisteredAsset(content::AssetHandle handle);
 }

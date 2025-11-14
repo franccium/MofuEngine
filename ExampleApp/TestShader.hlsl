@@ -468,7 +468,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);
     //color += ambientColor;
-    color += EvaluateIBL(S);
+    //color += EvaluateIBL(S);
     color = saturate(color);
     
 #if TEXTURED_MTL
