@@ -661,7 +661,7 @@ TempStructuredBuffer::TempStructuredBuffer(u32 elementCount, u32 stride, bool ma
 
 	if (makeDescriptor)
 	{
-		TempDescriptorAllocation alloc = core::SrvHeap().AllocateTemporary(1);
+		TempDescriptorAllocation alloc{ core::SrvHeap().AllocateTemporary(1) };
 		if (!srvDesc)
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC desc{};

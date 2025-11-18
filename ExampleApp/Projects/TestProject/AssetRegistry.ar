@@ -118,10 +118,6 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\characters\cyborg\cyborg.fbx
   ImportedFilePath: ""
-12236268237829469544:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\kloofendal_48d_partly_cloudy_puresky_2k.hdr
-  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\kloofendal_48d_partly_cloudy_puresky_2k_spec.tex
 11927785594456423243:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\steel01\Textures\leather_diff.png
@@ -238,6 +234,14 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_181.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_181.mat
+14229845381947892143:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_436.mat
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_436.mat
+6288324909672714022:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest3.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest3.mat
 4900747586779898311:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_114.mat
@@ -246,26 +250,22 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_806.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_806.mat
-6288324909672714022:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest3.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest3.mat
-14229845381947892143:
-  Type: 6
-  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_436.mat
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_436.mat
-16062278816839593902:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\SunTemple\Textures\M_Soul_Rocks2_Inst_4_Normal.dds
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Textures\M_Soul_Rocks2_Inst_4_Normal.tex
-16775440246232348286:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
 15123504814596887637:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Metalness_1K.png
   ImportedFilePath: Projects/TestProject\Resources\Sink_A_Metalness_1K.tex
+16775440246232348286:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
+16062278816839593902:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\SunTemple\Textures\M_Soul_Rocks2_Inst_4_Normal.dds
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Textures\M_Soul_Rocks2_Inst_4_Normal.tex
+15331106994041527858:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_bust_2k\textures\marble_bust_01_rough_2k.jpg
+  ImportedFilePath: ""
 15694983215266366912:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_28.mat
@@ -402,10 +402,6 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\textures\cloth-mr.png
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\cloth-mr.tex
-2556513264434931567:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\kloofendal_48d_partly_cloudy_puresky_2k.hdr
-  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\kloofendal_48d_partly_cloudy_puresky_2k_sky.tex
 16658033239865676700:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\brickwall_02_Metalness.png
@@ -3230,6 +3226,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_393.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_393.mat
+5687562804759351548:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\meadow_2_2k.hdr
+  ImportedFilePath: ""
 8018135863548898460:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\Materials\steel01_0.mat
@@ -4078,6 +4078,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_614.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_614.mat
+1549548391544188559:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_bust_2k\textures\marble_bust_01_diff_2k.jpg
+  ImportedFilePath: ""
 1712947138366650470:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\steel01\Textures\base_AO_alpha.png
@@ -4790,6 +4794,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_259.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_259.mat
+10488382653820042052:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Resources\Cubemaps\blaubeuren_night_4k_brdflut.tex
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\blaubeuren_night_4k_brdflut.tex
 11026586344056217285:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\wood_tile_01_Metalness.png
@@ -5038,6 +5046,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_32.mat
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_32.mat
+17650089944494164319:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\little_paris_eiffel_tower_2k.hdr
+  ImportedFilePath: ""
 3063109409736623678:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_567.mat
@@ -5054,6 +5066,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_247.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_247.mat
+17478103754041229342:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_horse_2k\textures\horse_statue_01_rough_2k.jpg
+  ImportedFilePath: ""
 4107391663761582416:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_414.mat
@@ -6014,6 +6030,10 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\wood_tile_01_BaseColor.png
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Textures\wood_tile_01_BaseColor.tex
+10970333768580243455:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\blaubeuren_night_4k.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\blaubeuren_night_4k_spec.tex
 9164170383172242144:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\wood_tile_01_Roughness.png
@@ -6646,9 +6666,17 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_180.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_180.mat
+15000745625279630168:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_horse_2k\horse_statue_01_2k.fbx
+  ImportedFilePath: ""
 1701877161329019602:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\Models\SunTemple\Textures\M_Rocks_Inst_0_BaseColor.dds
+  ImportedFilePath: ""
+1949664080968304457:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_bust_2k\marble_bust_01_2k.fbx
   ImportedFilePath: ""
 14608514287710223121:
   Type: 6
@@ -7562,10 +7590,6 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_17.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_17.mat
-15537869336758754935:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\little_paris_eiffel_tower_2k.hdr
-  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\little_paris_eiffel_tower_2k_spec.tex
 16580074838959035477:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_19.mat
@@ -7766,6 +7790,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_395.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_395.mat
+7628588064764004896:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\blaubeuren_night_4k.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\blaubeuren_night_4k_sky.tex
 11611900356464554521:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_88.mat
@@ -8194,14 +8222,14 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_283.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_283.mat
-9995667754265363250:
-  Type: 6
-  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_449.mat
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_449.mat
 10188967314101436176:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_285.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_285.mat
+9995667754265363250:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_449.mat
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_449.mat
 4617652993065604497:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_286.mat
@@ -8666,6 +8694,10 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_513.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_513.mat
+686585979398210160:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\kloofendal_48d_partly_cloudy_puresky_2k.hdr
+  ImportedFilePath: ""
 10456536849490198118:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_519.mat
@@ -9933,24 +9965,40 @@
 7733417588518510484:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\TestCubemap\LakesideSkyNew.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\LakesideSkyNew_sky.tex
+3966432691374029164:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\LakesideSkyNew.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\LakesideSkyNew_diff.tex
+87105037012549603:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\LakesideSkyNew.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\LakesideSkyNew_spec.tex
+7906557634463526788:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Resources\Cubemaps\LakesideSkyNew_brdflut.tex
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\LakesideSkyNew_brdflut.tex
+5340793684885884935:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_bust_2k\textures\marble_bust_01_mask_2k.png
   ImportedFilePath: ""
-13232954134269172518:
+14760437179177226748:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\little_paris_eiffel_tower_2k.hdr
-  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\little_paris_eiffel_tower_2k_sky.tex
-5042324562700764365:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\meadow_2_2k.hdr
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_bust_2k\textures\marble_bust_01_nor_gl_2k.exr
   ImportedFilePath: ""
-5403090489325938437:
+1552624095686554168:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\little_paris_eiffel_tower_2k.hdr
-  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\little_paris_eiffel_tower_2k_diff.tex
-2868525007478785550:
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_horse_2k\textures\horse_statue_01_diff_2k.jpg
+  ImportedFilePath: ""
+10266799563497155672:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\kloofendal_48d_partly_cloudy_puresky_2k.hdr
-  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\kloofendal_48d_partly_cloudy_puresky_2k_diff.tex
-8761581291055800908:
+  OriginalFilePath: Projects/TestProject\Assets\props\marble_horse_2k\textures\horse_statue_01_nor_gl_2k.exr
+  ImportedFilePath: ""
+10370618553711465186:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Resources\Cubemaps\kloofendal_48d_partly_cloudy_puresky_2k_brdflut.tex
-  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\kloofendal_48d_partly_cloudy_puresky_2k_brdflut.tex
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\blue_lagoon_night_4k.hdr
+  ImportedFilePath: ""
+5150991065153251709:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\TestCubemap\blaubeuren_night_4k.hdr
+  ImportedFilePath: Projects/TestProject\Resources\Cubemaps\blaubeuren_night_4k_diff.tex

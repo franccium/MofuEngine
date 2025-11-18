@@ -2,8 +2,8 @@
 #include "ContentTypes.hlsli"
 
 static const float PI = 3.14159265f;
-static const float INV_PI = 1.f / PI;
-static const float INV_TAU = 1.f / (2.f * PI);
+static const float INV_PI = 0.31830988618f;
+static const float INV_TAU = 0.15915494309f;
 static const float SAMPLE_OFFSET = 0.5f;
 
 ConstantBuffer<EnvironmentProcessingConstants> Constants : register(b0, space0);
@@ -62,7 +62,7 @@ float2 DirectionEquirectangularUV(float3 dir)
 
 float3x3 GetTangentFrame(float3 normal)
 {
-    float3 up = abs(normal.z) < 0.999f ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 up = abs(normal.z) < 0.999f ? float3(0.f, 0.f, 1.f) : float3(1.f, 0.f, 0.f);
     float3 tangentX = normalize(cross(up, normal));
     float3 tangentY = cross(normal, tangentX);
     return float3x3(tangentX, tangentY, normal);
@@ -155,7 +155,7 @@ float3 PrefilterEnvMap(float roughness, float3 N)
     {
         float2 Xi = Hammersley(i, NumSamples);
         float3 H = mul(ImportanceSampleGGX(Xi, a4), tangentFrame);
-        float3 L = -reflect(V, H);
+        float3 L = reflect(-V, H);
         float NoL = saturate(dot(N, L));
 
         if (NoL > 0)
@@ -164,8 +164,8 @@ float3 PrefilterEnvMap(float roughness, float3 N)
 
             float NoH = saturate(dot(N, H));
             float HoV = saturate(dot(H, V));
-            float pdf = D_GGX(NoH, a4) * 0.25f;
-            float omegaS = 1.f / (float(NumSamples) * pdf + 0.0001f);
+            float PDF = D_GGX(NoH, a4) * 0.25f;
+            float omegaS = 1.f / (float(NumSamples) * PDF + 0.0001f);
 
             mipLevel = roughness == 0.f ? 0.f : 0.5f * log2(omegaS * invOmegaP);
 
@@ -177,11 +177,44 @@ float3 PrefilterEnvMap(float roughness, float3 N)
     return PrefilteredColor / TotalWeight;
 }
 
+float3 SampleHemisphereBrute(float3 normal)
+{
+    float3 irradiance = 0.f;
+    float sampleCount = 0.f;
+    float invDim = 1.f / Constants.CubeMapInSize;
+
+    for (uint face = 0; face < 6; ++face)
+    {
+        for (uint y = 0; y < Constants.CubeMapInSize; ++y)
+        {
+            for (uint x = 0; x < Constants.CubeMapInSize; ++x)
+            {
+                float2 uv = (float2(x, y) + SAMPLE_OFFSET) * invDim;
+                float2 pos = 2.f * uv - 1.f;
+
+                float3 sampleDir = GetSampleDirCubemap(face, pos.x, pos.y);
+                float cosTheta = dot(sampleDir, normal);
+
+                if (cosTheta > 0.f)
+                {
+                    float tmp = 1.f + pos.x * pos.x + pos.y * pos.y;
+                    float weight = 4.f * cosTheta / (sqrt(tmp) * tmp);
+                    irradiance += TextureCube( ResourceDescriptorHeap[Constants.CubemapsSrvIndex]).SampleLevel(LinearSampler, sampleDir, 0).rgb * weight;
+                    sampleCount += weight;
+                }
+            }
+        }
+    }
+
+    irradiance *= 1.f / sampleCount;
+    return irradiance;
+}
+
 float3 ImportanceSampleHemisphere(float3 normal)
 {
     float3 irradiance = 0.f;
-    float3x3 tangentFrame = GetTangentFrame(normal);
-    uint sampleCount = Constants.SampleCount;
+    const float3x3 tangentFrame = GetTangentFrame(normal);
+    const uint sampleCount = Constants.SampleCount;
 
     for (uint i = 0; i < sampleCount; ++i)
     {
@@ -219,9 +252,9 @@ void EquirectangularToCubeMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, ui
         dir.x = 1.f - dir.x; // mirror the cubemap
     float4 envMapSample = Texture2D(ResourceDescriptorHeap[Constants.EnvMapSrvIndex]).SampleLevel(LinearSampler, dir, 0);
 
-    uint pixelIdx = DispatchThreadID.x + DispatchThreadID.y * size;
-    uint faceOffset = face * size * size;
-    uint elIdx = (pixelIdx + faceOffset);
+    const uint pixelIdx = DispatchThreadID.x + DispatchThreadID.y * size;
+    const uint faceOffset = face * size * size;
+    const uint elIdx = (pixelIdx + faceOffset);
     Output[elIdx] = envMapSample;
 }
 
@@ -249,9 +282,12 @@ void PrefilterDiffuseEnvMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
     float2 uv = (float2(DispatchThreadID.xy) + SAMPLE_OFFSET) / size;
     float2 pos = 2.f * uv - 1.f;
     float3 sampleDir = GetSampleDirCubemap(face, pos.x, pos.y);
-    float3 irradiance = ImportanceSampleHemisphere(sampleDir);
+    //float3 irradiance = ImportanceSampleHemisphere(sampleDir);
+    float3 irradiance = SampleHemisphereBrute(sampleDir);
 
-    Output[DispatchThreadID.x + DispatchThreadID.y * face] = float4(irradiance, 1.f);
+    const uint pixelIdx = DispatchThreadID.x + DispatchThreadID.y * size;
+    const uint faceOffset = face * size * size;
+    Output[pixelIdx + faceOffset] = float4(irradiance, 1.f);
 }
 
 [numthreads(16, 16, 1)]
@@ -267,5 +303,7 @@ void PrefilterSpecularEnvMapCS(uint3 DispatchThreadID : SV_DispatchThreadID, uin
     float3 sampleDir = GetSampleDirCubemap(face, pos.x, pos.y);
     float3 irradiance = PrefilterEnvMap(Constants.Roughness, sampleDir);
 
-    Output[DispatchThreadID.x + DispatchThreadID.y * face] = float4(irradiance, 1.f);
+    const uint pixelIdx = DispatchThreadID.x + DispatchThreadID.y * size;
+    const uint faceOffset = face * size * size;
+    Output[Constants.OutOffset + pixelIdx + faceOffset] = float4(irradiance, 1.f);
 }

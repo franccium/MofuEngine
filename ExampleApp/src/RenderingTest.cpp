@@ -143,7 +143,7 @@ u64 skyboxHandle{ 1764144365702082788 };
 //u64 brdfLutHandle{ 10865738213553409319 };
 //u64 skyboxHandle{ 11277431815226102038 };
 
-u64 skySkyboxHandle{ 7424433726636195600 };
+u64 skySkyboxHandle{ 7733417588518510484 };
 
 // meadow
 //u64 diffuseIBLHandle{ 3375815875843134095 };
@@ -278,7 +278,7 @@ AddLights()
 {
 	u32 lightSetOne{ graphics::light::CreateLightSet() };
 
-	bool createFromHandles{ false };
+	bool createFromHandles{ true };
 	if (createFromHandles)
 	{
 		content::AssetHandle skyboxHandle{ skySkyboxHandle };

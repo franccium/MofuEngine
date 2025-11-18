@@ -4,10 +4,10 @@
 static const float PI = 3.14159265f;
 static const float TAU = 6.28318548f;
 static const float E = 2.71828185f;
-static const float HALF_PI = 0.5f * PI;
-static const float PIDIV4 = 0.25f * PI;
-static const float INV_PI = 1.f / PI;
-static const float INV_TAU = 1.f / (2.f * PI);
+static const float HALF_PI = 1.57079632679f;
+static const float PIDIV4 = 0.78539816339f;
+static const float INV_PI = 0.31830988618f;
+static const float INV_TAU = 0.15915494309f;
 static const float EPSILON = 1e-5f;
 
 static const float F32_MAX = 0x7F7FFFFF;

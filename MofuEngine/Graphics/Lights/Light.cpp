@@ -303,11 +303,13 @@ GetLightSet(u32 lightSetIdx)
 	return lightSets[lightSetIdx];
 }
 
-u32 
-GetCurrentLightSetKey()
-{
-	return currentLightSetKey;
-}
+u32 GetCurrentLightSetKey() { return currentLightSetKey; }
+u32* const GetCurrentLightSetKeyRef() { return &currentLightSetKey; }
 
+f32* const GetAmbientIntensityRef() 
+{ 	
+	LightSet& set{ lightSets[currentLightSetKey] };
+	return &set.AmbientLight.Intensity;
+}
 
 }

@@ -8,14 +8,10 @@ using namespace Microsoft::WRL;
 namespace mofu::content::texture {
 namespace {
 
-//constexpr u32 PREFILTERED_DIFFUSE_CUBEMAP_SIZE{ 64 };
-//constexpr u32 PREFILTERED_SPECULAR_CUBEMAP_SIZE{ 512 };
-//constexpr u32 ROUGHNESS_MIP_LEVELS{ 6 };
-//constexpr u32 BRDF_INTEGRATION_LUT_SIZE{ 512 };
-	constexpr u32 PREFILTERED_DIFFUSE_CUBEMAP_SIZE{ 32 };
-	constexpr u32 PREFILTERED_SPECULAR_CUBEMAP_SIZE{ 128 };
-	constexpr u32 ROUGHNESS_MIP_LEVELS{ 6 };
-	constexpr u32 BRDF_INTEGRATION_LUT_SIZE{ 128 };
+constexpr u32 PREFILTERED_DIFFUSE_CUBEMAP_SIZE{ 64 };
+constexpr u32 PREFILTERED_SPECULAR_CUBEMAP_SIZE{ 512 };
+constexpr u32 ROUGHNESS_MIP_LEVELS{ 6 };
+constexpr u32 BRDF_INTEGRATION_LUT_SIZE{ 512 };
 
 #include "Shaders/out/EnvMapProcessingCS_EquirectangularToCubeMapCS.inc"
 #include "Shaders/out/EnvMapProcessingCS_PrefilterDiffuseEnvMapCS.inc"

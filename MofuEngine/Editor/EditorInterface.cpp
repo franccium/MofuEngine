@@ -26,6 +26,7 @@ InitializeEditorGUI()
 {
     object::Initialize();
     font::Initialize();
+    debug::InitializeRenderingConsole();
     return InitializeSceneEditorView() && material::InitializeMaterialEditor();
 }
 

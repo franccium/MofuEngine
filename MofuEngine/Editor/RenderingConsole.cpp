@@ -3,6 +3,10 @@
 #include "Graphics/RenderingDebug.h"
 #include "Graphics/RTSettings.h"
 #include "ValueDisplay.h"
+#include "Content/ContentUtils.h"
+#include "Project/Project.h"
+#include "Content/EditorContentManager.h"
+#include "Utilities/Logger.h"
 
 namespace mofu::editor::debug {
 namespace {
@@ -12,6 +16,8 @@ u32 _currentSampleIndex{ 0 };
 u64 _vertexCount{ 0 };
 u64 _indexCount{ 0 };
 u64 _lastAccelerationStructureBuildFrame{ 0 };
+Vec<std::string> _skyFiles{};
+
 
 void
 DrawPostProcessingOptions()
@@ -30,6 +36,22 @@ DrawRayTracingInfo()
 	ImGui::Text(" Last Built: %llu", _lastAccelerationStructureBuildFrame);
 	ImGui::Text(" Vertex Count: %llu", _vertexCount);
 	ImGui::Text(" Index Count: %llu", _indexCount);
+}
+
+void 
+RefreshCubemapFiles()
+{
+	//TODO: placeholder
+	_skyFiles.clear();
+	Vec<std::string> cubemapFiles{};
+	content::ListFilesByExtensionRec(".tex", project::GetResourceDirectory() / "Cubemaps", cubemapFiles);
+	for (const auto& file : cubemapFiles)
+	{
+		if (file.ends_with("_sky.tex"))
+		{
+			_skyFiles.emplace_back(file);
+		}
+	}
 }
 
 void
@@ -76,6 +98,12 @@ DrawRayTracingSettings()
 }
 
 } // anonymous namespace
+
+void 
+InitializeRenderingConsole()
+{
+	RefreshCubemapFiles();
+}
 
 void
 DrawRenderingConsole()
@@ -146,6 +174,54 @@ DrawRenderingConsole()
 			ImGui::SameLine();
 		}
 		ImGui::EndDisabled();
+	}
+
+	if (ImGui::CollapsingHeader("Ambient Light", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ui::DisplayEditableFloatNT(graphics::light::GetAmbientIntensityRef(), "Intensity", 0.f, 5.f);
+		ui::DisplayEditableUintNT(graphics::light::GetCurrentLightSetKeyRef(), "Light Set", 0.f, 5.f);
+
+		//TODO: very placeholder code
+		if(ImGui::Button("Refresh Cubemaps"))
+		{
+			RefreshCubemapFiles();
+		}
+		if (ImGui::Button("Change Skybox"))
+		{
+			ImGui::OpenPopup("SelectTexturePopup");
+		}
+		if (ImGui::BeginPopup("SelectTexturePopup"))
+		{
+			for (std::string_view path : _skyFiles)
+			{
+				if (ImGui::Selectable(path.data()))
+				{
+					content::AssetHandle skyHandle{ content::assets::GetHandleFromImportedPath(path) };
+					if (skyHandle != content::INVALID_HANDLE)
+					{
+						content::AssetPtr skybox{ content::assets::GetAsset(skyHandle) };
+						content::assets::AmbientLightHandles handles{ content::assets::GetAmbientLightHandles(skyHandle) };
+						content::AssetHandle diffuseHandle{ content::assets::GetIBLRelatedHandle(skyHandle) };
+						content::AssetHandle specularHandle{ content::assets::GetIBLRelatedHandle(diffuseHandle) };
+						content::AssetHandle brdfLUTHandle{ content::assets::GetIBLRelatedHandle(specularHandle) };
+
+						f32 ambientLightIntensity{ 1.f };
+						id_t diffuseIBL{ content::assets::CreateResourceFromHandle(handles.DiffuseHandle) };
+						id_t specularIBL{ content::assets::CreateResourceFromHandle(handles.SpecularHandle) };
+						id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(handles.BrdfLutHandle) };
+						id_t SkyboxHandle{ content::assets::CreateResourceFromHandle(skyHandle) };
+						graphics::light::AddAmbientLight(graphics::light::GetCurrentLightSetKey(), 
+							{ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL, SkyboxHandle});
+					}
+					else
+					{
+						log::Warn("Can't find assetHandle from path");
+					}
+					ImGui::CloseCurrentPopup();
+				}
+			}
+			ImGui::EndPopup();
+		}
 	}
 	
 	ImGui::End();

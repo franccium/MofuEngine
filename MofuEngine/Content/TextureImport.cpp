@@ -438,13 +438,43 @@ PrefilterIbl(TextureData* const data, IblFilter::Type filterType)
 		memcpy(image.pixels, images[imgIdx].pixels, image.slicePitch);
 	}
 
-	if (!RunOnGpu([&](ID3D11Device* device)
+	/*if (filterType == IblFilter::Specular)
+	{
+		if (!RunOnGpu([&](ID3D11Device* device)
+			{
+				hr = filterType == IblFilter::Diffuse
+					? PrefilterDiffuse(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps, device)
+					: PrefilterSpecular(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps, device);
+				return SUCCEEDED(hr);
+			}))
+		{
+			data->Info.ImportError = ImportError::Unknown;
+			return;
+		}
+	}
+	else
+	{
+		hr = PrefilterDiffuseD3D12(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps);
+	}*/
+	hr = filterType == IblFilter::Diffuse
+		? PrefilterDiffuseD3D12(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps)
+		: PrefilterSpecularD3D12(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps);
+
+	/*if (!RunOnGpu([&](ID3D11Device* device)
 		{
 			hr = filterType == IblFilter::Diffuse
 				? PrefilterDiffuse(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps, device)
 				: PrefilterSpecular(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps, device);
 			return SUCCEEDED(hr);
 		}))
+	{
+		data->Info.ImportError = ImportError::Unknown;
+		return;
+	}*/
+	/*hr = filterType == IblFilter::Diffuse
+		? PrefilterDiffuseD3D12(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps)
+		: PrefilterSpecularD3D12(cubemaps, SAMPLE_COUNT_RANDOM, cubemaps);*/
+	if (FAILED(hr))
 	{
 		data->Info.ImportError = ImportError::Unknown;
 		return;

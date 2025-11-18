@@ -72,6 +72,8 @@ void SendLightData();
 
 const LightSet& GetLightSet(u32 lightSetIdx);
 u32 GetCurrentLightSetKey();
+u32* const GetCurrentLightSetKeyRef();
+f32* const GetAmbientIntensityRef();
 
 u32 CreateLightSet();
 void RemoveLightSet(u32 lightSetIdx);
