@@ -31,6 +31,11 @@ struct OpaqueRootParameters
 		CullableLights,
 		LightGrid,
 		LightIndexList,
+#if RAYTRACING
+#if PATHTRACE_SHADOWS
+		SceneAccelerationStructure,
+#endif
+#endif
 
 		Count
 	};
@@ -49,6 +54,11 @@ struct AlphaTestedRootParameters
 		CullableLights,
 		LightGrid,
 		LightIndexList,
+#if RAYTRACING
+#if PATHTRACE_SHADOWS
+		SceneAccelerationStructure,
+#endif
+#endif
 
 		Count
 	};

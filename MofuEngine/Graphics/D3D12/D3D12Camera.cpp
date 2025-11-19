@@ -221,6 +221,7 @@ D3D12Camera::Update(u32 frameIndex)
     ecs::component::LocalTransform& lt = ecs::scene::GetComponent<ecs::component::LocalTransform>(_entityID);
     _position = XMLoadFloat3(&lt.Position);
     _direction = XMLoadFloat3(&lt.Forward);
+	_wasUpdated = ecs::scene::GetComponent<ecs::component::Camera>(_entityID).WasUpdated;
 
 	_view = XMMatrixLookToRH(_position, _direction, _up);
     _inverseView = XMMatrixInverse(nullptr, _view);

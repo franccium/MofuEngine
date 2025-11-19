@@ -143,7 +143,7 @@ u64 skyboxHandle{ 1764144365702082788 };
 //u64 brdfLutHandle{ 10865738213553409319 };
 //u64 skyboxHandle{ 11277431815226102038 };
 
-u64 skySkyboxHandle{ 7733417588518510484 };
+u64 skySkyboxHandle{ 7628588064764004896 };
 
 // meadow
 //u64 diffuseIBLHandle{ 3375815875843134095 };

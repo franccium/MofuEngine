@@ -3,4 +3,8 @@
 
 #define IS_DLSS_ENABLED 0
 
+#define RAYTRACING 1
+#define PATHTRACE_MAIN 0
+#define PATHTRACE_SHADOWS 1
+
 #endif

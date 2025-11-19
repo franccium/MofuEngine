@@ -145,7 +145,7 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 			cids.emplace_back(cid);
 			mask.set((size_t)cid, 1);
 		}
-#if RAYTRACING && PATH_TRACE_ALL
+#if RAYTRACING
 		mask.set(component::ID<component::PathTraceable>, 1);
 #endif
 
@@ -171,9 +171,9 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 			component::RenderMesh& mesh{ ecs::scene::GetComponent<component::RenderMesh>(entity) };
 			component::RenderMaterial& material{ ecs::scene::GetComponent<component::RenderMaterial>(entity) };
 			component::Collider col{};
-#if RAYTRACING && PATH_TRACE_ALL
+#if RAYTRACING
 			component::PathTraceable& pt{ ecs::scene::GetComponent<component::PathTraceable>(entity) };
-			renderables.emplace_back(entity, mesh, material, pt); //FIXME: doesn't work with submeshes
+			renderables.emplace_back(entity, mesh, material, pt, false, col); //FIXME: doesn't work with submeshes
 #else
 			renderables.emplace_back(entity, mesh, material, false, col); //FIXME: doesn't work with submeshes
 #endif
@@ -227,7 +227,7 @@ DeserializeEntityHierarchy(const YAML::Node& entityHierarchyData, Vec<ecs::Entit
 				e.Material.MaterialAsset = content::assets::GetAssetFromResource(e.Material.MaterialID, content::AssetType::Material);
 			}
 			e.Mesh.RenderItemID = graphics::AddRenderItem(e.entity, e.Mesh.MeshID, e.Material.MaterialCount, e.Material.MaterialID);
-#if RAYTRACING && PATH_TRACE_ALL
+#if RAYTRACING
 			e.PathTraceable.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(e.Mesh.MeshID);
 #endif
 
@@ -270,7 +270,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 	ecs::component::RenderMaterial material{};
 	ecs::component::RenderMesh mesh{};
 	ecs::component::NameComponent name{};
-#if RAYTRACING && PATH_TRACE_ALL
+#if RAYTRACING
 	ecs::component::PathTraceable pt{};
 #endif
 
@@ -287,7 +287,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		ecs::component::RenderMaterial Material;
 		bool isChild{ true };
 		ecs::component::Child child;
-#if RAYTRACING && PATH_TRACE_ALL
+#if RAYTRACING
 		ecs::component::PathTraceable pt{};
 #endif
 	};
@@ -297,7 +297,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 
 	// create root entity
 	ecs::component::Parent parentEntity{ {} };
-#if RAYTRACING && PATH_TRACE_ALL
+#if RAYTRACING
 	pt.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(mesh.MeshID);
 	ecs::EntityData& rootEntityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent, ecs::component::NameComponent,
@@ -325,7 +325,7 @@ DropModelIntoScene(std::filesystem::path modelPath, u32* materials /* = nullptr 
 		material.MaterialAsset = content::assets::GetAssetFromResource(material.MaterialID, content::AssetType::Material);
 		snprintf(name.Name, ecs::component::NAME_LENGTH, "child %u", i);
 
-#if RAYTRACING && PATH_TRACE_ALL
+#if RAYTRACING
 		pt.MeshInfo = graphics::d3d12::content::geometry::GetMeshInfo(mesh.MeshID);
 		ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
 			ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Child, ecs::component::NameComponent,

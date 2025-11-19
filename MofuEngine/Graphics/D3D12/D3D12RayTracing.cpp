@@ -540,13 +540,20 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 } // anonymous namespace
 
 void
-Update(bool shouldRestartPathTracing, bool renderItemsUpdated)
+Update(bool shouldRestartPathTracing, bool renderItemsUpdated, DXGraphicsCommandList* const cmdList)
 {
 	if (shouldRestartPathTracing)
 	{
 		_currentSampleIndex = 0;
 	}
 	_shouldBuildAccelerationStructure |= renderItemsUpdated;
+#if PATHTRACE_SHADOWS
+	static_assert(!PATHTRACE_MAIN);
+	if (_shouldBuildAccelerationStructure)
+	{
+		BuildAccelerationStructure(cmdList);
+	}
+#endif
 }
 
 DescriptorHandle MainBufferSRV()
@@ -850,7 +857,7 @@ bool CreatePSO()
 
 void RequestRTUpdate()
 {
-	rt::Update(true, false);
+	rt::Update(true, false, core::GraphicsCommandList());
 }
 void RequestRTAccStructureRebuild()
 {
@@ -930,4 +937,6 @@ ResetShaders()
 	CreatePSO();
 	CreateHitGroups();
 }
+
+D3D12_GPU_VIRTUAL_ADDRESS TopLevelAccStructureSRV() { return _topLevelAccStructure.GpuAddress(); }
 }

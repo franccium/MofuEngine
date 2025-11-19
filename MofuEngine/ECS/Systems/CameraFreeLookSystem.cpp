@@ -21,6 +21,7 @@ namespace mofu::ecs::system {
 		{
 			for (auto [entity, lt, cam] : ecs::scene::GetRW<ecs::component::LocalTransform, ecs::component::Camera>())
 			{
+				cam.WasUpdated = false;
 				//graphics::Camera& cam{}
 				using namespace DirectX;
 
@@ -76,6 +77,8 @@ namespace mofu::ecs::system {
 				}
 				xmm moveV{ XMLoadFloat3(&move) };
 				f32 moveMagnitude{ XMVectorGetX(XMVector3LengthSq(moveV)) };
+				const bool camMoved{ moveMagnitude > math::EPSILON };
+
 				/*if (input::IsKeyDown(input::Keys::W))
 				{
 					lt.Position.z += camSpeed.x * data.DeltaTime;
@@ -128,9 +131,14 @@ namespace mofu::ecs::system {
 				log::Info("Camera rot: %f, %f, %f, %f", lt.Rotation.w, lt.Rotation.x, lt.Rotation.y, lt.Rotation.z);
 				log::Info("Camera targetRot: %f, %f, %f", cam.TargetRot.x, cam.TargetRot.y, cam.TargetRot.z);
 #endif
+				f32 rotdot{ XMVectorGetX(XMQuaternionDot(rotV, targetRotQ)) };
+				if (camMoved || fabsf(rotdot) < 1.f - math::EPSILON)
+				{
+					cam.WasUpdated = true;
+				}
 
 				const f32 fpsScale{ data.DeltaTime / 0.016667f };
-				if (moveMagnitude > math::EPSILON)
+				if (camMoved)
 				{
 					v4 rot{ lt.Rotation };
 					xmm dir{ XMVector3Rotate(moveV * moveSpeed * fpsScale, XMLoadFloat4(&rot)) };

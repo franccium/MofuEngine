@@ -353,7 +353,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 
 	using idx = FXRootParameterIndices;
 	cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
-#if RAYTRACING
+#if PATHTRACE_MAIN
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::GPassMainBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, PostProcessRootConstants::GPassDepthBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, rt::MainBufferSRV().index, PostProcessRootConstants::RTBufferIndex);

@@ -195,22 +195,16 @@ SetRootParametersDepth(DXGraphicsCommandList* cmdList, u32 cacheItemIndex)
 	switch (materialType)
 	{
 	case MaterialType::Opaque:
+	case MaterialType::AlphaTested:
+	case MaterialType::AlphaBlended:
 	{
 		using params = OpaqueRootParameters;
 		cmdList->SetGraphicsRootConstantBufferView(params::PerObjectData, cache.PerObjectData[cacheItemIndex]);
 		cmdList->SetGraphicsRootShaderResourceView(params::PositionBuffer, cache.PositionBuffers[cacheItemIndex]);
 		//TODO: might want to avoid using element buffer in the vertex shader
 		cmdList->SetGraphicsRootShaderResourceView(params::ElementBuffer, cache.ElementBuffers[cacheItemIndex]);
+		break;
 	}
-	case MaterialType::AlphaTested:
-	{
-		using params = AlphaTestedRootParameters;
-		cmdList->SetGraphicsRootConstantBufferView(params::PerObjectData, cache.PerObjectData[cacheItemIndex]);
-		cmdList->SetGraphicsRootShaderResourceView(params::PositionBuffer, cache.PositionBuffers[cacheItemIndex]);
-		//TODO: might want to avoid using element buffer in the vertex shader
-		cmdList->SetGraphicsRootShaderResourceView(params::ElementBuffer, cache.ElementBuffers[cacheItemIndex]);
-	}
-	break;
 	}
 }
 
@@ -445,67 +439,6 @@ DoDepthPrepass(DXGraphicsCommandList* const* cmdLists, const D3D12FrameInfo& fra
 	}
 #endif
 }
-
-void 
-Render(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo)
-{
-#if RENDER_2D_TEST
-	cmdList->SetGraphicsRootSignature(gpassRootSig);
-	cmdList->SetPipelineState(gpassPSO);
-
-	static u32 frame;
-	struct
-	{
-		f32 width;
-		f32 height;
-		u32 frame;
-	} constants{ (f32)frameInfo.SurfaceWidth, (f32)frameInfo.SurfaceHeight, ++frame };
-
-	cmdList->SetGraphicsRoot32BitConstants(OpaqueRootParameters::GlobalShaderData, 3, &constants, 0);
-	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	cmdList->DrawInstanced(3, 1, 0, 0);
-#else
-	const GPassCache& cache{ frameCache };
-	const u32 renderItemCount{ cache.Size() };
-	
-	ID3D12RootSignature* currentRootSignature{ nullptr };
-	ID3D12PipelineState* currentPipelineState{ nullptr };
-	const u32 frameIndex{ frameInfo.FrameIndex };
-	const u32 lightCullingID{ frameInfo.LightCullingID };
-
-	assert(cache.IsValid());
-
-	for (u32 i{ 0 }; i < renderItemCount; ++i)
-	{
-		if (currentRootSignature != cache.RootSignatures[i])
-		{
-			currentRootSignature = cache.RootSignatures[i];
-			cmdList->SetGraphicsRootSignature(currentRootSignature);
-			using idx = OpaqueRootParameters;
-			cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
-			cmdList->SetGraphicsRootShaderResourceView(idx::DirectionalLights, light::GetNonCullableLightBuffer(frameIndex));
-			cmdList->SetGraphicsRootShaderResourceView(idx::CullableLights, light::GetCullableLightBuffer(frameIndex));
-			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaqueBuffer(lightCullingID, frameIndex));
-			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaqueBuffer(lightCullingID, frameIndex));
-		}
-
-		if (currentPipelineState != cache.GPassPipelineStates[i])
-		{
-			currentPipelineState = cache.GPassPipelineStates[i];
-			cmdList->SetPipelineState(currentPipelineState);
-		}
-
-		SetRootParametersMain(cmdList, i);
-
-		const D3D12_INDEX_BUFFER_VIEW ibv{ cache.IndexBufferViews[i] };
-		const u32 indexCount{ ibv.SizeInBytes >> (ibv.Format == DXGI_FORMAT_R16_UINT ? 1 : 2) };
-		cmdList->IASetIndexBuffer(&ibv);
-		cmdList->IASetPrimitiveTopology(cache.PrimitiveTopologies[i]);
-		cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
-		//log::Info("Draw: index count %u ", indexCount);
-	}
-#endif
-}
 constexpr u32 GIZMOS_TEST_COUNT{ 10 };
 
 void
@@ -545,6 +478,12 @@ MainGPassWorker(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo,
 			cmdList->SetGraphicsRootShaderResourceView(idx::CullableLights, light::GetCullableLightBuffer(frameIndex));
 			cmdList->SetGraphicsRootShaderResourceView(idx::LightGrid, light::GetLightGridOpaqueBuffer(lightCullingID, frameIndex));
 			cmdList->SetGraphicsRootShaderResourceView(idx::LightIndexList, light::GetLightIndexListOpaqueBuffer(lightCullingID, frameIndex));
+
+#if RAYTRACING
+#if PATHTRACE_SHADOWS
+			cmdList->SetGraphicsRootShaderResourceView(idx::SceneAccelerationStructure, rt::TopLevelAccStructureSRV());
+#endif
+#endif
 		}
 
 		if (currentPipelineState != cache.GPassPipelineStates[i])

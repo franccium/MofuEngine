@@ -63,7 +63,7 @@ float3 LinearToPQ(float3 lin)
 // testing for materials that don't write to the depth buffer, assumes there is a big opaque cube with materialID == 0, but won't work cause that cube would need to be skybox textured anyways
 #define MATERIAL_SKYBOX_TEST 0
 
-#if RAYTRACING
+#if PATHTRACE_MAIN
 float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];

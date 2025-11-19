@@ -8,11 +8,13 @@ void Shutdown();
 bool CreateRootSignature();
 bool CreatePSO();
 bool CreateBuffers(u32v2 size);
-void Update(bool shouldRestartPathTracing, bool renderItemsUpdated);
+void Update(bool shouldRestartPathTracing, bool renderItemsUpdated, DXGraphicsCommandList* const cmdList);
 void Render(const D3D12FrameInfo& frameInfo, DXGraphicsCommandList* const cmdList);
 DescriptorHandle MainBufferSRV();
 void RequestRTUpdate();
 void RequestRTAccStructureRebuild();
 void UpdateAccelerationStructure();
 void ResetShaders();
+
+D3D12_GPU_VIRTUAL_ADDRESS TopLevelAccStructureSRV();
 }

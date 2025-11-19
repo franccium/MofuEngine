@@ -256,6 +256,12 @@ CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFl
 		parameters[params::LightGrid].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5);
 		parameters[params::LightIndexList].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6);
 
+#if RAYTRACING
+#if PATHTRACE_SHADOWS
+		parameters[params::SceneAccelerationStructure].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 121);
+#endif
+#endif
+
 		D3D12_STATIC_SAMPLER_DESC samplers[]
 		{
 			d3dx::StaticSampler(d3dx::SamplerState.STATIC_POINT, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL),
@@ -280,6 +286,7 @@ CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFl
 	}
 	break;
 	case MaterialType::AlphaTested:
+	case MaterialType::AlphaBlended:
 	{
 		using params = gpass::AlphaTestedRootParameters;
 		d3dx::D3D12RootParameter parameters[params::Count]{};
@@ -318,6 +325,12 @@ CreateRootSignature(MaterialType::type materialType, ShaderFlags::Flags shaderFl
 		parameters[params::CullableLights].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 4);
 		parameters[params::LightGrid].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 5);
 		parameters[params::LightIndexList].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 6);
+
+#if RAYTRACING
+#if PATHTRACE_SHADOWS
+		parameters[params::SceneAccelerationStructure].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 121);
+#endif
+#endif
 
 		D3D12_STATIC_SAMPLER_DESC samplers[]
 		{

@@ -1,5 +1,6 @@
 #pragma once
 #include "CommonDefines.h"
+#include "Graphics/D3D12/Shaders/CommonDefines.hlsli"
 // C/C++
 #include <stdint.h>
 #include <assert.h>
@@ -47,7 +48,6 @@
 #define EDITOR_BUILD 1
 #define RENDER_GUI 1
 #define SHADER_HOT_RELOAD_ENABLED 1
-#define RAYTRACING 0
-#define PATH_TRACE_ALL 1
 #define PHYSICS_DEBUG_RENDER_ENABLED 1
 
+static_assert(!(RAYTRACING && (PATHTRACE_MAIN&& PATHTRACE_SHADOWS)), "Path tracing cannot be enabled with both main and shadow raytracing at the same time");

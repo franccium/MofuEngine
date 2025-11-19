@@ -18,6 +18,7 @@ public:
 	constexpr void ViewHeight(f32 height);	
 	constexpr void NearZ(f32 nearZ);
 	constexpr void FarZ(f32 farZ);
+	void SetWasUpdated(bool updated) { _wasUpdated = updated; }
 
 	[[nodiscard]] constexpr xmmat View() const { return _view; }
 	[[nodiscard]] constexpr xmmat Projection() const { return _projection; }
@@ -39,14 +40,10 @@ public:
 	[[nodiscard]] constexpr v2 CurrentJitter() const { return _jitter; }
 	[[nodiscard]] constexpr v2 PrevJitter() const { return _prevJitter; }
 	[[nodiscard]] constexpr m4x4 PrevViewProjection() const { return _prevViewProjection; }
+	[[nodiscard]] constexpr bool WasUpdated() const { return _wasUpdated; }
 
 private:
-	xmmat _view;
-	xmmat _inverseView;
-	xmmat _projection;
-	xmmat _inverseProjection;
-	xmmat _viewProjection;
-	xmmat _inverseViewProjection;
+	bool _wasUpdated{ false };
 	xmm _up;
 	xmm _position;
 	xmm _direction;
@@ -56,10 +53,16 @@ private:
 	f32 _viewWidth;
 	f32 _viewHeight;
 	f32 _fieldOfView;
-	graphics::Camera::Type _projectionType;
-	ecs::Entity _entityID{ id::INVALID_ID };
 	v2 _jitter;
 	v2 _prevJitter{ 0.f, 0.f };
+	xmmat _view;
+	xmmat _inverseView;
+	xmmat _projection;
+	xmmat _inverseProjection;
+	xmmat _viewProjection;
+	xmmat _inverseViewProjection;
+	graphics::Camera::Type _projectionType;
+	ecs::Entity _entityID{ id::INVALID_ID };
 	m4x4 _prevProjection{};
 	m4x4 _prevViewProjection{};
 };

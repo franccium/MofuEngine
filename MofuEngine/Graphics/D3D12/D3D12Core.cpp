@@ -99,7 +99,7 @@ public:
             NAME_D3D12_OBJECT_INDEXED(_cmdLists[i], i, type == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"GFX Command List"
                 : type == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command List" : L"Command List");
         }
-#if RAYTRACING == 0
+#if !RAYTRACING
         for (u32 i{ 0 }; i < BUNDLE_COUNT; ++i)
         {
             DXCall(hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_BUNDLE, _cmdFrames[0].cmdAllocatorsBundle[i], nullptr, IID_PPV_ARGS(&_cmdListsBundle[i])));
@@ -139,7 +139,7 @@ public:
             DXCall(frame.cmdAllocators[i]->Reset());
             DXCall(_cmdLists[i]->Reset(frame.cmdAllocators[i], nullptr));
         }
-#if RAYTRACING == 0
+#if !RAYTRACING
         if (renderItemsUpdated)
         {
             for (u32 i = 0; i < BUNDLE_COUNT; ++i)
@@ -758,7 +758,7 @@ DeferredRelease(IUnknown* resource)
 }
 } // namespace detail
 
-#if RAYTRACING
+#if PATHTRACE_MAIN
 void
 RenderSurface(surface_id id, FrameInfo frameInfo)
 {
@@ -896,6 +896,137 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     TracyD3D12Collect(tracyQueueContext);
 }
+#elif PATHTRACE_SHADOWS
+void
+RenderSurface(surface_id id, FrameInfo frameInfo)
+{
+    gfxCommand.BeginFrame();
+    TracyD3D12NewFrame(tracyQueueContext);
+
+    DXGraphicsCommandList* const cmdList{ gfxCommand.CommandList(0) };
+    DXGraphicsCommandList* const* cmdLists{ gfxCommand.CommandLists() };
+
+    const u32 frameIndex{ CurrentFrameIndex() };
+
+    ConstantBuffer& cbuffer{ constantBuffers[frameIndex] };
+    cbuffer.Clear();
+
+    if (deferredReleasesFlag[frameIndex])
+    {
+        std::lock_guard lock{ deferredReleasesMutex };
+        ProcessDeferredReleases(frameIndex);
+    }
+
+    const D3D12Surface& surface{ surfaces[id] };
+    DXResource* const currentBackBuffer{ surface.BackBuffer() };
+
+    f32 deltaTime{ 16.7f };
+    const D3D12FrameInfo d3d12FrameInfo{ GetD3D12FrameInfo(frameInfo, cbuffer, surface, frameIndex, deltaTime) };
+
+    d3dx::D3D12ResourceBarrierList& barriers{ resourceBarriers };
+
+    gpass::StartNewFrame(d3d12FrameInfo);
+
+    gpass::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
+    fx::SetBufferSize({ d3d12FrameInfo.SurfaceWidth, d3d12FrameInfo.SurfaceHeight });
+
+
+    ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
+
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Render Surface Frame Start", tracy::Color::Violet);
+
+        for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
+        {
+            cmdList->SetDescriptorHeaps(1, &heaps[0]);
+
+            cmdList->RSSetViewports(1, surface.Viewport());
+            cmdList->RSSetScissorRects(1, surface.ScissorRect());
+        }
+#if RENDER_GUI
+        ui::SetupGUIFrame();
+#endif
+        //TODO: for now just do that here, would need to rewrite everything
+        ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
+    }
+
+    if (graphics::rt::settings::PathTracingEnabled)
+    {
+        const bool wasCameraUpdated{ camera::GetCamera(frameInfo.CameraID).WasUpdated() };
+        const bool shouldRestartPathTracing{ graphics::rt::settings::AlwaysRestartPathTracing || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
+        rt::Update(shouldRestartPathTracing, renderItemsUpdated, cmdList);
+        renderItemsUpdated = false;
+    }
+
+    {
+        // Depth Prepass
+        gpass::AddTransitionsForDepthPrepass(barriers);
+        barriers.ApplyBarriers(cmdList);
+        gpass::ClearDepthStencilView(cmdList);
+        gpass::SetRenderTargetsForDepthPrepass(cmdList);
+        gpass::DoDepthPrepass(&cmdList, d3d12FrameInfo, 0);
+    }
+
+    barriers.AddTransitionBarrier(gpass::DepthBuffer().Resource(),
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    barriers.ApplyBarriers(cmdList);
+    {
+        // Lighting Pass
+        u32 lightSetIdx{ frameInfo.LightSetIdx };
+        const graphics::light::LightSet& set{ graphics::light::GetLightSet(lightSetIdx) };
+        light::UpdateLightBuffers(set, lightSetIdx, frameIndex);
+        light::CullLights(cmdList, d3d12FrameInfo, barriers);
+    }
+
+    // Main GPass
+    {
+        //TracyD3D12ZoneC(tracyQueueContext, cmdListSetup, "Main GPass", tracy::Color::PaleVioletRed3);
+        gpass::AddTransitionsForGPass(barriers);
+        barriers.ApplyBarriers(cmdList);
+        gpass::ClearMainBufferView(cmdList);
+        gpass::SetRenderTargetsForGPass(cmdList);
+        gpass::RenderMT(&cmdList, d3d12FrameInfo);
+
+        renderItemsUpdated = false;
+    }
+
+    // Post Processing
+    {
+        ZoneScopedNC("Post Processing CPU", tracy::Color::Blue1);
+        gpass::AddTransitionsForPostProcess(barriers);
+        fx::AddTransitionsPrePostProcess(barriers);
+        barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        barriers.ApplyBarriers(cmdList);
+
+        fx::DoPostProcessing(cmdList, d3d12FrameInfo, surface.RTV());
+        fx::AddTransitionsPostPostProcess(barriers);
+        barriers.ApplyBarriers(cmdList);
+    }
+
+#if RENDER_GUI
+    // Editor UI
+    {
+        TracyD3D12ZoneC(tracyQueueContext, cmdList, "Editor UI", tracy::Color::LightSkyBlue3);
+
+        {
+            ZoneScopedNC("Editor UI CPU", tracy::Color::LightSkyBlue2);
+            ui::RenderGUI();
+            ui::RenderSceneIntoImage(fx::GetSrvGPUDescriptorHandle(), d3d12FrameInfo);
+
+            ui::EndGUIFrame(cmdList);
+        }
+    }
+#endif
+
+    d3dx::TransitionResource(currentBackBuffer, cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+    gfxCommand.EndFrame(surface);
+    srvDescHeap.EndFrame(frameIndex);
+    upload::EndFrame();
+
+    TracyD3D12Collect(tracyQueueContext);
+}
 #else
 void
 RenderSurface(surface_id id, FrameInfo frameInfo)
@@ -970,6 +1101,15 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     DXGraphicsCommandList* const* depthBundles{ gfxCommand.CommandListsBundle() };
     DXGraphicsCommandList* const* mainBundles{ &gfxCommand.CommandListsBundle()[MAIN_BUNDLE_INDEX] };
+
+    if (graphics::rt::settings::PathTracingEnabled)
+    {
+        const bool wasCameraUpdated{ camera::GetCamera(frameInfo.CameraID).WasUpdated() };
+        const bool shouldRestartPathTracing{ graphics::rt::settings::AlwaysRestartPathTracing || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
+        rt::Update(shouldRestartPathTracing, renderItemsUpdated, cmdListDepthSetup);
+        renderItemsUpdated = false;
+    }
+
     {
         // Depth Prepass
         constexpr u32 LAST_DEPTH_WORKER{ DEPTH_WORKERS + FIRST_DEPTH_WORKER };

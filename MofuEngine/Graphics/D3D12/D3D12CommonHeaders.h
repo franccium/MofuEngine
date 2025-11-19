@@ -1,6 +1,5 @@
 #pragma once
 #include "CommonHeaders.h"
-#include "Shaders/CommonDefines.hlsli"
 #include "Graphics/Renderer.h"
 
 #ifndef NOMINMAX

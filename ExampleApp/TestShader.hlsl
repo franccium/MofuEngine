@@ -89,6 +89,13 @@ SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
 SamplerState AnisotropicSampler : register(s2, space0);
 
+#define SINGLE_MERGED_MODEL 1
+#if SINGLE_MERGED_MODEL
+RaytracingAccelerationStructure SceneAS : register(t0, space121);
+#else
+RaytracingAccelerationStructure SceneAS[] : register(t0, space121);
+#endif
+
 #define TILE_SIZE 32
 
 float4 Sample(uint index, SamplerState s, float2 uv)
@@ -117,6 +124,59 @@ float3 PhongBRDF(float3 N, float3 L, float3 V, float3 diffuseColor, float3 specu
     const float VoR = max(dot(V, R), 0.f);
     
     return diffuseColor + pow(VoR, max(shininess, 1.f)) * specularColor;
+}
+
+float3 TraceShadowDebug(float3 origin_WS, float3 normal_WS, float3 direction)
+{
+    float3 rayOrigin = origin_WS + normal_WS * 0.0001f;
+    RayDesc ray;
+    ray.Origin = rayOrigin;
+    ray.Direction = direction;
+    ray.TMin = 0.0f;
+    ray.TMax = 1e30f;
+    
+    uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_CULL_BACK_FACING_TRIANGLES |
+        RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES;
+    
+    RayQuery < RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_CULL_BACK_FACING_TRIANGLES | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES > query;
+    
+    query.TraceRayInline(SceneAS, rayFlags, 0xFFFFFFFF, ray);
+    while (query.Proceed())
+    {
+#if ALPHA_TEST || ALPHA_BLEND
+        if (query.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE)
+        {
+            query.CommitNonOpaqueTriangleHit();
+        }
+#endif
+    }
+    float nothing = query.CommittedStatus() == COMMITTED_NOTHING ? 1.0f : 0.f;
+    float col = (float) query.CommittedStatus() / 2.f;
+    return float3(col, col, nothing);
+}
+
+float TraceShadow(float3 origin_WS, float3 normal_WS, float3 direction)
+{
+    float3 rayOrigin = origin_WS + normal_WS * 0.0001f;
+    RayDesc ray;
+    ray.Origin = rayOrigin;
+    ray.Direction = direction;
+    ray.TMin = 0.0f;
+    ray.TMax = 1e30f;
+    
+    RayQuery < RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH > query;
+    query.TraceRayInline(SceneAS, RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_CULL_BACK_FACING_TRIANGLES |
+        RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES, 0xFFFFFFFF, ray);
+    while (query.Proceed())
+    {
+#if ALPHA_TEST || ALPHA_BLEND
+        if (query.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE)
+        {
+            query.CommitNonOpaqueTriangleHit();
+        }
+#endif
+    }
+    return query.CommittedStatus() == COMMITTED_NOTHING ? 1.0f : 0.0f;
 }
 
 float3 CookTorranceBRDF(Surface S, float3 L)
@@ -328,7 +388,7 @@ float3 CalculateSpotLight(Surface S, float3 worldPos, CullableLightParameters li
     return color;
 }
 
-float3 EvaluateIBL(Surface S)
+float3 EvaluateIBL(Surface S, float3 pos)
 {
     const float NoV = saturate(S.NoV);
     const float3 F0 = S.SpecularColor;
@@ -387,10 +447,21 @@ float3 Heatmap(StructuredBuffer<uint2> buffer, float2 posXY, float blend, float3
 }
 
 [earlydepthstencil]
+[shader("pixel")]
 PixelOut TestShaderPS(in VertexOut psIn)
 {
-#if RAYTRACING
+#if PATHTRACE_MAIN
     PixelOut psOut;
+#if IS_DLSS_ENABLED
+    float2 viewport = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
+    float2 currNDC = (psIn.HomogeneousPositon.xy / viewport) * 2.f - 1.f;
+    float2 prevNDC = psIn.PrevHomogeneousPositon.xy / psIn.PrevHomogeneousPositon.w;
+    prevNDC.y *= -1.0f;
+    float2 mv = currNDC - prevNDC;
+    psOut.MotionVectors = mv;
+#else
+    psOut.MotionVectors = float2(0.f, 0.f);
+#endif
     float3 viewDir = normalize(GlobalData.CameraPosition - psIn.WorldPosition);
     Surface S = GetSurface(psIn, viewDir);
     float4 color = float4(1.f, 1.f, 1.f, 1.f);
@@ -431,7 +502,14 @@ PixelOut TestShaderPS(in VertexOut psIn)
     {
         DirectionalLightParameters light = DirectionalLights[i];
         
+#if PATHTRACE_SHADOWS
+        float visibility = TraceShadow(psIn.WorldPosition, S.Normal, -light.Direction);
+        color += visibility * CalculateLighting(S, -light.Direction, light.Color * light.Intensity);
+        //color = TraceShadowDebug(psIn.WorldPosition, S.Normal, -light.Direction);
+#else
         color += CalculateLighting(S, -light.Direction, light.Color * light.Intensity);
+#endif
+        
     }
   
     
@@ -468,7 +546,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     float3 ambientColor = float3(0.1, 0.1, 0.1);
     //color += ambientColor;
-    color += EvaluateIBL(S);
+    color += EvaluateIBL(S, psIn.WorldPosition);
     color = saturate(color);
     
 #if TEXTURED_MTL
@@ -480,6 +558,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     color += S.EmissiveColor * S.EmissiveIntensity;
 #endif
     
+
     
 #if ALPHA_BLEND
     psOut.Color = float4(color, alpha);

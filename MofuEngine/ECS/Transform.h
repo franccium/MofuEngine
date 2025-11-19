@@ -296,6 +296,7 @@ struct Camera : Component
 	v3 TargetRot{};
 	f32 RotationSpeed{ 1.5f };
 	f32 SlerpFactor{ 0.5f };
+	bool WasUpdated{ false };
 #if EDITOR_BUILD
 	static void RenderFields([[maybe_unused]] Camera& c)
 	{
