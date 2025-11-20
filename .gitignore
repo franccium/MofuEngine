@@ -15,6 +15,7 @@ ExampleApp/shaders/*
 ExampleApp/Projects/*
 ExampleApp/External/tracy/
 MofuEngine/External/DLSS
+MofuEngine/External/FidelityFX/lib
 MofuEngine/Content/EngineAssets/
 
 bin/*

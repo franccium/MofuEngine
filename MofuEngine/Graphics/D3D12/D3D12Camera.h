@@ -39,7 +39,7 @@ public:
 	[[nodiscard]] constexpr id_t EntityID() const { return _entityID; }
 	[[nodiscard]] constexpr v2 CurrentJitter() const { return _jitter; }
 	[[nodiscard]] constexpr v2 PrevJitter() const { return _prevJitter; }
-	[[nodiscard]] constexpr m4x4 PrevViewProjection() const { return _prevViewProjection; }
+	[[nodiscard]] const m4x4* PrevViewProjection() const { return &_prevViewProjection; }
 	[[nodiscard]] constexpr bool WasUpdated() const { return _wasUpdated; }
 
 private:

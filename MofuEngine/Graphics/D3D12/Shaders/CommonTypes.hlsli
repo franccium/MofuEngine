@@ -26,7 +26,7 @@ struct GlobalShaderData
     uint SkyboxSrvIndex;
     uint DirectionalLightsCount;
     
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     float2 DLSSInputResolution;
     float2 Jitter;
     float2 PrevJitter;
@@ -40,7 +40,7 @@ struct PerObjectData
     float4x4 World;
     float4x4 InvWorld;
     float4x4 WorldViewProjection;
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     float4x4 PrevWorldViewProjection;
 #endif
     

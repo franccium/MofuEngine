@@ -6,6 +6,7 @@
 #include "Graphics/RenderingDebug.h"
 #include "D3D12RayTracing.h"
 #include "NGX/D3D12DLSS.h"
+#include "FFX/SSSR.h"
 
 namespace mofu::graphics::d3d12::fx {
 namespace {
@@ -48,6 +49,8 @@ struct PostProcessRootConstants
 		RTBufferIndex, // for non-raytracing this could be used for anything
 		NormalBufferIndex,
 		MotionVectorsBufferIndex,
+		MiscBufferIndex,
+		ReflectionsBufferIndex,
 
 		DoTonemap,
 		Count
@@ -359,6 +362,8 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, rt::MainBufferSRV().index, PostProcessRootConstants::RTBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
 	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
 #else
@@ -371,6 +376,8 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 #endif
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
 	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
 #endif

@@ -4,7 +4,7 @@
 struct VertexOut
 {
     float4 HomogeneousPositon : SV_POSITION;
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     float4 PrevHomogeneousPositon : TEXCOORD0;
 #endif
     float3 WorldPosition : POSITION;
@@ -18,6 +18,7 @@ struct PixelOut
     float4 Color : SV_Target0;
     float4 Normal : SV_Target1;
     float2 MotionVectors : SV_Target2;
+    uint4 MiscBuffer : SV_Target3;
 };
 
 struct Surface
@@ -221,7 +222,7 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     float3 normal = float3(nXY, sqrt(saturate(1.f - dot(nXY, nXY))) * nSign);
     
     vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
 #endif
     vsOut.WorldPosition = worldPosition.xyz;
@@ -246,7 +247,7 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     tangent = tangent - normal * dot(normal, tangent); // use Gram-Schmidt orthogonalization to restore orthogonality
     
     vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
 #endif
     vsOut.WorldPosition = worldPosition.xyz;
@@ -256,7 +257,7 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
 #else
 #undef ELEMENTS_TYPE
     vsOut.HomogeneousPositon = mul(PerObjectBuffer.WorldViewProjection, position);
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     vsOut.PrevHomogeneousPositon = mul(PerObjectBuffer.PrevWorldViewProjection, position);
 #endif
     vsOut.WorldPosition = worldPosition.xyz;
@@ -388,7 +389,7 @@ float3 CalculateSpotLight(Surface S, float3 worldPos, CullableLightParameters li
     return color;
 }
 
-float3 EvaluateIBL(Surface S, float3 pos)
+float3 EvaluateIBL(Surface S)
 {
     const float NoV = saturate(S.NoV);
     const float3 F0 = S.SpecularColor;
@@ -452,7 +453,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
 {
 #if PATHTRACE_MAIN
     PixelOut psOut;
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     float2 viewport = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
     float2 currNDC = (psIn.HomogeneousPositon.xy / viewport) * 2.f - 1.f;
     float2 prevNDC = psIn.PrevHomogeneousPositon.xy / psIn.PrevHomogeneousPositon.w;
@@ -471,7 +472,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     return psOut;
 #else
     PixelOut psOut;
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
     float2 viewport = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
     float2 currNDC = (psIn.HomogeneousPositon.xy / viewport) * 2.f - 1.f;
     float2 prevNDC = psIn.PrevHomogeneousPositon.xy / psIn.PrevHomogeneousPositon.w;
@@ -544,9 +545,9 @@ PixelOut TestShaderPS(in VertexOut psIn)
         color += CalculateSpotLight(S, psIn.WorldPosition, light);
     }
     
-    float3 ambientColor = float3(0.1, 0.1, 0.1);
-    //color += ambientColor;
-    color += EvaluateIBL(S, psIn.WorldPosition);
+#if !IS_SSSR_ENABLED
+    color += EvaluateIBL(S);
+#endif
     color = saturate(color);
     
 #if TEXTURED_MTL
@@ -558,7 +559,6 @@ PixelOut TestShaderPS(in VertexOut psIn)
     color += S.EmissiveColor * S.EmissiveIntensity;
 #endif
     
-
     
 #if ALPHA_BLEND
     psOut.Color = float4(color, alpha);
@@ -567,15 +567,18 @@ PixelOut TestShaderPS(in VertexOut psIn)
 #endif
     
     psOut.Normal.rgb = S.Normal;
-    // NOTE: now assuming we have max 2^16 materials
-    uint16_t materialID = PerObjectBuffer.MaterialID;
-    float materialIDHigh = float((materialID >> 8) & 0xFF) / 255.0f;
-    float materialIDLow = float(materialID & 0xFF) / 255.0f;
-#if ALPHA_BLEND
-    psOut.Normal.a = materialIDLow * alpha; //FIXME: this is not a skybox solution at all cause i can't do non 0-alpha blended materials
-#else
-    psOut.Normal.a = materialIDLow;
-#endif
+    psOut.Normal.a = S.PerceptualRoughness * S.PerceptualRoughness;
+//    // NOTE: now assuming we have max 2^16 materials
+//    uint16_t materialID = PerObjectBuffer.MaterialID;
+//    float materialIDHigh = float((materialID >> 8) & 0xFF) / 255.0f;
+//    float materialIDLow = float(materialID & 0xFF) / 255.0f;
+//#if ALPHA_BLEND
+//    psOut.Normal.a = materialIDLow * alpha; //FIXME: this is not a skybox solution at all cause i can't do non 0-alpha blended materials
+//#else
+//    psOut.Normal.a = materialIDLow;
+//#endif
+    psOut.MiscBuffer.r = PerObjectBuffer.MaterialID;
+    psOut.MiscBuffer.gba = 0.xxx;
     
     return psOut;
 #endif

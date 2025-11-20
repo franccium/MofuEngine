@@ -41,7 +41,7 @@ namespace mofu::graphics::d3d12 {
 			xmmat world{ XMLoadFloat4x4(&data->World) };
 			xmmat wvp{ XMMatrixMultiply(world, cameraVP) };
 			XMStoreFloat4x4(&data->WorldViewProjection, wvp);
-#if IS_DLSS_ENABLED
+#if NEED_MOTION_VECTORS
 			xmmat prevWorld{ XMLoadFloat4x4(ecs::transform::GetPreviousTransform(entity)) };
 			xmmat prevWVP{ XMMatrixMultiply(prevWorld, cameraPrevVP) };
 			XMStoreFloat4x4(&data->PrevWorldViewProjection, prevWVP);
@@ -102,8 +102,7 @@ namespace mofu::graphics::d3d12 {
 
 			renderItemIndex = 0;
 			const xmmat camVP{ frameInfo.Camera->ViewProjection() };
-			const m4x4 prevVP{ frameInfo.Camera->PrevViewProjection() };
-			const xmmat camPrevVP{ DirectX::XMLoadFloat4x4(&prevVP) };
+			const xmmat camPrevVP{ DirectX::XMLoadFloat4x4(frameInfo.Camera->PrevViewProjection()) };
 			for (auto e : visible)
 			{
 				auto& wt{ ecs::scene::GetComponent<ecs::component::WorldTransform>(e) };

@@ -12,6 +12,8 @@
 #include "Lights/D3D12Light.h"
 #include "Lights/D3D12LightCulling.h"
 #include "NGX/D3D12DLSS.h"
+#include "D3D12Core.h"
+#include "D3D12ResourceWatch.h"
 
 #include "tracy/Tracy.hpp"
 #include "D3D12RayTracing.h"
@@ -26,6 +28,7 @@ D3D12DepthBuffer gpassDepthBuffer{};
 
 D3D12RenderTexture normalBuffer{};
 D3D12RenderTexture motionVecBuffer{};
+D3D12RenderTexture miscBuffer{};
 
 u32v2 dimensions{};
 
@@ -36,8 +39,9 @@ constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
 GPassCache frameCache;
 
 
-constexpr D3D12_RESOURCE_STATES BUFFER_SAMPLE_STATE{ 
-	DLSS_ENABLED ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE };
+//constexpr D3D12_RESOURCE_STATES BUFFER_SAMPLE_STATE{ 
+//	DLSS_ENABLED ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE };
+constexpr D3D12_RESOURCE_STATES BUFFER_SAMPLE_STATE{D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE};
 constexpr D3D12_RESOURCE_STATES INITIAL_STATE{ BUFFER_SAMPLE_STATE };
 constexpr D3D12_RESOURCE_STATES BUFFER_RENDER_STATE{ D3D12_RESOURCE_STATE_RENDER_TARGET };
 
@@ -272,7 +276,23 @@ CreateAdditionalDataBuffers(u32v2 size)
 	}
 	NAME_D3D12_OBJECT(motionVecBuffer.Resource(), L"Motion Vectors Screen Buffer");
 
-	return normalBuffer.Resource() && motionVecBuffer.Resource();
+	// Misc Buffer
+	desc.Format = MISC_BUFFER_FORMAT;
+	{
+		D3D12TextureInitInfo texInfo;
+		texInfo.desc = &desc;
+		texInfo.initialState = INITIAL_STATE;
+		texInfo.MSAAEnabled = false;
+		texInfo.clearValue.Format = desc.Format;
+		texInfo.clearValue.Color[0] = 0;
+		texInfo.clearValue.Color[1] = 0;
+		texInfo.clearValue.Color[2] = 0;
+		texInfo.clearValue.Color[3] = 0;
+		miscBuffer = D3D12RenderTexture{ texInfo };
+	}
+	NAME_D3D12_OBJECT(miscBuffer.Resource(), L"Misc GPass Buffer");
+
+	return normalBuffer.Resource() && motionVecBuffer.Resource() && miscBuffer.Resource();
 }
 
 } // anonymous namespace
@@ -295,6 +315,7 @@ Shutdown()
 	gpassDepthBuffer.Release();
 	normalBuffer.Release();
 	motionVecBuffer.Release();
+	miscBuffer.Release();
 #if RAYTRACING
 	rt::Shutdown();
 #endif
@@ -364,7 +385,8 @@ SetBufferSize(u32v2 size)
 #if RAYTRACING
 		rt::CreateBuffers(size);
 #endif
-		assert(gpassMainBuffer.Resource() && gpassDepthBuffer.Resource() && normalBuffer.Resource() && motionVecBuffer.Resource());
+		assert(gpassMainBuffer.Resource() && gpassDepthBuffer.Resource() && normalBuffer.Resource() && motionVecBuffer.Resource() && miscBuffer.Resource());
+		resources::SetResourceUpdated(resources::ResourceUpdateState::GPassBuffers);
 	}
 }
 
@@ -572,6 +594,9 @@ AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers)
 	barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
 		BUFFER_SAMPLE_STATE,
 		BUFFER_RENDER_STATE);
+	barriers.AddTransitionBarrier(miscBuffer.Resource(),
+		BUFFER_SAMPLE_STATE,
+		BUFFER_RENDER_STATE);
 	//barriers.AddTransitionBarrier(gpassDepthBuffer.Resource(),
 	//	D3D12_RESOURCE_STATE_DEPTH_WRITE,
 	//	D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -591,6 +616,9 @@ AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 		barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		barriers.AddTransitionBarrier(miscBuffer.Resource(),
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	}
 	else
 	{
@@ -601,6 +629,9 @@ AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 			BUFFER_RENDER_STATE,
 			BUFFER_SAMPLE_STATE);
 		barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
+			BUFFER_RENDER_STATE,
+			BUFFER_SAMPLE_STATE);
+		barriers.AddTransitionBarrier(miscBuffer.Resource(),
 			BUFFER_RENDER_STATE,
 			BUFFER_SAMPLE_STATE);
 	}
@@ -618,6 +649,9 @@ AddTransitionsForDLSS(d3dx::D3D12ResourceBarrierList& barriers)
 	barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
 		BUFFER_RENDER_STATE,
 		BUFFER_SAMPLE_STATE);
+	barriers.AddTransitionBarrier(miscBuffer.Resource(),
+		BUFFER_RENDER_STATE,
+		BUFFER_SAMPLE_STATE);
 }
 
 void 
@@ -630,6 +664,8 @@ AddTransitionsAfterPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 		barriers.AddTransitionBarrier(normalBuffer.Resource(),
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		barriers.AddTransitionBarrier(miscBuffer.Resource(),
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 }
@@ -655,13 +691,14 @@ ClearMainBufferView(DXGraphicsCommandList* cmdList)
 	cmdList->ClearRenderTargetView(gpassMainBuffer.RTV(0), CLEAR_VALUE, 0, nullptr);
 	cmdList->ClearRenderTargetView(normalBuffer.RTV(0), CLEAR_VALUE, 0, nullptr);
 	cmdList->ClearRenderTargetView(motionVecBuffer.RTV(0), CLEAR_VALUE, 0, nullptr);
+	cmdList->ClearRenderTargetView(miscBuffer.RTV(0), CLEAR_VALUE, 0, nullptr);
 }
 
 void 
 SetRenderTargetsForGPass(DXGraphicsCommandList* cmdList)
 {
 	const D3D12_CPU_DESCRIPTOR_HANDLE dsv{ gpassDepthBuffer.Dsv() };
-	const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[]{ gpassMainBuffer.RTV(0), normalBuffer.RTV(0), motionVecBuffer.RTV(0) };
+	const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[]{ gpassMainBuffer.RTV(0), normalBuffer.RTV(0), motionVecBuffer.RTV(0), miscBuffer.RTV(0) };
 	cmdList->OMSetRenderTargets(_countof(renderTargets), renderTargets, 0, &dsv);
 }
 
@@ -702,6 +739,12 @@ const
 D3D12RenderTexture& MotionVecBuffer()
 {
 	return motionVecBuffer;
+}
+
+const
+D3D12RenderTexture& MiscBuffer()
+{
+	return miscBuffer;
 }
 
 }

@@ -67,7 +67,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS;C:\mofuengine\MofuEngine\ExampleApp\External\tracy\public;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\FidelityFX\include;C:\mofuengine\MofuEngine\MofuEngine\External\DLSS;C:\mofuengine\MofuEngine\ExampleApp\External\tracy\public;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/EHsc %(AdditionalOptions)</AdditionalOptions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <Optimization>Disabled</Optimization>
@@ -78,8 +78,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS\lib;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>yaml-cppd.lib;nvsdk_ngx_d_dbg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\FidelityFX\lib;C:\mofuengine\MofuEngine\MofuEngine\External\DLSS\lib;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>yaml-cppd.lib;nvsdk_ngx_d_dbg.lib;ffx_backend_dx12_x64d.lib;ffx_breadcrumbs_x64d.lib;ffx_denoiser_x64d.lib;ffx_sssr_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -100,7 +100,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ControlFlowGuard>false</ControlFlowGuard>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS;C:\mofuengine\MofuEngine\ExampleApp\External\tracy\public;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\FidelityFX\include;C:\mofuengine\MofuEngine\MofuEngine\External\DLSS;C:\mofuengine\MofuEngine\ExampleApp\External\tracy\public;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\backends;C:\mofuengine\MofuEngine\MofuEngine\External\imgui;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\include;C:\mofuengine\MofuEngine\MofuEngine\External\imgui\include;C:\mofuengine\MofuEngine\MofuEngine;C:\mofuengine\MofuEngine\MofuEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/EHsc %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -110,8 +110,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>yaml-cpp.lib;nvsdk_ngx_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\DLSS\lib;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>yaml-cpp.lib;nvsdk_ngx_d.lib;ffx_backend_dx12_x64drel.lib;ffx_breadcrumbs_x64drel.lib;ffx_denoiser_x64drel.lib;ffx_sssr_x64drel.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\mofuengine\MofuEngine\MofuEngine\External\FidelityFX\lib;C:\mofuengine\MofuEngine\MofuEngine\External\DLSS\lib;C:\mofuengine\MofuEngine\MofuEngine\External\yaml-cpp\build\Release</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -191,9 +191,11 @@
     <ClCompile Include="Graphics\D3D12\D3D12Primitives.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12RayTracing.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Resources.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12ResourceWatch.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
+    <ClCompile Include="Graphics\D3D12\FFX\SSSR.cpp" />
     <ClCompile Include="Graphics\D3D12\NGX\D3D12DLSS.cpp" />
     <ClCompile Include="Graphics\D3D12\DXRHelpers.cpp" />
     <ClCompile Include="Graphics\D3D12\Lights\D3D12Light.cpp" />
@@ -313,9 +315,11 @@
     <ClInclude Include="Graphics\D3D12\D3D12Primitives.h" />
     <ClInclude Include="Graphics\D3D12\D3D12RayTracing.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Resources.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12ResourceWatch.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
+    <ClInclude Include="Graphics\D3D12\FFX\SSSR.h" />
     <ClInclude Include="Graphics\D3D12\NGX\D3D12DLSS.h" />
     <ClInclude Include="Graphics\D3D12\DXRHelpers.h" />
     <ClInclude Include="Graphics\D3D12\GPassCache.h" />

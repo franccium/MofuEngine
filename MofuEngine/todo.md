@@ -1,3 +1,16 @@
+maybe roughness map and calculate ibl in post process and with bent normals
+reflections - amd fidelitydx ssr and then try my own
+GTAO and visibility bitmask
+
+generating primitive shapes; 
+adding primitive colliders - box, sphere, capsule - for dynamic objects; 
+
+assethandl;es for prefabs; 
+texture packer, 
+materials for raytracing, raytracing upgrades, 
+DLSS; 
+multithreading
+
 
 not recreating resources, keeping an asset library
 

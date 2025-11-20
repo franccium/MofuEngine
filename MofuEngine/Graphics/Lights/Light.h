@@ -51,13 +51,14 @@ struct LightSet
 	u32 FirstDirtyCullableIndex{ 0 };
 	u32 FirstDisabledCullableIndex{ 0 };
 	u32 SkyboxSrvIndex{ U32_INVALID_ID };
+	id_t EnvironmentMapTextureID{ U32_INVALID_ID };
+	id_t BrdfLutTextureID{ U32_INVALID_ID };
 
 	Vec<LightOwner> CullableLightOwners; // sorted, clean - dirty - disabled
 	Vec<CullableLightParameters> CullableLights; // sorted, clean - dirty - disabled
 	Vec<CullingInfo> CullingInfos; // sorted, clean - dirty - disabled
 	Vec<Sphere> BoundingSpheres; // sorted, clean - dirty - disabled
 	Vec<std::bitset<FRAME_BUFFER_COUNT>> DirtyBits; // NOTE: don't like having this
-
 };
 
 bool Initialize();

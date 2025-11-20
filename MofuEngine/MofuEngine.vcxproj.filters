@@ -309,6 +309,12 @@
     <ClCompile Include="Content\D3D12EnvironmentMapProcessing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\D3D12\FFX\SSSR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12ResourceWatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -729,6 +735,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Content\D3D12EnvironmentMapProcessing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\FFX\SSSR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12ResourceWatch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

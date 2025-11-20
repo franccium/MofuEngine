@@ -21,6 +21,9 @@
 #include "NGX/D3D12DLSS.h"
 #include "Graphics/RTSettings.h"
 #include "Physics/DebugRenderer/DebugRenderer.h"
+#include "D3D12ResourceWatch.h"
+
+#include "FFX/SSSR.h"
 
 #include "tracy/TracyD3D12.hpp"
 #include "tracy/Tracy.hpp"
@@ -32,7 +35,7 @@
 #else
 #define ENABLE_DEBUG_LAYER 0
 #endif
-#define ENABLE_GPU_BASED_VALIDATION 1
+#define ENABLE_GPU_BASED_VALIDATION 0
 
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
@@ -597,6 +600,19 @@ Initialize()
 
     tracyQueueContext = TracyD3D12Context(mainDevice, gfxCommand.CommandQueue());
 
+    if (graphics::debug::RenderingSettings.ReflectionsEnabled && graphics::debug::RenderingSettings.Reflections_FFXSSSR)
+    {
+        D3D12_FEATURE_DATA_D3D12_OPTIONS opts{};
+        mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &opts, sizeof(opts));
+        assert(opts.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3);
+        D3D12_FEATURE_DATA_D3D12_OPTIONS1 opts1{};
+        mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &opts1, sizeof(opts1));
+        assert(opts1.WaveOps);
+        D3D12_FEATURE_DATA_D3D12_OPTIONS5 opts5{};
+        mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &opts5, sizeof(opts5));
+        assert(opts5.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED);
+        ffx::sssr::Initialize();
+    }
 
 #if PHYSICS_DEBUG_RENDER_ENABLED
     graphics::d3d12::debug::Initialize();
@@ -620,6 +636,7 @@ Shutdown()
     shaders::Shutdown();
     upload::Shutdown();
     content::Shutdown();
+    ffx::sssr::Shutdown();
 #if PHYSICS_DEBUG_RENDER_ENABLED
     graphics::d3d12::debug::Shutdown();
 #endif
@@ -990,11 +1007,23 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
         renderItemsUpdated = false;
     }
+    gpass::AddTransitionsForPostProcess(barriers);
+
+    if (graphics::debug::RenderingSettings.ReflectionsEnabled && graphics::debug::RenderingSettings.Reflections_FFXSSSR)
+    {
+        barriers.ApplyBarriers(cmdList);
+        ffx::sssr::Dispatch(d3d12FrameInfo);
+
+        for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
+        {
+            DXGraphicsCommandList* const cmdList{ cmdLists[i] };
+            cmdList->SetDescriptorHeaps(1, &heaps[0]);
+        }
+    }
 
     // Post Processing
     {
         ZoneScopedNC("Post Processing CPU", tracy::Color::Blue1);
-        gpass::AddTransitionsForPostProcess(barriers);
         fx::AddTransitionsPrePostProcess(barriers);
         barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
         barriers.ApplyBarriers(cmdList);
@@ -1101,14 +1130,6 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     DXGraphicsCommandList* const* depthBundles{ gfxCommand.CommandListsBundle() };
     DXGraphicsCommandList* const* mainBundles{ &gfxCommand.CommandListsBundle()[MAIN_BUNDLE_INDEX] };
-
-    if (graphics::rt::settings::PathTracingEnabled)
-    {
-        const bool wasCameraUpdated{ camera::GetCamera(frameInfo.CameraID).WasUpdated() };
-        const bool shouldRestartPathTracing{ graphics::rt::settings::AlwaysRestartPathTracing || renderItemsUpdated || wasCameraUpdated || _rtUpdateRequested };
-        rt::Update(shouldRestartPathTracing, renderItemsUpdated, cmdListDepthSetup);
-        renderItemsUpdated = false;
-    }
 
     {
         // Depth Prepass
@@ -1221,11 +1242,24 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
         renderItemsUpdated = false;
     }
+    gpass::AddTransitionsForPostProcess(barriers);
 
 #if PHYSICS_DEBUG_RENDER_ENABLED
     if(graphics::debug::RenderingSettings.EnablePhysicsDebugRendering)
         graphics::d3d12::debug::Render(d3d12FrameInfo);
 #endif
+
+    if (graphics::debug::RenderingSettings.ReflectionsEnabled && graphics::debug::RenderingSettings.Reflections_FFXSSSR)
+    {
+        barriers.ApplyBarriers(cmdListFXSetup);
+        ffx::sssr::Dispatch(d3d12FrameInfo);
+
+        for (u32 i{ 0 }; i < COMMAND_LIST_WORKERS; ++i)
+        {
+            DXGraphicsCommandList* const cmdList{ cmdLists[i] };
+            cmdList->SetDescriptorHeaps(1, &heaps[0]);
+        }
+    }
 
 
 #if IS_DLSS_ENABLED
@@ -1250,7 +1284,6 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         TracyD3D12ZoneC(tracyQueueContext, cmdListFXSetup, "Post Processing", tracy::Color::Blue2);
         {
             ZoneScopedNC("Post Processing CPU", tracy::Color::Blue1);
-            gpass::AddTransitionsForPostProcess(barriers);
             fx::AddTransitionsPrePostProcess(barriers);
             barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
             barriers.ApplyBarriers(cmdListFXSetup);
@@ -1301,11 +1334,13 @@ void
 EndFrame(surface_id surfaceID)
 {
 #if PHYSICS_DEBUG_RENDER_ENABLED
-if (graphics::debug::RenderingSettings.EnablePhysicsDebugRendering || !_physicsCleared)
-{
-    graphics::d3d12::debug::Clear();
-    _physicsCleared = true;
-}
+    if (graphics::debug::RenderingSettings.EnablePhysicsDebugRendering || !_physicsCleared)
+    {
+        graphics::d3d12::debug::Clear();
+        _physicsCleared = true;
+    }
+
+    resources::ClearWatch();
     
 #endif
 }

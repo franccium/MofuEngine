@@ -294,6 +294,8 @@ AddAmbientLight(u32 lightSetIdx, AmbientLightInitInfo ambientInfo)
 	LightSet& set{ lightSets[lightSetIdx] };
 	set.AmbientLight = { ambientInfo.Intensity, textureIndices[0], textureIndices[1], textureIndices[2] };
 	set.SkyboxSrvIndex = textureIndices[3];
+	set.EnvironmentMapTextureID = ambientInfo.SkyboxTextureID;
+	set.BrdfLutTextureID = ambientInfo.BRDFLutTextureID;
 }
 
 const LightSet&

@@ -1,6 +1,7 @@
 
 #include "Common.hlsli"
 #include "PostProcessing/TonemapGT7.hlsl"
+#include "PostProcessing/ApplyReflections.hlsl"
 
 #define APPLY_TONEMAPPING 0
 
@@ -24,6 +25,8 @@ struct PostProcessConstants
     uint RTBufferIndex;
     uint NormalBufferIndex;
     uint MotionVectorsBufferIndex;
+    uint MiscBufferIndex;
+    uint ReflectionsBufferIndex;
     
     uint DoTonemap;
 };
@@ -92,10 +95,9 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     
 #if RENDER_SKYBOX
 #if MATERIAL_SKYBOX_TEST
-    Texture2D normalBuffer = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-    const float mat = normalBuffer[Position.xy].a;
-    const float unpackedMatLow = (mat * 255.0f);
-    if (unpackedMatLow > 0.1f)
+    Texture2D miscBufer = ResourceDescriptorHeap[ShaderParams.MiscBufferIndex];
+    const uint16_t mat = miscBufer[Position.xy].r;
+    if (mat > 0)
 #else
     if (depth > 0.0f)
 #endif
@@ -133,10 +135,23 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 #if IS_DLSS_ENABLED
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
 #else
+        
+#if IS_SSSR_ENABLED
+        Texture2D reflections = ResourceDescriptorHeap[ShaderParams.ReflectionsBufferIndex];
+        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
+        #if 1
+        color = reflections[Position.xy].rgb;
+        #else
+        float3 mainColor = gpassMain[Position.xy].rgb;
+        color = mainColor;
+        #endif
+#else
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
         //Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-#endif
         color = gpassMain[Position.xy].rgb;
+#endif
+        
+#endif
         //color = float3(texture[Position.xy].xy * 0.5f + 0.5f, 0.f);
 #endif
     }

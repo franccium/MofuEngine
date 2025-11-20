@@ -108,14 +108,16 @@ InitializeRenderingConsole()
 void
 DrawRenderingConsole()
 {
+	graphics::debug::Settings& settings{ graphics::debug::RenderingSettings };
 #if USE_DEBUG_KEYBINDS
 	if (input::WasKeyPressed(input::Keybinds::Editor.ToggleRenderingConsole))
 	{
 		_isOpen = !_isOpen;
 	}
+
 	if (input::WasKeyPressed(input::Keybinds::Editor.TogglePhysicsDebugRendering))
 	{
-		graphics::debug::RenderingSettings.EnablePhysicsDebugRendering = !graphics::debug::RenderingSettings.EnablePhysicsDebugRendering;
+		settings.EnablePhysicsDebugRendering = !settings.EnablePhysicsDebugRendering;
 	}
 #endif
 
@@ -126,11 +128,29 @@ DrawRenderingConsole()
 	}
 
 	ImGui::BeginGroup();
-	ImGui::Checkbox("Apply Tonemap", &graphics::debug::RenderingSettings.ApplyTonemap);
-	ImGui::Checkbox("Enable Physics Debug Render", &graphics::debug::RenderingSettings.EnablePhysicsDebugRendering);
-	ImGui::Checkbox("Draw Physics World Bounds", &graphics::debug::RenderingSettings.DrawPhysicsWorldBounds);
-	ImGui::Checkbox("Render All Physics Shapes", &graphics::debug::RenderingSettings.RenderAllPhysicsShapes);
+	ImGui::Checkbox("Apply Tonemap", &settings.ApplyTonemap);
+	ImGui::Checkbox("Enable Physics Debug Render", &settings.EnablePhysicsDebugRendering);
+	ImGui::Checkbox("Draw Physics World Bounds", &settings.DrawPhysicsWorldBounds);
+	ImGui::Checkbox("Render All Physics Shapes", &settings.RenderAllPhysicsShapes);
 	ImGui::EndGroup();
+
+	if (ImGui::CollapsingHeader("Reflections", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Enable Reflections", &settings.ReflectionsEnabled);
+		if (ImGui::CollapsingHeader("FFX SSSR", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ui::DisplayEditableFloatNT(&settings.FFX_SSSR.DepthBufferThickness, "Depth Buffer Thickness", 0.f, 0.2f);
+			ui::DisplayEditableFloatNT(&settings.FFX_SSSR.RoughnessThreshold, "Roughness Threshold", 0.f, 1.f);
+			ui::DisplayEditableFloatNT(&settings.FFX_SSSR.IBLFactor, "IBL Factor", 0.f, 5.f);
+			ui::DisplayEditableFloatNT(&settings.FFX_SSSR.TemporalStabilityFactor, "Temporal Stability Factor", 0.f, 1.f);
+			ui::DisplayEditableFloatNT(&settings.FFX_SSSR.VarianceThreshold, "Variance Threshold", 0.f, 1.f);
+			ui::DisplayEditableUintNT(&settings.FFX_SSSR.MaxTraversalIntersections, "Max Traversal Intersections", 1, 150);
+			ui::DisplayEditableUintNT(&settings.FFX_SSSR.MinTraversalOccupancy, "Min Traversal Occupancy", 0, 100);
+			ui::DisplayEditableUintNT(&settings.FFX_SSSR.MostDetailedMip, "Most Detailed Mip", 0, 13);
+			ui::DisplayEditableUintNT(&settings.FFX_SSSR.SamplesPerQuad, "Samples Per Quad", 1, 8);
+			ImGui::Checkbox("Tmp Variance Guided Tracing", &settings.FFX_SSSR.TemporalVarianceGuidedTracingEnabled);
+		}
+	}
 
 	bool isInDebugPostProcessing{ graphics::debug::IsUsingDebugPostProcessing() };
 	u32 debugPostProcessingOption{ isInDebugPostProcessing ? 1u : 0u };
@@ -212,6 +232,7 @@ DrawRenderingConsole()
 						id_t SkyboxHandle{ content::assets::CreateResourceFromHandle(skyHandle) };
 						graphics::light::AddAmbientLight(graphics::light::GetCurrentLightSetKey(), 
 							{ambientLightIntensity, diffuseIBL, specularIBL, BRDFLutIBL, SkyboxHandle});
+						settings.FFX_SSSR.WasAmbientLightChanged = true;
 					}
 					else
 					{

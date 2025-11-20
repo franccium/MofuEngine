@@ -1,31 +1,31 @@
-3039958200145447644:
-  Type: 6
-  OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_66.mat
-  ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_66.mat
-7787392965484012379:
-  Type: 6
-  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_233.mat
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_233.mat
-16687973121019033593:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\specular.jpg
-  ImportedFilePath: Projects/TestProject\Resources\specular.tex
-17375111759972484472:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest239.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest239.mat
-3586374141534647144:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest242.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest242.mat
-5491686192802694934:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\momon_base.mat
-  ImportedFilePath: Projects/TestProject\Resources\momon_base.mat
 10459735847266722715:
   Type: 5
   OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest147.mat
   ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest147.mat
+5491686192802694934:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\momon_base.mat
+  ImportedFilePath: Projects/TestProject\Resources\momon_base.mat
+3586374141534647144:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest242.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest242.mat
+17375111759972484472:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest239.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest239.mat
+16687973121019033593:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ba\boat\textures\specular.jpg
+  ImportedFilePath: Projects/TestProject\Resources\specular.tex
+7787392965484012379:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_233.mat
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_233.mat
+3039958200145447644:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_66.mat
+  ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_66.mat
 332327334680374667:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_230.mat
@@ -38,38 +38,38 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_3.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_3.mat
-10:
-  Type: 1
-  OriginalFilePath: Projects/TestProject\Assets\testing\sphere_s2.fbx
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\sphere_s2.mesh
-1826999993908933434:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\brickwall_01_Normal.png
-  ImportedFilePath: ""
 11463031264594668848:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_34.mat
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_34.mat
-6241441981473599187:
+1826999993908933434:
   Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\stones_2ndfloor_01_BaseColor.png
-  ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Textures\stones_2ndfloor_01_BaseColor.tex
-15030839100632353515:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\SunTemple\Textures\M_Rocks_Inst_2_Specular.dds
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Textures\M_Rocks_Inst_2_Specular.tex
-12584653297989865669:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\Models\SunTemple\Textures\M_Soul_Rocks2_Inst_7_Normal.dds
+  OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\brickwall_01_Normal.png
   ImportedFilePath: ""
-8179160113850239545:
+10:
   Type: 1
-  OriginalFilePath: Projects/TestProject\Assets\ab\vertex_colored_cube.fbx
-  ImportedFilePath: ""
+  OriginalFilePath: Projects/TestProject\Assets\testing\sphere_s2.fbx
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\sphere_s2.mesh
 6877040427135320329:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\column_1stfloor_Metalness.png
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Textures\column_1stfloor_Metalness.tex
+8179160113850239545:
+  Type: 1
+  OriginalFilePath: Projects/TestProject\Assets\ab\vertex_colored_cube.fbx
+  ImportedFilePath: ""
+12584653297989865669:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\Models\SunTemple\Textures\M_Soul_Rocks2_Inst_7_Normal.dds
+  ImportedFilePath: ""
+15030839100632353515:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\SunTemple\Textures\M_Rocks_Inst_2_Specular.dds
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Textures\M_Rocks_Inst_2_Specular.tex
+6241441981473599187:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\Models\Sponza\textures\stones_2ndfloor_01_BaseColor.png
+  ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Textures\stones_2ndfloor_01_BaseColor.tex
 14:
   Type: 2
   OriginalFilePath: Projects/TestProject\Resources\Cubemaps\lakeside_sunrise_2kbrdf_lut.tex
@@ -206,18 +206,18 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_57.mat
   ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_57.mat
-11812462975694040789:
-  Type: 6
-  OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\Materials\steel01_8.mat
-  ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\Materials\steel01_8.mat
-3068704264302982970:
-  Type: 6
-  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_746.mat
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_746.mat
 10657233949938857958:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\nature\small_tree_1\quiver_tree_02_1k.fbx
   ImportedFilePath: ""
+3068704264302982970:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_746.mat
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_746.mat
+11812462975694040789:
+  Type: 6
+  OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\Materials\steel01_8.mat
+  ImportedFilePath: Projects/TestProject\Resources\ImportedScenes\steel01\Textures\Materials\steel01_8.mat
 7194168452384733189:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_141.mat
@@ -226,6 +226,18 @@
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\amomonha\base_AO.png
   ImportedFilePath: Projects/TestProject\Resources\base_AO.tex
+16062278816839593902:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\SunTemple\Textures\M_Soul_Rocks2_Inst_4_Normal.dds
+  ImportedFilePath: Projects/TestProject\Resources\Meshes\Textures\M_Soul_Rocks2_Inst_4_Normal.tex
+16775440246232348286:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
+15123504814596887637:
+  Type: 2
+  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Metalness_1K.png
+  ImportedFilePath: Projects/TestProject\Resources\Sink_A_Metalness_1K.tex
 15787060415004291062:
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\furtniture\Urinal_B.fbx
@@ -250,18 +262,6 @@
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_806.mat
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Materials\SunTemple_806.mat
-15123504814596887637:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ab\Sink_A_Metalness_1K.png
-  ImportedFilePath: Projects/TestProject\Resources\Sink_A_Metalness_1K.tex
-16775440246232348286:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest190.mat
-16062278816839593902:
-  Type: 2
-  OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\SunTemple\Textures\M_Soul_Rocks2_Inst_4_Normal.dds
-  ImportedFilePath: Projects/TestProject\Resources\Meshes\Textures\M_Soul_Rocks2_Inst_4_Normal.tex
 15331106994041527858:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\props\marble_bust_2k\textures\marble_bust_01_rough_2k.jpg
@@ -2042,14 +2042,14 @@
   Type: 1
   OriginalFilePath: Projects/TestProject\Assets\nature\Bridge01.fbx
   ImportedFilePath: ""
-17722461668850416592:
-  Type: 5
-  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest211.mat
-  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest211.mat
 18404621972616712785:
   Type: 2
   OriginalFilePath: Projects/TestProject\Assets\ImportedScenes\SunTemple\Textures\M_StoneCeiling_Inst_0_BaseColor.dds
   ImportedFilePath: Projects/TestProject\Resources\Meshes\Textures\M_StoneCeiling_Inst_0_BaseColor.tex
+17722461668850416592:
+  Type: 5
+  OriginalFilePath: Projects/TestProject\Resources\Materials\InteriorTest211.mat
+  ImportedFilePath: Projects/TestProject\Resources\Materials\InteriorTest211.mat
 2986541002817843576:
   Type: 6
   OriginalFilePath: Projects/TestProject\Resources\ImportedScenes\Sponza\Materials\Sponza_65.mat

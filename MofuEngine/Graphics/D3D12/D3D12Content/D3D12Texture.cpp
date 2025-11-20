@@ -451,4 +451,12 @@ GetDescriptorHandle(id_t textureID, u32 arrayIndex, u32 mipLevel, u32 depthIndex
     return textures[textureID].GetSRV(arrayIndex, mipLevel, depthIndex, format, isCubemap);
 }
 
+const DXResource* const
+GetResource(id_t textureID)
+{
+    assert(id::IsValid(textureID));
+    std::lock_guard lock{ textureMutex };
+    return textures[textureID].Resource();
+}
+
 }
