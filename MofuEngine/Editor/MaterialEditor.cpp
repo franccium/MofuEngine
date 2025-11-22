@@ -48,9 +48,12 @@ constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Resources/Editor/gray_
 constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Resources/Editor/black_placeholder_texture.tex" };
 constexpr const char* ERROR_TEXTURE{ "Projects/TestProject/Resources/Editor/error_texture.tex" };
 constexpr const char* DEFAULT_TEXTURES_PATHS[TextureUsage::Count]{
-	ERROR_TEXTURE,
+	//ERROR_TEXTURE,
+	WHITE_TEXTURE,
 	GRAY_TEXTURE,
-	GRAY_TEXTURE,
+	WHITE_TEXTURE,
+	//GRAY_TEXTURE,
+	//GRAY_TEXTURE,
 	BLACK_TEXTURE,
 	WHITE_TEXTURE
 };
@@ -312,32 +315,31 @@ DisplayMaterialSurfaceProperties(const graphics::MaterialSurface& surface)
 void
 DisplayEditableMaterialSurfaceProperties(graphics::MaterialSurface& surface)
 {
-	if (ImGui::BeginTable("Surface Properties", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+	if (ImGui::CollapsingHeader("Surface Properties", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 2.0f);
-		ImGui::TableNextRow();
-		ImGui::TextUnformatted("Surface:");
-		ImGui::TableNextRow();
-		constexpr f32 min{ 0.f };
-		constexpr f32 max{ 1.f };
-		static bool colorEditOpen{ false };
-		ui::DisplayLabelT("Base Color");
-		ImGui::ColorEdit4("", (float*)&surface.BaseColor, ImGuiColorEditFlags_PickerHueWheel);
-		ImGui::TableNextRow();
-		ui::DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
-		ImGui::TableNextRow();
-		ui::DisplayEditableFloat(&surface.Roughness, "Roughness", min, max);
-		ImGui::TableNextRow();
-		ui::DisplayEditableVector3(&surface.Emissive, "Emission Color", min, max);
-		ImGui::TableNextRow();
-		ui::DisplayEditableFloat(&surface.EmissiveIntensity, "Emission Intensity", min, max);
-		ImGui::TableNextRow();
-		ui::DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
-		ImGui::EndTable();
+		if (ImGui::BeginTable("Surface Props", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
+		{
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+			constexpr f32 min{ 0.f };
+			constexpr f32 max{ 1.f };
+			static bool colorEditOpen{ false };
+			ui::DisplayLabelT("Base Color");
+			ImGui::ColorEdit4("", (float*)&surface.BaseColor, ImGuiColorEditFlags_PickerHueWheel);
+			ImGui::TableNextRow();
+			ui::DisplayEditableFloat(&surface.Metallic, "Metallic", min, max);
+			ImGui::TableNextRow();
+			ui::DisplayEditableFloat(&surface.Roughness, "Roughness", min, max);
+			ImGui::TableNextRow();
+			ui::DisplayEditableVector3(&surface.Emissive, "Emission Color", min, max);
+			ImGui::TableNextRow();
+			ui::DisplayEditableFloat(&surface.EmissiveIntensity, "Emission Intensity", min, max);
+			ImGui::TableNextRow();
+			ui::DisplayEditableFloat(&surface.AmbientOcclusion, "Ambient Occlusion", min, max);
+			ImGui::EndTable();
+		}
 	}
-	DisplayStandardMaterialEdit(standardMaterial);
-
+	//DisplayStandardMaterialEdit(standardMaterial);
 }
 
 void

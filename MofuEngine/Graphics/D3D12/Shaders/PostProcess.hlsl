@@ -1,7 +1,6 @@
 
 #include "Common.hlsli"
 #include "PostProcessing/TonemapGT7.hlsl"
-#include "PostProcessing/ApplyReflections.hlsl"
 
 #define APPLY_TONEMAPPING 0
 
@@ -27,6 +26,7 @@ struct PostProcessConstants
     uint MotionVectorsBufferIndex;
     uint MiscBufferIndex;
     uint ReflectionsBufferIndex;
+    uint MaterialPropertiesBufferIndex;
     
     uint DoTonemap;
 };
@@ -38,6 +38,16 @@ ConstantBuffer<DebugConstants> DebugOptions : register(b2, space0);
 #endif
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
+
+float4 Sample(uint index, SamplerState s, float2 uv)
+{
+    return Texture2D(ResourceDescriptorHeap[index]).Sample(s, uv);
+}
+
+float4 Sample(uint index, SamplerState s, float2 uv, float mip)
+{
+    return Texture2D(ResourceDescriptorHeap[index]).SampleLevel(s, uv, mip);
+}
 
 // sRGB OETF
 float3 LinearToSRGB(float3 x)
@@ -60,6 +70,28 @@ float3 LinearToPQ(float3 lin)
     float3 num = c1 * c2 * ym;
     float3 den = 1.f + c3 * ym;
     return exp2(m2 * (log2(num) - log2(den)));
+}
+
+float3 ApplyReflections(float3 baseColor, float2 uv, float depth)
+{
+    const float3 radiance = Sample(ShaderParams.ReflectionsBufferIndex, LinearSampler, uv).rgb;
+    const float4 nr = Sample(ShaderParams.NormalBufferIndex, LinearSampler, uv).rgba;
+    const float4 mat = Sample(ShaderParams.MaterialPropertiesBufferIndex, LinearSampler, uv).rgba;
+    
+    const float3 pos_WS = ScreenSpacePosTo3DPos(uv, depth, GlobalData.InvViewProjection).xyz;
+    const float3 viewDir = normalize(GlobalData.CameraPosition - pos_WS);
+    const float3 n = nr.rgb;
+    const float perceptualRoughness = sqrt(mat.r);
+    const float metallic = mat.g;
+    const float ao = mat.a;
+    const float3 F0 = lerp(0.04f, baseColor, metallic);
+    
+    const float NoV = saturate(dot(n, viewDir));
+    float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, saturate(float2(NoV, 1.f - perceptualRoughness)), 0).rg;
+    
+    float3 color = radiance * (F0 * brdfLut.x + brdfLut.y);
+    color = clamp(color, 0.f, 1.0f);
+    return color + baseColor;
 }
 
 #define RENDER_SKYBOX 1
@@ -140,7 +172,9 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         Texture2D reflections = ResourceDescriptorHeap[ShaderParams.ReflectionsBufferIndex];
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
         #if 1
-        color = reflections[Position.xy].rgb;
+        //color = reflections[Position.xy].rgb;
+        float3 mainColor = gpassMain[Position.xy].rgb;
+        color = ApplyReflections(mainColor, UV, depth);
         #else
         float3 mainColor = gpassMain[Position.xy].rgb;
         color = mainColor;

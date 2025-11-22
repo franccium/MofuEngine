@@ -17,8 +17,9 @@ struct PixelOut
 {
     float4 Color : SV_Target0;
     float4 Normal : SV_Target1;
-    float2 MotionVectors : SV_Target2;
-    uint4 MiscBuffer : SV_Target3;
+    float4 MaterialProperties : SV_Target2; // r - roughness, g - metallic, b -, a - ao
+    float2 MotionVectors : SV_Target3;
+    uint4 MiscBuffer : SV_Target4;
 };
 
 struct Surface
@@ -275,21 +276,22 @@ Surface GetSurface(VertexOut psIn, float3 V)
     Surface S;
 #if TEXTURED_MTL
     float2 uv = psIn.UV;
-    S.AmbientOcclusion = Sample(SrvIndices[4], LinearSampler, uv).r;
+    S.AmbientOcclusion = Sample(SrvIndices[4], LinearSampler, uv).r * PerObjectBuffer.AmbientOcclusion;
 #if (ALPHA_TEST | ALPHA_BLEND)
-    float4 colorA = Sample(SrvIndices[0], LinearSampler, uv).rgba;
+    float4 colorA = Sample(SrvIndices[0], LinearSampler, uv).rgba * PerObjectBuffer.BaseColor.rgba;
     S.BaseColor = colorA.rgb;
     S.Alpha = colorA.a;
 #else
-    S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb;
+    S.BaseColor = Sample(SrvIndices[0], LinearSampler, uv).rgb * PerObjectBuffer.BaseColor.rgb;
 #endif
-    S.EmissiveColor = Sample(SrvIndices[3], LinearSampler, uv).rgb;
-    float2 metalRough = Sample(SrvIndices[2], LinearSampler, uv).rg;
-    S.Metallic = metalRough.r;
-    S.PerceptualRoughness = metalRough.g;
-    S.EmissiveIntensity = 1.f;
-    
+    S.EmissiveColor = Sample(SrvIndices[3], LinearSampler, uv).rgb * PerObjectBuffer.Emissive;
+    const float2 metalRough = Sample(SrvIndices[2], LinearSampler, uv).rg;
     float3 n = Sample(SrvIndices[1], LinearSampler, uv).rgb;
+    
+    S.Metallic = metalRough.r * PerObjectBuffer.Metallic;
+    S.PerceptualRoughness = metalRough.g * PerObjectBuffer.Roughness;
+    S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
+    
     n = n * 2.f - 1.f;
 #if NORMALS_RECONSTRUCT_Z
     //n.y *= -1.f;
@@ -494,10 +496,6 @@ PixelOut TestShaderPS(in VertexOut psIn)
     const float alpha = S.Alpha;
 #endif
             
-    float3 diffuseColor = float3(1.0, 0.8, 0.8);
-    float3 specularColor = float3(0.9, 0.9, 0.9);
-    float specularPower = 16.f;
-    
     uint i = 0;
     for (i = 0; i < GlobalData.DirectionalLightsCount; ++i)
     {
@@ -567,7 +565,13 @@ PixelOut TestShaderPS(in VertexOut psIn)
 #endif
     
     psOut.Normal.rgb = S.Normal;
-    psOut.Normal.a = S.PerceptualRoughness * S.PerceptualRoughness;
+    psOut.Normal.a = 0.f;
+    
+    psOut.MaterialProperties.r = S.PerceptualRoughness * S.PerceptualRoughness;
+    psOut.MaterialProperties.g = S.Metallic;
+    psOut.MaterialProperties.b = 0.f;
+    psOut.MaterialProperties.a = 0.f;
+    
 //    // NOTE: now assuming we have max 2^16 materials
 //    uint16_t materialID = PerObjectBuffer.MaterialID;
 //    float materialIDHigh = float((materialID >> 8) & 0xFF) / 255.0f;

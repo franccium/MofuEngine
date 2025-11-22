@@ -539,6 +539,7 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 		if (mat->pbr.emission_color.has_value)
 		{
 			Color emissionColor{ ColorFromMaterial(mat->pbr.emission_color).LinearToSRGB() };
+			surface.Emissive = { emissionColor.r, emissionColor.g, emissionColor.b };
 			surface.EmissiveIntensity = (f32)mat->pbr.emission_factor.value_real;
 		}
 

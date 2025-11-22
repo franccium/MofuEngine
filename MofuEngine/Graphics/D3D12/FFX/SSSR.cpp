@@ -144,8 +144,10 @@ GatherResources()
 		_dispatchDesc.normal = ffxGetResourceDX12(normalBuffer, ffxGetResourceDescriptionDX12(normalBuffer), L"Color Buffer", FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 		_dispatchDesc.normalUnPackMul = 1.f;
 		_dispatchDesc.normalUnPackAdd = 0.f;
-		_dispatchDesc.materialParameters = ffxGetResourceDX12(normalBuffer, ffxGetResourceDescriptionDX12(normalBuffer), L"Material Parameters Buffer", FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-		_dispatchDesc.roughnessChannel = 3; // Alpha channel
+
+		const DXResource* const matPropsBuffer{ gpass::MaterialPropertiesBuffer().Resource() };
+		_dispatchDesc.materialParameters = ffxGetResourceDX12(matPropsBuffer, ffxGetResourceDescriptionDX12(matPropsBuffer), L"Material Parameters Buffer", FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+		_dispatchDesc.roughnessChannel = 0;
 		_dispatchDesc.isRoughnessPerceptual = false;
 	}
 
