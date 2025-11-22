@@ -6,11 +6,12 @@
 #include "ECS/Entity.h"
 
 namespace mofu::physics {
-JPH::BodyID AddStaticBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity);
-JPH::BodyID AddDynamicBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity);
+void AddStaticBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity);
+void AddDynamicBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity);
 void DestroyPhysicsBody(ecs::Entity entity);
 void DestroyPhysicsBodies(const Array<ecs::Entity>& entities);
 void DeactivatePhysicsBody(ecs::Entity entity);
+void UpdateBodyManagerDeferred();
 
 void ChangePhysicsShape(ecs::Entity ownerEntity, shapes::PrimitiveShapes::Type shapeType);
 }

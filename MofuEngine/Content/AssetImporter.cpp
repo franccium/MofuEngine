@@ -327,12 +327,12 @@ ImportImageFromBytes(const u8* const bytes, u64 size, const char* fileExtension,
 }
 
 void
-FindAllTextureFiles(FBXImportState& state)
+FindAllTextureFiles(FBXImportState* const state)
 {
-	std::filesystem::path startTextureScanPath{ state.ModelSourcePath };
-	if (state.ModelSourcePath.stem().string() == "source")
+	std::filesystem::path startTextureScanPath{ state->ModelSourcePath };
+	if (state->ModelSourcePath.stem().string() == "source")
 	{
-		startTextureScanPath = state.ModelSourcePath.parent_path();
+		startTextureScanPath = state->ModelSourcePath.parent_path();
 	}
 	Vec<std::string> textureFiles{};
 	std::string texExtension{};
@@ -357,128 +357,177 @@ FindAllTextureFiles(FBXImportState& state)
 	{
 		log::Info("Found %u texture files (%s)", (u32)textureFiles.size(), texExtension);
 	}
-	std::filesystem::path textureResourceBasePath{ state.ModelResourcePath };
+	std::filesystem::path textureResourceBasePath{ state->ModelResourcePath };
 	textureResourceBasePath.append("Textures");
 	std::filesystem::create_directory(textureResourceBasePath);
 
 	const u32 textureCount{ (u32)textureFiles.size() };
-	state.AllTextureHandles.resize(textureCount);
+	state->AllTextureHandles.resize(textureCount);
 	for (u32 i{0}; i < textureCount; ++i)
 	{
 		const std::filesystem::path texturePath{ textureFiles[i] };
 		std::filesystem::path resourcePath{ textureResourceBasePath / texturePath.stem() };
 		resourcePath.replace_extension(".tex");
-		state.AllTextureHandles[i] = ImportAsset(texturePath, resourcePath);
+		state->AllTextureHandles[i] = ImportAsset(texturePath, resourcePath);
 	}
 }
 
 void
-ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImportState& state)
+ImportImages(const ufbx_scene* fbxScene, const std::string_view basePath, FBXImportState* const state)
 {
-	if(state.ImportSettings.FindAllTextureFiles) FindAllTextureFiles(state);
+	state->Textures.resize(fbxScene->texture_files.count);
+	state->SourceImages.resize(fbxScene->texture_files.count);
+	state->ImageFiles.resize(fbxScene->texture_files.count);
 
-	state.Textures.resize(fbxScene->texture_files.count);
-	state.SourceImages.resize(fbxScene->texture_files.count);
-	state.ImageFiles.resize(fbxScene->texture_files.count);
-	for (u32 textureIdx{ 0 }; textureIdx < fbxScene->texture_files.count; ++textureIdx)
+	if (state->ImportSettings.TexturesFromImportedPath)
 	{
-		const ufbx_texture_file& fbxTexFile{ fbxScene->texture_files[textureIdx] };
-
-		std::filesystem::path texturePath{ fbxTexFile.filename.data };
-		if (texturePath.is_absolute()) 
+		std::filesystem::path seekInPath{ state->ModelResourcePath / state->ImportSettings.TextureDirectory };
+		if(!std::filesystem::exists(seekInPath))
 		{
-			texturePath = texturePath.filename();
-			texturePath = editor::project::GetAssetDirectory() / std::filesystem::path{ "ab" } / texturePath;
+			log::Error("FBX Import: Could not find texture directory at path [%s]", seekInPath.string().data());
+			state->Errors |= FBXImportState::ErrorFlags::InvalidTexturePath;
+			return;
 		}
-		if (!basePath.empty())
-		{
-			texturePath = texturePath.concat(basePath);
-		}
+		std::string textureBasePath{ seekInPath.append("").string() };
 
-		assert(fbxTexFile.content.size < UINT_MAX);
-		u32 contentSize{ (u32)fbxTexFile.content.size };
+		for (u32 textureIdx{ 0 }; textureIdx < fbxScene->texture_files.count; ++textureIdx)
+		{
+			const ufbx_texture_file& fbxTexFile{ fbxScene->texture_files[textureIdx] };
 
-		// get image data as a byte array
-		std::unique_ptr<u8[]> data;
-		if (contentSize > 0)
-		{
-			data = std::make_unique<u8[]>(contentSize);
-			memcpy(data.get(), fbxTexFile.content.data, contentSize);
-		}
-		else
-		{
-			u64 outSize{ 0 };
-			if (!std::filesystem::exists(texturePath))
-			{
-				state.Errors |= FBXImportState::ErrorFlags::InvalidTexturePath;
-			}
-			else if (std::filesystem::file_size(texturePath) != 0)
-			{
-				content::ReadFileToByteBuffer(texturePath, data, outSize);
-				assert(outSize < UINT_MAX);
-				contentSize = (u32)outSize;
-			}
-			if (contentSize == 0)
-			{
-				log::Warn("FBX Import: Image at path [%s] had no data", texturePath.string().data());
-				state.Textures[textureIdx] = {};
-				state.SourceImages[textureIdx] = {};
-				state.ImageFiles[textureIdx] = {};
-			}
-		}
+			std::filesystem::path texturePath{ fbxTexFile.filename.data };
+			std::string textureFilename{ texturePath.stem().string() };
+			
+			//TODO: look for textures
 
-		if (contentSize > 0)
-		{
-			std::filesystem::path textureImagePath{ editor::project::GetAssetDirectory() / "ImportedScenes" / state.Name / "Textures" };
-			std::filesystem::path resourcePath{ state.ModelResourcePath / "Textures" };
-			if (!std::filesystem::exists(textureImagePath)) 
-			{
-				if (!std::filesystem::exists(textureImagePath.parent_path())) 
-					std::filesystem::create_directory(textureImagePath.parent_path());
-				std::filesystem::create_directory(textureImagePath);
-			}
+			std::string resourcePath{ textureBasePath + textureFilename + ".tex" };
+			assert(std::filesystem::exists(resourcePath));
 			if (!std::filesystem::exists(resourcePath))
 			{
-				std::filesystem::create_directory(resourcePath);
+				log::Error("FBX Import: Could not find texture file [%s]");
 			}
-			//char name[16];
-			//sprintf_s(name, "%u%s\0", textureIdx, texturePath.extension().string().data());
-			textureImagePath /= texturePath.filename();
-			resourcePath /= texturePath.filename();
-			resourcePath.replace_extension(".tex");
+			state->Textures[textureIdx] = {};
+			state->SourceImages[textureIdx] = textureIdx; // TODO: not sure if this is correct
+			state->ImageFiles[textureIdx] = resourcePath;
+		}
+		return;
+	}
 
-			Asset* asset = new Asset{ AssetType::Texture, textureImagePath, resourcePath };
-			ImportImageFromBytes(data.get(), contentSize, textureImagePath.extension().string().data(), asset, resourcePath);
-			state.Textures[textureIdx] = {};
-			state.SourceImages[textureIdx] = textureIdx; // TODO: not sure if this is correct
-			state.ImageFiles[textureIdx] = resourcePath.string();
+	if (state->ImportSettings.FindAllTextureFiles)
+	{
+		FindAllTextureFiles(state);
+	}
 
-			assets::RegisterAsset(asset);
+	if (state->ImportSettings.ImportEmbeddedTextures)
+	{
+		for (u32 textureIdx{ 0 }; textureIdx < fbxScene->texture_files.count; ++textureIdx)
+		{
+			const ufbx_texture_file& fbxTexFile{ fbxScene->texture_files[textureIdx] };
+
+			std::filesystem::path texturePath{ fbxTexFile.filename.data };
+			if (texturePath.is_absolute())
+			{
+				// these are weird so just try to find them in the source folder
+				texturePath = texturePath.filename();
+				std::filesystem::path startTextureScanPath{ state->ModelSourcePath };
+				if (state->ModelSourcePath.stem().string() == "source")
+				{
+					startTextureScanPath = state->ModelSourcePath.parent_path();
+				}
+				if (std::filesystem::exists(startTextureScanPath / "textures"))
+					texturePath = startTextureScanPath / "textures" / texturePath.filename();
+				else if (std::filesystem::exists(startTextureScanPath / "Textures"))
+					texturePath = startTextureScanPath / "Textures" / texturePath.filename();
+			}
+			if (!basePath.empty())
+			{
+				texturePath = texturePath.concat(basePath);
+			}
+
+			assert(fbxTexFile.content.size < UINT_MAX);
+			u32 contentSize{ (u32)fbxTexFile.content.size };
+
+			// get image data as a byte array
+			std::unique_ptr<u8[]> data;
+			if (contentSize > 0)
+			{
+				data = std::make_unique<u8[]>(contentSize);
+				memcpy(data.get(), fbxTexFile.content.data, contentSize);
+			}
+			else
+			{
+				u64 outSize{ 0 };
+				if (!std::filesystem::exists(texturePath))
+				{
+					state->Errors |= FBXImportState::ErrorFlags::InvalidTexturePath;
+				}
+				else if (std::filesystem::file_size(texturePath) != 0)
+				{
+					content::ReadFileToByteBuffer(texturePath, data, outSize);
+					assert(outSize < UINT_MAX);
+					contentSize = (u32)outSize;
+				}
+				if (contentSize == 0)
+				{
+					log::Warn("FBX Import: Image at path [%s] had no data", texturePath.string().data());
+					state->Textures[textureIdx] = {};
+					state->SourceImages[textureIdx] = {};
+					state->ImageFiles[textureIdx] = {};
+				}
+			}
+
+			if (contentSize > 0)
+			{
+				std::filesystem::path textureImagePath{ editor::project::GetAssetDirectory() / "ImportedScenes" / state->Name / "Textures" };
+				std::filesystem::path resourcePath{ state->ModelResourcePath / "Textures" };
+				if (!std::filesystem::exists(textureImagePath))
+				{
+					if (!std::filesystem::exists(textureImagePath.parent_path()))
+						std::filesystem::create_directory(textureImagePath.parent_path());
+					std::filesystem::create_directory(textureImagePath);
+				}
+				if (!std::filesystem::exists(resourcePath))
+				{
+					std::filesystem::create_directory(resourcePath);
+				}
+				//char name[16];
+				//sprintf_s(name, "%u%s\0", textureIdx, texturePath.extension().string().data());
+				textureImagePath /= texturePath.filename();
+				resourcePath /= texturePath.filename();
+				resourcePath.replace_extension(".tex");
+
+				Asset* asset = new Asset{ AssetType::Texture, textureImagePath, resourcePath };
+				ImportImageFromBytes(data.get(), contentSize, textureImagePath.extension().string().data(), asset, resourcePath);
+				state->Textures[textureIdx] = {};
+				state->SourceImages[textureIdx] = textureIdx; // TODO: not sure if this is correct
+				state->ImageFiles[textureIdx] = resourcePath.string();
+
+				assets::RegisterAsset(asset);
+			}
 		}
 	}
 }
 
 void
-GetTextureForMaterial(editor::material::TextureUsage::Usage textureUsage, editor::material::EditorMaterial& material, u32 fileIndex, FBXImportState& state)
+GetTextureForMaterial(editor::material::TextureUsage::Usage textureUsage, editor::material::EditorMaterial& material, u32 fileIndex, FBXImportState* const state)
 {
 	//TODO: reuse already loaded
 
-	if (!state.ImportSettings.ImportEmbeddedTextures) return;
-	u32 sourceImageIndex{ state.SourceImages[fileIndex] };
-	if (!state.ImageFiles[sourceImageIndex].empty())
+	if (!(state->ImportSettings.ImportEmbeddedTextures || state->ImportSettings.TexturesFromImportedPath)) return;
+	u32 sourceImageIndex{ state->SourceImages[fileIndex] };
+	if (!state->ImageFiles[sourceImageIndex].empty())
 	{
-		material.TextureIDs[textureUsage] = content::CreateResourceFromAsset(state.ImageFiles[sourceImageIndex], content::AssetType::Texture);
+		material.TextureIDs[textureUsage] = content::CreateResourceFromAsset(state->ImageFiles[sourceImageIndex], content::AssetType::Texture);
 	}
 	else
 	{
 		log::Warn("Couldn't find texture for %u, idx: %u %u", textureUsage, fileIndex, sourceImageIndex);
-		state.Errors |= FBXImportState::ErrorFlags::MaterialTextureNotFound;
+		state->Errors |= FBXImportState::ErrorFlags::MaterialTextureNotFound;
 		material.TextureIDs[textureUsage] = id::INVALID_ID;
 	}
 }
 
 void
-ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
+ImportFBXMaterials(ufbx_scene* scene, FBXImportState* const state)
 {
 	for (ufbx_material* mat : scene->materials)
 	{
@@ -555,12 +604,49 @@ ImportFBXMaterials(ufbx_scene* scene, FBXImportState& state)
 			GetTextureForMaterial(TexUse::AmbientOcclusion, material, mat->pbr.ambient_occlusion.texture->file_index, state);
 		}
 
-		state.Materials.emplace_back(std::move(material));
+		state->Materials.emplace_back(std::move(material));
 	}
 }
 
 void
-ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
+ImportUfbxLights(const ufbx_scene* const scene, FBXImportState* const state)
+{
+	const u32 lightCount{ (u32)scene->lights.count };
+	if (!lightCount) return;
+
+	assert(lightCount == state->FBXLightNodes.size());
+	state->Lights.resize(lightCount);
+	log::Info("Importing %u lights", lightCount);
+	for(u32 i{0}; i < lightCount; ++i)
+	{
+		const FBXLightNode& lightNode{ state->FBXLightNodes[i] };
+		ufbx_light* fbxLight{ lightNode.Light };
+		ufbx_node* node{ scene->nodes.data[lightNode.NodeIndex] };
+		LightInitInfo& lightInfo{ state->Lights[i] };
+		lightInfo.Color = { (f32)fbxLight->color.x, (f32)fbxLight->color.y, (f32)fbxLight->color.z };
+		lightInfo.Intensity = (f32)fbxLight->intensity;
+		lightInfo.Type =
+			fbxLight->type == UFBX_LIGHT_POINT ? graphics::light::LightType::Point :
+			(fbxLight->type == UFBX_LIGHT_SPOT ? graphics::light::LightType::Spot : graphics::light::LightType::Directional);
+		assert(lightInfo.Type < graphics::light::LightType::Count);
+		lightInfo.Range = 1.f;
+		lightInfo.InnerConeAngle = (f32)fbxLight->inner_angle;
+		lightInfo.OuterConeAngle = (f32)fbxLight->outer_angle;
+
+		lightInfo.Transform.Position = { (f32)node->local_transform.translation.x, (f32)node->local_transform.translation.y,
+			(f32)node->local_transform.translation.z };
+		lightInfo.Transform.Rotation = { (f32)node->local_transform.rotation.x, (f32)node->local_transform.rotation.y,
+			(f32)node->local_transform.rotation.z, (f32)node->local_transform.rotation.w };
+		lightInfo.Transform.Scale = { (f32)node->local_transform.scale.x, (f32)node->local_transform.scale.y,
+			(f32)node->local_transform.scale.z };
+
+		lightInfo.Name = fbxLight->name.data;
+		// should also process cast_shadows
+	}
+}
+
+void
+ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState* const state)
 {
 	// node - LodGroup
 
@@ -617,10 +703,10 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 			}
 		}
 
-		if(state.ImportSettings.ColliderFromGeometry) 
-			state.JoltMeshShapes.emplace_back(physics::CreateJoltMeshFromVertices(vertexPositions, state.ImportSettings));
+		if(state->ImportSettings.ColliderFromGeometry) 
+			state->JoltMeshShapes.emplace_back(physics::CreateJoltMeshFromVertices(vertexPositions, state->ImportSettings));
 
-		if (m->vertex_tangent.exists && !state.ImportSettings.CalculateTangents)
+		if (m->vertex_tangent.exists && !state->ImportSettings.CalculateTangents)
 		{
 
 			if (m->vertex_bitangent.exists) 
@@ -666,7 +752,7 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 		if (fbxMat)
 		{
 			const u32 materialIdx = (u32)fbxMat->typed_id;
-			assert(materialIdx < state.Materials.size());
+			assert(materialIdx < state->Materials.size());
 			mesh.MaterialIndices.emplace_back(materialIdx);
 		}
 		else
@@ -687,18 +773,18 @@ ImportUfbxMesh(ufbx_node* node, LodGroup& lodGroup, FBXImportState& state)
 
 		lodGroup.Meshes.emplace_back(mesh);
 	}
-	state.MeshNames.emplace_back(m->name.data, m->name.length);
+	state->MeshNames.emplace_back(m->name.data, m->name.length);
 }
 
 //	data layout: 
 //	... todo
 //	All Texture Handles (till the end of the file or assume count * TextureUsage::Count?)
 void
-CreateGeometryMetadata(AssetPtr asset, const FBXImportState& state, const std::filesystem::path& metadataPath)
+CreateGeometryMetadata(AssetPtr asset, const FBXImportState* const state, const std::filesystem::path& metadataPath)
 {
 	assert(metadataPath.extension().string() == ASSET_METADATA_EXTENSION);
 
-	const u32 textureCount{ (u32)state.AllTextureHandles.size() };
+	const u32 textureCount{ (u32)state->AllTextureHandles.size() };
 	if (textureCount == 0)
 	{
 		log::Warn("No textures found, couldn't generate metadata");
@@ -709,7 +795,7 @@ CreateGeometryMetadata(AssetPtr asset, const FBXImportState& state, const std::f
 	u8* buffer{ new u8[metadataSize] };
 	util::BlobStreamWriter blob{ buffer, metadataSize };
 
-	for (const AssetHandle texHandle : state.AllTextureHandles)
+	for (const AssetHandle texHandle : state->AllTextureHandles)
 	{
 		blob.Write<u64>(texHandle.id);
 	}
@@ -724,7 +810,7 @@ CreateGeometryMetadata(AssetPtr asset, const FBXImportState& state, const std::f
 }
 
 void
-ImportMeshes(ufbx_scene* scene, FBXImportState& state, const std::filesystem::path& outPath)
+ImportMeshes(ufbx_scene* scene, FBXImportState* const state, const std::filesystem::path& outPath)
 {
 	MeshGroup meshGroup{};
 	meshGroup.Name = scene->metadata.filename.data;
@@ -744,9 +830,10 @@ ImportMeshes(ufbx_scene* scene, FBXImportState& state, const std::filesystem::pa
 			for (u32 i = 0; i < node->children.count; ++i)
 			{
 				ufbx_node* child = node->children.data[i];
-				if (!child->mesh) continue;
-
-				ImportUfbxMesh(child, lodGroup, state);
+				if (child->mesh)
+				{
+					ImportUfbxMesh(child, lodGroup, state);
+				}
 			}
 		}
 		else if (node->mesh)
@@ -755,12 +842,11 @@ ImportMeshes(ufbx_scene* scene, FBXImportState& state, const std::filesystem::pa
 		}
 	}
 	meshGroup.LodGroups.emplace_back(lodGroup);
-	state.LodGroups.emplace_back(lodGroup);
-
-	ufbx_free_scene(scene);
+	state->LodGroups.emplace_back(lodGroup);
 
 
-	ProcessMeshGroupData(meshGroup, state.ImportSettings);
+
+	ProcessMeshGroupData(meshGroup, state->ImportSettings);
 	//PackGeometryData(meshGroup, outData);
 	//PackGeometryDataForEditor(meshGroup, data, outPath);
 	//SaveGeometry(data, path.replace_extension(".geom"));
@@ -774,17 +860,17 @@ ImportFBX(std::filesystem::path path, AssetPtr asset, const std::filesystem::pat
 
 	const std::string originalFilename{ path.stem().string() };
 
-	FBXImportState state{};
-	state.Name = originalFilename;
-	state.ModelResourcePath = importedPath.empty() ? editor::project::GetResourceDirectory() / "ImportedScenes" / state.Name : importedPath.parent_path();
-	state.ModelSourcePath = path.parent_path();
-	std::filesystem::create_directory(state.ModelResourcePath);
+	std::unique_ptr<FBXImportState> state{ std::make_unique<FBXImportState>() };
+	state->Name = originalFilename;
+	state->ModelResourcePath = importedPath.empty() ? editor::project::GetResourceDirectory() / "ImportedScenes" / state->Name : importedPath.parent_path();
+	state->ModelSourcePath = path.parent_path();
+	std::filesystem::create_directory(state->ModelResourcePath);
 
-	std::filesystem::path importedAssetPath{ importedPath.empty() ? state.ModelResourcePath / state.Name : importedPath };
+	std::filesystem::path importedAssetPath{ importedPath.empty() ? state->ModelResourcePath / state->Name : importedPath };
 	importedAssetPath.replace_extension(".mesh");
 
-	state.OutModelFile = importedAssetPath;
-	state.ImportSettings = editor::assets::GetGeometryImportSettings();
+	state->OutModelFile = importedAssetPath;
+	state->ImportSettings = editor::assets::GetGeometryImportSettings();
 
 	ufbx_load_opts opts{};
 	opts.target_axes = ufbx_axes_right_handed_y_up;
@@ -797,29 +883,37 @@ ImportFBX(std::filesystem::path path, AssetPtr asset, const std::filesystem::pat
 		return importedAssetPath;
 	}
 
+	//state->Transforms = Array<ecs::component::LocalTransform>{ scene->nodes.count };
+	state->FBXLightNodes = Array<FBXLightNode>{ scene->lights.count };
+	u32 lightIdx{ 0 };
+	//state->Transforms.resize(scene->nodes.count);
 
 	// list all nodes in the scene
 	for (u32 i{ 0 }; i < scene->nodes.count; i++) 
 	{
 		ufbx_node* node = scene->nodes.data[i];
 		if (node->is_root) continue;
+		/*state->Transforms[i].Position = { (f32)node->local_transform.translation.x, (f32)node->local_transform.translation.y, 
+			(f32)node->local_transform.translation.z };
+		state->Transforms[i].Rotation = { (f32)node->local_transform.rotation.x, (f32)node->local_transform.rotation.y, 
+			(f32)node->local_transform.rotation.z, (f32)node->local_transform.rotation.w };
+		state->Transforms[i].Scale = { (f32)node->local_transform.scale.x, (f32)node->local_transform.scale.y, 
+			(f32)node->local_transform.scale.z };*/
 
-		log::Info("Object: %s\n", node->name.data);
-		if (node->mesh) {
-			log::Info("-> mesh with %zu faces\n", node->mesh->faces.count);
-		}
+		if (node->light) state->FBXLightNodes[lightIdx++] = { node->light, i };
 	}
 
-	if (state.ImportSettings.ImportEmbeddedTextures)
-	{
-		ImportImages(scene, "", state);
-	}
-	ImportFBXMaterials(scene, state);
-	ImportMeshes(scene, state, importedAssetPath);
+	FBXImportState* const statePtr{ state.get() };
+	ImportImages(scene, "", statePtr);
+	ImportFBXMaterials(scene, statePtr);
+	ImportMeshes(scene, statePtr, importedAssetPath);
+	ImportUfbxLights(scene, statePtr);
+
+	ufbx_free_scene(scene);
 
 	std::filesystem::path mtPath{ importedAssetPath };
 	mtPath.replace_extension(ASSET_METADATA_EXTENSION);
-	CreateGeometryMetadata(asset, state, mtPath);
+	CreateGeometryMetadata(asset, statePtr, mtPath);
 	
 	editor::assets::ViewFBXImportSummary(state);
 

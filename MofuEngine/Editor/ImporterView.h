@@ -5,7 +5,7 @@
 #include "Content/Asset.h"
 
 namespace mofu::editor::assets {
-void ViewFBXImportSummary(content::FBXImportState state);
+void ViewFBXImportSummary(std::unique_ptr<content::FBXImportState>& state);
 void ViewImportSettings(content::AssetType::type assetType);
 void ViewImportSettings(content::AssetHandle handle);
 void AddFile(const std::string& filename);

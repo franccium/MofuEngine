@@ -374,11 +374,12 @@ ReleaseResources()
 }
 
 void
-OpenMaterialEditor(ecs::Entity entityID, ecs::component::RenderMaterial mat)
+OpenMaterialEditor(ecs::Entity entityID)
 {
 	materialOwner = entityID;
 	editorMaterial = {};
 	
+	ecs::component::RenderMaterial mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entityID) };
 	//TODO: could also just use mat.MaterialAsset and call UpdateMaterialInitInfo();
 	materialInitInfo = graphics::GetMaterialReflection(mat.MaterialID);
 	editorMaterial.TextureCount = materialInitInfo.TextureCount;

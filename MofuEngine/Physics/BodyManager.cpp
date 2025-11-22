@@ -21,49 +21,80 @@
 #include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
 
 namespace mofu::physics {
-JPH::BodyID 
+namespace {
+struct DeferredBody
+{
+    ecs::Entity Entity;
+    JPH::Ref<JPH::Shape> Shape;
+};
+Vec<DeferredBody> _deferredDynamicBodies{};
+Vec<DeferredBody> _deferredStaticBodies{};
+
+void 
+SpawnDeferredBodies()
+{
+    for (const DeferredBody& b : _deferredDynamicBodies)
+    {
+        const ecs::Entity e{ b.Entity };
+        const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(e) };
+        JPH::BodyCreationSettings bodySettings{ b.Shape.GetPtr(), lt.Position.Vec3(), lt.Rotation,
+            JPH::EMotionType::Dynamic, PhysicsLayers::Layer::Movable };
+
+        bodySettings.mUserData = e;
+
+        JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
+        const JPH::BodyID bodyID{ body->GetID() };
+        core::BodyInterface().AddBody(bodyID, JPH::EActivation::Activate);
+        log::Info("JOLT: Added a new physics body: [%u]", body->GetID().GetIndex());
+        ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(e) };
+        collider.BodyID = bodyID;
+
+
+        JPH::BodyLockWrite lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), bodyID };
+        lock.GetBody().GetMotionProperties()->SetGravityFactor(0.1f);
+    }
+
+    for (const DeferredBody& b : _deferredStaticBodies)
+    {
+        const ecs::Entity e{ b.Entity };
+        const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(e) };
+        JPH::BodyCreationSettings bodySettings{ b.Shape.GetPtr(), lt.Position.Vec3(), lt.Rotation,
+            JPH::EMotionType::Static, PhysicsLayers::Layer::Static };
+        bodySettings.mAllowDynamicOrKinematic = core::settings::CREATE_STATIC_BODIES_AS_CHANGEABLE_TO_MOVABLE;
+        bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+        bodySettings.mMassPropertiesOverride = JPH::MassProperties{ core::settings::DEFAULT_BODY_MASS };
+
+        bodySettings.mUserData = e;
+
+        JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
+        const JPH::BodyID bodyID{ body->GetID() };
+        core::BodyInterface().AddBody(bodyID, JPH::EActivation::DontActivate);
+        log::Info("JOLT: Added a new physics body: [%u]", body->GetID().GetIndex());
+        ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(e) };
+        collider.BodyID = bodyID;
+    }
+
+    _deferredDynamicBodies.clear();
+    _deferredStaticBodies.clear();
+}
+
+}
+
+void
 AddStaticBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity)
 {
     ecs::scene::AddComponents<ecs::component::Collider, ecs::component::StaticObject>(ownerEntity);
 
-    const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
-    JPH::BodyCreationSettings bodySettings{ shape.GetPtr(), lt.Position.Vec3(), lt.Rotation, 
-        JPH::EMotionType::Static, PhysicsLayers::Layer::Static};
-    bodySettings.mAllowDynamicOrKinematic = core::settings::CREATE_STATIC_BODIES_AS_CHANGEABLE_TO_MOVABLE;
-    bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
-    bodySettings.mMassPropertiesOverride = JPH::MassProperties{ core::settings::DEFAULT_BODY_MASS };
-
-    bodySettings.mUserData = ownerEntity;
-
-    JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
-    const JPH::BodyID bodyID{ body->GetID() };
-    core::BodyInterface().AddBody(bodyID, JPH::EActivation::DontActivate);
-    log::Info("JOLT: Added a new physics body: [%u]", body->GetID().GetIndex());
-    ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(ownerEntity) };
-    collider.BodyID = bodyID;
-
-    return bodyID;
+    _deferredStaticBodies.emplace_back(DeferredBody{ ownerEntity, shape });
 }
 
-JPH::BodyID
+void
 AddDynamicBody(JPH::Ref<JPH::Shape> shape, ecs::Entity ownerEntity)
 {
-    TODO_("when added as first entity crash in transform hierarchy because migration probably");
     ecs::scene::AddComponents<ecs::component::Collider, ecs::component::DynamicObject>(ownerEntity);
 
-    const ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(ownerEntity) };
-    JPH::BodyCreationSettings bodySettings{ shape.GetPtr(), lt.Position.Vec3(), lt.Rotation,
-        JPH::EMotionType::Dynamic, PhysicsLayers::Layer::Movable };
-    bodySettings.mUserData = ownerEntity;
-
-    JPH::Body* body{ core::BodyInterface().CreateBody(bodySettings) };
-    const JPH::BodyID bodyID{ body->GetID() };
-    core::BodyInterface().AddBody(bodyID, JPH::EActivation::Activate);
-    log::Info("JOLT: Added a new physics body: [%u]", body->GetID().GetIndex());
-    ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(ownerEntity) };
-    collider.BodyID = bodyID;
-
-    return bodyID;
+    //_deferredPhysicsSpawns[_deferredSpawnsCount++] = ownerEntity;
+    _deferredDynamicBodies.emplace_back(DeferredBody{ ownerEntity, shape });
 }
 
 void 
@@ -93,6 +124,12 @@ DestroyPhysicsBodies(const Array<ecs::Entity>& entities)
     }
     core::BodyInterface().RemoveBodies(bodies.data(), entityCount);
     core::BodyInterface().DestroyBodies(bodies.data(), entityCount);
+}
+
+void
+UpdateBodyManagerDeferred()
+{
+    SpawnDeferredBodies();
 }
 
 void 

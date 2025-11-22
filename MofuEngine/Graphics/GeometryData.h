@@ -181,6 +181,9 @@ struct GeometryImportSettings
 	bool FindAllTextureFiles{ false };
 	bool ImportAnimations{ false };
 	bool MergeMeshes{ false };
+
+	bool TexturesFromImportedPath{ false }; // skip reimporting textures if they already are imported somewhere
+	std::string TextureDirectory{ "Textures" };
 };
 
 struct MeshGroupData

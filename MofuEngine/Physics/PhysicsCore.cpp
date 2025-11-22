@@ -18,6 +18,7 @@
 #include "ECS/QueryView.h"
 #include "ECS/Transform.h"
 #include "Utilities/Logger.h"
+#include "BodyManager.h"
 
 namespace mofu::physics::core {
 namespace {
@@ -140,6 +141,12 @@ Update(f32 deltaTime)
 		//DirectX::XMStoreFloat4x4(&wt.TRS, newTransform);
 		//log::Info("PHYSICS: Updated object transform");
 	}
+}
+
+void
+UpdateDeferred()
+{
+	UpdateBodyManagerDeferred();
 }
 
 JPH::BodyInterface& BodyInterface() { return _physicsSystem.GetBodyInterface(); }

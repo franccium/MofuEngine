@@ -172,7 +172,11 @@ void DisableEntityIn(Entity entity);
 void RemoveEntity(Entity entity);
 void UnloadScene();
 
+void ValidateTransform(Entity entity);
+
 void Initialize();
 void Shutdown();
+
+void EndFrame();
 
 }

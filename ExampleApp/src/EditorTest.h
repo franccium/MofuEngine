@@ -219,6 +219,8 @@ bool MofuInitialize()
 
 	editor::project::RefreshAllAssets();
 
+	ecs::scene::EndFrame();
+	physics::core::UpdateDeferred();
 
 	return true;
 }
@@ -299,6 +301,9 @@ void MofuUpdate()
 	}
 
 	graphics::light::ProcessUpdates(0);
+
+	ecs::scene::EndFrame();
+	physics::core::UpdateDeferred();
 
 	timer.End();
 

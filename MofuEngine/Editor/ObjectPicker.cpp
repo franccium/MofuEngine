@@ -15,6 +15,7 @@
 #include "Input/InputSystem.h"
 #include "ECS/Scene.h"
 #include "EngineAPI/ECS/SceneAPI.h"
+#include "SceneEditorView.h"
 
 namespace mofu::editor::object {
 namespace {
@@ -58,6 +59,10 @@ CastProbe(f32 probeLength, f32& outFraction, JPH::RVec3& outPos, JPH::BodyID& ou
 			if (interacted)
 			{
 				_pickedEntity = (ecs::Entity)hitBody.GetUserData();
+				if(ecs::scene::IsEntityAlive(_pickedEntity))
+				{
+					SelectEntity(_pickedEntity);
+				}
 			}
 
 			JPH::Vec3 normal{ hitBody.GetWorldSpaceSurfaceNormal(res.mSubShapeID2, outPos) };

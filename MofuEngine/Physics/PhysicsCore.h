@@ -11,6 +11,7 @@ constexpr f32 DEFAULT_BODY_MASS{ 1.f };
 void Initialize();
 void Shutdown();
 void Update(f32 deltaTime);
+void UpdateDeferred();
 void FinalizePhysicsWorld();
 
 JPH::BodyInterface& BodyInterface();

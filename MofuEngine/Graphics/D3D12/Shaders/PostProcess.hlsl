@@ -169,7 +169,7 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 #else
         
 #if IS_SSSR_ENABLED
-        Texture2D reflections = ResourceDescriptorHeap[ShaderParams.ReflectionsBufferIndex];
+        //Texture2D reflections = ResourceDescriptorHeap[ShaderParams.ReflectionsBufferIndex];
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
         #if 1
         //color = reflections[Position.xy].rgb;

@@ -35,7 +35,7 @@ char sceneNameBuffer[ecs::scene::Scene::MAX_NAME_LENGTH];
 
 
 constexpr EntityTreeNode*
-FindParentAsNode(ecs::Entity parentEntity)
+FindEntityAsNode(ecs::Entity parentEntity)
 {
     for (auto [e, n] : entityToPair)
     {
@@ -373,8 +373,7 @@ struct SceneHierarchy
                 {
                     if (ImGui::Button("Edit Material"))
                     {
-                        ecs::component::RenderMaterial mat{ ecs::scene::GetComponent<ecs::component::RenderMaterial>(entity) };
-                        material::OpenMaterialEditor(entity, mat);
+                        material::OpenMaterialEditor(entity);
                     }
                 }
                 else
@@ -540,14 +539,21 @@ void AddEntityToSceneView(ecs::Entity entity)
     if (ecs::scene::HasComponent<ecs::component::Child>(entity))
     {
         ecs::component::Child p{ ecs::scene::GetComponent<ecs::component::Child>(entity) };
-        parentNode = FindParentAsNode(p.ParentEntity);
+        parentNode = FindEntityAsNode(p.ParentEntity);
     }
 
     CreateEntityTreeNode(entity, parentNode);
+}
 
-
-    //TODO: move this somewhere, for now its the only palce where i know the components are all initialized
-    ecs::transform::AddEntityToHierarchy(entity);
+void 
+SelectEntity(ecs::Entity entity)
+{
+    EntityTreeNode* node{ FindEntityAsNode(entity) };
+    if (node)
+    {
+        selectedNode = node;
+        material::OpenMaterialEditor(entity);
+    }
 }
 
 bool 
@@ -584,6 +590,11 @@ void LoadScene(const std::filesystem::path& path)
     Vec<Vec<ecs::Entity>> hierarchies{};
     assets::LoadScene(hierarchies, path);
     currentScenePath = path;
+    for (auto [e, n] : entityToPair)
+    {
+        delete n;
+        n = nullptr;
+    }
     entityToPair.clear();
     delete _rootNode;
     _rootNode = nullptr;
@@ -606,6 +617,11 @@ void LoadScene(const std::filesystem::path& path)
 void 
 ShutdownSceneEditorView()
 {
+    for (auto [e, n] : entityToPair)
+    {
+        delete n;
+        n = nullptr;
+    }
 	delete _rootNode;
 	_rootNode = nullptr;
 }

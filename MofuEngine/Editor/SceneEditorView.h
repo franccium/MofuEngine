@@ -7,6 +7,8 @@ namespace mofu::editor
 {
 void AddEntityToSceneView(ecs::Entity entity);
 
+void SelectEntity(ecs::Entity entity);
+
 bool InitializeSceneEditorView();
 void ShutdownSceneEditorView();
 void RenderSceneEditorView();

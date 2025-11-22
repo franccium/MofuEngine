@@ -14,7 +14,8 @@ struct EntityFinalTRS
 	component::LocalTransform* LocalTransform;
 };
 
-void AddEntityToHierarchy(Entity entity);
+//void AddEntityToHierarchy(Entity entity);
+void ValidateHierarchyForEntity(Entity entity);
 void MoveEntityInHierarchy(Entity entity);
 void RemoveEntityFromHierarchy(Entity entity);
 void UpdateEntityComponents(Entity entity);

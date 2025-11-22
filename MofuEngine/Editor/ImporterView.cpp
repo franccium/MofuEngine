@@ -13,7 +13,7 @@ void RenderTextureImportSettings();
 namespace {
 
 bool isOpen{ false }; // TODO: something better this is placeholder
-content::FBXImportState fbxState;
+std::unique_ptr<content::FBXImportState> fbxState;
 content::AssetHandle activeAssetHandle{ content::INVALID_HANDLE };
 content::AssetType::type activeAssetImportType{ content::AssetType::Unknown };
 
@@ -46,8 +46,15 @@ RenderMeshImportSettings()
 	if (geometryImportSettings.IsStatic)
 		ImGui::Checkbox("Collider from Geometry", &geometryImportSettings.ColliderFromGeometry);
 	else geometryImportSettings.ColliderFromGeometry = false;
+	ImGui::BeginGroup();
 	ImGui::Checkbox("Import Embedded Textures", &geometryImportSettings.ImportEmbeddedTextures);
 	ImGui::Checkbox("Find All Texture Files", &geometryImportSettings.FindAllTextureFiles);
+	ImGui::Checkbox("Textures From Imported Path", &geometryImportSettings.TexturesFromImportedPath);
+	ImGui::BeginDisabled(!geometryImportSettings.TexturesFromImportedPath);
+	ImGui::TextUnformatted("Texture Directory: "); ImGui::SameLine();
+	ImGui::TextUnformatted(geometryImportSettings.TextureDirectory.c_str());
+	ImGui::EndDisabled();
+	ImGui::EndGroup();
 	ImGui::Checkbox("Calculate Tangents", &geometryImportSettings.CalculateTangents);
 	ImGui::Checkbox("Calculate Normals", &geometryImportSettings.CalculateNormals);
 	ImGui::Checkbox("Import Animations", &geometryImportSettings.ImportAnimations);
@@ -132,10 +139,17 @@ RenderTextureImportSettings()
 }
 
 void
-ViewFBXImportSummary(content::FBXImportState state)
+ViewFBXImportSummary(std::unique_ptr<content::FBXImportState>& state)
 {
 	isOpen = true;
-	fbxState = state;
+	fbxState.swap(state);
+}
+
+void
+CloseFBXImportSummary()
+{
+	isOpen = false;
+	fbxState.reset();
 }
 
 void
@@ -175,18 +189,18 @@ RefreshFiles(const Vec<std::string>& files)
 void
 RenderImportSummary()
 {
-	if (!isOpen) return;
+	if (!isOpen || !fbxState) return;
 
 	ImGui::Begin("FBX Import Summary", &isOpen);
 
-	ImGui::Text("File: %s", fbxState.ModelResourcePath.string().data());
-	if (fbxState.Errors)
+	ImGui::Text("File: %s", fbxState->ModelResourcePath.string().data());
+	if (fbxState->Errors)
 	{
 		ui::PushTextColor(ui::Color::RED);
 		ImGui::TextUnformatted("Errors:");
 		for (u32 i{ 1 }; i < 32; ++i)
 		{
-			if (fbxState.Errors & (1u << i))
+			if (fbxState->Errors & (1u << i))
 			{
 				ImGui::TextUnformatted(ErrorString[i]);
 			}
@@ -194,14 +208,14 @@ RenderImportSummary()
 		ImGui::PopStyleColor();
 	}
 	
-	ImGui::Text("Image Files: [%u]", fbxState.ImageFiles.size());
-	for (std::string_view file : fbxState.ImageFiles)
+	ImGui::Text("Image Files: [%u]", fbxState->ImageFiles.size());
+	for (std::string_view file : fbxState->ImageFiles)
 	{
 		ImGui::TextUnformatted(file.data());
 	}
 
-	ImGui::Text("Materials: [%u]", fbxState.Materials.size());
-	for (editor::material::EditorMaterial& mat : fbxState.Materials)
+	ImGui::Text("Materials: [%u]", fbxState->Materials.size());
+	for (editor::material::EditorMaterial& mat : fbxState->Materials)
 	{
 		//TODO: display vec4s etc
 		ImGui::TextUnformatted(mat.Name.data());
@@ -212,11 +226,16 @@ RenderImportSummary()
 
 	if (ImGui::Button("Add To Scene"))
 	{
-		assets::AddFBXImportedModelToScene(fbxState, false);
+		assets::AddFBXImportedModelToScene(*fbxState, false);
 	}
 	if (ImGui::Button("Extract materials"))
 	{
-		assets::AddFBXImportedModelToScene(fbxState, true);
+		assets::AddFBXImportedModelToScene(*fbxState, true);
+	}
+
+	if (!isOpen)
+	{
+		CloseFBXImportSummary();
 	}
 
 	ImGui::End();

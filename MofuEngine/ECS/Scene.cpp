@@ -22,8 +22,13 @@ MatchCet(const CetMask& querySignature, const CetMask& blockSignature)
 	return (querySignature & blockSignature) == querySignature;
 }
 
-Vec<Scene> scenes;
+constexpr u32 MAX_DEFERRED_SPAWNS_PER_FRAME{ 8192 };
+u32 _deferredSpawnsCount{ 0 };
+Entity _deferredSpawns[MAX_DEFERRED_SPAWNS_PER_FRAME]{};
+Vec<Entity> _newPhysicsEntities{};
+
 u32 currentSceneIndex;
+Vec<Scene> scenes;
 
 HashMap<CetMask, Vec<EntityBlock*>> queryToBlockMap;
 //constexpr u32 TEST_ENTITY_COUNT{ 1 }; //TODO: temporarily cause only one entity with render mesh actually has data
@@ -146,6 +151,8 @@ RemoveEntity(EntityBlock* block, Entity entity)
 		Entity movedEntity{ block->Entities[newRow] };
 		_entityDatas[id::Index(movedEntity)].row = newRow;
 	}
+
+	ValidateTransform(entity);
 }
 
 
@@ -165,7 +172,7 @@ MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlo
 			const u32 oldOffset{ oldBlock->ComponentOffsets[cid] + componentSize * oldRow };
 			const u32 newOffset{ newBlock->ComponentOffsets[cid] + componentSize * newRow };
 			memcpy(newBlock->ComponentData + newOffset, oldBlock->ComponentData + oldOffset, component::GetComponentSize(cid));
-			memset(newBlock->ComponentData + oldOffset, 0, component::GetComponentSize(cid));
+			memset(oldBlock->ComponentData + oldOffset, 0, component::GetComponentSize(cid));
 		}
 	}
 
@@ -175,11 +182,25 @@ MigrateEntity(EntityData& entityData, EntityBlock* oldBlock, EntityBlock* newBlo
 	newBlock->Entities[newRow] = entity;
 	newBlock->EntityCount++;
 
+	ValidateTransform(entity);
+
 	//TODO: to avoid updating all possible references, implement the generations finally
-	if (EntityHasComponent<component::WorldTransform>(entity))
+	/*if (EntityHasComponent<component::WorldTransform>(entity))
 	{
 		transform::UpdateEntityComponents(entity);
+	}*/
+}
+
+void
+SpawnDeferredEntities()
+{
+	//TODO: for now its just for the hierarchy, to make sure parent/children components are initialized
+	for (u32 i{ 0 }; i < _deferredSpawnsCount; ++i)
+	{
+		Entity entity{ _deferredSpawns[i] };
+		ecs::transform::ValidateHierarchyForEntity(entity);
 	}
+	_deferredSpawnsCount = 0;
 }
 
 } // anonymous namespace
@@ -586,6 +607,12 @@ UnloadScene()
 	currentSceneIndex = (u32)scenes.size() - 1;
 }
 
+void 
+ValidateTransform(Entity entity)
+{
+	_deferredSpawns[_deferredSpawnsCount++] = entity;
+}
+
 void
 Initialize()
 {
@@ -603,6 +630,12 @@ Initialize()
 void 
 Shutdown()
 {
+}
+
+void
+EndFrame()
+{
+	SpawnDeferredEntities();
 }
 
 }

@@ -22,35 +22,60 @@ Vec<m4x4> _previousTransforms{};
 //TODO: when i stack all added entities to add them at the end i should just have one sort instead of inserting in the right place immediately
 constexpr bool SORT_DEFERRED{ false };
 
-u32
-GetEntityIndex(Entity entity, u32 level)
+struct EntityLevelIndex
 {
+	u32 Level;
+	u32 Index;
+};
+
+u32
+GetEntityIndexInLevel(Entity entity, u32 level)
+{
+	if (finalTransforms.empty()) return U32_INVALID_ID;
 	const Vec<EntityFinalTRS>& transforms{ finalTransforms[level] };
 	for (u32 i = 0; i < transforms.size(); ++i)
 	{
 		if (transforms[i].Entity == entity) return i;
 	}
-	assert(false);
-	return 0;
+	return U32_INVALID_ID;
+}
+
+EntityLevelIndex
+GetEntityLevelIndex(Entity entity)
+{
+	ecs::Entity currentEntity{ entity };
+	u32 level{ 0 };
+	while (ecs::scene::EntityHasComponent<ecs::component::Child>(currentEntity))
+	{
+		currentEntity = ecs::scene::GetEntityComponent<ecs::component::Child>(currentEntity).ParentEntity;
+		level++;
+	}
+	level = level ? level - 1 : 0;
+	return { level, GetEntityIndexInLevel(entity, level) };
 }
 
 EntityFinalTRS&
 FindEntityFinalTRS(Entity entity)
 {
 	Entity currentEntity{ entity };
-	u32 parentCount{ 0 };
+	u32 level{ 0 };
 	while (ecs::scene::EntityHasComponent<ecs::component::Child>(currentEntity))
 	{
 		currentEntity = ecs::scene::GetEntityComponent<ecs::component::Child>(currentEntity).ParentEntity;
-		parentCount++;
+		level++;
 	}
+	level = level ? level - 1 : 0;
 
-	return finalTransforms[parentCount][GetEntityIndex(entity, parentCount)];
+	return finalTransforms[level][GetEntityIndexInLevel(entity, level)];
 }
 
-} // anonymous namespace
+EntityFinalTRS&
+FindEntityFinalTRS(EntityLevelIndex entityLevelIndex)
+{
+	return finalTransforms[entityLevelIndex.Level][entityLevelIndex.Index];
+}
 
-void 
+EntityLevelIndex
 AddEntityToHierarchy(Entity entity)
 {
 	Entity currentEntity{ entity };
@@ -63,7 +88,7 @@ AddEntityToHierarchy(Entity entity)
 
 	EntityFinalTRS finalTRS{};
 	finalTRS.Entity = entity;
-	finalTRS.ParentIdx = parentCount ? GetEntityIndex(ecs::scene::GetEntityComponent<ecs::component::Child>(entity).ParentEntity, parentCount - 1) : 0;
+	finalTRS.ParentIdx = parentCount ? GetEntityIndexInLevel(ecs::scene::GetEntityComponent<ecs::component::Child>(entity).ParentEntity, parentCount - 1) : 0;
 	assert(ecs::scene::EntityHasComponent<ecs::component::WorldTransform>(entity));
 	assert(ecs::scene::EntityHasComponent<ecs::component::LocalTransform>(entity));
 	finalTRS.WorldTransform = &ecs::scene::GetEntityComponent<ecs::component::WorldTransform>(entity);
@@ -73,6 +98,7 @@ AddEntityToHierarchy(Entity entity)
 	assert(id::Index(entity) < _previousTransforms.size());
 	_previousTransforms[id::Index(entity)] = {};
 
+	u32 entityIndexInLevel{ 0 };
 	if constexpr (SORT_DEFERRED)
 	{
 
@@ -87,11 +113,47 @@ AddEntityToHierarchy(Entity entity)
 			if (finalTRS.ParentIdx < transforms[i].ParentIdx)
 			{
 				finalTransforms[parentCount].insert(i, finalTRS);
-				return;
+				entityIndexInLevel = i;
+				return { parentCount, entityIndexInLevel };
 			}
 		}
 
+		entityIndexInLevel = transforms.size();
 		transforms.emplace_back(finalTRS);
+	}
+	return { parentCount, entityIndexInLevel };
+}
+
+} // anonymous namespace
+
+void 
+ValidateHierarchyForEntity(Entity entity)
+{
+	EntityLevelIndex levelIndex{ GetEntityLevelIndex(entity) };
+
+	//FIXME: right now its assuming each entity must have a transform, and stuff like _previousTransforms[entity] won't work if i don't create space for each entity
+	/*if(!ecs::scene::EntityHasComponent<ecs::component::LocalTransform>(entity) ||
+		!ecs::scene::EntityHasComponent<ecs::component::WorldTransform>(entity))
+	{
+		if(levelIndex.Index != U32_INVALID_ID)
+		{
+			RemoveEntityFromHierarchy(entity);
+		}
+		return;
+	}*/
+
+	if(levelIndex.Index == U32_INVALID_ID)
+	{
+		levelIndex = AddEntityToHierarchy(entity);
+	}
+	else
+	{
+		//TODO: change parents etc
+		EntityFinalTRS& finalTRS{ FindEntityFinalTRS(levelIndex) };
+		finalTRS.Entity = entity;
+		finalTRS.ParentIdx = levelIndex.Level;
+		finalTRS.WorldTransform = &ecs::scene::GetEntityComponent<ecs::component::WorldTransform>(entity);
+		finalTRS.LocalTransform = &ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(entity);
 	}
 }
 
@@ -103,6 +165,7 @@ MoveEntityInHierarchy(Entity entity)
 void
 RemoveEntityFromHierarchy(Entity entity)
 {
+	log::Warn("RemoveEntityFromHierarchy is TODO");
 }
 
 void 

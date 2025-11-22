@@ -573,9 +573,9 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 		if (!_joltMeshShapes.empty() && _joltMeshShapes[entityIdx].GetPtr() != nullptr)
 		{
 			if(_isStaticBody)
-				JPH::BodyID bodyID{ physics::AddStaticBody(_joltMeshShapes[entityIdx], c.entity) };
+				physics::AddStaticBody(_joltMeshShapes[entityIdx], c.entity);
 			else
-				JPH::BodyID bodyID{ physics::AddDynamicBody(_joltMeshShapes[entityIdx], c.entity) };
+				physics::AddDynamicBody(_joltMeshShapes[entityIdx], c.entity);
 			ecs::component::Collider& col{ ecs::scene::GetComponent<ecs::component::Collider>(c.entity) };
 			col.ShapeAsset = _joltShapeAssets[entityIdx];
 		}
@@ -584,6 +584,54 @@ Prefab::Instantiate([[maybe_unused]] const ecs::scene::Scene& scene)
 
 	// TODO: needed for materials, force this somewhere
 	content::assets::PairAssetWithResource(_meshAssets[0], uploadedGeometryInfo.GeometryContentID, content::AssetType::Mesh);
+
+	const u32 lightSet{ graphics::light::GetCurrentLightSetKey() };
+	for(const content::LightInitInfo& lightInfo : _lights)
+	{
+		ecs::component::Light light{};
+		ecs::component::WorldTransform wt{};
+		ecs::component::NameComponent name{};
+		assert(!spawnedEntities.empty());
+		ecs::component::Child child{ {}, spawnedEntities[0].entity };
+		snprintf(name.Name, ecs::component::NAME_LENGTH, "%s", lightInfo.Name.c_str());
+		ecs::Entity entity{};
+
+		switch (lightInfo.Type)
+		{
+			case graphics::light::LightType::Point:
+			{
+				ecs::component::PointLight pointLight{};
+				pointLight.Range = lightInfo.Range;
+				pointLight.Color = lightInfo.Color;
+				pointLight.Intensity = lightInfo.Intensity;
+				entity = ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Light, ecs::component::PointLight, ecs::component::CullableLight, ecs::component::NameComponent, ecs::component::Child>(lightInfo.Transform, wt, light, pointLight, {}, name, child).id;
+				break;
+			}
+			case graphics::light::LightType::Spot:
+			{
+				ecs::component::SpotLight spotLight{};
+				spotLight.Range = lightInfo.Range;
+				spotLight.Color = lightInfo.Color;
+				spotLight.Intensity = lightInfo.Intensity;
+				spotLight.Umbra = lightInfo.InnerConeAngle;
+				spotLight.Penumbra = lightInfo.OuterConeAngle;
+				entity = ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Light, ecs::component::SpotLight, ecs::component::CullableLight, ecs::component::NameComponent, ecs::component::Child>(lightInfo.Transform, wt, light, spotLight, {}, name, child).id;
+				break;
+			}
+			case graphics::light::LightType::Directional:
+			{
+				ecs::component::DirectionalLight dirLight{};
+				dirLight.Color = lightInfo.Color;
+				dirLight.Intensity = lightInfo.Intensity;
+				//dirLight.Direction
+				entity = ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform, ecs::component::Light, ecs::component::DirectionalLight, ecs::component::NameComponent, ecs::component::Child>(lightInfo.Transform, wt, light, dirLight, name, child).id;
+				break;
+			}
+		}
+
+		editor::AddEntityToSceneView(entity);
+		graphics::light::AddLightToLightSet(lightSet, entity, lightInfo.Type);
+	}
 }
 
 void
@@ -605,6 +653,7 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 	_materials.resize(meshCount);
 
 	_joltMeshShapes = std::move(state.JoltMeshShapes);
+	_lights = std::move(state.Lights);
 
 	if (extractMaterials)
 	{

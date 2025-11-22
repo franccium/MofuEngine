@@ -23,7 +23,7 @@ using AmbientLightParameters = graphics::d3d12::hlsl::AmbientLightParameters;
 
 struct LightType
 {
-	enum Type : u32
+	enum Type : u8
 	{
 		Directional,
 		Point,

@@ -70,7 +70,7 @@ inline EntityData& SpawnEntity(const C... components)
 	EntityData& entityData{ scene::CreateEntity<C...>() }; // TODO: create an entity, find it a corresponding block and return the EntityData
 
 	((scene::GetEntityComponent<C>(entityData.id) = components), ...);
-
+	scene::ValidateTransform(entityData.id);
 	//constexpr bool hasRenderMesh{ contains_type<component::RenderMesh, C...> };
 	//constexpr bool hasRenderMaterial{ contains_type<component::RenderMaterial, C...> };
 	//if constexpr (hasRenderMesh && hasRenderMaterial)
@@ -86,7 +86,7 @@ inline EntityData& SpawnEntity(const C... components)
 inline EntityData& SpawnEntity(const CetMask& signature)
 {
 	EntityData& entityData{ scene::CreateEntity(signature) };
-
+	scene::ValidateTransform(entityData.id);
 	return entityData;
 }
 

@@ -33,6 +33,8 @@ private:
 
 	Vec<JPH::Ref<JPH::Shape>> _joltMeshShapes;
 	Vec<content::AssetHandle> _joltShapeAssets;
+
+	Vec<content::LightInitInfo> _lights;
 };
 
 void DropModelIntoScene(std::filesystem::path modelPath, u32* materials = nullptr);

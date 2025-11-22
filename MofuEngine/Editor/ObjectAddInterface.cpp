@@ -39,15 +39,10 @@ constexpr const char* _prefabPaths[Objects::Count] = {
 
 void AddPhysicsCube(v2 mousePos)
 {
-	log::Error("AddPhysicsCube Turned off");
-	return;
 	ecs::Entity e{ editor::AddPrefab(_prefabPaths[Objects::PhysicsCube]) };
 	JPH::BoxShape boxShape{ JPH::Vec3{1.f, 1.f, 1.f} };
-	JPH::Shape* shape{ new JPH::BoxShape{JPH::Vec3{1.f, 1.f, 1.f}} };
-	JPH::BodyID id{ physics::AddDynamicBody(shape, e) };
-
-	JPH::BodyLockWrite lock{ physics::core::PhysicsSystem().GetBodyLockInterface(), id };
-	lock.GetBody().GetMotionProperties()->SetGravityFactor(0.1f);
+	JPH::Ref<JPH::Shape> shape{ new JPH::BoxShape{JPH::Vec3{1.f, 1.f, 1.f}} };
+	physics::AddDynamicBody(shape, e);
 }
 
 void AddPhysicsSphere(v2 mousePos)

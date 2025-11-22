@@ -260,6 +260,11 @@ CreateResourceFromAsset(std::filesystem::path path, AssetType::type assetType)
     assert(std::filesystem::exists(path));
     content::ReadAssetFileNoVersion(path, buffer, size, assetType);
     assert(buffer.get());
+    if (!buffer || !size)
+    {
+        log::Error("CreateResourceFromAsset: Failed to get a valid-size buffer from the asset file");
+        return U32_INVALID_ID;
+    }
 
     id_t resourceID{ content::CreateResourceFromBlob(buffer.get(), assetType) };
     assert(id::IsValid(resourceID));
