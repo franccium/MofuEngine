@@ -600,9 +600,6 @@ CreateTestRenderItems()
 	ecs::component::RenderMesh& meshEd{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entityData.id) };
 	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 	editor::AddEntityToSceneView(entityData.id);
-	assert(0);
-	assert(false);
-	TODO_("Aaa");
 	AddLights();
 
 	const content::AssetHandle RT_CUBES{ 15519544575226091575 };

@@ -7,6 +7,7 @@
 #include "D3D12RayTracing.h"
 #include "NGX/D3D12DLSS.h"
 #include "FFX/SSSR.h"
+#include "Effects/D3D12KawaseBlur.h"
 
 namespace mofu::graphics::d3d12::fx {
 namespace {
@@ -19,8 +20,21 @@ struct FXRootParameterIndices
 	{
 		GlobalShaderData = 0,
 		RootConstants,
+		GISettings,
 		GTTonemapCurve,
 		//DescriptorTable,
+
+		Count
+	};
+};
+
+struct SSILVBRootParameterIndices
+{
+	enum : u32
+	{
+		GlobalShaderData = 0,
+		RootConstants,
+		GISettings,
 
 		Count
 	};
@@ -32,6 +46,7 @@ struct FXRootParameterIndices_Debug
 	{
 		GlobalShaderData = 0,
 		RootConstants,
+		GISettings,
 		GTTonemapCurve,
 		DebugConstants,
 		//DescriptorTable,
@@ -48,11 +63,13 @@ struct PostProcessRootConstants
 		GPassDepthBufferIndex,
 		RTBufferIndex, // for non-raytracing this could be used for anything
 		NormalBufferIndex,
+		PositionBufferIndex,
 		MotionVectorsBufferIndex,
 		MiscBufferIndex,
 		ReflectionsBufferIndex,
 		MaterialPropertiesBufferIndex,
 		ReflectionsStrength,
+		VB_HalfRes,
 
 		DoTonemap,
 		Count
@@ -66,9 +83,16 @@ ID3D12PipelineState* fxPSO_Debug{ nullptr };
 ID3D12RootSignature* fxRootSig{ nullptr };
 ID3D12PipelineState* fxPSO{ nullptr };
 
+ID3D12RootSignature* ssilvbRootSig{ nullptr };
+ID3D12PipelineState* ssilvbPSO{ nullptr };
+
 u32v2 currentDimensions{ 0, 0 };
 D3D12RenderTexture renderTexture{};
+D3D12RenderTexture ssilvbTarget{};
+DXGI_FORMAT SSILVB_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT };
 constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
+
+u32v2 _fxResolution{ 0, 0 };
 
 struct GT7ToneMapCurve
 {
@@ -102,6 +126,8 @@ constexpr f32 REFERENCE_LUMINANCE{ 100.0f };
 constexpr f32 PhysicalToFrameBufferValue(f32 v) { return v / REFERENCE_LUMINANCE; }
 
 
+
+
 void
 CreateDebugRootSignature()
 {
@@ -117,6 +143,7 @@ CreateDebugRootSignature()
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices_Debug::Count]{};
 	parameters[FXRootParameterIndices_Debug::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
 	parameters[FXRootParameterIndices_Debug::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices_Debug::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
 	parameters[FXRootParameterIndices_Debug::DebugConstants].AsConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
@@ -180,6 +207,7 @@ CreateRootSignature()
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices::Count]{};
 	parameters[FXRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
 	parameters[FXRootParameterIndices::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
@@ -200,35 +228,112 @@ CreateRootSignature()
 	fxRootSig_Default = rootSigDesc.Create();
 	assert(fxRootSig_Default);
 	NAME_D3D12_OBJECT(fxRootSig_Default, L"Post-Process FX Root Signature");
+
+
+	{
+		assert(!ssilvbRootSig);
+
+		d3dx::D3D12RootParameter vbParams[SSILVBRootParameterIndices::Count]{};
+		vbParams[SSILVBRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
+		vbParams[SSILVBRootParameterIndices::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+		vbParams[SSILVBRootParameterIndices::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
+
+		d3dx::D3D12RootSignatureDesc rootSigDesc
+		{
+			&vbParams[0], _countof(vbParams), d3dx::D3D12RootSignatureDesc::DEFAULT_FLAGS,
+			&samplers[0], _countof(samplers)
+		};
+
+		rootSigDesc.Flags &= ~D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+
+		ssilvbRootSig = rootSigDesc.Create();
+		assert(ssilvbRootSig);
+		NAME_D3D12_OBJECT(ssilvbRootSig, L"Post-Process SSILVB Root Signature");
+	}
 }
 
 bool
 CreatePSO()
 {
-	assert(!fxPSO_Default && fxRootSig_Default);
-	struct {
-		d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Default };
-		d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(EngineShader::FullscreenTriangleVS) };
-		d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(EngineShader::PostProcessPS) };
-		d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
-		d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
-		//d3dx::D3D12PipelineStateSubobjectBlend{ d3dx::BlendState.MSAA };
-		d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };
-		//d3dx::D3D12PipelineStateSubobjectSampleDesc sd{ { MSAA_SAMPLE_COUNT, MSAA_SAMPLE_QUALITY } };
-		//d3dx::D3D12PipelineStateSubobjectSampleMask sm{ { UINT_MAX } };
-	} stream;
+	{
+		assert(!fxPSO_Default && fxRootSig_Default);
+		struct {
+			d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ fxRootSig_Default };
+			d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(EngineShader::FullscreenTriangleVS) };
+			d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(EngineShader::PostProcessPS) };
+			d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
+			d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
+			//d3dx::D3D12PipelineStateSubobjectBlend{ d3dx::BlendState.MSAA };
+			d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };
+			//d3dx::D3D12PipelineStateSubobjectSampleDesc sd{ { MSAA_SAMPLE_COUNT, MSAA_SAMPLE_QUALITY } };
+			//d3dx::D3D12PipelineStateSubobjectSampleMask sm{ { UINT_MAX } };
+		} stream;
 
-	D3D12_RT_FORMAT_ARRAY rtfArray{};
-	rtfArray.NumRenderTargets = 1;
-	rtfArray.RTFormats[0] = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
-	stream.renderTargetFormats = rtfArray;
+		D3D12_RT_FORMAT_ARRAY rtfArray{};
+		rtfArray.NumRenderTargets = 1;
+		rtfArray.RTFormats[0] = D3D12Surface::DEFAULT_BACK_BUFFER_FORMAT;
+		stream.renderTargetFormats = rtfArray;
 
-	fxPSO_Default = d3dx::CreatePipelineState(&stream, sizeof(stream));
-	NAME_D3D12_OBJECT(fxPSO_Default, L"Post-Process FX PSO");
+		fxPSO_Default = d3dx::CreatePipelineState(&stream, sizeof(stream));
+		NAME_D3D12_OBJECT(fxPSO_Default, L"Post-Process FX PSO");
 
-	fxRootSig = fxRootSig_Default;
-	fxPSO = fxPSO_Default;
+		fxRootSig = fxRootSig_Default;
+		fxPSO = fxPSO_Default;
+	}
+
+	{
+		struct {
+			d3dx::D3D12PipelineStateSubobjectRootSignature rootSignature{ ssilvbRootSig };
+			d3dx::D3D12PipelineStateSubobjectVS vs{ shaders::GetEngineShader(EngineShader::FullscreenTriangleVS) };
+			d3dx::D3D12PipelineStateSubobjectPS ps{ shaders::GetEngineShader(EngineShader::SSILVB_PS) };
+			d3dx::D3D12PipelineStateSubobjectPrimitiveTopology primitiveTopology{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE };
+			d3dx::D3D12PipelineStateSubobjectRenderTargetFormats renderTargetFormats{};
+			//d3dx::D3D12PipelineStateSubobjectBlend{ d3dx::BlendState.MSAA };
+			d3dx::D3D12PipelineStateSubobjectRasterizer rasterizer{ d3dx::RasterizerState.NO_CULLING };
+			//d3dx::D3D12PipelineStateSubobjectSampleDesc sd{ { MSAA_SAMPLE_COUNT, MSAA_SAMPLE_QUALITY } };
+			//d3dx::D3D12PipelineStateSubobjectSampleMask sm{ { UINT_MAX } };
+		} stream;
+
+		D3D12_RT_FORMAT_ARRAY rtfArray{};
+		rtfArray.NumRenderTargets = 1;
+		rtfArray.RTFormats[0] = SSILVB_BUFFER_FORMAT;
+		stream.renderTargetFormats = rtfArray;
+
+		ssilvbPSO = d3dx::CreatePipelineState(&stream, sizeof(stream));
+		NAME_D3D12_OBJECT(ssilvbPSO, L"Post-Process FX PSO");
+	}
+
+	effects::CreatePSOs();
+
 	return fxRootSig_Default && fxPSO_Default;
+}
+
+void
+CreateFXBuffers()
+{
+	ssilvbTarget.Release();
+
+	D3D12_RESOURCE_DESC1 desc;
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	desc.Alignment = 0;
+	desc.Width = _fxResolution.x;
+	desc.Height = _fxResolution.y;
+	desc.DepthOrArraySize = 1;
+	desc.MipLevels = 0;
+	desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	desc.SampleDesc = { MSAA_SAMPLE_COUNT, MSAA_SAMPLE_QUALITY };
+	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	desc.SamplerFeedbackMipRegion = { 0, 0, 0 };
+	{
+		D3D12TextureInitInfo texInfo;
+		texInfo.desc = &desc;
+		texInfo.initialState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		texInfo.clearValue.Format = desc.Format;
+		memcpy(&texInfo.clearValue.Color, &CLEAR_VALUE[0], sizeof(CLEAR_VALUE));
+		ssilvbTarget = D3D12RenderTexture{ texInfo };
+	}
+	NAME_D3D12_OBJECT(ssilvbTarget.Resource(), L"SSILVB Buffer");
 }
 
 #if RENDER_GUI
@@ -270,6 +375,8 @@ InitializeEffects()
 #else
 	_tonemapCurve.Initialize(PhysicalToFrameBufferValue(GRAN_TURISMO_SDR_PAPER_WHITE), 0.25f, 0.538f, 0.444f, 1.280f);
 #endif
+
+	effects::Initialize();
 }
 
 } // anonymous namespace
@@ -278,12 +385,15 @@ void
 SetBufferSize(u32v2 size)
 {
 	u32v2& d{ currentDimensions };
+	_fxResolution = { size.x / 2, size.y / 2 };
 	if (size.x > d.x || size.y > d.y)
 	{
+		CreateFXBuffers();
 		d = { std::max(size.x, d.x), std::max(size.y, d.y) };
 #if RENDER_GUI
 		CreateImGuiPresentableSRV(size);
 		assert(renderTexture.Resource());
+		assert(ssilvbTarget.Resource());
 #endif
 	}
 }
@@ -304,7 +414,9 @@ Initialize()
 void
 Shutdown()
 {
+	effects::Shutdown();
 	renderTexture.Release();
+	ssilvbTarget.Release();
 	core::Release(fxRootSig_Default);
 	core::Release(fxPSO_Default);
 	core::Release(fxRootSig_Debug);
@@ -329,6 +441,12 @@ SetDebug(bool debugOn)
 }
 
 void
+ClearEffectsBuffers(DXGraphicsCommandList* cmdList)
+{
+	cmdList->ClearRenderTargetView(ssilvbTarget.RTV(0), CLEAR_VALUE, 0, nullptr);
+}
+
+void
 AddTransitionsPrePostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 {
 #if RENDER_GUI
@@ -336,6 +454,14 @@ AddTransitionsPrePostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATE_RENDER_TARGET);
 #endif
+	barriers.AddTransitionBarrier(ssilvbTarget.Resource(),
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+		D3D12_RESOURCE_STATE_RENDER_TARGET);
+}
+
+void
+AddTransitionsMidPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
+{
 }
 
 void
@@ -348,8 +474,59 @@ AddTransitionsPostPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 #endif
 }
 
-void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, D3D12_CPU_DESCRIPTOR_HANDLE rtv)
+void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, D3D12_CPU_DESCRIPTOR_HANDLE rtv, const D3D12Surface& surface)
 {
+	u32 ssilvbSrvIndex{ gpass::MotionVecBuffer().SRV().index };
+	if(debug::RenderingSettings.VB_HalfRes)
+	{
+		cmdList->RSSetViewports(1, effects::GetLowResViewport());
+		cmdList->RSSetScissorRects(1, effects::GetLowResScissorRect());
+		ClearEffectsBuffers(cmdList);
+
+		cmdList->SetGraphicsRootSignature(ssilvbRootSig);
+		cmdList->SetPipelineState(ssilvbPSO);
+
+		using idx = FXRootParameterIndices;
+		cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::GPassMainBufferIndex);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, PostProcessRootConstants::GPassDepthBufferIndex);
+#if IS_DLSS_ENABLED
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, dlss::GetOutputBufferSRV().index, PostProcessRootConstants::RTBufferIndex);
+#else
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::RTBufferIndex); // dummy
+#endif
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::PositionBuffer().SRV().index, PostProcessRootConstants::PositionBufferIndex);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MaterialPropertiesBuffer().SRV().index, PostProcessRootConstants::MaterialPropertiesBufferIndex);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, debug::RenderingSettings.ReflectionsStrength, PostProcessRootConstants::PostProcessRootConstants::ReflectionsStrength);
+		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
+
+		graphics::debug::Settings::SSILVB_Settings* giSettings{ core::CBuffer().AllocateSpace<graphics::debug::Settings::SSILVB_Settings>() };
+		memcpy(giSettings, &graphics::debug::RenderingSettings.SSILVB, sizeof(graphics::debug::Settings::SSILVB_Settings));
+		cmdList->SetGraphicsRootConstantBufferView(idx::GISettings, core::CBuffer().GpuAddress(giSettings));
+
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		const D3D12_CPU_DESCRIPTOR_HANDLE target{ ssilvbTarget.RTV(0) };
+		cmdList->OMSetRenderTargets(1, &target, 1, nullptr);
+		cmdList->DrawInstanced(3, 1, 0, 0);
+
+		d3dx::TransitionResource(ssilvbTarget.Resource(), cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		ssilvbSrvIndex = ssilvbTarget.SRV().index;
+		if (graphics::debug::RenderingSettings.ApplyDualKawaseBlur)
+		{
+			effects::ApplyKawaseBlur(ssilvbTarget.Resource(), ssilvbTarget.SRV().index, cmdList);
+			ssilvbSrvIndex = effects::GetBlurUpResultSrvIndex();
+		}
+
+		//FIXME: this not here
+		cmdList->RSSetViewports(1, surface.Viewport());
+		cmdList->RSSetScissorRects(1, surface.ScissorRect());
+	}
+
 	GT7ToneMapCurve* curveData{ core::CBuffer().AllocateSpace<GT7ToneMapCurve>() };
 	memcpy(curveData, &_tonemapCurve, sizeof(GT7ToneMapCurve));
 
@@ -363,6 +540,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, PostProcessRootConstants::GPassDepthBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, rt::MainBufferSRV().index, PostProcessRootConstants::RTBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::PositionBuffer().SRV().index, PostProcessRootConstants::PositionBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
@@ -379,14 +557,21 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::RTBufferIndex); // dummy
 #endif
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::PositionBuffer().SRV().index, PostProcessRootConstants::PositionBufferIndex);
+	//cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ssilvbSrvIndex, PostProcessRootConstants::MotionVectorsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MaterialPropertiesBuffer().SRV().index, PostProcessRootConstants::MaterialPropertiesBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, debug::RenderingSettings.ReflectionsStrength, PostProcessRootConstants::PostProcessRootConstants::ReflectionsStrength);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.VB_HalfRes, PostProcessRootConstants::VB_HalfRes);
 	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
 #endif
+	graphics::debug::Settings::SSILVB_Settings* giSettings{core::CBuffer().AllocateSpace<graphics::debug::Settings::SSILVB_Settings>()};
+	memcpy(giSettings, &graphics::debug::RenderingSettings.SSILVB, sizeof(graphics::debug::Settings::SSILVB_Settings));
+	cmdList->SetGraphicsRootConstantBufferView(idx::GISettings, core::CBuffer().GpuAddress(giSettings));
+
 	if (fxRootSig == fxRootSig_Debug)
 	{
 		cmdList->SetGraphicsRoot32BitConstant(FXRootParameterIndices_Debug::DebugConstants, debug::GetDebugMode(), 0);

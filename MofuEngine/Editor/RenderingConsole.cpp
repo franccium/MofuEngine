@@ -138,6 +138,10 @@ DrawRenderingConsole()
 	{
 		ImGui::Checkbox("Enable Reflections", &settings.ReflectionsEnabled);
 		ui::DisplayEditableFloatNT(&settings.ReflectionsStrength, "Reflections Strength", 0.f, 8.f);
+		ImGui::Checkbox("VB at half res", &settings.VB_HalfRes);
+		ImGui::Checkbox("Apply Dual Kawase Blur", &settings.ApplyDualKawaseBlur);
+		ImGui::Checkbox("Use Prefiltered Specular", &settings.UsePrefilteredSpecular);
+
 		if (ImGui::CollapsingHeader("FFX SSSR", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ui::DisplayEditableFloatNT(&settings.FFX_SSSR.DepthBufferThickness, "Depth Buffer Thickness", 0.f, 0.2f);
@@ -150,6 +154,14 @@ DrawRenderingConsole()
 			ui::DisplayEditableUintNT(&settings.FFX_SSSR.MostDetailedMip, "Most Detailed Mip", 0, 13);
 			ui::DisplayEditableUintNT(&settings.FFX_SSSR.SamplesPerQuad, "Samples Per Quad", 1, 8);
 			ImGui::Checkbox("Tmp Variance Guided Tracing", &settings.FFX_SSSR.TemporalVarianceGuidedTracingEnabled);
+		}
+
+		if (ImGui::CollapsingHeader("SSILVB", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ui::DisplayEditableFloatNT(&settings.SSILVB.SampleCount, "SampleCount", 1.f, 8.f);
+			ui::DisplayEditableFloatNT(&settings.SSILVB.SampleRadius, "Sample Radius", 1.f, 6.f);
+			ui::DisplayEditableFloatNT(&settings.SSILVB.SliceCount, "Slice Count", 1.f, 8.f);
+			ui::DisplayEditableFloatNT(&settings.SSILVB.HitThickness, "Hit Thickness", 0.f, 1.f);
 		}
 	}
 

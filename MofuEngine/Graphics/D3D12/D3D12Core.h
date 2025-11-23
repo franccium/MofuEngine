@@ -95,4 +95,6 @@ void OnShadersRecompiled(EngineShader::ID shaderID);
 info::DisplayInfo GetDisplayInfo();
 void StartCompute();
 void ExecuteCompute();
+
+u32v2 RenderResolution();
 }

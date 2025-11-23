@@ -13,6 +13,9 @@ struct EngineShader
         CalculateGridFrustumsCS,
         LightCullingCS,
         RayTracingLib,
+        SSILVB_PS,
+        KawaseBlurDownPS,
+        KawaseBlurUpPS,
         Count
     };
 };
@@ -42,6 +45,9 @@ constexpr EngineShaderInfo ENGINE_SHADER_FILES[] {
     {EngineShader::CalculateGridFrustumsCS, {"CalculateGridFrustums.hlsl", "CalculateGridFrustumsCS", ShaderType::Compute}},
     {EngineShader::LightCullingCS, {"LightCulling.hlsl", "LightCullingCS", ShaderType::Compute}},
     {EngineShader::RayTracingLib, {"RayTracing.hlsl", nullptr, ShaderType::Library}},
+    {EngineShader::SSILVB_PS, {"SSILVB.hlsl", "ApplySSILVB", ShaderType::Pixel}},
+    {EngineShader::KawaseBlurDownPS, {"KawaseBlur.hlsl", "KawaseBlurDown", ShaderType::Pixel}},
+    {EngineShader::KawaseBlurUpPS, {"KawaseBlur.hlsl", "KawaseBlurUp", ShaderType::Pixel}},
 };
 static_assert(_countof(ENGINE_SHADER_FILES) == EngineShader::Count);
 

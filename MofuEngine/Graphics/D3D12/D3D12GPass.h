@@ -15,7 +15,9 @@ constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT{ DXGI_FORMAT_D32_FLOAT_S8X24_UINT };
 #else
 constexpr DXGI_FORMAT DEPTH_BUFFER_FORMAT{ DXGI_FORMAT_D32_FLOAT };
 #endif
-constexpr DXGI_FORMAT NORMAL_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT }; // .a - roughness
+// TODO: pack buffers and use more packed formats
+constexpr DXGI_FORMAT NORMAL_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT }; // .a - 
+constexpr DXGI_FORMAT POSITION_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT }; // .a - 
 constexpr DXGI_FORMAT MATERIAL_PROPERTIES_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_FLOAT }; // r - roughness, g - metallic, b -, a - ao
 constexpr DXGI_FORMAT MOTION_VEC_BUFFER_FORMAT{ DXGI_FORMAT_R16G16_FLOAT };
 constexpr DXGI_FORMAT MISC_BUFFER_FORMAT{ DXGI_FORMAT_R16G16B16A16_UINT };
@@ -73,6 +75,7 @@ void Shutdown();
 [[nodiscard]] const D3D12RenderTexture& MainBuffer();
 [[nodiscard]] const D3D12DepthBuffer& DepthBuffer();
 [[nodiscard]] const D3D12RenderTexture& NormalBuffer();
+[[nodiscard]] const D3D12RenderTexture& PositionBuffer();
 [[nodiscard]] const D3D12RenderTexture& MaterialPropertiesBuffer();
 [[nodiscard]] const D3D12RenderTexture& MotionVecBuffer();
 [[nodiscard]] const D3D12RenderTexture& MiscBuffer();

@@ -79,6 +79,44 @@ DeserializeRegistry()
 	return true;
 }
 
+//TODO: actual deletion
+bool
+DeserializeRegistryDeleteAssets()
+{
+	const std::filesystem::path& registryPath{ mofu::editor::project::GetAssetRegistryPath() };
+	assert(std::filesystem::exists(registryPath) && registryPath.extension() == ".ar");
+
+	YAML::Node data{ YAML::LoadFile(registryPath.string()) };
+	assert(data.IsDefined());
+
+	YAML::Node newData;
+
+	for (const auto& item : data)
+	{
+		u64 handleId = item.first.as<u64>();
+		const YAML::Node& assetNode = item.second;
+
+		std::string origPath = assetNode["OriginalFilePath"].as<std::string>();
+
+		if (origPath.find("Bistro") == std::string::npos) 
+		{
+			newData[handleId] = assetNode;
+
+			AssetType::type type = static_cast<AssetType::type>(assetNode["Type"].as<u32>());
+			std::string impPath = assetNode["ImportedFilePath"].as<std::string>();
+
+			Asset* asset = new Asset{ type, origPath, impPath };
+			RegisterAsset(asset, handleId);
+		}
+	}
+
+	std::ofstream fout(registryPath);
+	fout << newData;
+	fout.close();
+
+	return true;
+}
+
 void
 RegisterAllAssetsInProject()
 {
@@ -382,6 +420,7 @@ InitializeAssetRegistry()
 	editor::InitializeAssetBrowserGUI();
 
 	DeserializeRegistry();
+	//DeserializeRegistryDeleteAssets();
 
 	RegisterAllAssetsInProject();
 	RegisterShaders();
@@ -471,6 +510,7 @@ ParseMetadata(AssetPtr asset)
 	{
 	case content::AssetType::Texture:
 	{
+#if ASSET_ICONS_ENABLED
 		std::filesystem::path metadataPath{ asset->GetMetadataPath() };
 		if (std::filesystem::exists(metadataPath) && !id::IsValid(asset->AdditionalData)) //FIXME: 0 is a valid id
 		{
@@ -483,6 +523,9 @@ ParseMetadata(AssetPtr asset)
 				asset->AdditionalData = iconId;
 			}
 		}
+#else
+		asset->AdditionalData = U32_INVALID_ID;
+#endif
 		break;
 	}
 	default:

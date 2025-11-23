@@ -11,15 +11,17 @@ struct VertexOut
     float3 WorldNormal : NORMAL;
     float4 WorldTangent : TANGENT; // z - handedness
     float2 UV : TEXTURE;
+    float4 ViewPosition : TEXCOORD1;
 };
 
 struct PixelOut
 {
     float4 Color : SV_Target0;
     float4 Normal : SV_Target1;
-    float4 MaterialProperties : SV_Target2; // r - roughness, g - metallic, b -, a - ao
-    float2 MotionVectors : SV_Target3;
-    uint4 MiscBuffer : SV_Target4;
+    float4 Position_VS : SV_Target2;
+    float4 MaterialProperties : SV_Target3; // r - roughness, g - metallic, b -, a - ao
+    float2 MotionVectors : SV_Target4;
+    uint4 MiscBuffer : SV_Target5;
 };
 
 struct Surface
@@ -212,6 +214,7 @@ VertexOut TestShaderVS(in uint VertexIdx : SV_VertexID)
     
     float4 position = float4(VertexPositions[VertexIdx], 1.f);
     float4 worldPosition = mul(PerObjectBuffer.World, position);
+    vsOut.ViewPosition = mul(GlobalData.View, worldPosition);
     
 #if ELEMENTS_TYPE == ElementsTypeStaticNormal
     VertexElement element = Elements[VertexIdx];
@@ -565,7 +568,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     }
     
 #if !IS_SSSR_ENABLED
-    color += EvaluateIBL(S);
+    //color += EvaluateIBL(S);
 #else
     color += EvaluateDiffuseIBL(S);
 #endif
@@ -589,6 +592,8 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
     psOut.Normal.rgb = S.Normal;
     psOut.Normal.a = S.BaseColor.r;
+    
+    psOut.Position_VS.rgba = psIn.ViewPosition;
     
     psOut.MaterialProperties.r = S.PerceptualRoughness * S.PerceptualRoughness;
     psOut.MaterialProperties.g = S.Metallic;

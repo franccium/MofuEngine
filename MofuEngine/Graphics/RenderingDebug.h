@@ -18,6 +18,9 @@ struct Settings
 	bool ReflectionsEnabled{ true };
 	bool Reflections_FFXSSSR{ true };
 	f32 ReflectionsStrength{ 1.f };
+	bool ApplyDualKawaseBlur{ true };
+	bool VB_HalfRes{ false };
+	bool UsePrefilteredSpecular{ true };
 	bool ApplyTonemap{ false };
 	bool EnablePhysicsDebugRendering{ true };
 	bool DrawPhysicsWorldBounds{ false };
@@ -37,6 +40,14 @@ struct Settings
 		bool TemporalVarianceGuidedTracingEnabled{ true };
 		bool WasAmbientLightChanged{ true };
 	} FFX_SSSR;
+
+	struct SSILVB_Settings
+	{
+		f32 SampleCount{ 4.0f };
+		f32 SampleRadius{ 4.0f };
+		f32 SliceCount{ 4.0f };
+		f32 HitThickness{ 0.5f };
+	} SSILVB;
 };
 extern Settings RenderingSettings;
 

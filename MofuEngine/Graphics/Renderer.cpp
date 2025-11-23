@@ -19,6 +19,9 @@ constexpr const char* ENGINE_SHADERS_PATHS[][EngineShader::Count]{
         ".\\shaders\\d3d12\\GridFrustums.bin",
         ".\\shaders\\d3d12\\LightCulling.bin",
         ".\\shaders\\d3d12\\RayTracing.bin",
+        ".\\shaders\\d3d12\\SSILVB.bin",
+        ".\\shaders\\d3d12\\KawaseBlurDown.bin",
+        ".\\shaders\\d3d12\\KawaseBlurUp.bin",
     }
 };
 constexpr const char* ENGINE_DEBUG_SHADERS_PATHS[][EngineDebugShader::Count]{

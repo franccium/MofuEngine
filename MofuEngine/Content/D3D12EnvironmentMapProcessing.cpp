@@ -502,6 +502,7 @@ EquirectangularToCubemapD3D12(const Image* envMaps, u32 envMapCount, u32 cubemap
 HRESULT 
 PrefilterDiffuseD3D12(const ScratchImage& cubemaps, u32 sampleCount, ScratchImage& prefilteredDiffuse)
 {
+	TODO_("fix sync");
 	const TexMetadata& metadata{ cubemaps.GetMetadata() };
 	const u32 arraySize{ (u32)metadata.arraySize };
 	const u32 cubemapCount{ arraySize / 6 };

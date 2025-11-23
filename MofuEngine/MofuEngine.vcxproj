@@ -195,6 +195,7 @@
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
+    <ClCompile Include="Graphics\D3D12\Effects\D3D12KawaseBlur.cpp" />
     <ClCompile Include="Graphics\D3D12\FFX\SSSR.cpp" />
     <ClCompile Include="Graphics\D3D12\NGX\D3D12DLSS.cpp" />
     <ClCompile Include="Graphics\D3D12\DXRHelpers.cpp" />
@@ -319,6 +320,7 @@
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
+    <ClInclude Include="Graphics\D3D12\Effects\D3D12KawaseBlur.h" />
     <ClInclude Include="Graphics\D3D12\FFX\SSSR.h" />
     <ClInclude Include="Graphics\D3D12\NGX\D3D12DLSS.h" />
     <ClInclude Include="Graphics\D3D12\DXRHelpers.h" />

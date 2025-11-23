@@ -1,6 +1,7 @@
 #include "Light.h"
 #include "EngineAPI/ECS/SceneAPI.h"
 #include "ECS/Component.h"
+#include "Graphics/RenderingDebug.h"
 
 namespace mofu::graphics::light {
 namespace {
@@ -294,8 +295,7 @@ AddAmbientLight(u32 lightSetIdx, AmbientLightInitInfo ambientInfo)
 	LightSet& set{ lightSets[lightSetIdx] };
 	set.AmbientLight = { ambientInfo.Intensity, textureIndices[0], textureIndices[1], textureIndices[2] };
 	set.SkyboxSrvIndex = textureIndices[3];
-	set.EnvironmentMapTextureID = ambientInfo.SkyboxTextureID;
-	//set.EnvironmentMapTextureID = ambientInfo.SpecularTextureID;
+	set.EnvironmentMapTextureID = graphics::debug::RenderingSettings.UsePrefilteredSpecular ? ambientInfo.SpecularTextureID : ambientInfo.SkyboxTextureID;
 	set.BrdfLutTextureID = ambientInfo.BRDFLutTextureID;
 }
 

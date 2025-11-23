@@ -35,7 +35,7 @@
 #else
 #define ENABLE_DEBUG_LAYER 0
 #endif
-#define ENABLE_GPU_BASED_VALIDATION 0
+#define ENABLE_GPU_BASED_VALIDATION 1
 
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
@@ -55,6 +55,8 @@ bool _rtUpdateRequested{ false };
 bool _physicsCleared{ false };
 
 info::DisplayInfo _displayInfo{};
+u32v2 _renderResolution{ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
+u32v2 _targetResolution{ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
 
 class D3D12Command
 {
@@ -1085,6 +1087,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         assert(false && "Failed to initialize DLSS");
         DEBUG_LOG("Can't initialize DLSS");
     }
+    _renderResolution = dlss::GetOptimalResolution();
 #endif
 
     const D3D12Surface& surface{ surfaces[id] };
@@ -1099,13 +1102,13 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
 #if IS_DLSS_ENABLED
     {
-        gpass::SetBufferSize(dlss::GetOptimalResolution());
-        dlss::SetTargetResolution({ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT });
+        //gpass::SetBufferSize(dlss::GetOptimalResolution());
+        dlss::SetTargetResolution(_targetResolution);
     }
 #else
-    gpass::SetBufferSize({ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT });
+    gpass::SetBufferSize(_renderResolution);
 #endif
-    fx::SetBufferSize({ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT });
+    fx::SetBufferSize(_renderResolution);
 
     ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
 
@@ -1288,7 +1291,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             barriers.AddTransitionBarrier(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
             barriers.ApplyBarriers(cmdListFXSetup);
 
-            fx::DoPostProcessing(cmdListFXSetup, d3d12FrameInfo, surface.RTV());
+            fx::DoPostProcessing(cmdListFXSetup, d3d12FrameInfo, surface.RTV(), surface);
             fx::AddTransitionsPostPostProcess(barriers);
             gpass::AddTransitionsAfterPostProcess(barriers);
             barriers.ApplyBarriers(cmdListFXSetup);
@@ -1392,6 +1395,9 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
     switch (shaderID)
     {
         case EngineShader::PostProcessPS:
+        case EngineShader::SSILVB_PS:
+        case EngineShader::KawaseBlurDownPS:
+        case EngineShader::KawaseBlurUpPS:
             fx::ResetShaders(false);
             break;
         case EngineShader::LightCullingCS:
@@ -1417,6 +1423,16 @@ void StartCompute()
 void ExecuteCompute()
 {
     computeCommand.EndFrameNoPresent();
+}
+
+u32v2 RenderResolution()
+{
+    return _renderResolution;
+}
+
+u32v2 TargetResolution()
+{
+    return _targetResolution;
 }
 
 }
