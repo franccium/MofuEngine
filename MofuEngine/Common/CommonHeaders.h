@@ -45,6 +45,25 @@
 #define DISABLE_COPY_AND_MOVE(T) DISABLE_COPY(T) DISABLE_MOVE(T)
 #endif
 
+#define RELEASE_ASSERTS 1
+#ifdef NDEBUG
+#if RELEASE_ASSERTS
+inline void HandleAssert(const char* exprStr, const char* file, int line)
+{
+
+}
+
+#undef assert
+#define assert(expr) do {                                               \
+        if (!(expr))                                                    \
+        {                                                               \
+            __debugbreak();                                             \
+            HandleAssert(#expr, __FILE__, __LINE__);                    \
+        }                                                               \
+    } while(0)
+#endif
+#endif
+
 #define EDITOR_BUILD 1
 #define RENDER_GUI 1
 #define SHADER_HOT_RELOAD_ENABLED 1

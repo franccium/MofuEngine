@@ -44,6 +44,7 @@ constexpr const wchar_t* STANDARD_MATERIAL_FLAGS_DEFINES[]{
 
 
 constexpr const char* WHITE_TEXTURE{ "Projects/TestProject/Resources/Editor/white_placeholder_texture.tex" };
+//constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Resources/Editor/gray_placeholder_texture.tex" };
 constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Resources/Editor/gray_placeholder_texture.tex" };
 constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Resources/Editor/black_placeholder_texture.tex" };
 constexpr const char* ERROR_TEXTURE{ "Projects/TestProject/Resources/Editor/error_texture.tex" };
@@ -718,5 +719,5 @@ RefreshMaterials()
 	}
 }
 
-
+bool IsInvalidNormalMap(id_t texId) { return texId == DEFAULT_TEXTURES[TextureUsage::Normal]; }
 }

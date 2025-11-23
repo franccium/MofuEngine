@@ -52,6 +52,7 @@ struct PostProcessRootConstants
 		MiscBufferIndex,
 		ReflectionsBufferIndex,
 		MaterialPropertiesBufferIndex,
+		ReflectionsStrength,
 
 		DoTonemap,
 		Count
@@ -366,6 +367,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MaterialPropertiesBuffer().SRV().index, PostProcessRootConstants::MaterialPropertiesBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, debug::RenderingSettings.ReflectionsStrength, PostProcessRootConstants::ReflectionsStrength);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
 	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
 #else
@@ -381,6 +383,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MaterialPropertiesBuffer().SRV().index, PostProcessRootConstants::MaterialPropertiesBufferIndex);
+	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, debug::RenderingSettings.ReflectionsStrength, PostProcessRootConstants::PostProcessRootConstants::ReflectionsStrength);
 	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
 	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
 #endif

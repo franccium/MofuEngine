@@ -149,6 +149,7 @@ struct MaterialFlags
 		PremultipliedAlpha = (1u << 4),
 		DepthBufferDisabled = (1u << 5),
 		AlphaTest = (1u << 6),
+		NoNormalMap = (1u << 29),
 	};
 };
 
@@ -204,7 +205,7 @@ struct MaterialInitInfo
 	MaterialType::type Type{ MaterialType::Opaque };
 	u32 TextureCount{ 0 }; // NOTE: textures are optional, texture_count may be 0, and texture_ids null
 	id_t ShaderIDs[shaders::ShaderType::Count]{ id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID, id::INVALID_ID };
-	MaterialFlags::Flags MaterialFlags{ MaterialFlags::None };
+	u32 MaterialFlags{ MaterialFlags::None };
 };
 
 struct AmbientLightInitInfo

@@ -137,6 +137,7 @@ DrawRenderingConsole()
 	if (ImGui::CollapsingHeader("Reflections", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::Checkbox("Enable Reflections", &settings.ReflectionsEnabled);
+		ui::DisplayEditableFloatNT(&settings.ReflectionsStrength, "Reflections Strength", 0.f, 8.f);
 		if (ImGui::CollapsingHeader("FFX SSSR", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ui::DisplayEditableFloatNT(&settings.FFX_SSSR.DepthBufferThickness, "Depth Buffer Thickness", 0.f, 0.2f);

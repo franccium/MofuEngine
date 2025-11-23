@@ -121,8 +121,15 @@ ImportTexture(std::filesystem::path path, AssetPtr asset, const std::filesystem:
 
 	if (!isReimporting)
 	{
-		texturePath = !isCubemap ? editor::project::GetTextureDirectory() : editor::project::GetResourceDirectory() / "Cubemaps";
-		texturePath.append(originalFilename + "_sky" + ".tex");
+		if (!isCubemap)
+		{
+			texturePath = editor::project::GetTextureDirectory();
+		}
+		else
+		{
+			texturePath = editor::project::GetResourceDirectory() / "Cubemaps";
+			texturePath.append(originalFilename + "_sky" + ".tex");
+		}
 	}
 	else if (isCubemap)
 	{

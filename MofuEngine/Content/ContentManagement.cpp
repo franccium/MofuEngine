@@ -65,11 +65,13 @@ CreateDefaultShaders()
         {L"TEXTURED_MTL=1"},
         {L"TEXTURED_MTL=1", L"ALPHA_TEST=1"},
         {L"TEXTURED_MTL=1", L"ALPHA_BLEND=1"},
+        {L"TEXTURED_MTL=1", L"NO_NORMAL_MAP=1"},
     };
     Vec<u32> psKeys{};
     psKeys.emplace_back((u32)graphics::MaterialType::Opaque);
     psKeys.emplace_back((u32)graphics::MaterialType::AlphaTested);
     psKeys.emplace_back((u32)graphics::MaterialType::AlphaBlended);
+    psKeys.emplace_back(graphics::MaterialFlags::Flags::NoNormalMap);
     for (u32 i{ 0 }; i < psKeys.size(); ++i)
     {
         extraArgs.clear();

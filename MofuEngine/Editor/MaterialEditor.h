@@ -22,4 +22,6 @@ graphics::MaterialInitInfo GetDefaultMaterialInitInfo();
 EditorMaterial GetDefaultEditorMaterial();
 EditorMaterial GetDefaultEditorMaterialUntextured();
 void RefreshMaterials();
+
+bool IsInvalidNormalMap(id_t texId);
 }

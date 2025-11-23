@@ -51,6 +51,7 @@ SaveShape(const JPH::Shape* shape, const std::filesystem::path& path)
 {
 	//TODO: check IsAssetAlreadyRegistered
 	std::ofstream file{ path, std::ios::binary };
+	assert(file);
 	auto stream{ JPH::StreamOutWrapper{file} };
 	JPH::Shape::ShapeToIDMap shapeMap{};
 	JPH::Shape::MaterialToIDMap materialMap{};

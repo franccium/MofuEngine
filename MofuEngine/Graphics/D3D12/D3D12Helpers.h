@@ -357,9 +357,9 @@ constexpr struct
     const D3D12_STATIC_SAMPLER_DESC STATIC_POINT
     {
         D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT,     // Filter;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressU;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressV;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressW;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressU;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressV;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressW;
         MIP_LOD_BIAS,                               // MipLODBias;
         1,                                          // MaxAnisotropy;
         D3D12_COMPARISON_FUNC_NONE,                 // ComparisonFunc;
@@ -374,9 +374,9 @@ constexpr struct
     const D3D12_STATIC_SAMPLER_DESC STATIC_LINEAR
     {
         D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR,    // Filter;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressU;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressV;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressW;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressU;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressV;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressW;
         MIP_LOD_BIAS,                               // MipLODBias;
         1,                                          // MaxAnisotropy;
         D3D12_COMPARISON_FUNC_NONE,                 // ComparisonFunc;
@@ -391,9 +391,9 @@ constexpr struct
     const D3D12_STATIC_SAMPLER_DESC STATIC_ANISOTROPIC
     {
         D3D12_FILTER_ANISOTROPIC,                   // Filter;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressU;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressV;
-        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,           // AddressW;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressU;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressV;
+        D3D12_TEXTURE_ADDRESS_MODE_WRAP,            // AddressW;
         MIP_LOD_BIAS,                               // MipLODBias;
         16,                                         // MaxAnisotropy;
         D3D12_COMPARISON_FUNC_NONE,                 // ComparisonFunc;

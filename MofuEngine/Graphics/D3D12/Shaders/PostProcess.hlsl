@@ -27,6 +27,7 @@ struct PostProcessConstants
     uint MiscBufferIndex;
     uint ReflectionsBufferIndex;
     uint MaterialPropertiesBufferIndex;
+    float ReflectionsStrength;
     
     uint DoTonemap;
 };
@@ -84,13 +85,12 @@ float3 ApplyReflections(float3 baseColor, float2 uv, float depth)
     const float perceptualRoughness = sqrt(mat.r);
     const float metallic = mat.g;
     const float ao = mat.a;
-    const float3 F0 = lerp(0.04f, baseColor, metallic);
+    const float3 F0 = lerp(0.04f, float3(nr.a, mat.b, mat.a), metallic);
     
     const float NoV = saturate(dot(n, viewDir));
     float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, saturate(float2(NoV, 1.f - perceptualRoughness)), 0).rg;
     
     float3 color = radiance * (F0 * brdfLut.x + brdfLut.y);
-    color = clamp(color, 0.f, 1.0f);
     return color + baseColor;
 }
 
@@ -171,12 +171,14 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 #if IS_SSSR_ENABLED
         //Texture2D reflections = ResourceDescriptorHeap[ShaderParams.ReflectionsBufferIndex];
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
+        Texture2D normals = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
         #if 1
         //color = reflections[Position.xy].rgb;
         float3 mainColor = gpassMain[Position.xy].rgb;
         color = ApplyReflections(mainColor, UV, depth);
         #else
-        float3 mainColor = gpassMain[Position.xy].rgb;
+        //float3 mainColor = gpassMain[Position.xy].rgb;
+        float3 mainColor = normals[Position.xy].rgb;
         color = mainColor;
         #endif
 #else

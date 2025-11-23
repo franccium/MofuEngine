@@ -26,18 +26,18 @@ SerializeEntityHierarchy(YAML::Emitter& out, const Vec<ecs::Entity>& entities)
 {
 	ecs::Entity parent{ entities.front() };
 
-	//FIXME: test
-	if (ecs::scene::HasComponent<ecs::component::Collider>(parent))
-	{
-		TODO_("");
-		ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(parent) };
-		auto current{ content::assets::GetAsset(collider.ShapeAsset) };
-		const JPH::BodyID bodyId{ collider.BodyID };
-		JPH::BodyLockRead lock{ mofu::physics::core::PhysicsSystem().GetBodyLockInterface(), bodyId };
-		const JPH::Shape* shape{ lock.GetBody().GetShape() };
-		content::AssetHandle a{ physics::shapes::SaveShape(shape, current->ImportedFilePath) };
-		collider.ShapeAsset = a;
-	}
+	////FIXME: test
+	//if (ecs::scene::HasComponent<ecs::component::Collider>(parent))
+	//{
+	//	TODO_("");
+	//	ecs::component::Collider& collider{ ecs::scene::GetEntityComponent<ecs::component::Collider>(parent) };
+	//	auto current{ content::assets::GetAsset(collider.ShapeAsset) };
+	//	const JPH::BodyID bodyId{ collider.BodyID };
+	//	JPH::BodyLockRead lock{ mofu::physics::core::PhysicsSystem().GetBodyLockInterface(), bodyId };
+	//	const JPH::Shape* shape{ lock.GetBody().GetShape() };
+	//	content::AssetHandle a{ physics::shapes::SaveShape(shape, current->ImportedFilePath) };
+	//	collider.ShapeAsset = a;
+	//}
 
 	assert(ecs::scene::HasComponent<ecs::component::Parent>(parent));
 	//TODO: can use sth better for sure
@@ -721,6 +721,7 @@ Prefab::InitializeFromFBXState(const content::FBXImportState& state, bool extrac
 	if (!_joltMeshShapes.empty())
 	{
 		std::filesystem::path shapesBasePath{ state.ModelResourcePath / "Shapes" };
+		if (!std::filesystem::exists(shapesBasePath)) std::filesystem::create_directory(shapesBasePath);
 		_joltShapeAssets.resize(_joltMeshShapes.size());
 		for (u32 i{ 0 }; i < _joltMeshShapes.size(); ++i)
 		{

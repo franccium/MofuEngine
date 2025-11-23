@@ -140,6 +140,8 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 		const ShaderFlags::Flags shaderFlags{ material.ShaderFlags() };
 		D3D12_SHADER_BYTECODE shaders[shaders::ShaderType::Count]{};
 		u32 shaderIndex{ 0 };
+		MaterialType::type tempMatType{ materialType };
+		if (materialFlags & MaterialFlags::NoNormalMap) tempMatType = (MaterialType::type)MaterialFlags::NoNormalMap;
 		for (u32 i{ 0 }; i < shaders::ShaderType::Count; ++i)
 		{
 			if (shaderFlags & (1u << i))
@@ -147,7 +149,7 @@ CreatePSO(id_t materialID, D3D12_PRIMITIVE_TOPOLOGY primitiveTopology, u32 eleme
 				u32 key{ U32_INVALID_ID };
 				const ShaderFlags::Flags shaderType{ GetShaderType(shaderFlags & (1u << i)) + 1u };
 				if (shaderType == ShaderFlags::Vertex) key = elementType;
-				else if (shaderType == ShaderFlags::Pixel) key = materialType;
+				else if (shaderType == ShaderFlags::Pixel) key = tempMatType;
 
 				shaders::CompiledShaderPtr shader{ mofu::content::GetShader(material.ShaderIDs()[shaderIndex], key) };
 				assert(shader);

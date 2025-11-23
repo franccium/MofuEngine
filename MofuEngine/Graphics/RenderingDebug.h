@@ -17,6 +17,7 @@ struct Settings
 	//TODO: should have a bindless constant buffer with all settings relevant to shaders
 	bool ReflectionsEnabled{ true };
 	bool Reflections_FFXSSSR{ true };
+	f32 ReflectionsStrength{ 1.f };
 	bool ApplyTonemap{ false };
 	bool EnablePhysicsDebugRendering{ true };
 	bool DrawPhysicsWorldBounds{ false };

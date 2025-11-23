@@ -334,7 +334,7 @@ constexpr u32 MAX_BIND_COUNT{ 16 };
 constexpr u32 DESCRIPTOR_COPY_RANGES[MAX_BIND_COUNT]{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
 ConstantBuffer constantBuffers[FRAME_BUFFER_COUNT];
-constexpr u32 CONSTANT_BUFFER_SIZE{ 1024 * 1024 };
+constexpr u32 CONSTANT_BUFFER_SIZE{ 1024 * 1024 * 10 };
 
 u32 deferredReleasesFlag[FRAME_BUFFER_COUNT]{};
 std::mutex deferredReleasesMutex{};

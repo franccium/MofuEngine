@@ -286,16 +286,22 @@ Surface GetSurface(VertexOut psIn, float3 V)
 #endif
     S.EmissiveColor = Sample(SrvIndices[3], LinearSampler, uv).rgb * PerObjectBuffer.Emissive;
     const float2 metalRough = Sample(SrvIndices[2], LinearSampler, uv).rg;
+#ifndef NO_NORMAL_MAP
     float3 n = Sample(SrvIndices[1], LinearSampler, uv).rgb;
+#endif
     
     S.Metallic = metalRough.r * PerObjectBuffer.Metallic;
     S.PerceptualRoughness = metalRough.g * PerObjectBuffer.Roughness;
     S.EmissiveIntensity = PerObjectBuffer.EmissiveIntensity;
     
+#ifndef NO_NORMAL_MAP
     n = n * 2.f - 1.f;
 #if NORMALS_RECONSTRUCT_Z
     //n.y *= -1.f;
     n.z = sqrt(1.f - saturate(dot(n.xy, n.xy)));
+#endif
+#else
+    float3 n = float3(0.f, 0.f, 1.f);
 #endif
     
     const float3 N = normalize(psIn.WorldNormal);
@@ -411,6 +417,21 @@ float3 EvaluateIBL(Surface S)
     specular *= energyLossCompensation;
 
     return (diffuse + specular) * IBL.Intensity;
+}
+
+float3 EvaluateDiffuseIBL(Surface S)
+{
+    const float NoV = saturate(S.NoV);
+    const float3 F0 = S.SpecularColor;
+    const float3 F90 = max((1.f - S.PerceptualRoughness), F0);
+    const float3 F = F_Schlick(NoV, F0, F90);
+    
+    const float roughness = S.PerceptualRoughness * S.PerceptualRoughness;
+    AmbientLightParameters IBL = GlobalData.AmbientLight;
+    float3 diffN = S.Normal;
+    float3 diffuse = SampleCube(IBL.DiffuseSrvIndex, LinearSampler, diffN).rgb * S.DiffuseColor * (1.f - F);
+
+    return diffuse * IBL.Intensity;
 }
 
 uint GetGridIndex(float2 posXY, float viewWidth)
@@ -545,6 +566,8 @@ PixelOut TestShaderPS(in VertexOut psIn)
     
 #if !IS_SSSR_ENABLED
     color += EvaluateIBL(S);
+#else
+    color += EvaluateDiffuseIBL(S);
 #endif
     color = saturate(color);
     
@@ -565,12 +588,12 @@ PixelOut TestShaderPS(in VertexOut psIn)
 #endif
     
     psOut.Normal.rgb = S.Normal;
-    psOut.Normal.a = 0.f;
+    psOut.Normal.a = S.BaseColor.r;
     
     psOut.MaterialProperties.r = S.PerceptualRoughness * S.PerceptualRoughness;
     psOut.MaterialProperties.g = S.Metallic;
-    psOut.MaterialProperties.b = 0.f;
-    psOut.MaterialProperties.a = 0.f;
+    psOut.MaterialProperties.b = S.BaseColor.g;
+    psOut.MaterialProperties.a = S.BaseColor.b;
     
 //    // NOTE: now assuming we have max 2^16 materials
 //    uint16_t materialID = PerObjectBuffer.MaterialID;

@@ -4,6 +4,7 @@
 #include "Content/ResourceCreation.h"
 #include "Content/EditorContentManager.h"
 #include "Utilities/Logger.h"
+#include "Editor/MaterialEditor.h"
 
 namespace mofu::editor::material {
 u64
@@ -150,6 +151,8 @@ LoadMaterialDataFromAsset(graphics::MaterialInitInfo& outMaterial, content::Asse
 	memcpy(outMaterial.ShaderIDs, mat.ShaderIDs, shaders::ShaderType::Count * sizeof(id_t));
 	outMaterial.TextureIDs = new id_t[mat.TextureCount];
 	memcpy(outMaterial.TextureIDs, mat.TextureIDs, mat.TextureCount * sizeof(id_t));
+	//FIXME: for real fix this texture stuff
+	if (IsInvalidNormalMap(outMaterial.TextureIDs[TextureUsage::Normal])) outMaterial.MaterialFlags |= graphics::MaterialFlags::NoNormalMap;
 }
 
 }

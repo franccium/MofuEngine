@@ -27,7 +27,14 @@
 #include "Physics/PhysicsLayers.h"
 #include "ECS/Transform.h"
 #include "ECS/Scene.h"
-
+#ifdef NDEBUG
+#define assert(expr)                                              \
+    do {                                                             \
+        if (!(expr)) {                                               \
+            __debugbreak();                                          \
+        }                                                            \
+    } while (0);
+#endif
 using namespace mofu;
 
 id_t content::CreateResourceFromBlob(const void* const blob, content::AssetType::type resourceType);
@@ -593,7 +600,9 @@ CreateTestRenderItems()
 	ecs::component::RenderMesh& meshEd{ ecs::scene::GetComponent<ecs::component::RenderMesh>(entityData.id) };
 	meshEd.RenderItemID = graphics::AddRenderItem(entityData.id, mesh.MeshID, mat.MaterialCount, mat.MaterialID);
 	editor::AddEntityToSceneView(entityData.id);
-
+	assert(0);
+	assert(false);
+	TODO_("Aaa");
 	AddLights();
 
 	const content::AssetHandle RT_CUBES{ 15519544575226091575 };
