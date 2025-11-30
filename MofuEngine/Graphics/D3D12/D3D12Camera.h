@@ -26,6 +26,8 @@ public:
 	[[nodiscard]] constexpr xmmat InverseView() const { return _inverseView; }
 	[[nodiscard]] constexpr xmmat ViewProjection() const { return _viewProjection; }
 	[[nodiscard]] constexpr xmmat InverseViewProjection() const { return _inverseViewProjection; }
+	[[nodiscard]] const m4x4* const NoJitterProjection() const { return &_noJitterProjection; }
+	[[nodiscard]] const m4x4* const NoJitterInvProjection() const { return &_noJitterInvProjection; }
 	[[nodiscard]] constexpr xmm Up() const { return _up; }
 	[[nodiscard]] constexpr xmm Position() const { return _position; }
 	[[nodiscard]] constexpr xmm Direction() const { return _direction; }
@@ -61,6 +63,8 @@ private:
 	xmmat _inverseProjection;
 	xmmat _viewProjection;
 	xmmat _inverseViewProjection;
+	m4x4 _noJitterProjection;
+	m4x4 _noJitterInvProjection;
 	graphics::Camera::Type _projectionType;
 	ecs::Entity _entityID{ id::INVALID_ID };
 	m4x4 _prevProjection{};
@@ -72,5 +76,8 @@ void RemoveCamera(camera_id id);
 void SetProperty(camera_id id, CameraProperty::Property property, const void* const data, u32 size);
 void GetProperty(camera_id id, CameraProperty::Property property, void* const data, u32 size);
 [[nodiscard]] D3D12Camera& GetCamera(camera_id id);
+void UpdateRenderResolution(u32v2 renderRes);
+void Initialize();
+void Shutdown();
 
 }

@@ -9,6 +9,7 @@
 #include "FFX/SSSR.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Effects/D3D12KawaseBlur.h"
+#include "D3D12ResolvePass.h"
 
 namespace mofu::graphics::d3d12::fx {
 namespace {
@@ -23,7 +24,6 @@ struct FXRootParameterIndices
 		RootConstants,
 		GISettings,
 		GTTonemapCurve,
-		//DescriptorTable,
 
 		Count
 	};
@@ -144,7 +144,6 @@ CreateDebugRootSignature()
 	parameters[FXRootParameterIndices_Debug::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
 	parameters[FXRootParameterIndices_Debug::DebugConstants].AsConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 2);
-	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
 	struct D3D12_STATIC_SAMPLER_DESC samplers[]
 	{
@@ -207,7 +206,6 @@ CreateRootSignature()
 	parameters[FXRootParameterIndices::RootConstants].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	parameters[FXRootParameterIndices::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
-	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
 
 	struct D3D12_STATIC_SAMPLER_DESC samplers[]
 	{
@@ -495,12 +493,9 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	shaderParams->DisplayAO = (u32)graphics::debug::RenderingSettings.DisplayAO;
 	shaderParams->RenderGUI = (u32)graphics::debug::RenderingSettings.RenderGUI;
 #else
-
-#if IS_DLSS_ENABLED
-	shaderParams->RTBufferIndex = gpass::MainBuffer().SRV().index;
-#else
 	shaderParams->RTBufferIndex = gpass::MainBuffer().SRV().index; // dummy
-	shaderParams->GPassMainBufferIndex = gpass::MainBuffer().SRV().index;
+	//shaderParams->GPassMainBufferIndex = gpass::MainBuffer().SRV().index;
+	shaderParams->GPassMainBufferIndex = resolve::GetResolveOutputSRV();
 	shaderParams->GPassDepthBufferIndex = gpass::DepthBuffer().SRV().index;
 	shaderParams->NormalBufferIndex = gpass::NormalBuffer().SRV().index;
 	shaderParams->PositionBufferIndex = gpass::PositionBuffer().SRV().index;
@@ -517,44 +512,46 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	shaderParams->RenderGUI = (u32)graphics::debug::RenderingSettings.RenderGUI;
 #endif
 
+	//if (debug::RenderingSettings.VB_HalfRes)
+	//{
+	//	cmdList->RSSetViewports(1, effects::GetLowResViewport());
+	//	cmdList->RSSetScissorRects(1, effects::GetLowResScissorRect());
+	//	ClearEffectsBuffers(cmdList);
+
+	//	cmdList->SetGraphicsRootSignature(ssilvbRootSig);
+	//	cmdList->SetPipelineState(ssilvbPSO);
+
+	//	using idx = FXRootParameterIndices;
+	//	cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
+	//	cmdList->SetGraphicsRootConstantBufferView(idx::RootConstants, core::CBuffer().GpuAddress(shaderParams));
+
+	//	graphics::debug::Settings::SSILVB_Settings* giSettings{ core::CBuffer().AllocateSpace<graphics::debug::Settings::SSILVB_Settings>() };
+	//	memcpy(giSettings, &graphics::debug::RenderingSettings.SSILVB, sizeof(graphics::debug::Settings::SSILVB_Settings));
+	//	cmdList->SetGraphicsRootConstantBufferView(idx::GISettings, core::CBuffer().GpuAddress(giSettings));
+
+	//	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//	const D3D12_CPU_DESCRIPTOR_HANDLE target{ ssilvbTarget.RTV(0) };
+	//	cmdList->OMSetRenderTargets(1, &target, 1, nullptr);
+	//	cmdList->DrawInstanced(3, 1, 0, 0);
+
+	//	d3dx::TransitionResource(ssilvbTarget.Resource(), cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	//	ssilvbSrvIndex = ssilvbTarget.SRV().index;
+	//	if (graphics::debug::RenderingSettings.ApplyDualKawaseBlur)
+	//	{
+	//		effects::ApplyKawaseBlur(ssilvbTarget.Resource(), ssilvbTarget.SRV().index, cmdList);
+	//		ssilvbSrvIndex = effects::GetBlurUpResultSrvIndex();
+	//	}
+
+	//	//FIXME: this not here
+	//	cmdList->RSSetViewports(1, surface.Viewport());
+	//	cmdList->RSSetScissorRects(1, surface.ScissorRect());
+	//}
+
+	//shaderParams->MiscBufferIndex = ssilvbSrvIndex;
+
+#if IS_DLSS_ENABLED
+	shaderParams->MiscBufferIndex = dlss::GetOutputBufferSRV().index;
 #endif
-
-	if (debug::RenderingSettings.VB_HalfRes)
-	{
-		cmdList->RSSetViewports(1, effects::GetLowResViewport());
-		cmdList->RSSetScissorRects(1, effects::GetLowResScissorRect());
-		ClearEffectsBuffers(cmdList);
-
-		cmdList->SetGraphicsRootSignature(ssilvbRootSig);
-		cmdList->SetPipelineState(ssilvbPSO);
-
-		using idx = FXRootParameterIndices;
-		cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
-		cmdList->SetGraphicsRootConstantBufferView(idx::RootConstants, core::CBuffer().GpuAddress(shaderParams));
-
-		graphics::debug::Settings::SSILVB_Settings* giSettings{ core::CBuffer().AllocateSpace<graphics::debug::Settings::SSILVB_Settings>() };
-		memcpy(giSettings, &graphics::debug::RenderingSettings.SSILVB, sizeof(graphics::debug::Settings::SSILVB_Settings));
-		cmdList->SetGraphicsRootConstantBufferView(idx::GISettings, core::CBuffer().GpuAddress(giSettings));
-
-		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		const D3D12_CPU_DESCRIPTOR_HANDLE target{ ssilvbTarget.RTV(0) };
-		cmdList->OMSetRenderTargets(1, &target, 1, nullptr);
-		cmdList->DrawInstanced(3, 1, 0, 0);
-
-		d3dx::TransitionResource(ssilvbTarget.Resource(), cmdList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		ssilvbSrvIndex = ssilvbTarget.SRV().index;
-		if (graphics::debug::RenderingSettings.ApplyDualKawaseBlur)
-		{
-			effects::ApplyKawaseBlur(ssilvbTarget.Resource(), ssilvbTarget.SRV().index, cmdList);
-			ssilvbSrvIndex = effects::GetBlurUpResultSrvIndex();
-		}
-
-		//FIXME: this not here
-		cmdList->RSSetViewports(1, surface.Viewport());
-		cmdList->RSSetScissorRects(1, surface.ScissorRect());
-	}
-
-	shaderParams->MiscBufferIndex = ssilvbSrvIndex;
 
 	GT7ToneMapCurve* curveData{ core::CBuffer().AllocateSpace<GT7ToneMapCurve>() };
 	memcpy(curveData, &_tonemapCurve, sizeof(GT7ToneMapCurve));

@@ -1,24 +1,4 @@
-
 #include "Common.hlsli"
-#include "PostProcessing/TonemapGT7.hlsl"
-
-#define APPLY_TONEMAPPING 0
-#define DO_RESOLVE_PASS 1
-
-#ifdef DEBUG
-struct DebugConstants
-{
-    uint DebugMode; // 0 - default; 1 - depth; 2 - normals; 3 - material IDs
-};
-
-#define DEBUG_DEFAULT 0
-#define DEBUG_DEPTH 1
-#define DEBUG_NORMALS 2
-#define DEBUG_MATERIAL_IDS 3
-#define DEBUG_MOTION_VECTORS 4
-#endif
-
-
 
 struct GISettings
 {
@@ -31,9 +11,7 @@ struct GISettings
 ConstantBuffer<GlobalShaderData> GlobalData : register(b0, space0);
 ConstantBuffer<PostProcessConstants> ShaderParams : register(b1, space0);
 ConstantBuffer<GISettings> GIParams : register(b2, space0);
-#ifdef DEBUG
-ConstantBuffer<DebugConstants> DebugOptions : register(b2, space0);
-#endif
+
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
 
@@ -55,29 +33,6 @@ float4 SampleCube(uint index, SamplerState s, float3 n)
 float4 SampleCube(uint index, SamplerState s, float3 n, float mip)
 {
      return TextureCube(ResourceDescriptorHeap[index]).SampleLevel(s, n, mip);
-}
-
-// sRGB OETF
-float3 LinearToSRGB(float3 x)
-{
-    return select((x <= 0.0031308f), x * 12.92f, 1.055f * pow(x, 0.416666666f) - 0.055f);
-}
-// PQ inverse EOTF
-float3 LinearToPQ(float3 lin)
-{
-    const float m1 = 0.1593017578125f;
-    const float m2 = 78.84375f * EXPONENT_SCALE_FACTOR;
-    const float c1 = 0.8359375f;
-    const float c2 = 18.8515625f;
-    const float c3 = 18.6875f;
-    const float pqC = 10000.0f;
-
-    float3 physical = FrameBufferValueToPhysical(lin);
-    float3 y = physical / pqC;
-    float3 ym = pow(y, m1);
-    float3 num = c1 * c2 * ym;
-    float3 den = 1.f + c3 * ym;
-    return exp2(m2 * (log2(num) - log2(den)));
 }
 
 // Sclick Fresnel
@@ -115,7 +70,7 @@ float3 ApplyReflections(float3 directLighting, float2 uv, float depth, float ao)
     float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, saturate(float2(NoV, 1.f - perceptualRoughness)), 0).rg;
     
     float3 color = diffuse * IBL.Intensity + radiance * (F0 * brdfLut.x + brdfLut.y);
-    return color + directLighting;
+    return saturate(color + directLighting);
 }
 
 static const uint SectorCount = 32u;
@@ -146,7 +101,7 @@ float VBAO(float2 uv, float depth)
     uint indirect = 0u;
     uint occlusion = 0u;
     
-    float2 aspectRatio = float2(GlobalData.ViewHeight, GlobalData.ViewWidth) / GlobalData.ViewWidth;
+    float2 aspectRatio = float2(GlobalData.RenderSizeY, GlobalData.RenderSizeX) / GlobalData.RenderSizeX;
     
     float visibility = 0.f;
     float2 frontBackHorizon = 0.f.xx;
@@ -220,7 +175,7 @@ float4 ApplySSILVB(float2 uv, float depth)
     uint indirect = 0u;
     uint occlusion = 0u;
     
-    float2 aspectRatio = float2(GlobalData.ViewHeight, GlobalData.ViewWidth) / GlobalData.ViewWidth;
+    float2 aspectRatio = float2(GlobalData.RenderSizeY, GlobalData.RenderSizeX) / GlobalData.RenderSizeX;
     
     float visibility = 0.f;
     float3 lighting = 0.f.xxx;
@@ -240,7 +195,7 @@ float4 ApplySSILVB(float2 uv, float depth)
     float jitter = randf(int(uv.x), int(uv.y)) - 0.5f;
     
     float currSlice = 0.f;
-    for (;currSlice < sliceCount + 0.5f; currSlice += 1.0f)
+    for (; currSlice < sliceCount + 0.5f; currSlice += 1.0f)
     {
         float phi = sliceRotation * (currSlice + jitter) + PI;
         float2 omega = float2(cos(phi), sin(phi));
@@ -277,8 +232,8 @@ float4 ApplySSILVB(float2 uv, float depth)
             
             indirect = UpdateSectors(frontBackHorizon.x, frontBackHorizon.y, 0u);
             
-            lighting += (1.f - float(bitCount(indirect & ~occlusion)) / float(SectorCount)) 
-                * sampleDirectLight * saturate(dot(normal_VS, sampleHorizon)) 
+            lighting += (1.f - float(bitCount(indirect & ~occlusion)) / float(SectorCount))
+                * sampleDirectLight * saturate(dot(normal_VS, sampleHorizon))
                 * saturate(dot(sampleNormal, -sampleHorizon));
             occlusion |= indirect;
         }
@@ -291,12 +246,8 @@ float4 ApplySSILVB(float2 uv, float depth)
     return float4(lighting, visibility);
 }
 
-#define RENDER_SKYBOX 1
-// testing for materials that don't write to the depth buffer, assumes there is a big opaque cube with materialID == 0, but won't work cause that cube would need to be skybox textured anyways
-#define MATERIAL_SKYBOX_TEST 0
-
 #if PATHTRACE_MAIN
-float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
+float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
     Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     Texture2D rtMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
@@ -306,96 +257,15 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     return fin;
 }
 #else
-float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
+float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
-#if DO_RESOLVE_PASS
-    
-#if IS_DLSS_ENABLED
-    Texture2D mainColor = ResourceDescriptorHeap[ShaderParams.MiscBufferIndex];
-    //float3 color = mainColor[Position.xy].rgb;
-    float3 color = Sample(ShaderParams.MiscBufferIndex, LinearSampler, UV).rgb;
-#else
-    Texture2D mainColor = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-    float3 color = mainColor[Position.xy].rgb;
-    
-#endif
-        
-    if(ShaderParams.DoTonemap)
-    {
-        color = ApplyTonemap(color);
-#if HDR
-        color = LinearToPQ(color);
-#else
-        color = LinearToSRGB(color);
-#endif
-    }
-    
-    if (!ShaderParams.RenderGUI)
-    {
-        color = pow(color, 2.2f);
-    }
-    
-    return float4(color, 1.f);
-#else
-    
     Texture2D gpassDepth = ResourceDescriptorHeap[ShaderParams.GPassDepthBufferIndex];
+    float depth = gpassDepth.SampleLevel(PointSampler, UV, 0).r;
     float3 color;
     
-#if IS_DLSS_ENABLED
-    const float2 targetRes = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
-    const float2 renderRes = GlobalData.DLSSInputResolution;
-    const float2 uvScale = renderRes / targetRes;
-    const float2 uvScaled = UV * uvScale;
-    const float depth = gpassDepth.SampleLevel(PointSampler, UV, 0).r;
-#else
-    float depth = gpassDepth.SampleLevel(PointSampler, UV, 0).r;
-#endif
-
-    
-#if RENDER_SKYBOX
-#if MATERIAL_SKYBOX_TEST
-    Texture2D miscBufer = ResourceDescriptorHeap[ShaderParams.MiscBufferIndex];
-    const uint16_t mat = miscBufer[Position.xy].r;
-    if (mat > 0)
-#else
     if (depth > 0.0f)
-#endif
     {
-#ifdef DEBUG
-        Texture2D texture;
-        float3 color;
-        if (DebugOptions.DebugMode == DEBUG_DEFAULT)
-        {
-            texture = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-            color = texture[Position.xy].rgb;
-        }
-        else if (DebugOptions.DebugMode == DEBUG_DEPTH)
-        {
-            color = gpassDepth[Position.xy].rrr * 150.f;
-        }
-        else if (DebugOptions.DebugMode == DEBUG_NORMALS)
-        {
-            texture = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-            color = texture[Position.xy].rgb * 0.5f + 0.5f;
-        }
-        else if (DebugOptions.DebugMode == DEBUG_MATERIAL_IDS)
-        {
-            texture = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-            color = texture[Position.xy].aaa * 2.f;
-        }
-        else if (DebugOptions.DebugMode == DEBUG_MOTION_VECTORS)
-        {
-            texture = ResourceDescriptorHeap[ShaderParams.MotionVectorsBufferIndex];
-            color = float3(texture[Position.xy].xy * 0.5f + 0.5f, 0.f);
-        }
-        color = saturate(color);
-#else
-        //Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.MotionVectorsBufferIndex];
-#if IS_DLSS_ENABLED
-        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
-#else
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-#endif
         color = gpassMain[Position.xy].rgb;
         
         float ao = 1.f;
@@ -429,11 +299,11 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         {
 #if IS_SSSR_ENABLED
         //Texture2D reflections = ResourceDescriptorHeap[ShaderParams.ReflectionsBufferIndex];
-        Texture2D normals = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
+            Texture2D normals = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
 #if 1
         //color = reflections[Position.xy].rgb;
-        float3 mainColor = gpassMain[Position.xy].rgb;
-        color = ApplyReflections(mainColor, UV, depth, ao);
+            float3 mainColor = gpassMain[Position.xy].rgb;
+            color = ApplyReflections(mainColor, UV, depth, ao);
 #else
         //float3 mainColor = gpassMain[Position.xy].rgb;
         float3 mainColor = normals[Position.xy].rgb;
@@ -457,29 +327,8 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
         float4 clip = float4(2.f * UV.x - 1.f, -2.f * UV.y + 1.f, 0.f, 1.f);
         float3 view = mul(GlobalData.InvProjection, clip).xyz;
         float3 direction = mul(view, (float3x3) GlobalData.View); // we swap the order or operations so the view matrix is transposed, since rotation is orthogonal, this makes it inverse view
-        color = TextureCube( ResourceDescriptorHeap[GlobalData.SkyboxSrvIndex]).SampleLevel(LinearSampler, direction, 0.1f).xyz * GlobalData.AmbientLight.Intensity;
-    }
-#else
-    Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
-    color = gpassMain[Position.xy].rgb;
-#endif
-    
-    if(ShaderParams.DoTonemap)
-    {
-        color = ApplyTonemap(color);
-#if HDR
-        color = LinearToPQ(color);
-#else
-        color = LinearToSRGB(color);
-#endif
-    }
-    
-    if (!ShaderParams.RenderGUI)
-    {
-        color = pow(color, 2.2f);
+        color = SampleCube(GlobalData.SkyboxSrvIndex, LinearSampler, direction, 0.1f).xyz * GlobalData.AmbientLight.Intensity;
     }
     
     return float4(color, 1.f);
-#endif
 }
-#endif

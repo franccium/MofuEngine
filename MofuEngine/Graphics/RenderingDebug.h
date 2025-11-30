@@ -14,7 +14,7 @@ enum DebugMode : u32
 };
 struct Settings
 {
-	bool RenderGUI{ true };
+	bool RenderGUI{ false };
 	//TODO: should have a bindless constant buffer with all settings relevant to shaders
 	bool ReflectionsEnabled{ false };
 	bool Reflections_FFXSSSR{ true };

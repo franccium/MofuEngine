@@ -114,7 +114,7 @@ void LightCullingCS(ComputeShaderInput csIn)
     GroupMemoryBarrierWithGroupSync();
     // TODO: look at other depth discontinuity solutions
     const uint lightCount = min(_lightCount, MAX_LIGHTS_PER_GROUP);
-    const float2 invViewDimensions = 1.f / float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
+    const float2 invViewDimensions = 1.f / float2(GlobalData.RenderSizeX, GlobalData.RenderSizeY);
     const float2 uv = csIn.DispatchThreadID.xy * invViewDimensions;
     const float3 pxWorldPos = ScreenSpacePosTo3DPos(uv, depth, GlobalData.InvViewProjection).xyz;
     for (i = 0; i < lightCount; i++)

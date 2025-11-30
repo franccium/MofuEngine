@@ -318,6 +318,12 @@
     <ClCompile Include="Graphics\D3D12\Effects\D3D12KawaseBlur.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12ResolvePass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\D3D12\D3D12SSILVB.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -747,6 +753,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\D3D12\Effects\D3D12KawaseBlur.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12ResolvePass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\D3D12\D3D12SSILVB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

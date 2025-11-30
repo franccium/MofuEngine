@@ -14,6 +14,7 @@ namespace {
 constexpr u32 FFX_CONTEXT_COUNT{ 1 };
 constexpr FfxSurfaceFormat FFX_SSSR_SURFACE_FORMAT{ FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT };
 
+u32v2 _currentRenderRes;
 FfxSssrContext _context;
 FfxInterface _backendInterface;
 u8* _scratchMem{ nullptr };
@@ -57,6 +58,7 @@ CreateBuffers(u32v2 size)
 	const DXResource* const output{ outputBuffer.Resource() };
 	assert(output);
 	_dispatchDesc.output = ffxGetResourceDX12(output, ffxGetResourceDescriptionDX12(output), L"SSSR Output", FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+	_dispatchDesc.renderSize = { size.x, size.y };
 
 	return output;
 }
@@ -82,24 +84,27 @@ Initialize()
 		log::Error("FFX SSSR: Failed to get DX12 interface");
 		return;
 	}
+}
+
+void 
+CreateBuffer(u32v2 renderRes)
+{
+	_currentRenderRes = renderRes;
+	if(outputBuffer.Resource()) ffxSssrContextDestroy(&_context);
 
 	FfxSssrContextDescription desc{};
 	desc.flags = FFX_SSSR_ENABLE_DEPTH_INVERTED;
-	const u32v2 renderRes{ core::RenderResolution() };
 	desc.renderSize = { renderRes.x, renderRes.y };
 	desc.normalsHistoryBufferFormat = FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
 	desc.backendInterface = _backendInterface;
 	ffxSssrContextCreate(&_context, &desc);
 
-	bool success{ CreateBuffers({ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT }) };
-	assert(success);
-	if (!success)
+	if (!CreateBuffers(renderRes))
 	{
+		assert(false);
 		Shutdown();
 	}
 }
-
-
 
 void 
 Shutdown()
@@ -160,7 +165,6 @@ GatherResources()
 		_isInitialized = true;
 	}
 
-	_dispatchDesc.renderSize = { graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
 	_dispatchDesc.depthBufferThickness = settings.DepthBufferThickness;
 	_dispatchDesc.roughnessThreshold = settings.RoughnessThreshold;
 	_dispatchDesc.iblFactor = settings.IBLFactor;
@@ -190,7 +194,9 @@ Dispatch(const D3D12FrameInfo& frameInfo)
 	const camera::D3D12Camera* camera{ frameInfo.Camera };
 	DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)_dispatchDesc.invViewProjection, camera->InverseViewProjection());
 	DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)_dispatchDesc.projection, camera->Projection());
+	//memcpy(_dispatchDesc.projection, camera->NoJitterProjection(), sizeof(m4x4));
 	DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)_dispatchDesc.invProjection, camera->InverseProjection());
+	//memcpy(_dispatchDesc.invProjection, camera->NoJitterInvProjection(), sizeof(m4x4));
 	DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)_dispatchDesc.view, camera->View());
 	DirectX::XMStoreFloat4x4((DirectX::XMFLOAT4X4*)_dispatchDesc.invView, camera->InverseView());
 	memcpy(_dispatchDesc.prevViewProjection, camera->PrevViewProjection(), sizeof(m4x4));

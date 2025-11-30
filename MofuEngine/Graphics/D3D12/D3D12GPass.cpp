@@ -612,6 +612,17 @@ AddTransitionsForDepthPrepass(d3dx::D3D12ResourceBarrierList& barriers)
 void 
 AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers)
 {
+	/*if constexpr (DLSS_ENABLED)
+	{
+		barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
+			BUFFER_SAMPLE_STATE,
+			BUFFER_RENDER_STATE);
+	}
+	else
+	{
+		
+	}
+	*/
 	//barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
 	//	D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 	//	BUFFER_RENDER_STATE, D3D12_RESOURCE_BARRIER_FLAG_END_ONLY);
@@ -645,48 +656,24 @@ AddTransitionsForGPass(d3dx::D3D12ResourceBarrierList& barriers)
 void 
 AddTransitionsForPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 {
-	if constexpr (DLSS_ENABLED)
-	{
-		barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
-			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(normalBuffer.Resource(),
-			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(positionBuffer.Resource(),
-			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(materialPropertiesBuffer.Resource(),
-			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
-			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(miscBuffer.Resource(),
-			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	}
-	else
-	{
-		barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
-			BUFFER_RENDER_STATE,
-			BUFFER_SAMPLE_STATE);
-		barriers.AddTransitionBarrier(normalBuffer.Resource(),
-			BUFFER_RENDER_STATE,
-			BUFFER_SAMPLE_STATE);
-		barriers.AddTransitionBarrier(positionBuffer.Resource(),
-			BUFFER_RENDER_STATE,
-			BUFFER_SAMPLE_STATE);
-		barriers.AddTransitionBarrier(materialPropertiesBuffer.Resource(),
-			BUFFER_RENDER_STATE,
-			BUFFER_SAMPLE_STATE);
-		barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
-			BUFFER_RENDER_STATE,
-			BUFFER_SAMPLE_STATE);
-		barriers.AddTransitionBarrier(miscBuffer.Resource(),
-			BUFFER_RENDER_STATE,
-			BUFFER_SAMPLE_STATE);
-	}
+	barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
+		BUFFER_RENDER_STATE,
+		BUFFER_SAMPLE_STATE);
+	barriers.AddTransitionBarrier(normalBuffer.Resource(),
+		BUFFER_RENDER_STATE,
+		BUFFER_SAMPLE_STATE);
+	barriers.AddTransitionBarrier(positionBuffer.Resource(),
+		BUFFER_RENDER_STATE,
+		BUFFER_SAMPLE_STATE);
+	barriers.AddTransitionBarrier(materialPropertiesBuffer.Resource(),
+		BUFFER_RENDER_STATE,
+		BUFFER_SAMPLE_STATE);
+	barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
+		BUFFER_RENDER_STATE,
+		BUFFER_SAMPLE_STATE);
+	barriers.AddTransitionBarrier(miscBuffer.Resource(),
+		BUFFER_RENDER_STATE,
+		BUFFER_SAMPLE_STATE);
 }
 
 void
@@ -715,21 +702,7 @@ AddTransitionsForDLSS(d3dx::D3D12ResourceBarrierList& barriers)
 void 
 AddTransitionsAfterPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 {
-	if constexpr (DLSS_ENABLED)
-	{
-		barriers.AddTransitionBarrier(gpassMainBuffer.Resource(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(normalBuffer.Resource(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(positionBuffer.Resource(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(materialPropertiesBuffer.Resource(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(motionVecBuffer.Resource(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		barriers.AddTransitionBarrier(miscBuffer.Resource(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	}
+
 }
 
 void

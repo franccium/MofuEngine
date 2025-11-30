@@ -80,7 +80,7 @@ float4 ApplySSILVB(in noperspective float4 Position : SV_Position, in noperspect
     uint indirect = 0u;
     uint occlusion = 0u;
     
-    float2 aspectRatio = float2(GlobalData.ViewHeight / GlobalData.ViewWidth, 1.f);
+    float2 aspectRatio = float2(GlobalData.RenderSizeY / GlobalData.RenderSizeX, 1.f);
     
     float visibility = 0.f;
     float3 lighting = 0.f.xxx;

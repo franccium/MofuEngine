@@ -190,9 +190,11 @@
     <ClCompile Include="Graphics\D3D12\D3D12PostProcess.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Primitives.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12RayTracing.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12ResolvePass.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Resources.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12ResourceWatch.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12SSILVB.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\D3D12\Effects\D3D12KawaseBlur.cpp" />
@@ -315,9 +317,11 @@
     <ClInclude Include="Graphics\D3D12\D3D12PostProcess.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Primitives.h" />
     <ClInclude Include="Graphics\D3D12\D3D12RayTracing.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12ResolvePass.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Resources.h" />
     <ClInclude Include="Graphics\D3D12\D3D12ResourceWatch.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12SSILVB.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
     <ClInclude Include="Graphics\D3D12\Effects\D3D12KawaseBlur.h" />

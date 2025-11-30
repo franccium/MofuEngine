@@ -446,7 +446,7 @@ uint GetGridIndex(float2 posXY, float viewWidth)
 
 float3 Heatmap(StructuredBuffer<uint2> buffer, float2 posXY, float blend, float3 currentColor)
 {
-    const float w = GlobalData.ViewWidth;
+    const float w = GlobalData.RenderSizeX;
     const uint gridIndex = GetGridIndex(posXY, w);
     uint numLights = buffer[gridIndex].y;
     const uint numPointLights = numLights >> 16;
@@ -480,7 +480,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
 #if PATHTRACE_MAIN
     PixelOut psOut;
 #if NEED_MOTION_VECTORS
-    float2 viewport = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
+    float2 viewport = float2(GlobalData.RenderSizeX, GlobalData.RenderSizeY);
     float2 currNDC = (psIn.HomogeneousPositon.xy / viewport) * 2.f - 1.f;
     float2 prevNDC = psIn.PrevHomogeneousPositon.xy / psIn.PrevHomogeneousPositon.w;
     prevNDC.y *= -1.0f;
@@ -499,7 +499,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
 #else
     PixelOut psOut;
 #if NEED_MOTION_VECTORS
-    float2 viewport = float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
+    float2 viewport = float2(GlobalData.RenderSizeX, GlobalData.RenderSizeY);
     float2 currNDC = (psIn.HomogeneousPositon.xy / viewport) * 2.f - 1.f;
     float2 prevNDC = psIn.PrevHomogeneousPositon.xy / psIn.PrevHomogeneousPositon.w;
     prevNDC.y *= -1.0f;
@@ -549,7 +549,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
     //    color += CalculateSpotLight(S, psIn.WorldPosition, sLight);
     //}
     
-    const uint gridIndex = GetGridIndex(psIn.HomogeneousPositon.xy, GlobalData.ViewWidth);
+    const uint gridIndex = GetGridIndex(psIn.HomogeneousPositon.xy, GlobalData.RenderSizeX);
     const uint lightStartIndex = LightGrid[gridIndex].x;
     const uint lightCount = LightGrid[gridIndex].y;
     const uint maxPointLight = lightStartIndex + (lightCount >> 16);

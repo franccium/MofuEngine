@@ -16,6 +16,7 @@ constexpr const char* ENGINE_SHADERS_PATHS[][EngineShader::Count]{
     {
         ".\\shaders\\d3d12\\FSTriangle.bin",
         ".\\shaders\\d3d12\\PostProcess.bin",
+        ".\\shaders\\d3d12\\Resolve.bin",
         ".\\shaders\\d3d12\\GridFrustums.bin",
         ".\\shaders\\d3d12\\LightCulling.bin",
         ".\\shaders\\d3d12\\RayTracing.bin",

@@ -9,7 +9,7 @@ void CalculateGridFrustumsCS(uint3 DTid : SV_DispatchThreadID)
 {
     if (DTid.x >= DispatchParams.NumThreads.x || DTid.y >= DispatchParams.NumThreads.y) return;
 
-    const float2 invViewDimensions = TILE_SIZE / float2(GlobalData.ViewWidth, GlobalData.ViewHeight);
+    const float2 invViewDimensions = TILE_SIZE / float2(GlobalData.RenderSizeX, GlobalData.RenderSizeY);
     const float2 topLeft = DTid.xy * invViewDimensions;
     const float2 center = topLeft + invViewDimensions * 0.5f;
     

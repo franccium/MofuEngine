@@ -11,6 +11,7 @@ void Initialize();
 void Shutdown();
 void Dispatch(const D3D12FrameInfo& frameInfo);
 void GatherResources();
+void CreateBuffer(u32v2 renderRes);
 
 const D3D12RenderTexture& ReflectionsBuffer();
 }

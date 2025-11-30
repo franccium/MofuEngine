@@ -8,6 +8,7 @@
 #include "DLSS/nvsdk_ngx_helpers_dlssd.h"
 #include "DLSS/nvsdk_ngx_params_dlssd.h"
 #include "../D3D12GPass.h"
+#include "../D3D12ResolvePass.h"
 #include "../D3D12Camera.h"
 
 namespace mofu::graphics::d3d12::dlss {
@@ -101,7 +102,7 @@ SetTargetResolution(u32v2 size)
 bool 
 Initialize()
 {
-	if (!DLSS_ENABLED || _isInitialized) return true; // FIXME: dont call this every frame lol
+	if (!DLSS_ENABLED || _isInitialized) return true; // FIXME: dont call this every frame
 	_isInitialized = true;
 	NVSDK_NGX_PathListInfo pathListInfo{};
 	pathListInfo.Length = 1;
@@ -177,7 +178,9 @@ CreateDLSSFeature()
 		NVSDK_NGX_D3D12_DestroyParameters(_ngxParameters);
 		return false;
 	}
-	NVSDK_NGX_DLSS_Feature_Flags dlssFlags{ NVSDK_NGX_DLSS_Feature_Flags_DepthInverted };
+
+	u32 flags{ NVSDK_NGX_DLSS_Feature_Flags_MVLowRes | NVSDK_NGX_DLSS_Feature_Flags_MVJittered | NVSDK_NGX_DLSS_Feature_Flags_DepthInverted };
+	NVSDK_NGX_DLSS_Feature_Flags dlssFlags{ (NVSDK_NGX_DLSS_Feature_Flags)flags };
 	NVSDK_NGX_Feature_Create_Params createParams{};
 	createParams.InWidth = renderOptimalWidth;
 	createParams.InHeight = renderOptimalHeight;
@@ -216,8 +219,8 @@ DoDLSSPass(DXResource* colorBuffer, DXResource* outputBuffer, const camera::D3D1
 	evalParams.Feature.pInOutput = _outputBuffer.Buffer;
 	evalParams.pInDepth = gpass::DepthBuffer().Resource();
 	evalParams.pInMotionVectors = gpass::MotionVecBuffer().Resource();
-	evalParams.InJitterOffsetX = camera.CurrentJitter().x;
-	evalParams.InJitterOffsetY = camera.CurrentJitter().y;
+	evalParams.InJitterOffsetX = camera.CurrentJitter().x * 0.5f;
+	evalParams.InJitterOffsetY = camera.CurrentJitter().y * 0.5f;
 	evalParams.InRenderSubrectDimensions = { _optimalResolution.x, _optimalResolution.y };
 	evalParams.InReset = shouldResetDLSS;
 	evalParams.InMVScaleX = _outputBuffer.TargetResolution.x;

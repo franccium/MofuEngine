@@ -172,19 +172,37 @@ constexpr GetFunction GET[CameraProperty::Count]
     GetEntityId
 };
 
-#if IS_DLSS_ENABLED
-constexpr u32 HALTON_SEQUENCE_SAMPLE_COUNT{ 8 };
-constexpr v2 HALTON_SEQUENCE[HALTON_SEQUENCE_SAMPLE_COUNT]{
-    { 0.0f, 0.0f },
-    { -0.25f, 0.25f },
-    { 0.25f, -0.25f },
-    { -0.125f, -0.375f },
-    { 0.375f, 0.125f },
-    { -0.375f, 0.375f },
-    { 0.125f, -0.125f },
-    { -0.25f, -0.25f }
-};
-#endif
+constexpr u32 JITTER_BASE_PHASE_COUNT{ 8 };
+u32 _jitterPhaseCount{ JITTER_BASE_PHASE_COUNT };
+u32v2 _renderResolution{ 0, 0 };
+v2* _jitterSequence{ nullptr };
+
+constexpr f32 Halton(u32 i, u32 base)
+{
+    f32 f{ 1.f };
+    f32 r{ 0.f };
+    while (i > 0)
+    {
+        f /= base;
+        r += f * (i % base);
+        i /= base;
+    }
+    return r;
+}
+
+// Generates a halton sequence with values in range <-0.5, 0.5>
+void GenerateJitterSequence()
+{
+    if (_jitterSequence) free(_jitterSequence);
+    _jitterSequence = (v2*)malloc(_jitterPhaseCount * sizeof(v2));
+
+    for (u32 i{ 0 }; i < _jitterPhaseCount; ++i)
+    {
+        const f32 jitterX{ (2.f * Halton(i + 1, 2) - 1.f) / _renderResolution.x };
+        const f32 jitterY{ (2.f * Halton(i + 1, 3) - 1.f) / _renderResolution.y };
+        _jitterSequence[i] = v2{ jitterX, jitterY };
+    }
+}
 
 } // anonymous namespace
 
@@ -232,14 +250,15 @@ D3D12Camera::Update(u32 frameIndex)
 	_projection = (_projectionType == graphics::Camera::Type::Perspective) ?
 		XMMatrixPerspectiveFovRH(_fieldOfView * XM_PI, _aspectRatio, _farZ, _nearZ) :
 		XMMatrixOrthographicRH(_viewWidth, _viewHeight, _farZ, _nearZ);
+
+    xmmat noJitterInvProj = XMMatrixInverse(nullptr, _projection);
+    XMStoreFloat4x4(&_noJitterProjection, _projection);
+    XMStoreFloat4x4(&_noJitterInvProjection, noJitterInvProj);
 #if IS_DLSS_ENABLED
     _prevJitter = _jitter;
-    _jitter = HALTON_SEQUENCE[frameIndex % HALTON_SEQUENCE_SAMPLE_COUNT];
-    v2 jitter_NDC{ (2.f * _jitter.x) / graphics::DEFAULT_WIDTH, (-2.f * _jitter.y) / graphics::DEFAULT_HEIGHT };
-    XMMATRIX jitterMat = XMMatrixIdentity();
-    jitterMat.r[2].m128_f32[0] = jitter_NDC.x;
-    jitterMat.r[2].m128_f32[1] = jitter_NDC.y;
-    _projection = XMMatrixMultiply(jitterMat, _projection);
+    _jitter = _jitterSequence[frameIndex % _jitterPhaseCount];
+    _projection.r[3].m128_f32[0] += _jitter.x * 2.f;
+    _projection.r[3].m128_f32[1] += _jitter.y * 2.f;
 #endif
 
     _inverseProjection = XMMatrixInverse(nullptr, _projection);
@@ -287,6 +306,28 @@ constexpr void
 D3D12Camera::FarZ(f32 farZ)
 {
     _farZ = farZ;
+}
+
+void 
+Initialize()
+{
+    _jitterSequence = (v2*)malloc(JITTER_BASE_PHASE_COUNT * sizeof(v2));
+    memset(_jitterSequence, 0, JITTER_BASE_PHASE_COUNT * sizeof(v2));
+}
+
+void 
+Shutdown()
+{
+    free(_jitterSequence);
+}
+
+void 
+UpdateRenderResolution(u32v2 renderRes)
+{
+    _renderResolution = renderRes;
+    u32 resScale{ (graphics::DEFAULT_WIDTH * graphics::DEFAULT_HEIGHT) / (renderRes.x * renderRes.y) };
+    _jitterPhaseCount = JITTER_BASE_PHASE_COUNT * resScale * resScale;
+    GenerateJitterSequence();
 }
 
 graphics::Camera 

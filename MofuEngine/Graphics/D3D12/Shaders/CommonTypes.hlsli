@@ -25,9 +25,10 @@ struct GlobalShaderData
     AmbientLightParameters AmbientLight;
     uint SkyboxSrvIndex;
     uint DirectionalLightsCount;
+    float RenderSizeX;
+    float RenderSizeY;
     
 #if NEED_MOTION_VECTORS
-    float2 DLSSInputResolution;
     float2 Jitter;
     float2 PrevJitter;
 #endif
@@ -201,6 +202,27 @@ struct RTSettings
 };
 
 struct PostProcessConstants
+{
+    uint GPassMainBufferIndex;
+    uint GPassDepthBufferIndex;
+    uint RTBufferIndex;
+    uint NormalBufferIndex;
+    uint PositionBufferIndex;
+    uint MotionVectorsBufferIndex;
+    uint MiscBufferIndex;
+    uint ReflectionsBufferIndex;
+    uint MaterialPropertiesBufferIndex;
+    float ReflectionsStrength;
+    uint RenderGUI;
+    uint VB_HalfRes;
+    uint VBAO_Enabled;
+    uint DisplayAO;
+    uint SSSR_Enabled;
+    
+    uint DoTonemap;
+};
+
+struct ResolveConstants
 {
     uint GPassMainBufferIndex;
     uint GPassDepthBufferIndex;
