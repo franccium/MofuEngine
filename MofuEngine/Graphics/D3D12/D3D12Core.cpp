@@ -35,7 +35,7 @@
 #else
 #define ENABLE_DEBUG_LAYER 0
 #endif
-#define ENABLE_GPU_BASED_VALIDATION 1
+#define ENABLE_GPU_BASED_VALIDATION 0
 
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
@@ -602,19 +602,18 @@ Initialize()
 
     tracyQueueContext = TracyD3D12Context(mainDevice, gfxCommand.CommandQueue());
 
-    if (graphics::debug::RenderingSettings.ReflectionsEnabled && graphics::debug::RenderingSettings.Reflections_FFXSSSR)
-    {
-        D3D12_FEATURE_DATA_D3D12_OPTIONS opts{};
-        mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &opts, sizeof(opts));
-        assert(opts.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3);
-        D3D12_FEATURE_DATA_D3D12_OPTIONS1 opts1{};
-        mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &opts1, sizeof(opts1));
-        assert(opts1.WaveOps);
-        D3D12_FEATURE_DATA_D3D12_OPTIONS5 opts5{};
-        mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &opts5, sizeof(opts5));
-        assert(opts5.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED);
-        ffx::sssr::Initialize();
-    }
+#if IS_SSSR_ENABLED
+    D3D12_FEATURE_DATA_D3D12_OPTIONS opts{};
+    mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &opts, sizeof(opts));
+    assert(opts.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3);
+    D3D12_FEATURE_DATA_D3D12_OPTIONS1 opts1{};
+    mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &opts1, sizeof(opts1));
+    assert(opts1.WaveOps);
+    D3D12_FEATURE_DATA_D3D12_OPTIONS5 opts5{};
+    mainDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &opts5, sizeof(opts5));
+    assert(opts5.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED);
+    ffx::sssr::Initialize();
+#endif
 
 #if PHYSICS_DEBUG_RENDER_ENABLED
     graphics::d3d12::debug::Initialize();
@@ -835,7 +834,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             cmdList->RSSetScissorRects(1, surface.ScissorRect());
         }
 #if RENDER_GUI
-        ui::SetupGUIFrame();
+        if (graphics::debug::RenderingSettings.RenderGUI)
+            ui::SetupGUIFrame();
 #endif
         //TODO: for now just do that here, would need to rewrite everything
         ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
@@ -894,6 +894,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
 #if RENDER_GUI
     // Editor UI
+    if (graphics::debug::RenderingSettings.RenderGUI)
     {
         TracyD3D12ZoneC(tracyQueueContext, cmdList, "Editor UI", tracy::Color::LightSkyBlue3);
 
@@ -963,7 +964,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             cmdList->RSSetScissorRects(1, surface.ScissorRect());
         }
 #if RENDER_GUI
-        ui::SetupGUIFrame();
+        if (graphics::debug::RenderingSettings.RenderGUI)
+            ui::SetupGUIFrame();
 #endif
         //TODO: for now just do that here, would need to rewrite everything
         ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
@@ -1037,6 +1039,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
 #if RENDER_GUI
     // Editor UI
+    if (graphics::debug::RenderingSettings.RenderGUI)
     {
         TracyD3D12ZoneC(tracyQueueContext, cmdList, "Editor UI", tracy::Color::LightSkyBlue3);
 
@@ -1102,7 +1105,6 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
 #if IS_DLSS_ENABLED
     {
-        //gpass::SetBufferSize(dlss::GetOptimalResolution());
         dlss::SetTargetResolution(_targetResolution);
     }
 #else
@@ -1125,7 +1127,8 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
             cmdList->RSSetScissorRects(1, surface.ScissorRect());
         }
 
-        ui::SetupGUIFrame();
+        if (graphics::debug::RenderingSettings.RenderGUI)
+            ui::SetupGUIFrame();
 
         //TODO: for now just do that here, would need to rewrite everything
         ecs::UpdateRenderSystems(ecs::system::SystemUpdateData{}, d3d12FrameInfo);
@@ -1298,26 +1301,21 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         }
     }
 
-    // Editor UI
+    if (graphics::debug::RenderingSettings.RenderGUI)
     {
-        TracyD3D12ZoneC(tracyQueueContext, cmdListFXSetup, "Editor UI", tracy::Color::LightSkyBlue3);
-
+        // set render target for ImGui
+        D3D12_CPU_DESCRIPTOR_HANDLE rtv{ surface.RTV() };
+        cmdListFXSetup->OMSetRenderTargets(1, &rtv, 1, nullptr);
+        // Editor UI
         {
-            ZoneScopedNC("Editor UI CPU", tracy::Color::LightSkyBlue2);
-            ui::RenderGUI();
-            ui::RenderSceneIntoImage(fx::GetSrvGPUDescriptorHandle(), d3d12FrameInfo);
-#if RENDER_2D_TEST
-#if RENDER_SCENE_ONTO_GUI_IMAGE
-            //TODO: make it work with post processing
-            ui::RenderSceneIntoImage(cmdListFXSetup, gpass::MainBuffer().SRV().gpu, d3d12FrameInfo);
-#else
-            // TODO:
-#endif // RENDER_SCENE_ONTO_GUI_IMAGE
-#else
-            // render 3d scene
-#endif // RENDER_2D_TEST
+            TracyD3D12ZoneC(tracyQueueContext, cmdListFXSetup, "Editor UI", tracy::Color::LightSkyBlue3);
 
-            ui::EndGUIFrame(cmdListFXSetup);
+            {
+                ZoneScopedNC("Editor UI CPU", tracy::Color::LightSkyBlue2);
+                ui::RenderGUI();
+                ui::RenderSceneIntoImage(fx::GetSrvGPUDescriptorHandle(), d3d12FrameInfo);
+                ui::EndGUIFrame(cmdListFXSetup);
+            }
         }
     }
 

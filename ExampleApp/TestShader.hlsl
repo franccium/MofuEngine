@@ -570,7 +570,7 @@ PixelOut TestShaderPS(in VertexOut psIn)
 #if !IS_SSSR_ENABLED
     //color += EvaluateIBL(S);
 #else
-    color += EvaluateDiffuseIBL(S);
+    //color += EvaluateDiffuseIBL(S);
 #endif
     color = saturate(color);
     

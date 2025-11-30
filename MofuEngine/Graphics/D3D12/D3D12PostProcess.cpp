@@ -7,6 +7,7 @@
 #include "D3D12RayTracing.h"
 #include "NGX/D3D12DLSS.h"
 #include "FFX/SSSR.h"
+#include "Graphics/GraphicsTypes.h"
 #include "Effects/D3D12KawaseBlur.h"
 
 namespace mofu::graphics::d3d12::fx {
@@ -125,9 +126,6 @@ constexpr f32 GRAN_TURISMO_SDR_PAPER_WHITE{ 250.0f };
 constexpr f32 REFERENCE_LUMINANCE{ 100.0f };
 constexpr f32 PhysicalToFrameBufferValue(f32 v) { return v / REFERENCE_LUMINANCE; }
 
-
-
-
 void
 CreateDebugRootSignature()
 {
@@ -142,7 +140,7 @@ CreateDebugRootSignature()
 
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices_Debug::Count]{};
 	parameters[FXRootParameterIndices_Debug::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-	parameters[FXRootParameterIndices_Debug::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices_Debug::RootConstants].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	parameters[FXRootParameterIndices_Debug::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
 	parameters[FXRootParameterIndices_Debug::DebugConstants].AsConstants(1, D3D12_SHADER_VISIBILITY_PIXEL, 2);
@@ -206,7 +204,7 @@ CreateRootSignature()
 
 	d3dx::D3D12RootParameter parameters[FXRootParameterIndices::Count]{};
 	parameters[FXRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-	parameters[FXRootParameterIndices::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+	parameters[FXRootParameterIndices::RootConstants].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	parameters[FXRootParameterIndices::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
 	parameters[FXRootParameterIndices::GTTonemapCurve].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0, 3);
 	//parameters[FXRootParameterIndices::DescriptorTable].AsDescriptorTable(D3D12_SHADER_VISIBILITY_PIXEL, &range, 1);
@@ -235,7 +233,7 @@ CreateRootSignature()
 
 		d3dx::D3D12RootParameter vbParams[SSILVBRootParameterIndices::Count]{};
 		vbParams[SSILVBRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
-		vbParams[SSILVBRootParameterIndices::RootConstants].AsConstants(PostProcessRootConstants::Count, D3D12_SHADER_VISIBILITY_PIXEL, 1);
+		vbParams[SSILVBRootParameterIndices::RootConstants].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 		vbParams[SSILVBRootParameterIndices::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
 
 		d3dx::D3D12RootSignatureDesc rootSigDesc
@@ -454,9 +452,12 @@ AddTransitionsPrePostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATE_RENDER_TARGET);
 #endif
-	barriers.AddTransitionBarrier(ssilvbTarget.Resource(),
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		D3D12_RESOURCE_STATE_RENDER_TARGET);
+	if (graphics::debug::RenderingSettings.VB_HalfRes)
+	{
+		barriers.AddTransitionBarrier(ssilvbTarget.Resource(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET);
+	}
 }
 
 void
@@ -477,7 +478,48 @@ AddTransitionsPostPostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo, D3D12_CPU_DESCRIPTOR_HANDLE rtv, const D3D12Surface& surface)
 {
 	u32 ssilvbSrvIndex{ gpass::MotionVecBuffer().SRV().index };
-	if(debug::RenderingSettings.VB_HalfRes)
+	hlsl::PostProcessConstants* shaderParams{ core::CBuffer().AllocateSpace<hlsl::PostProcessConstants>() };
+#if PATHTRACE_MAIN
+	shaderParams->RTBufferIndex = rt::MainBufferSRV().index;
+	shaderParams->GPassMainBufferIndex = gpass::MainBuffer().SRV().index;
+	shaderParams->GPassDepthBufferIndex = gpass::DepthBuffer().SRV().index;
+	shaderParams->NormalBufferIndex = gpass::NormalBuffer().SRV().index;
+	shaderParams->PositionBufferIndex = gpass::PositionBuffer().SRV().index;
+	shaderParams->MotionVectorsBufferIndex = gpass::MotionVecBuffer().SRV().index;
+	shaderParams->MiscBufferIndex = gpass::MiscBuffer().SRV().index;
+	shaderParams->ReflectionsBufferIndex = ffx::sssr::ReflectionsBuffer().SRV().index;
+	shaderParams->MaterialPropertiesBufferIndex = gpass::MaterialPropertiesBuffer().SRV().index;
+	shaderParams->ReflectionsStrength = debug::RenderingSettings.ReflectionsStrength;
+	shaderParams->DoTonemap = (u32)graphics::debug::RenderingSettings.ApplyTonemap;
+	shaderParams->VB_HalfRes = (u32)graphics::debug::RenderingSettings.VB_HalfRes;
+	shaderParams->DisplayAO = (u32)graphics::debug::RenderingSettings.DisplayAO;
+	shaderParams->RenderGUI = (u32)graphics::debug::RenderingSettings.RenderGUI;
+#else
+
+#if IS_DLSS_ENABLED
+	shaderParams->RTBufferIndex = gpass::MainBuffer().SRV().index;
+#else
+	shaderParams->RTBufferIndex = gpass::MainBuffer().SRV().index; // dummy
+	shaderParams->GPassMainBufferIndex = gpass::MainBuffer().SRV().index;
+	shaderParams->GPassDepthBufferIndex = gpass::DepthBuffer().SRV().index;
+	shaderParams->NormalBufferIndex = gpass::NormalBuffer().SRV().index;
+	shaderParams->PositionBufferIndex = gpass::PositionBuffer().SRV().index;
+	shaderParams->MotionVectorsBufferIndex = gpass::MotionVecBuffer().SRV().index;
+	shaderParams->MiscBufferIndex = gpass::MiscBuffer().SRV().index; // NOTE: not using it now, instead using as space for vbao
+	shaderParams->ReflectionsBufferIndex = ffx::sssr::ReflectionsBuffer().SRV().index;
+	shaderParams->MaterialPropertiesBufferIndex = gpass::MaterialPropertiesBuffer().SRV().index;
+	shaderParams->ReflectionsStrength = debug::RenderingSettings.ReflectionsStrength;
+	shaderParams->DoTonemap = (u32)graphics::debug::RenderingSettings.ApplyTonemap;
+	shaderParams->SSSR_Enabled = (u32)(graphics::debug::RenderingSettings.ReflectionsEnabled & graphics::debug::RenderingSettings.Reflections_FFXSSSR);
+	shaderParams->VBAO_Enabled = (u32)graphics::debug::RenderingSettings.VBAOEnabled;
+	shaderParams->VB_HalfRes = (u32)graphics::debug::RenderingSettings.VB_HalfRes;
+	shaderParams->DisplayAO = (u32)graphics::debug::RenderingSettings.DisplayAO;
+	shaderParams->RenderGUI = (u32)graphics::debug::RenderingSettings.RenderGUI;
+#endif
+
+#endif
+
+	if (debug::RenderingSettings.VB_HalfRes)
 	{
 		cmdList->RSSetViewports(1, effects::GetLowResViewport());
 		cmdList->RSSetScissorRects(1, effects::GetLowResScissorRect());
@@ -488,22 +530,7 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 
 		using idx = FXRootParameterIndices;
 		cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
-
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::GPassMainBufferIndex);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, PostProcessRootConstants::GPassDepthBufferIndex);
-#if IS_DLSS_ENABLED
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, dlss::GetOutputBufferSRV().index, PostProcessRootConstants::RTBufferIndex);
-#else
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::RTBufferIndex); // dummy
-#endif
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::PositionBuffer().SRV().index, PostProcessRootConstants::PositionBufferIndex);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MaterialPropertiesBuffer().SRV().index, PostProcessRootConstants::MaterialPropertiesBufferIndex);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, debug::RenderingSettings.ReflectionsStrength, PostProcessRootConstants::PostProcessRootConstants::ReflectionsStrength);
-		cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
+		cmdList->SetGraphicsRootConstantBufferView(idx::RootConstants, core::CBuffer().GpuAddress(shaderParams));
 
 		graphics::debug::Settings::SSILVB_Settings* giSettings{ core::CBuffer().AllocateSpace<graphics::debug::Settings::SSILVB_Settings>() };
 		memcpy(giSettings, &graphics::debug::RenderingSettings.SSILVB, sizeof(graphics::debug::Settings::SSILVB_Settings));
@@ -527,6 +554,8 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 		cmdList->RSSetScissorRects(1, surface.ScissorRect());
 	}
 
+	shaderParams->MiscBufferIndex = ssilvbSrvIndex;
+
 	GT7ToneMapCurve* curveData{ core::CBuffer().AllocateSpace<GT7ToneMapCurve>() };
 	memcpy(curveData, &_tonemapCurve, sizeof(GT7ToneMapCurve));
 
@@ -535,40 +564,9 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 
 	using idx = FXRootParameterIndices;
 	cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
-#if PATHTRACE_MAIN
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::GPassMainBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, PostProcessRootConstants::GPassDepthBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, rt::MainBufferSRV().index, PostProcessRootConstants::RTBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::PositionBuffer().SRV().index, PostProcessRootConstants::PositionBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MaterialPropertiesBuffer().SRV().index, PostProcessRootConstants::MaterialPropertiesBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, debug::RenderingSettings.ReflectionsStrength, PostProcessRootConstants::ReflectionsStrength);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
+	cmdList->SetGraphicsRootConstantBufferView(idx::RootConstants, core::CBuffer().GpuAddress(shaderParams));
 	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
-#else
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::GPassMainBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::DepthBuffer().SRV().index, PostProcessRootConstants::GPassDepthBufferIndex);
-#if IS_DLSS_ENABLED
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, dlss::GetOutputBufferSRV().index, PostProcessRootConstants::RTBufferIndex);
-#else
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MainBuffer().SRV().index, PostProcessRootConstants::RTBufferIndex); // dummy
-#endif
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::NormalBuffer().SRV().index, PostProcessRootConstants::NormalBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::PositionBuffer().SRV().index, PostProcessRootConstants::PositionBufferIndex);
-	//cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MotionVecBuffer().SRV().index, PostProcessRootConstants::MotionVectorsBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ssilvbSrvIndex, PostProcessRootConstants::MotionVectorsBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MiscBuffer().SRV().index, PostProcessRootConstants::MiscBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, ffx::sssr::ReflectionsBuffer().SRV().index, PostProcessRootConstants::ReflectionsBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, gpass::MaterialPropertiesBuffer().SRV().index, PostProcessRootConstants::MaterialPropertiesBufferIndex);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, debug::RenderingSettings.ReflectionsStrength, PostProcessRootConstants::PostProcessRootConstants::ReflectionsStrength);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.ApplyTonemap, PostProcessRootConstants::DoTonemap);
-	cmdList->SetGraphicsRoot32BitConstant(idx::RootConstants, (u32)graphics::debug::RenderingSettings.VB_HalfRes, PostProcessRootConstants::VB_HalfRes);
-	cmdList->SetGraphicsRootConstantBufferView(idx::GTTonemapCurve, core::CBuffer().GpuAddress(curveData));
-#endif
-	graphics::debug::Settings::SSILVB_Settings* giSettings{core::CBuffer().AllocateSpace<graphics::debug::Settings::SSILVB_Settings>()};
+	graphics::debug::Settings::SSILVB_Settings* giSettings{ core::CBuffer().AllocateSpace<graphics::debug::Settings::SSILVB_Settings>() };
 	memcpy(giSettings, &graphics::debug::RenderingSettings.SSILVB, sizeof(graphics::debug::Settings::SSILVB_Settings));
 	cmdList->SetGraphicsRootConstantBufferView(idx::GISettings, core::CBuffer().GpuAddress(giSettings));
 
@@ -580,12 +578,21 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 #if RENDER_GUI
-	const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.RTV(0) };
-	cmdList->OMSetRenderTargets(1, &imageSourceRTV, 1, nullptr);
-	cmdList->DrawInstanced(3, 1, 0, 0);
-#endif
+	if (graphics::debug::RenderingSettings.RenderGUI)
+	{
+		const D3D12_CPU_DESCRIPTOR_HANDLE imageSourceRTV{ renderTexture.RTV(0) };
+		cmdList->OMSetRenderTargets(1, &imageSourceRTV, 1, nullptr);
+		cmdList->DrawInstanced(3, 1, 0, 0);
+	}
+	else
+	{
+		cmdList->OMSetRenderTargets(1, &rtv, 1, nullptr);
+		cmdList->DrawInstanced(3, 1, 0, 0);
+	}
+#else
 	cmdList->OMSetRenderTargets(1, &rtv, 1, nullptr);
 	cmdList->DrawInstanced(3, 1, 0, 0);
+#endif
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE 

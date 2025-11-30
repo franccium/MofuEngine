@@ -14,12 +14,15 @@ enum DebugMode : u32
 };
 struct Settings
 {
+	bool RenderGUI{ true };
 	//TODO: should have a bindless constant buffer with all settings relevant to shaders
-	bool ReflectionsEnabled{ true };
+	bool ReflectionsEnabled{ false };
 	bool Reflections_FFXSSSR{ true };
 	f32 ReflectionsStrength{ 1.f };
-	bool ApplyDualKawaseBlur{ true };
+	bool ApplyDualKawaseBlur{ false };
+	bool VBAOEnabled{ false };
 	bool VB_HalfRes{ false };
+	bool DisplayAO{ false };
 	bool UsePrefilteredSpecular{ true };
 	bool ApplyTonemap{ false };
 	bool EnablePhysicsDebugRendering{ true };
@@ -43,10 +46,10 @@ struct Settings
 
 	struct SSILVB_Settings
 	{
-		f32 SampleCount{ 4.0f };
-		f32 SampleRadius{ 4.0f };
-		f32 SliceCount{ 4.0f };
-		f32 HitThickness{ 0.5f };
+		f32 SampleCount{ 3.0f };
+		f32 SampleRadius{ 1.2f };
+		f32 SliceCount{ 3.0f };
+		f32 HitThickness{ 0.982f };
 	} SSILVB;
 };
 extern Settings RenderingSettings;

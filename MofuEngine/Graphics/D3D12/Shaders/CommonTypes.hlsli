@@ -200,6 +200,27 @@ struct RTSettings
     uint UseRussianRoulette;
 };
 
+struct PostProcessConstants
+{
+    uint GPassMainBufferIndex;
+    uint GPassDepthBufferIndex;
+    uint RTBufferIndex;
+    uint NormalBufferIndex;
+    uint PositionBufferIndex;
+    uint MotionVectorsBufferIndex;
+    uint MiscBufferIndex;
+    uint ReflectionsBufferIndex;
+    uint MaterialPropertiesBufferIndex;
+    float ReflectionsStrength;
+    uint RenderGUI;
+    uint VB_HalfRes;
+    uint VBAO_Enabled;
+    uint DisplayAO;
+    uint SSSR_Enabled;
+    
+    uint DoTonemap;
+};
+
 #ifdef __cplusplus
 static_assert((sizeof(PerObjectData) % 16) == 0, "The PerObjectData struct has to be formatted in 16-byte chunks without any implicit padding.");
 static_assert((sizeof(CullableLightParameters) % 16) == 0, "The CullableLightParameters struct has to be formatted in 16-byte chunks without any implicit padding.");

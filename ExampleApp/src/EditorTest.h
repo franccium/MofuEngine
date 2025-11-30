@@ -31,6 +31,7 @@
 #include "Editor/ObjectPicker.h"
 #include "Content/ContentManagement.h"
 #include "Editor/MaterialEditor.h"
+#include "Graphics/RenderingDebug.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -234,6 +235,8 @@ void MofuUpdate()
 	fixedAccum += dt;
 	constexpr f32 MAX_ACCUMULATED_TIME = 0.1f;
 	fixedAccum = std::min(fixedAccum, MAX_ACCUMULATED_TIME);
+	if (input::WasKeyPressed(input::Keybinds::Editor.ToggleFullscreen)) 
+		graphics::debug::RenderingSettings.RenderGUI = !graphics::debug::RenderingSettings.RenderGUI;
 #if SHADER_HOT_RELOAD_ENABLED
 	// autosave is problematic so keybind only for now
 	if (input::WasKeyPressed(input::Keybinds::Editor.ShaderReload)) shaders::UpdateHotReload();
@@ -281,7 +284,8 @@ void MofuUpdate()
 	}
 	
 #if RENDER_GUI
-	graphics::ui::StartNewFrame();
+	if (graphics::debug::RenderingSettings.RenderGUI)
+		graphics::ui::StartNewFrame();
 #endif
 
 	for (u32 i{ 0 }; i < WINDOW_COUNT; ++i)

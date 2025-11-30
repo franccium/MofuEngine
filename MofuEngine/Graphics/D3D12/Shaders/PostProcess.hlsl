@@ -17,22 +17,7 @@ struct DebugConstants
 #define DEBUG_MOTION_VECTORS 4
 #endif
 
-struct PostProcessConstants
-{
-    uint GPassMainBufferIndex;
-    uint GPassDepthBufferIndex;
-    uint RTBufferIndex;
-    uint NormalBufferIndex;
-    uint PositionBufferIndex;
-    uint MotionVectorsBufferIndex;
-    uint MiscBufferIndex;
-    uint ReflectionsBufferIndex;
-    uint MaterialPropertiesBufferIndex;
-    float ReflectionsStrength;
-    uint VB_HalfRes;
-    
-    uint DoTonemap;
-};
+
 
 struct GISettings
 {
@@ -102,7 +87,7 @@ float3 F_Schlick(float3 F0, float VoH)
     return F90Approx * u + (1.f - u) * F0;
 }
 
-float3 ApplyReflections(float3 baseColor, float2 uv, float depth)
+float3 ApplyReflections(float3 directLighting, float2 uv, float depth, float ao)
 {
     const float3 radiance = Sample(ShaderParams.ReflectionsBufferIndex, LinearSampler, uv).rgb;
     const float4 nr = Sample(ShaderParams.NormalBufferIndex, LinearSampler, uv).rgba;
@@ -113,7 +98,6 @@ float3 ApplyReflections(float3 baseColor, float2 uv, float depth)
     const float3 n = nr.rgb;
     const float perceptualRoughness = sqrt(mat.r);
     const float metallic = mat.g;
-    const float ao = mat.a;
     const float3 albedo = float3(nr.a, mat.b, mat.a);
     const float3 F0 = lerp(0.04f, albedo, metallic);
     const float NoV = saturate(dot(n, viewDir));
@@ -124,13 +108,13 @@ float3 ApplyReflections(float3 baseColor, float2 uv, float depth)
     
     AmbientLightParameters IBL = GlobalData.AmbientLight;
     const float3 diffuseColor = albedo * (1.f - metallic);
-    float3 diffuse = SampleCube(IBL.DiffuseSrvIndex, LinearSampler, n).rgb * diffuseColor * (1.f - F);
+    float3 diffuse = SampleCube(IBL.DiffuseSrvIndex, LinearSampler, n).rgb * diffuseColor * (1.f - F) * ao;
     
     
     float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, saturate(float2(NoV, 1.f - perceptualRoughness)), 0).rg;
     
     float3 color = diffuse * IBL.Intensity + radiance * (F0 * brdfLut.x + brdfLut.y);
-    return color + baseColor;
+    return color + directLighting;
 }
 
 static const uint SectorCount = 32u;
@@ -379,60 +363,61 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 #if IS_DLSS_ENABLED
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.RTBufferIndex];
 #else
+        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
+#endif
+        color = gpassMain[Position.xy].rgb;
         
+        float ao = 1.f;
+        if (ShaderParams.VBAO_Enabled)
+        {
+            if (ShaderParams.VB_HalfRes)
+            {
+                Texture2D ssilvb = ResourceDescriptorHeap[ShaderParams.MotionVectorsBufferIndex];
+                float2 lowresUV = UV * 0.5f;
+                const float4 visibility = ssilvb.Sample(LinearSampler, lowresUV).rgba;
+                //color = visibility.rgb;
+                if (ShaderParams.DisplayAO)
+                {
+                    color = visibility.aaa;
+                }
+                else
+                {
+                    ao = visibility.a;
+                }
+            }
+            else
+            {
+                //float4 visibility = ApplySSILVB(Position.xy, depth);
+                //color = visibility.aaa;
+                float vbao = VBAO(Position.xy, depth);
+                ao = vbao;
+            }
+        }
+        
+        if (ShaderParams.SSSR_Enabled)
+        {
 #if IS_SSSR_ENABLED
         //Texture2D reflections = ResourceDescriptorHeap[ShaderParams.ReflectionsBufferIndex];
-        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
         Texture2D normals = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-        #if 1
+#if 1
         //color = reflections[Position.xy].rgb;
         float3 mainColor = gpassMain[Position.xy].rgb;
-        color = ApplyReflections(mainColor, UV, depth);
-        #else
+        color = ApplyReflections(mainColor, UV, depth, ao);
+#else
         //float3 mainColor = gpassMain[Position.xy].rgb;
         float3 mainColor = normals[Position.xy].rgb;
         color = mainColor;
-        #endif
-#else
-        #define VISIBILITY_BITMASK 1
-        #if VISIBILITY_BITMASK
-        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-        Texture2D ssilvb = ResourceDescriptorHeap[ShaderParams.MotionVectorsBufferIndex];
-        
-        if (ShaderParams.VB_HalfRes)
-        {
-            float2 lowresUV = UV * 0.5f;
-            const float4 visibility = ssilvb.Sample(LinearSampler, lowresUV).rgba;
-            //color = visibility.rgb;
-            color = visibility.aaa;
-            //color *= visibility.aaa;
-            //color = visibility.aaa;
-            //color *= visibility.a;
-            //color *= gpassMain[Position.xy].rgb;
+#endif
+#endif
         }
-        else
+        
+        if (ShaderParams.DisplayAO)
         {
-            //float4 visibility = ApplySSILVB(Position.xy, depth);
-            //color = visibility.aaa;
-            float ao = VBAO(Position.xy, depth);
             color = ao.xxx;
         }
-        //color = visibility.aaa;
-        //color = visibility.rgb * visibility.a;
-        //color += gpassMain[Position.xy].rgb;
         
-        //color = ssilvb[Position.xy].rgb;
+        //Texture2D normals = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
         
-        
-        
-        #else
-        Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
-        //Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
-        color = gpassMain[Position.xy].rgb;
-        #endif
-#endif
-        
-#endif
         //color = float3(texture[Position.xy].xy * 0.5f + 0.5f, 0.f);
 #endif
     }
@@ -456,6 +441,11 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
 #else
         color = LinearToSRGB(color);
 #endif
+    }
+    
+    if (!ShaderParams.RenderGUI)
+    {
+        color = pow(color, 2.2f);
     }
     
     return float4(color, 1.f);

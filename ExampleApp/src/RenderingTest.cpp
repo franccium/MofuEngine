@@ -61,61 +61,6 @@ id_t mtlID{ id::INVALID_ID };
 id_t texturedPsID{ id::INVALID_ID };
 id_t texturedMaterialID{ id::INVALID_ID };
 
-constexpr const char* TEST_MESH_ASSET_PATH{ "Projects/TestProject/Assets/Generated/plane.geom" };
-constexpr const char* TEST_MESH_PATH{ "Projects/TestProject/Assets/Generated/planeModel.model" };
-constexpr const char* TEST_IMPORTED_MESH_PATH{ "Projects/TestProject/Assets/Generated/testmodel.model" };
-constexpr const char* TEST_BISTRO_MESH_PATH{ "Projects/TestProject/Assets/Generated/BistroInterior.model" };
-
-constexpr const char* TEST_TEXTURE_PATH{ "Projects/TestProject/Assets/Generated/testTextureEnginePacked.tex" };
-
-constexpr const char* WHITE_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/white_placeholder_texture.tex" };
-constexpr const char* GRAY_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/gray_placeholder_texture.tex" };
-constexpr const char* BLACK_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/black_placeholder_texture.tex" };
-constexpr const char* ERROR_TEXTURE{ "Projects/TestProject/Assets/Generated/Textures/eror_texture.tex" };
-
-struct ModelData
-{
-	const char* MeshFile{ TEST_MESH_PATH };
-	const char* BaseColor{};
-	const char* Normal{};
-	const char* MetallicRoughness{};
-	const char* AO{};
-	const char* Emissive{};
-	u32 somewhereAroundSubmeshCount{ 1 };
-	v3 Pos{ 0.f, 0.f, 0.f };
-	quat Rot{ quatIndentity };
-	v3 Scale{ 1.f, 1.f, 1.f };
-};
-
-constexpr ModelData CYBORG_MODEL{
-	"Projects/TestProject/Assets/Generated/cyborg.model",
-	//"Assets/Generated/testroomwithmonkeys.model",
-	//"Assets/Generated/campfire_scene_simplest.model",
-	//TEST_MESH_PATH,
-	"Projects/TestProject/Assets/Generated/Body_B.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_N.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_Metal.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_E.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_AO.tga.tex",
-	//TEST_TEXTURE_PATH,
-	//TEST_TEXTURE_PATH,
-	//TEST_TEXTURE_PATH,
-	//TEST_TEXTURE_PATH,
-	//TEST_TEXTURE_PATH, //TODO: placeholder textures
-	10
-};
-
-constexpr ModelData BISTRO_INTERIOR_MODEL{
-	"Projects/TestProject/Assets/Generated/BistroInterior.model",
-	"Projects/TestProject/Assets/Generated/Body_B.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_N.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_Metal.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_E.tga.tex",
-	"Projects/TestProject/Assets/Generated/Body_AO.tga.tex",
-	3000
-};
-
-
 struct MeshTest
 {
 	id_t MeshID{ id::INVALID_ID };
@@ -144,19 +89,7 @@ u64 specularIBLHandle{ 15753239102389846408 };
 u64 brdfLutHandle{ 6591591707561885939 };
 u64 skyboxHandle{ 1764144365702082788 };
 
-
-//u64 diffuseIBLHandle{ 4366106093611776610 };
-//u64 specularIBLHandle{ 10035983706911181120 };
-//u64 brdfLutHandle{ 10865738213553409319 };
-//u64 skyboxHandle{ 11277431815226102038 };
-
-u64 skySkyboxHandle{ 7628588064764004896 };
-
-// meadow
-//u64 diffuseIBLHandle{ 3375815875843134095 };
-//u64 specularIBLHandle{ 2879393416251087236 };
-//u64 brdfLutHandle{ 6591591707561885939 };
-//u64 skyboxHandle{ 1764144365702082788 };
+u64 skySkyboxHandle{ 7733417588518510484 };
 
 constexpr f32 INV_RAND_MAX{ 1.f / RAND_MAX };
 f32 Random(f32 min = 0.f) { return std::max(min, rand() * INV_RAND_MAX); }
@@ -254,21 +187,6 @@ CreateMaterials()
 
 	loadedMaterialIDs.emplace_back(mtlID);
 
-	//memset(pbrMaterialIDs, 0xDD, sizeof(pbrMaterialIDs));
-	//v2 metallicRoughness[_countof(pbrMaterialIDs)]{
-	//	{0.f, 0.0f}, {0.f, 0.2f}, {0.f, 0.4f}, {0.f, 0.6f}, {0.f, 0.8f}, {0.f, 1.0f},
-	//	{0.f, 0.f}, {0.2f, 0.f}, {0.4f, 0.f}, {0.6f, 0.f}, {0.8f, 0.f}, {1.0f, 0.f},
-	//	{0.f, 0.f}, {0.2f, 0.2f}, {0.4f, 0.4f}, {0.6f, 0.6f}, {0.8f, 0.8f}, {1.0f, 1.0f}
-	//};
-	//graphics::MaterialSurface& surface{ info.Surface };
-	//surface.BaseColor = { 0.5f, 0.5f, 0.5f, 1.f };
-	//for (u32 i{ 0 }; i < _countof(pbrMaterialIDs); ++i)
-	//{
-	//	surface.Metallic = metallicRoughness[i].x;
-	//	surface.Roughness = metallicRoughness[i].y;
-	//	pbrMaterialIDs[i] = content::CreateResourceFromBlob(&info, content::AssetType::Material);
-	//}
-
 	info.ShaderIDs[shaders::ShaderType::Pixel] = texturedPsID;
 	if (loadedTexturesCount != 0)
 	{
@@ -295,19 +213,8 @@ AddLights()
 		content::AssetHandle diffuseHandle{ content::assets::GetIBLRelatedHandle(skyboxHandle) };
 		content::AssetHandle specularHandle{ content::assets::GetIBLRelatedHandle(diffuseHandle) };
 		content::AssetHandle brdfLUTHandle{ content::assets::GetIBLRelatedHandle(specularHandle) };
-		
-		
-		////content::AssetHandle diffuseHandle{ skybox->AdditionalData2 };
-		//content::AssetPtr diffuseAsset{ content::assets::GetAsset(diffuseHandle) };
-		//assert(diffuseAsset);
-		////content::AssetHandle specularHandle{ diffuseAsset->AdditionalData2 };
-		//content::AssetPtr specularAsset{ content::assets::GetAsset(specularHandle) };
-		//assert(specularAsset);
-		////content::AssetHandle brdfLUTHandle{ specularAsset->AdditionalData2 };
-		//content::AssetPtr brdfLUTAsset{ content::assets::GetAsset(brdfLUTHandle) };
-		//assert(brdfLUTAsset);
 
-		f32 ambientLightIntensity{ 1.f };
+		f32 ambientLightIntensity{ 0.198f };
 		id_t diffuseIBL{ content::assets::CreateResourceFromHandle(handles.DiffuseHandle) };
 		id_t specularIBL{ content::assets::CreateResourceFromHandle(handles.SpecularHandle) };
 		id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(handles.BrdfLutHandle) };
@@ -316,7 +223,7 @@ AddLights()
 	}
 	else
 	{
-		f32 ambientLightIntensity{ 1.f };
+		f32 ambientLightIntensity{ 0.198f };
 		id_t diffuseIBL{ content::assets::CreateResourceFromHandle(diffuseIBLHandle) };
 		id_t specularIBL{ content::assets::CreateResourceFromHandle(specularIBLHandle) };
 		id_t BRDFLutIBL{ content::assets::CreateResourceFromHandle(brdfLutHandle) };
@@ -433,140 +340,9 @@ AddLights()
 #endif
 }
 
-void
-AddRenderItem()
-{
-	ModelData modelData{ CYBORG_MODEL };
-	v3 pos{ modelData.Pos };
-	quat rot{ modelData.Rot };
-	v3 scale{ modelData.Scale };
-	ecs::component::LocalTransform lt{ {}, pos, rot, scale };
-	ecs::component::WorldTransform wt{};
-	ecs::component::RenderMaterial material{};
-	ecs::component::RenderMesh mesh{};
-
-	//const char* path{ TEST_MESH_PATH };
-	//const char* path{ TEST_IMPORTED_MESH_PATH };
-	//const char* path{ TEST_BISTRO_MESH_PATH };
-	//std::filesystem::path modelPath{ path };
-
-	//ModelData modelData{ BISTRO_INTERIOR_MODEL };
-
-	memset(&textureIDs[0], 0xEE, _countof(textureIDs) * sizeof(id_t));
-	//std::thread threads[]{
-	//	std::thread{[modelData] {textureIDs[TextureUsage::BaseColor] = LoadTexture(modelData.BaseColor); }},
-	//	std::thread{[modelData] {textureIDs[TextureUsage::Normal] = LoadTexture(modelData.Normal); }},
-	//	std::thread{[modelData] {textureIDs[TextureUsage::Emissive] = LoadTexture(modelData.Emissive); }},
-	//	std::thread{[modelData] {textureIDs[TextureUsage::MetallicRoughness] = LoadTexture(modelData.MetallicRoughness); }},
-	//	std::thread{[modelData] {textureIDs[TextureUsage::AmbientOcclusion] = LoadTexture(modelData.AO); }},
-	//};
-	textureIDs[TextureUsage::BaseColor] = LoadTexture(modelData.BaseColor);
-	textureIDs[TextureUsage::Normal] = LoadTexture(modelData.Normal);
-	textureIDs[TextureUsage::Emissive] = LoadTexture(modelData.Emissive);
-	textureIDs[TextureUsage::MetallicRoughness] = LoadTexture(modelData.MetallicRoughness);
-	textureIDs[TextureUsage::AmbientOcclusion] = LoadTexture(modelData.AO);
-
-	//for (auto& t : threads)
-	//{
-	//	t.join();
-	//}
-
-	LoadShaders();
-
-	CreateMaterials();
-
-	constexpr bool USE_TEXTURES{ true };
-
-	if (USE_TEXTURES)
-	{
-		u32* texturedMaterials = new u32[modelData.somewhereAroundSubmeshCount];
-		for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
-		{
-			texturedMaterials[i] = texturedMaterialID;
-		}
-		editor::assets::DropModelIntoScene(modelData.MeshFile, texturedMaterials);
-	}
-	else
-	{
-		u32* materials = new u32[modelData.somewhereAroundSubmeshCount];
-		for (u32 i{ 0 }; i < modelData.somewhereAroundSubmeshCount; ++i)
-		{
-			materials[i] = mtlID;
-		}
-		editor::assets::DropModelIntoScene(modelData.MeshFile, materials);
-	}
-
-	//MeshTest planeMeshTest{};
-	//planeMeshTest.MeshID = LoadMesh(path); //FIXME: this assumes 1 LOD
-	//content::UploadedGeometryInfo uploadedGeometryInfo{ content::GetLastUploadedGeometryInfo() };
-	//planeMeshTest.MeshID = uploadedGeometryInfo.GeometryContentID;
-
-	//u32 submeshCount{ uploadedGeometryInfo.SubmeshCount };
-
-
-	//if(mtlID == id::INVALID_ID) CreateMaterial();
-	////u32 materialCount{ 1 };
-	//u32* materials = new u32[submeshCount];
-	//for (u32 i{ 0 }; i < submeshCount; ++i)
-	//{
-	//	materials[i] = mtlID;
-	//}
-	//meshTests.emplace_back(planeMeshTest);
-
-	//mesh.MeshID = planeMeshTest.MeshID;
-	//material.MaterialCount = 1;
-	//material.MaterialIDs = &materials[0];
-
-	//// create root entity
-	//ecs::EntityData& entityData{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-	//	ecs::component::RenderMesh, ecs::component::RenderMaterial>(lt, wt, mesh, material) };
-	//loadedEntities.emplace_back(entityData.id);
-
-	////u32 renderItemCount{ mofu::content::GetSubmeshGpuIDCount(mesh.MeshID) };
-	////assert(renderItemCount == materialCount);
-
-
-	//u32 subEntities{ (u32)uploadedGeometryInfo.SubmeshGpuIDs.size() };
-	//ecs::component::Parent parentEntity{ {}, entityData.id };
-	//for (u32 i{ 1 }; i < subEntities; ++i)
-	//{
-	//	pos.x -= 0.25f;
-	//	pos.y += 0.25f;
-	//	lt.Position = pos;
-	//	id_t meshId{ uploadedGeometryInfo.SubmeshGpuIDs[i] };
-	//	//mesh.MeshID = planeMeshTest.MeshID; //TODO:
-	//	mesh.MeshID = meshId;
-	//	material.MaterialIDs = &materials[i];
-	//	material.MaterialCount = 1;
-
-	//	ecs::EntityData& e{ ecs::scene::SpawnEntity<ecs::component::LocalTransform, ecs::component::WorldTransform,
-	//		ecs::component::RenderMesh, ecs::component::RenderMaterial, ecs::component::Parent>(lt, wt, mesh, material, parentEntity)};
-
-	//	loadedMeshesIDs.emplace_back(meshId);
-	//	loadedEntities.emplace_back(e.id);
-	//	++loadedModelsCount;
-	//	meshTests.emplace_back(MeshTest{ meshId, e.id });
-	//}
-
-	////planeMeshTest.EntityID = ecs::Entity{ 0 };
-	////planeMeshTest.EntityID = ecs::Entity{ entityData.id };
-	//planeMeshTest.EntityID = ecs::Entity{ entityData.id };
-	////if(loadedModelsCount == 0) planeMeshTest.EntityID = ecs::Entity{ entityData.id };
-	////else if (loadedModelsCount == 1) planeMeshTest.EntityID = ecs::Entity{ 1 };
-	////else if (loadedModelsCount == 2) planeMeshTest.EntityID = ecs::Entity{ 1 };
-
-	////graphics::AddRenderItem(planeMeshTest.EntityID, planeMeshTest.MeshID, 1, materials);
-	////++loadedModelsCount;
-	////loadedModelsCount = 3;
-
-	//loadedModelsCount = submeshCount;
-}
-
 u32
 CreateTestRenderItems()
 {
-
-
 	content::AssetHandle meshAsset{ content::assets::DEFAULT_MESH_HANDLE };
 	content::AssetHandle materialAsset{ content::assets::DEFAULT_MATERIAL_UNTEXTURED_HANDLE };
 
@@ -607,24 +383,6 @@ CreateTestRenderItems()
 	editor::AddPrefab("Projects/TestProject/Resources/Prefabs/boxestest.pre");
 	const content::AssetHandle SUN_TEMPLE{ 13905473850964664605 };
 	//editor::AddPrefab("Projects/TestProject/Resources/Prefabs/suntemple1.pre");
-
-
-	/*for (u32 i{ 0 }; i < 3; ++i)
-	{
-		ecs::Entity e{ editor::AddPrefab("EditorAssets/Prefabs/pcube.pre") };
-		ecs::scene::AddComponent<ecs::component::StaticObject>(e);
-		
-		JPH::BoxShape boxShape{ JPH::Vec3{1.f, 1.f, 1.f} };
-		JPH::Shape* shape{ new JPH::BoxShape{JPH::Vec3{1.f, 1.f, 1.f}} };
-		
-		ecs::component::LocalTransform& lt{ ecs::scene::GetEntityComponent<ecs::component::LocalTransform>(e) };
-		lt.Position.x += i * 3.f;
-		lt.Position.y += i * 0.2f;
-		JPH::RVec3 pos{ lt.Position.x, lt.Position.y, lt.Position.z };
-		JPH::Quat rot{ lt.Rotation.x, lt.Rotation.y, lt.Rotation.z, lt.Rotation.w };
-
-		physics::AddStaticBodyFromMesh()
-	}*/
 
 	return loadedModelsCount;
 }

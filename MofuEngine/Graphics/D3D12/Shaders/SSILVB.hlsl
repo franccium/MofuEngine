@@ -1,22 +1,6 @@
 
 #include "Common.hlsli"
 
-struct PostProcessConstants
-{
-    uint GPassMainBufferIndex;
-    uint GPassDepthBufferIndex;
-    uint RTBufferIndex;
-    uint NormalBufferIndex;
-    uint PositionBufferIndex;
-    uint MotionVectorsBufferIndex;
-    uint MiscBufferIndex;
-    uint ReflectionsBufferIndex;
-    uint MaterialPropertiesBufferIndex;
-    float ReflectionsStrength;
-    
-    uint DoTonemap;
-};
-
 struct GISettings
 {
     float SampleCount;

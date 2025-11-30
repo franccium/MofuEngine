@@ -21,6 +21,7 @@ FfxSssrDispatchDescription _dispatchDesc{};
 
 D3D12RenderTexture outputBuffer{};
 constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
+bool _isInitialized{ false };
 
 }
 
@@ -84,14 +85,8 @@ Initialize()
 
 	FfxSssrContextDescription desc{};
 	desc.flags = FFX_SSSR_ENABLE_DEPTH_INVERTED;
-	if constexpr (DLSS_ENABLED)
-	{
-		assert(false);
-	}
-	else
-	{
-		desc.renderSize = { graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
-	}
+	const u32v2 renderRes{ core::RenderResolution() };
+	desc.renderSize = { renderRes.x, renderRes.y };
 	desc.normalsHistoryBufferFormat = FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
 	desc.backendInterface = _backendInterface;
 	ffxSssrContextCreate(&_context, &desc);
@@ -124,7 +119,7 @@ GatherResources()
 #endif
 	_dispatchDesc.commandList = ffxGetCommandListDX12(core::GraphicsCommandList());
 
-	if (resources::WasResourceUpdated(resources::ResourceUpdateState::GPassBuffers))
+	if (resources::WasResourceUpdated(resources::ResourceUpdateState::GPassBuffers) || !_isInitialized)
 	{
 		const DXResource* const colorBuffer{ gpass::MainBuffer().Resource() };
 		assert(colorBuffer);
@@ -152,7 +147,7 @@ GatherResources()
 	}
 
 	graphics::debug::Settings::FFX_SSSR_Settings& settings{ graphics::debug::RenderingSettings.FFX_SSSR };
-	if (settings.WasAmbientLightChanged)
+	if (settings.WasAmbientLightChanged || !_isInitialized)
 	{
 		const DXResource* const environmentMap{ content::texture::GetResource(graphics::light::GetLightSet(0).EnvironmentMapTextureID) };
 		assert(environmentMap);
@@ -162,6 +157,7 @@ GatherResources()
 		assert(brdfTexture);
 		_dispatchDesc.brdfTexture = ffxGetResourceDX12(brdfTexture, ffxGetResourceDescriptionDX12(brdfTexture), L"BRDF Texture", FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 		settings.WasAmbientLightChanged = false;
+		_isInitialized = true;
 	}
 
 	_dispatchDesc.renderSize = { graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
@@ -188,8 +184,6 @@ Dispatch(const D3D12FrameInfo& frameInfo)
 #if !IS_SSSR_ENABLED
 	return;
 #endif
-	_dispatchDesc.commandList = ffxGetCommandListDX12(core::GraphicsCommandList());
-
 	GatherResources(); // TODO: for now its here
 
 	// camera matrices in column major
