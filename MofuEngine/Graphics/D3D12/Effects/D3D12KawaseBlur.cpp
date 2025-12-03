@@ -87,11 +87,15 @@ CreatePSO()
 	return _psoDown && _psoUp;
 }
 
+}
+
 void
-CreateFXBuffers()
+CreateFXBuffers(u32v2 renderDimensions)
 {
 	downBuffer.Release();
 	upBuffer.Release();
+	downDimensions = { renderDimensions.x / 2, renderDimensions.y / 2 };
+	upDimensions = { renderDimensions.x, renderDimensions.y };
 
 	D3D12_RESOURCE_DESC1 desc;
 	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -115,7 +119,6 @@ CreateFXBuffers()
 	}
 	NAME_D3D12_OBJECT(downBuffer.Resource(), L"Kawase Blur Down Buffer");
 
-
 	desc.Width = upDimensions.x;
 	desc.Height = upDimensions.y;
 	{
@@ -127,12 +130,9 @@ CreateFXBuffers()
 		upBuffer = D3D12RenderTexture{ texInfo };
 	}
 	NAME_D3D12_OBJECT(upBuffer.Resource(), L"Kawase Blur Up Buffer");
-}
-}
 
-void 
-Initialize()
-{
+	assert(downBuffer.Resource() && upBuffer.Resource());
+
 	_halfResViewport.TopLeftX = 0.f;
 	_halfResViewport.TopLeftY = 0.f;
 	_halfResViewport.Width = (float)upDimensions.x;
@@ -149,13 +149,15 @@ Initialize()
 
 	_halfResScissor = { 0, 0, (i32)upDimensions.x, (i32)upDimensions.y };
 	_quarterResScissor = { 0, 0, (i32)downDimensions.x, (i32)downDimensions.y };
+}
 
+void 
+Initialize()
+{
 	CreateRootSignature();
 	assert(_rootSig);
 	CreatePSO();
 	assert(_psoDown && _psoUp);
-	CreateFXBuffers();
-	assert(downBuffer.Resource() && upBuffer.Resource());
 }
 
 void
@@ -195,6 +197,8 @@ const D3D12_RECT* GetLowResScissorRect()
 void 
 ApplyKawaseBlur(DXResource* res, u32 texSrvIndex, DXGraphicsCommandList* const cmdList)
 {
+	assert(downBuffer.Resource() && upBuffer.Resource());
+
 	d3dx::TransitionResource(upBuffer.Resource(), cmdList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	cmdList->RSSetViewports(1, &_quarterResViewport);
 	cmdList->RSSetScissorRects(1, &_quarterResScissor);

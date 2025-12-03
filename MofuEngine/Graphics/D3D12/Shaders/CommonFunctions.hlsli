@@ -40,4 +40,14 @@ float4 ScreenToView(float4 screen, float2 invViewDimensions, float4x4 inversePro
     return ClipToView(clip, inverseProjection);
 }
 
+float2 WorldDirToScreenUV(float3 worldDir, float3 camPos, float4x4 viewProjection)
+{
+    float3 worldPos = camPos + worldDir * 1000.0f;
+    float4 clipPos = mul(viewProjection, float4(worldPos, 1.0f));
+    float3 ndc = clipPos.xyz / clipPos.w;
+    float2 uv = ndc.xy * 0.5f + 0.5f;
+    uv.y = 1.0f - uv.y;
+    return uv;
+}
+
 #endif

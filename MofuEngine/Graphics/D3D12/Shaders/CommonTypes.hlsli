@@ -34,6 +34,7 @@ struct GlobalShaderData
 #endif
     
     float DeltaTime;
+    uint FrameIndex;
 };
 
 struct PerObjectData
@@ -220,6 +221,9 @@ struct PostProcessConstants
     uint SSSR_Enabled;
     
     uint DoTonemap;
+    
+    float3 SunDirection;
+    float3 SunColor;
 };
 
 struct ResolveConstants

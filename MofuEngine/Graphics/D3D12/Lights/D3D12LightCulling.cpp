@@ -210,8 +210,8 @@ void _declspec(noinline)
 ResizeAndCalculateGridFrustums(CullingParameters& culler, DXGraphicsCommandList* const cmdList, 
 	const D3D12FrameInfo& frameInfo, d3dx::D3D12ResourceBarrierList& barriers)
 {
-	culler.ViewWidth = frameInfo.SurfaceWidth;
-	culler.ViewHeight = frameInfo.SurfaceHeight;
+	culler.ViewWidth = core::RenderResolution().x;
+	culler.ViewHeight = core::RenderResolution().y;
 	culler.CameraFOV = frameInfo.Camera->FieldOfView();
 
 	ResizeSurfaceCuller(culler);

@@ -18,7 +18,7 @@ float4 KawaseBlurDown(in noperspective float4 Position : SV_Position, in nopersp
     
     //float2 offset = float2(1.5f / SSILVB_Res.x, 1.5f / SSILVB_Res.y);
     float2 offset = float2(1.5f / SSILVB_Res.x, 1.5f / SSILVB_Res.y);
-    float2 inputUV = UV;
+    float2 inputUV = UV * 2.f;
 
     float4 col = 0;
     col += tex.Sample(LinearSampler, inputUV + offset * float2(1, 1));
@@ -33,7 +33,7 @@ float4 KawaseBlurUp(in noperspective float4 Position : SV_Position, in noperspec
 {
     Texture2D tex = ResourceDescriptorHeap[Params.TargetTexIndex];
     float2 offset = float2(1.5f / SSILVB_HalfRes.x, 1.5f / SSILVB_HalfRes.y) * 0.2f;
-    float2 inputUV = UV;
+    float2 inputUV = UV / 2.f;
 
     float4 col = 0;
     col += tex.Sample(LinearSampler, inputUV + offset * float2(1, 1));

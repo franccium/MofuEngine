@@ -125,9 +125,16 @@ uint bitCount(uint value)
     value = (value & 0x33333333u) + ((value >> 2u) & 0x33333333u);
     return ((value + (value >> 4u) & 0xF0F0F0Fu) * 0x1010101u) >> 24u;
 }
-float randf(int x, int y)
+float scrolledInterleavedGradNoise(int px, int py, uint frame)
 {
+    frame = frame % 64;
+    float x = float(px) + 5.588238f * float(frame);
+    float y = float(py) + 5.588238f * float(frame);
     return fmod(52.9829189f * fmod(0.06711056f * float(x) + 0.00583715f * float(y), 1.0f), 1.0f);
+}
+float interleavedGradNoise(int px, int py)
+{
+    return fmod(52.9829189f * fmod(0.06711056f * float(px) + 0.00583715f * float(py), 1.0f), 1.0f);
 }
 uint UpdateSectors(float minHorizon, float maxHorizon, uint bitfield)
 {
@@ -162,7 +169,7 @@ float VBAO(float2 uv, float depth)
     
     float sampleScale = (-GIParams.SampleRadius * GlobalData.Projection._11) / depth;
     float sampleOffset = 0.01f;
-    float jitter = randf(int(uv.x), int(uv.y)) - 0.5f;
+    float jitter = interleavedGradNoise(int(uv.x), int(uv.y)) - 0.5f;
     
     float currSlice = 0.f;
     for (; currSlice < sliceCount + 0.5f; currSlice += 1.0f)
@@ -237,7 +244,7 @@ float4 ApplySSILVB(float2 uv, float depth)
     
     float sampleScale = (-GIParams.SampleRadius * GlobalData.Projection._11) / depth;
     float sampleOffset = 0.01f;
-    float jitter = randf(int(uv.x), int(uv.y)) - 0.5f;
+    float jitter = interleavedGradNoise(int(uv.x), int(uv.y)) - 0.5f;
     
     float currSlice = 0.f;
     for (;currSlice < sliceCount + 0.5f; currSlice += 1.0f)
@@ -314,6 +321,7 @@ float4 PostProcessPS(in noperspective float4 Position : SV_Position, in noperspe
     Texture2D mainColor = ResourceDescriptorHeap[ShaderParams.MiscBufferIndex];
     //float3 color = mainColor[Position.xy].rgb;
     float3 color = Sample(ShaderParams.MiscBufferIndex, LinearSampler, UV).rgb;
+
 #else
     Texture2D mainColor = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     float3 color = mainColor[Position.xy].rgb;

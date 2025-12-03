@@ -3,6 +3,7 @@
 
 namespace mofu::graphics::d3d12::effects {
 void ApplyKawaseBlur(DXResource* res, u32 texSrvIndex, DXGraphicsCommandList* const cmdList);
+void CreateFXBuffers(u32v2 renderDimensions);
 void Initialize();
 void Shutdown();
 void CreatePSOs();

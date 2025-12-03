@@ -10,7 +10,7 @@ struct GISettings
 };
 
 ConstantBuffer<GlobalShaderData> GlobalData : register(b0, space0);
-ConstantBuffer<PostProcessConstants> ShaderParams : register(b1, space0);
+ConstantBuffer<ResolveConstants> ShaderParams : register(b1, space0);
 ConstantBuffer<GISettings> GIParams : register(b2, space0);
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
@@ -67,9 +67,84 @@ uint UpdateSectors(float minHorizon, float maxHorizon, uint bitfield)
     return bitfield | currBitfield;
 }
 
-float4 ApplySSILVB(in noperspective float4 Position : SV_Position, in noperspective float2 halfUV : TEXCOORD) : SV_TARGET0
+float4 ApplySSILVB(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
-    float2 uv = halfUV * 2.0f;
+#if SSILVB_ONLY_AO
+    const float2 uv = Position.xy;
+    Texture2D normalBuffer = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
+    Texture2D posBuffer = ResourceDescriptorHeap[ShaderParams.PositionBufferIndex];
+    const float depth = Sample(ShaderParams.GPassDepthBufferIndex, LinearSampler, UV, 0).r;
+    
+    uint indirect = 0u;
+    uint occlusion = 0u;
+    
+    float2 aspectRatio = float2(GlobalData.RenderSizeY, GlobalData.RenderSizeX) / GlobalData.RenderSizeX;
+    
+    float visibility = 0.f;
+    float2 frontBackHorizon = 0.f.xx;
+    
+    const float sliceCount = GIParams.SliceCount;
+    const float sampleCount = GIParams.SampleCount + 2.f * (1.f - depth * 40.f);
+    //const float hitThickness = saturate(GIParams.HitThickness + 0.2f * (1.f - depth * 25.f));
+    const float hitThickness = GIParams.HitThickness;
+    float sliceRotation = TAU / (sliceCount - 1.f);
+    
+    const float3 normal_VS = normalize(mul((float3x3) GlobalData.View, normalBuffer[uv].rgb));
+    
+    float3 pos_VS = posBuffer[uv].rgb;
+    const float3 camera = normalize(-pos_VS);
+    
+    float sampleScale = (-GIParams.SampleRadius * GlobalData.Projection._11) / depth;
+    float sampleOffset = 0.01f;
+    float jitter = randf(int(uv.x), int(uv.y)) - 0.5f;
+    
+    float currSlice = 0.f;
+    for (; currSlice < sliceCount + 0.5f; currSlice += 1.0f)
+    {
+        float phi = sliceRotation * (currSlice + jitter) + PI;
+        float2 omega = float2(cos(phi), sin(phi));
+        float3 direction = float3(omega.x, omega.y, 0.f);
+        float3 orthoDirection = direction - dot(direction, camera) * camera;
+        float3 axis = cross(direction, camera);
+        float3 projNormal = normal_VS - axis * dot(normal_VS, axis);
+        float projLength = length(projNormal);
+        
+        float signN = sign(dot(orthoDirection, projNormal));
+        float cosN = saturate(dot(projNormal, camera) / projLength);
+        float n = signN * acos(cosN);
+        
+        float currSample = 0.f;
+        for (; currSample < sampleCount + 0.5f; currSample += 1.0f)
+        {
+            const float sampleStep = (currSample + jitter) / sampleCount + sampleOffset;
+            
+            const float2 sampleUV = uv - sampleStep * sampleScale * omega * aspectRatio;
+            float3 samplePos = posBuffer[sampleUV].rgb;
+            float3 sampleNormal = normalBuffer[sampleUV].rgb;
+            
+            sampleNormal = normalize(mul((float3x3) GlobalData.View, sampleNormal));
+            
+            const float3 sampleDistance = samplePos - pos_VS;
+            float sampleLength = length(sampleDistance);
+            float3 sampleHorizon = sampleDistance / sampleLength;
+            
+            frontBackHorizon.x = dot(sampleHorizon, camera);
+            frontBackHorizon.y = dot(normalize(sampleDistance - camera * hitThickness), camera);
+            frontBackHorizon = acos(frontBackHorizon);
+            frontBackHorizon = saturate((frontBackHorizon + n + HALF_PI) / PI);
+            
+            indirect = UpdateSectors(frontBackHorizon.x, frontBackHorizon.y, 0u);
+            
+            occlusion |= indirect;
+        }
+        visibility += 1.f - float(bitCount(occlusion)) / float(SectorCount);
+    }
+
+    visibility /= sliceCount;
+    return visibility.x;
+#else
+    const float2 uv = UV;
+    const float2 screenPos = Position.xy;
     const float depth = Sample(ShaderParams.GPassDepthBufferIndex, LinearSampler, uv, 0).r;
     //return float4(depth.xxx * 30.f, 1.f);
     Texture2D directLightBuffer = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
@@ -80,7 +155,7 @@ float4 ApplySSILVB(in noperspective float4 Position : SV_Position, in noperspect
     uint indirect = 0u;
     uint occlusion = 0u;
     
-    float2 aspectRatio = float2(GlobalData.RenderSizeY / GlobalData.RenderSizeX, 1.f);
+    float2 aspectRatio = float2(GlobalData.RenderSizeY, GlobalData.RenderSizeX) / GlobalData.RenderSizeX;
     
     float visibility = 0.f;
     float3 lighting = 0.f.xxx;
@@ -97,8 +172,8 @@ float4 ApplySSILVB(in noperspective float4 Position : SV_Position, in noperspect
     
     //float sampleScale = (-GIParams.SampleRadius * GlobalData.Projection._11) / depth;
     float sampleScale = (-GIParams.SampleRadius * GlobalData.Projection._11) / -pos_VS.z;
-    float sampleOffset = 0.01f;
-    float jitter = randf(int(halfUV.x), int(halfUV.y)) - 0.5f;
+    float sampleOffset = 0.001f;
+    float jitter = randf(int(screenPos.x), int(screenPos.y)) - 0.5f;
     
     float currSlice = 0.f;
     for (; currSlice < sliceCount + 0.5f; currSlice += 1.0f)
@@ -150,4 +225,5 @@ float4 ApplySSILVB(in noperspective float4 Position : SV_Position, in noperspect
     lighting /= sliceCount;
     
     return float4(lighting, visibility);
+#endif
 }

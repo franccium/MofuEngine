@@ -10,6 +10,7 @@
 #include "Graphics/GraphicsTypes.h"
 #include "Effects/D3D12KawaseBlur.h"
 #include "D3D12ResolvePass.h"
+#include "EngineAPI/ECS/SceneAPI.h"
 
 namespace mofu::graphics::d3d12::fx {
 namespace {
@@ -382,16 +383,12 @@ SetBufferSize(u32v2 size)
 {
 	u32v2& d{ currentDimensions };
 	_fxResolution = { size.x / 2, size.y / 2 };
-	if (size.x > d.x || size.y > d.y)
-	{
-		CreateFXBuffers();
-		d = { std::max(size.x, d.x), std::max(size.y, d.y) };
+	CreateFXBuffers();
 #if RENDER_GUI
-		CreateImGuiPresentableSRV(size);
-		assert(renderTexture.Resource());
-		assert(ssilvbTarget.Resource());
+	CreateImGuiPresentableSRV(size);
+	assert(renderTexture.Resource());
+	assert(ssilvbTarget.Resource());
 #endif
-	}
 }
 
 bool 
@@ -450,12 +447,12 @@ AddTransitionsPrePostProcess(d3dx::D3D12ResourceBarrierList& barriers)
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		D3D12_RESOURCE_STATE_RENDER_TARGET);
 #endif
-	if (graphics::debug::RenderingSettings.VB_HalfRes)
+	/*if (graphics::debug::RenderingSettings.VB_HalfRes)
 	{
 		barriers.AddTransitionBarrier(ssilvbTarget.Resource(),
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_RENDER_TARGET);
-	}
+	}*/
 }
 
 void
@@ -511,6 +508,12 @@ void DoPostProcessing(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& fram
 	shaderParams->DisplayAO = (u32)graphics::debug::RenderingSettings.DisplayAO;
 	shaderParams->RenderGUI = (u32)graphics::debug::RenderingSettings.RenderGUI;
 #endif
+	for (auto [entity, dirLight] : ecs::scene::GetRO<ecs::component::DirectionalLight>())
+	{
+		shaderParams->SunDirection = dirLight.Direction;
+		shaderParams->SunColor = dirLight.Color;
+		break; // only the first directional light
+	}
 
 	//if (debug::RenderingSettings.VB_HalfRes)
 	//{

@@ -462,7 +462,6 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
     //data.ViewHeight = surface.Viewport()->Height;
     data.ViewWidth = _targetResolution.x;
     data.ViewHeight = _targetResolution.y;
-    data.DeltaTime = deltaTime;
     data.DirectionalLightsCount = graphics::light::GetDirectionalLightsCount(info.LightSetIdx);
     data.AmbientLight = graphics::light::GetAmbientLight(info.LightSetIdx);
     data.SkyboxSrvIndex = graphics::light::GetLightSet(info.LightSetIdx).SkyboxSrvIndex;
@@ -472,6 +471,8 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
     data.Jitter = camera.CurrentJitter();
     data.Jitter = camera.PrevJitter();
 #endif
+    data.DeltaTime = deltaTime;
+    data.FrameIndex = frameIndex;
 
     hlsl::GlobalShaderData* const shaderData{ cbuffer.AllocateSpace<hlsl::GlobalShaderData>() };
     memcpy(shaderData, &data, sizeof(hlsl::GlobalShaderData));
@@ -1127,9 +1128,12 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
         _dlssRenderResViewport.MaxDepth = 1.f;
         _dlssRenderResScissorRect = { 0, 0, (i32)_renderResolution.x, (i32)_renderResolution.y };
 
+        camera::GetCamera(frameInfo.CameraID).ViewWidth((f32)_renderResolution.x);
+        camera::GetCamera(frameInfo.CameraID).ViewHeight((f32)_renderResolution.y);
         camera::UpdateRenderResolution(_renderResolution);
         gpass::SetBufferSize(_renderResolution);
         resolve::SetBufferSize(_renderResolution);
+        effects::CreateFXBuffers(_renderResolution);
         fx::SetBufferSize(_renderResolution);
         ffx::sssr::CreateBuffer(_renderResolution);
 
@@ -1429,8 +1433,11 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
     shaders::ReloadShader(shaderID);
     switch (shaderID)
     {
+    case EngineShader::SSILVB_PS:
+        resolve::ResetShaders();
+        break;
         case EngineShader::PostProcessPS:
-        case EngineShader::SSILVB_PS:
+        //case EngineShader::SSILVB_PS:
         case EngineShader::KawaseBlurDownPS:
         case EngineShader::KawaseBlurUpPS:
             fx::ResetShaders(false);
@@ -1456,6 +1463,18 @@ void StartCompute()
     computeCommand.BeginFrame();
     ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
     ComputeCommandList()->SetDescriptorHeaps(1, &heaps[0]);
+}
+
+void
+SetRenderSizeViewport(DXGraphicsCommandList* const cmdList)
+{
+#if IS_DLSS_ENABLED
+    cmdList->RSSetViewports(1, &_dlssRenderResViewport);
+    cmdList->RSSetScissorRects(1, &_dlssRenderResScissorRect);
+#else
+    cmdList->RSSetViewports(1, surface.Viewport());
+    cmdList->RSSetScissorRects(1, surface.ScissorRect());
+#endif
 }
 
 void ExecuteCompute()

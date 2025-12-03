@@ -96,5 +96,6 @@ info::DisplayInfo GetDisplayInfo();
 void StartCompute();
 void ExecuteCompute();
 
+void SetRenderSizeViewport(DXGraphicsCommandList* const cmdList);
 u32v2 RenderResolution();
 }

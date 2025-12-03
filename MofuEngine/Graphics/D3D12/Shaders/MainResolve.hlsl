@@ -69,7 +69,7 @@ float3 ApplyReflections(float3 directLighting, float2 uv, float depth, float ao)
     
     float2 brdfLut = Sample(GlobalData.AmbientLight.BrdfLutSrvIndex, LinearSampler, saturate(float2(NoV, 1.f - perceptualRoughness)), 0).rg;
     
-    float3 color = diffuse * IBL.Intensity + radiance * (F0 * brdfLut.x + brdfLut.y);
+    float3 color = diffuse * IBL.Intensity + ShaderParams.ReflectionsStrength * radiance * (F0 * brdfLut.x + brdfLut.y);
     return saturate(color + directLighting);
 }
 
@@ -80,9 +80,16 @@ uint bitCount(uint value)
     value = (value & 0x33333333u) + ((value >> 2u) & 0x33333333u);
     return ((value + (value >> 4u) & 0xF0F0F0Fu) * 0x1010101u) >> 24u;
 }
-float randf(int x, int y)
+float scrolledInterleavedGradNoise(int px, int py, uint frame)
 {
+    frame = frame % 64;
+    float x = float(px) + 5.588238f * float(frame);
+    float y = float(py) + 5.588238f * float(frame);
     return fmod(52.9829189f * fmod(0.06711056f * float(x) + 0.00583715f * float(y), 1.0f), 1.0f);
+}
+float interleavedGradNoise(int px, int py)
+{
+    return fmod(52.9829189f * fmod(0.06711056f * float(px) + 0.00583715f * float(py), 1.0f), 1.0f);
 }
 uint UpdateSectors(float minHorizon, float maxHorizon, uint bitfield)
 {
@@ -93,7 +100,7 @@ uint UpdateSectors(float minHorizon, float maxHorizon, uint bitfield)
     return bitfield | currBitfield;
 }
 
-float VBAO(float2 uv, float depth)
+float VBAO(float2 uv, float depth, float2 screenUV)
 {
     Texture2D normalBuffer = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
     Texture2D posBuffer = ResourceDescriptorHeap[ShaderParams.PositionBufferIndex];
@@ -107,7 +114,8 @@ float VBAO(float2 uv, float depth)
     float2 frontBackHorizon = 0.f.xx;
     
     const float sliceCount = GIParams.SliceCount;
-    const float sampleCount = GIParams.SampleCount;
+    const float sampleCount = GIParams.SampleCount + 2.f * (1.f - depth * 40.f);
+    //const float hitThickness = saturate(GIParams.HitThickness + 0.2f * (1.f - depth * 25.f));
     const float hitThickness = GIParams.HitThickness;
     float sliceRotation = TAU / (sliceCount - 1.f);
     
@@ -117,7 +125,7 @@ float VBAO(float2 uv, float depth)
     
     float sampleScale = (-GIParams.SampleRadius * GlobalData.Projection._11) / depth;
     float sampleOffset = 0.01f;
-    float jitter = randf(int(uv.x), int(uv.y)) - 0.5f;
+    float jitter = interleavedGradNoise(int(uv.x), int(uv.y)) - 0.5f;
     
     float currSlice = 0.f;
     for (; currSlice < sliceCount + 0.5f; currSlice += 1.0f)
@@ -166,7 +174,7 @@ float VBAO(float2 uv, float depth)
     return visibility;
 }
 
-float4 ApplySSILVB(float2 uv, float depth)
+float4 ApplySSILVB(float2 uv, float depth, float2 screenUV)
 {
     Texture2D directLightBuffer = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
     Texture2D normalBuffer = ResourceDescriptorHeap[ShaderParams.NormalBufferIndex];
@@ -192,7 +200,7 @@ float4 ApplySSILVB(float2 uv, float depth)
     
     float sampleScale = (-GIParams.SampleRadius * GlobalData.Projection._11) / depth;
     float sampleOffset = 0.01f;
-    float jitter = randf(int(uv.x), int(uv.y)) - 0.5f;
+    float jitter = interleavedGradNoise(int(uv.x), int(uv.y)) - 0.5f;
     
     float currSlice = 0.f;
     for (; currSlice < sliceCount + 0.5f; currSlice += 1.0f)
@@ -246,6 +254,115 @@ float4 ApplySSILVB(float2 uv, float depth)
     return float4(lighting, visibility);
 }
 
+float hash(float2 p)
+{
+    return frac(sin(dot(p, float2(12.9898f, 78.233f))) * 43758.5453f);
+}
+
+float noise(float2 uv)
+{
+    float2 i = floor(uv);
+    float2 f = frac(uv);
+    
+    float2 u = f * f * f * (f * (f * 6.0f - 15.0f) + 10.0f);
+    
+    return lerp(lerp(hash(i + float2(0.0f, 0.0f)), hash(i + float2(1.0f, 0.0f)), u.x), 
+        lerp(hash(i + float2(0.0f, 1.0f)), hash(i + float2(1.0f, 1.0f)), u.x), u.y);
+}
+
+float noise(float t)
+{
+    return sin(t * 12.9898f) * 0.5f + 0.5f;
+}
+
+float3 LensFlare(float2 uv, float depth)
+{
+    float3 color = 0.f.xxx;
+    
+    //const float3 lightDir = ShaderParams.SunDirection;
+    const float3 lightDir = float3(0.2f, -0.2f, 0.f);
+    const float3 camDir = GlobalData.CameraDirection;
+    //const float3 sunColor = ShaderParams.SunColor;
+    const float3 sunColor = float3(0.9f, 0.7f, 0.6f);
+    
+    float strength = dot(-lightDir, camDir);
+    if (strength < 0.f)
+        return 0.f.xxx;
+    strength = strength * 0.5f + 0.5f;
+        
+    float2 sunPos = WorldDirToScreenUV(lightDir, GlobalData.CameraPosition, GlobalData.ViewProjection);
+    uv = uv - 0.5f;
+    sunPos -= 0.5f;
+    sunPos.x *= GlobalData.RenderSizeX / GlobalData.RenderSizeY;
+    uv.x *= GlobalData.RenderSizeX / GlobalData.RenderSizeY;
+    
+    float2 sunDir = uv - sunPos;
+    float sunDist = length(sunDir);
+    float sunRad = 0.5f;
+    float edgeFalloff = 0.005f;
+    float sunMask = smoothstep(sunRad + edgeFalloff, sunRad - edgeFalloff, sunDist);
+    
+    if (depth > 0.f)
+    {
+        return float3(0.12f, 0.03f, 0.01f) * strength;
+    }
+    
+    
+    const float3 haloColor = float3(0.25f, 0.23f, 0.21f);
+    const float sunCenterIntensity = 1.8f;
+    
+    // based on Lens Flare Example by mu6k - https://www.shadertoy.com/view/4sX3Rs
+    float3 flareColor = 0.f.xxx;
+    {
+        float2 main = sunDir;
+        float2 uvd = uv * (length(uv));
+	
+        float ang = atan2(main.x, main.y);
+        float dist = length(main);
+        dist = pow(dist, 0.1f);
+        float n = noise(float2(ang * 16.0f, dist * 32.0f));
+	
+        float center = 1.0f / (length(sunDir) * 16.0f + 1.0f);
+	    
+        // ciliary corona
+        center += center * (sin(noise(sin(ang * 1. + sunPos.x) * 0.7 - cos(ang * 1. + sunPos.y)) * 1.2) * .1 + dist * .1 + sunCenterIntensity);
+        float s1 = max(0.01f - pow(length(uv + 1.2f * sunPos), 1.9f), 0.0f) * 4.0f;
+
+        float s21 = max(1.0f / (1.0f + 32.0f * pow(length(uvd + 0.8f * sunPos), 2.0f)), 0.0f) * haloColor.x;
+        float s22 = max(1.0f / (1.0f + 32.0f * pow(length(uvd + 0.85f * sunPos), 2.0f)), 0.0f) * haloColor.y;
+        float s23 = max(1.0f / (1.0f + 32.0f * pow(length(uvd + 0.9f * sunPos), 2.0f)), 0.0f) * haloColor.z;
+	
+        float2 uvx = lerp(uv, uvd, -0.5f);
+	
+        float s31 = max(0.01f - pow(length(uvx + 0.4f * sunPos), 2.4f), 0.0f) * 6.0f;
+        float s32 = max(0.01f - pow(length(uvx + 0.45f * sunPos), 2.4f), 0.0f) * 5.0f;
+        float s33 = max(0.01f - pow(length(uvx + 0.5f * sunPos), 2.4f), 0.0f) * 3.0f;
+	
+        uvx = lerp(uv, uvd, -0.4f);
+	
+        float s41 = max(0.01f - pow(length(uvx + 0.2f * sunPos), 5.5f), 0.0f) * 2.0f;
+        float s42 = max(0.01f - pow(length(uvx + 0.4f * sunPos), 5.5f), 0.0f) * 2.0f;
+        float s43 = max(0.01f - pow(length(uvx + 0.6f * sunPos), 5.5f), 0.0f) * 2.0f;
+	
+        uvx = lerp(uv, uvd, -0.5f);
+	
+        float s51 = max(0.01f - pow(length(uvx - 0.3f * sunPos), 1.6f), 0.0f) * 6.0f;
+        float s52 = max(0.01f - pow(length(uvx - 0.325f * sunPos), 1.6f), 0.0f) * 3.0f;
+        float s53 = max(0.01f - pow(length(uvx - 0.35f * sunPos), 1.6f), 0.0f) * 5.0f;
+	
+        flareColor.r += s21 + s31 + s41 + s51;
+        flareColor.g += s22 + s32 + s42 + s52;
+        flareColor.b += s23 + s33 + s43 + s53;
+        flareColor = flareColor * 1.3f - (length(uvd) * 0.05f); // vignette
+        flareColor += center;
+    }
+    
+    color += max(0.f.xxx, flareColor);
+    color *= sunColor;
+    
+    return color;
+}
+
 #if PATHTRACE_MAIN
 float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspective float2 UV : TEXCOORD) : SV_TARGET0
 {
@@ -262,6 +379,7 @@ float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspe
     Texture2D gpassDepth = ResourceDescriptorHeap[ShaderParams.GPassDepthBufferIndex];
     float depth = gpassDepth.SampleLevel(PointSampler, UV, 0).r;
     float3 color;
+    float3 indirect = 0.f.xxx;
     
     if (depth > 0.0f)
     {
@@ -273,25 +391,26 @@ float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspe
         {
             if (ShaderParams.VB_HalfRes)
             {
-                Texture2D ssilvb = ResourceDescriptorHeap[ShaderParams.MotionVectorsBufferIndex];
-                float2 lowresUV = UV * 0.5f;
-                const float4 visibility = ssilvb.Sample(LinearSampler, lowresUV).rgba;
-                //color = visibility.rgb;
-                if (ShaderParams.DisplayAO)
-                {
-                    color = visibility.aaa;
-                }
-                else
-                {
-                    ao = visibility.a;
-                }
+                Texture2D ssilvb = ResourceDescriptorHeap[ShaderParams.MiscBufferIndex];
+#if SSILVB_ONLY_AO
+                ao = ssilvb.Sample(LinearSampler, UV).r;
+#else
+                const float4 visibility = ssilvb.Sample(LinearSampler, UV).rgba;
+                indirect = visibility.rgb;
+                color = indirect;
+                ao = visibility.a;
+#endif
             }
             else
             {
-                //float4 visibility = ApplySSILVB(Position.xy, depth);
-                //color = visibility.aaa;
-                float vbao = VBAO(Position.xy, depth);
+#if SSILVB_ONLY_AO
+                float vbao = VBAO(Position.xy, depth, UV);
                 ao = vbao;
+#else
+                float4 visibility = ApplySSILVB(Position.xy, depth, UV);
+                indirect = visibility.rgb;
+                ao = visibility.a;
+#endif
             }
         }
         
@@ -312,6 +431,8 @@ float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspe
 #endif
         }
         
+        color += indirect;
+        
         if (ShaderParams.DisplayAO)
         {
             color = ao.xxx;
@@ -329,6 +450,11 @@ float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspe
         float3 direction = mul(view, (float3x3) GlobalData.View); // we swap the order or operations so the view matrix is transposed, since rotation is orthogonal, this makes it inverse view
         color = SampleCube(GlobalData.SkyboxSrvIndex, LinearSampler, direction, 0.1f).xyz * GlobalData.AmbientLight.Intensity;
     }
+    
+    color += LensFlare(UV, depth);
+    color = saturate(color);
+    
+    
     
     return float4(color, 1.f);
 }

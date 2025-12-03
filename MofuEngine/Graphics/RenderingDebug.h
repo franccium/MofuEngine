@@ -33,7 +33,7 @@ struct Settings
 	{
 		f32 DepthBufferThickness{ 0.015f };
 		f32 RoughnessThreshold{ 0.4f };
-		f32 IBLFactor{ 1.5f };
+		f32 IBLFactor{ 0.5f };
 		f32 TemporalStabilityFactor{ 0.7f };
 		f32 VarianceThreshold{ 0.0f };
 		u32 MaxTraversalIntersections{ 24 };

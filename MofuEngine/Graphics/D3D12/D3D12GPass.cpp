@@ -411,17 +411,13 @@ void
 SetBufferSize(u32v2 size)
 {
 	u32v2& d{ dimensions };
-	if (size.x > d.x || size.y > d.y)
-	{
-		d = { std::max(size.x, d.x), std::max(size.y, d.y) };
-		CreateBuffers(size);
+	CreateBuffers(size);
 #if RAYTRACING
 		rt::CreateBuffers(size);
 #endif
-		assert(gpassMainBuffer.Resource() && gpassDepthBuffer.Resource() && normalBuffer.Resource() && positionBuffer.Resource()
-			&& materialPropertiesBuffer.Resource() && motionVecBuffer.Resource() && miscBuffer.Resource());
-		resources::SetResourceUpdated(resources::ResourceUpdateState::GPassBuffers);
-	}
+	assert(gpassMainBuffer.Resource() && gpassDepthBuffer.Resource() && normalBuffer.Resource() && positionBuffer.Resource()
+		&& materialPropertiesBuffer.Resource() && motionVecBuffer.Resource() && miscBuffer.Resource());
+	resources::SetResourceUpdated(resources::ResourceUpdateState::GPassBuffers);
 }
 
 void

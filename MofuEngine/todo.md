@@ -1,6 +1,5 @@
 reflections - amd fidelitydx ssr and then try my own
 GTAO and visibility bitmask
-lower render res
 blur
 physical camera
 
