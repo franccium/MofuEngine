@@ -325,7 +325,7 @@ float3 LensFlare(float2 uv, float depth)
         float center = 1.0f / (length(sunDir) * 16.0f + 1.0f);
 	    
         // ciliary corona
-        center += center * (sin(noise(sin(ang * 1. + sunPos.x) * 0.7 - cos(ang * 1. + sunPos.y)) * 1.2) * .1 + dist * .1 + sunCenterIntensity);
+        center += center * (sin(noise(sin(ang * 1.f + sunPos.x) * 0.7f - cos(ang * 1.f + sunPos.y)) * 1.2f) * 0.1f + dist * 0.1f + sunCenterIntensity);
         float s1 = max(0.01f - pow(length(uv + 1.2f * sunPos), 1.9f), 0.0f) * 4.0f;
 
         float s21 = max(1.0f / (1.0f + 32.0f * pow(length(uvd + 0.8f * sunPos), 2.0f)), 0.0f) * haloColor.x;

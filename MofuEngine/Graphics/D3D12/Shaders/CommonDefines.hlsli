@@ -10,4 +10,8 @@
 #define PATHTRACE_MAIN 0
 #define PATHTRACE_SHADOWS 0
 
+#ifdef __cplusplus
+static_assert(!(RAYTRACING && (PATHTRACE_MAIN&& PATHTRACE_SHADOWS)), "Path tracing cannot be enabled with both main and shadow raytracing at the same time");
+#endif
+
 #endif

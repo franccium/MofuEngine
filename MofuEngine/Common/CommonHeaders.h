@@ -22,8 +22,8 @@
 #ifdef _WIN64 // temporary here
 #define DEBUG_LOG(expr) OutputDebugStringA("*** Debug Log: "); OutputDebugStringA(expr)
 #define DEBUG_LOGW(expr) OutputDebugStringW(L"*** Debug Log: "); OutputDebugStringW(expr)
-#endif
-#else
+#endif // _WIN64
+#else // !_DEBUG
 #define DEBUG_OP(expr)
 #define DEBUG_LOG(expr)
 #define DEBUG_LOGW(expr)
@@ -48,6 +48,7 @@
 #define RELEASE_ASSERTS 1
 #ifdef NDEBUG
 #if RELEASE_ASSERTS
+#ifdef _WIN64
 inline void HandleAssert(const char* exprStr, const char* file, int line)
 {
 
@@ -61,12 +62,12 @@ inline void HandleAssert(const char* exprStr, const char* file, int line)
             HandleAssert(#expr, __FILE__, __LINE__);                    \
         }                                                               \
     } while(0)
-#endif
-#endif
+#endif // _WIN64
+#endif // RELEASE_ASSERTS
+#endif // NDEBUG
 
 #define EDITOR_BUILD 1
 #define RENDER_GUI 1
 #define SHADER_HOT_RELOAD_ENABLED 1
 #define PHYSICS_DEBUG_RENDER_ENABLED 1
-
-static_assert(!(RAYTRACING && (PATHTRACE_MAIN&& PATHTRACE_SHADOWS)), "Path tracing cannot be enabled with both main and shadow raytracing at the same time");
+#define ASSET_ICONS_ENABLED 1

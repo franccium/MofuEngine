@@ -39,7 +39,7 @@ void
 RenderConfigWindow()
 {
     //TODO: config window
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
 }
 
 
