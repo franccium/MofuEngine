@@ -14,4 +14,5 @@
 static_assert(!(RAYTRACING && (PATHTRACE_MAIN&& PATHTRACE_SHADOWS)), "Path tracing cannot be enabled with both main and shadow raytracing at the same time");
 #endif
 
+#define PARTICLE_SYSTEM_ON 1
 #endif

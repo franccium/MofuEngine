@@ -4,6 +4,7 @@
 #include "SceneEditorView.h"
 #include "TextureView.h"
 #include "MaterialEditor.h"
+#include "ParticleEditor.h"
 #include "ImporterView.h"
 #include "Content/EditorContentManager.h"
 #include "AssetInteraction.h"
@@ -27,7 +28,7 @@ InitializeEditorGUI()
     object::Initialize();
     font::Initialize();
     debug::InitializeRenderingConsole();
-    return InitializeSceneEditorView() && material::InitializeMaterialEditor();
+    return InitializeSceneEditorView() && material::InitializeMaterialEditor() && particles::InitializeParticleEditor();
 }
 
 void 
@@ -52,6 +53,7 @@ RenderEditorGUI()
 	RenderAssetBrowserGUI();
     texture::RenderTextureView();
     material::RenderMaterialEditor();
+    particles::RenderParticleEditor();
     assets::RenderImportSettings();
     assets::RenderImportSummary();
     debug::DrawRenderingConsole();

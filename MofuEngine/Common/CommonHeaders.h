@@ -70,4 +70,4 @@ inline void HandleAssert(const char* exprStr, const char* file, int line)
 #define RENDER_GUI 1
 #define SHADER_HOT_RELOAD_ENABLED 1
 #define PHYSICS_DEBUG_RENDER_ENABLED 1
-#define ASSET_ICONS_ENABLED 1
+#define ASSET_ICONS_ENABLED 0

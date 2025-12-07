@@ -414,6 +414,7 @@ private:
 struct RawBufferInitInfo
 {
 	u32 ElementCount{ 0 };
+	u32 Stride{ 4 };
 	bool IsCPUAccessible{ false };
 	bool CreateUAV{ false };
 	bool IsDynamic{ false };
@@ -427,8 +428,6 @@ struct RawBufferInitInfo
 class RawBuffer
 {
 public:
-	static constexpr u32 Stride{ 4 };
-
 	RawBuffer() = default;
 	RawBuffer(const RawBufferInitInfo& info);
 	DISABLE_COPY(RawBuffer);

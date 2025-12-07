@@ -24,6 +24,7 @@
 #include "D3D12ResourceWatch.h"
 #include "D3D12ResolvePass.h"
 #include "Effects/D3D12KawaseBlur.h"
+#include "Particles/D3D12ParticleSystem.h"
 
 #include "FFX/SSSR.h"
 
@@ -362,6 +363,9 @@ InitializeModules()
     //    DEBUG_LOG("Can't initialize DLSS");
     //}
     success &= (gpass::Initialize() && resolve::Initialize() && fx::Initialize() && light::InitializeLightCulling());
+#if PARTICLE_SYSTEM_ON
+    success &= particles::Initialize();
+#endif
     return success;
 }
 
@@ -641,6 +645,9 @@ Shutdown()
     camera::Shutdown();
 #if IS_DLSS_ENABLED
     dlss::Shutdown();
+#endif
+#if PARTICLE_SYSTEM_ON
+    particles::Shutdown();
 #endif
     gpass::Shutdown();
     resolve::Shutdown();

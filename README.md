@@ -12,7 +12,7 @@ The editor is pure ImGui, with a customizable docking layout.
 Currently supports most of the basic asset, scene, material and entity management operations.
 ![editor](assets/editor_ui.png)
 
-## Some more notable renders
+## Some renders
 ![ambience](assets/ambience.png)
 
 #### DXR Path Tracing
@@ -26,10 +26,10 @@ Currently supports most of the basic asset, scene, material and entity managemen
 ![bistro](assets/bistro.png)
 
 ### ECS
-Features my own ECS inspired mainly by Unity DOTS
+Features my own ECS inspired primarily by Unity DOTS
 
 Currently looking for possibilities of making it more GPU-driven
 
 ### Physics
-The engine uses Jolt for it's physics simulation.
+The engine uses Jolt for its physics simulation.
 ![collider](assets/collider_wireframe.png)

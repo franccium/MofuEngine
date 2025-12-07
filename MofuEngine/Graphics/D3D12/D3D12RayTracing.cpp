@@ -239,27 +239,26 @@ BuildAccelerationStructure(DXGraphicsCommandList* const cmdList)
 
 	{
 		RawBufferInitInfo info{};
-		info.ElementCount = std::max(topPrebuildInfo.ScratchDataSizeInBytes, bottomPrebuildInfo.ScratchDataSizeInBytes) / RawBuffer::Stride;
+		info.Stride = 1;
 		info.CreateUAV = true;
-		info.InitialState = D3D12_RESOURCE_STATE_COMMON;
-		info.Name = L"RT Scratch Buffer";
-		_accScratchBuffer.Initialize(info);
-	}
-	{
-		RawBufferInitInfo info{};
-		info.ElementCount = topPrebuildInfo.ResultDataMaxSizeInBytes / RawBuffer::Stride;
-		info.CreateUAV = true;
-		info.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-		info.Name = L"RT Top Level AccStructure Buffer";
-		_topLevelAccStructure.Initialize(info);
-	}
-	{
-		RawBufferInitInfo info{};
-		info.ElementCount = bottomPrebuildInfo.ResultDataMaxSizeInBytes / RawBuffer::Stride;
-		info.CreateUAV = true;
-		info.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-		info.Name = L"RT Bottom Level AccStructure Buffer";
-		_bottomLevelAccStructure.Initialize(info);
+		{
+			info.ElementCount = std::max(topPrebuildInfo.ScratchDataSizeInBytes, bottomPrebuildInfo.ScratchDataSizeInBytes);
+			info.InitialState = D3D12_RESOURCE_STATE_COMMON;
+			info.Name = L"RT Scratch Buffer";
+			_accScratchBuffer.Initialize(info);
+		}
+		{
+			info.ElementCount = topPrebuildInfo.ResultDataMaxSizeInBytes;
+			info.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			info.Name = L"RT Top Level AccStructure Buffer";
+			_topLevelAccStructure.Initialize(info);
+		}
+		{
+			info.ElementCount = bottomPrebuildInfo.ResultDataMaxSizeInBytes;
+			info.InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			info.Name = L"RT Bottom Level AccStructure Buffer";
+			_bottomLevelAccStructure.Initialize(info);
+		}
 	}
 
 	/*for (auto [entity, m, wt, ritem] : ecs::scene::GetRO<ecs::component::PathTraceable, ecs::component::WorldTransform, ecs::component::RenderMesh>())

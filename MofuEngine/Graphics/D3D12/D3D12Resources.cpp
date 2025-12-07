@@ -592,8 +592,8 @@ RawBuffer::Initialize(const RawBufferInitInfo& info)
 	bufferInfo.allocationInfo = {};
 	bufferInfo.initialState = info.InitialState;
 	bufferInfo.flags = info.CreateUAV ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
-	bufferInfo.size = Stride * info.ElementCount;
-	bufferInfo.alignment = Stride;
+	bufferInfo.size = info.Stride * info.ElementCount;
+	bufferInfo.alignment = info.Stride;
 	_buffer = D3D12Buffer{ bufferInfo, info.IsCPUAccessible };
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{ SRVDesc(0) };
