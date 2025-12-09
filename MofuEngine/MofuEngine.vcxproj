@@ -197,6 +197,7 @@
     <ClCompile Include="Graphics\D3D12\D3D12Shaders.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12SSILVB.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Surface.cpp" />
+    <ClCompile Include="Graphics\D3D12\D3D12Transpacency.cpp" />
     <ClCompile Include="Graphics\D3D12\D3D12Upload.cpp" />
     <ClCompile Include="Graphics\D3D12\Effects\D3D12KawaseBlur.cpp" />
     <ClCompile Include="Graphics\D3D12\FFX\SSSR.cpp" />
@@ -326,6 +327,7 @@
     <ClInclude Include="Graphics\D3D12\D3D12Shaders.h" />
     <ClInclude Include="Graphics\D3D12\D3D12SSILVB.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Surface.h" />
+    <ClInclude Include="Graphics\D3D12\D3D12Transpacency.h" />
     <ClInclude Include="Graphics\D3D12\D3D12Upload.h" />
     <ClInclude Include="Graphics\D3D12\Effects\D3D12KawaseBlur.h" />
     <ClInclude Include="Graphics\D3D12\FFX\SSSR.h" />
@@ -361,6 +363,7 @@
     <ClInclude Include="Platform\PlatformWin32.h" />
     <ClInclude Include="Platform\Window.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Utilities\DataPacking.h" />
     <ClInclude Include="Utilities\DataStructures\Array.h" />
     <ClInclude Include="Utilities\DataStructures\DataStructures.h" />
     <ClInclude Include="Utilities\DataStructures\FreeList.h" />

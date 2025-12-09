@@ -50,4 +50,24 @@ float2 WorldDirToScreenUV(float3 worldDir, float3 camPos, float4x4 viewProjectio
     return uv;
 }
 
+float4 Sample(uint index, SamplerState s, float2 uv)
+{
+    return Texture2D(ResourceDescriptorHeap[index]).Sample(s, uv);
+}
+
+float4 Sample(uint index, SamplerState s, float2 uv, float mip)
+{
+    return Texture2D(ResourceDescriptorHeap[index]).SampleLevel(s, uv, mip);
+}
+
+float4 SampleCube(uint index, SamplerState s, float3 n)
+{
+    return TextureCube(ResourceDescriptorHeap[index]).Sample(s, n);
+}
+
+float4 SampleCube(uint index, SamplerState s, float3 n, float mip)
+{
+     return TextureCube(ResourceDescriptorHeap[index]).SampleLevel(s, n, mip);
+}
+
 #endif

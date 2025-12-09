@@ -1,4 +1,5 @@
 #include "Common.hlsli"
+#include "DataPacking.hlsli"
 
 struct GISettings
 {
@@ -8,32 +9,20 @@ struct GISettings
     float HitThickness;
 };
 
+struct ParticleTransparencyNodePacked
+{
+    uint Color;
+    float Depth;
+};
+
 ConstantBuffer<GlobalShaderData> GlobalData : register(b0, space0);
-ConstantBuffer<PostProcessConstants> ShaderParams : register(b1, space0);
+ConstantBuffer<ResolveConstants> ShaderParams : register(b1, space0);
 ConstantBuffer<GISettings> GIParams : register(b2, space0);
+StructuredBuffer<uint> TransparencyHeadBuffer : register(t0, space0);;
+StructuredBuffer<ParticleTransparencyNodePacked> TransparencyListBuffer : register(t1, space0);;
 
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
-
-float4 Sample(uint index, SamplerState s, float2 uv)
-{
-    return Texture2D(ResourceDescriptorHeap[index]).Sample(s, uv);
-}
-
-float4 Sample(uint index, SamplerState s, float2 uv, float mip)
-{
-    return Texture2D(ResourceDescriptorHeap[index]).SampleLevel(s, uv, mip);
-}
-
-float4 SampleCube(uint index, SamplerState s, float3 n)
-{
-    return TextureCube(ResourceDescriptorHeap[index]).Sample(s, n);
-}
-
-float4 SampleCube(uint index, SamplerState s, float3 n, float mip)
-{
-     return TextureCube(ResourceDescriptorHeap[index]).SampleLevel(s, n, mip);
-}
 
 // Sclick Fresnel
 float3 F_Schlick(float3 F0, float VoH)
@@ -381,6 +370,19 @@ float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspe
     float3 color;
     float3 indirect = 0.f.xxx;
     
+    
+    //uint xSize = GlobalData.RenderSizeX - 800;
+    //uint ySize = GlobalData.RenderSizeY - 400;
+    //uint yy = clamp(Position.y, 0, xSize);
+    //uint xx = clamp(Position.x, 0, ySize);
+    //uint transparencyIdx = yy * xSize + xx;
+    //ParticleTransparencyNodePacked test = TransparencyListBuffer[transparencyIdx * MAX_TRANSPARENCY_LAYERS + 0];
+    //float4 afasfasf = Unorm4x8ToF4Norm(test.Color);
+    //return float4(afasfasf.rgb, 1.f);
+    
+    
+    
+    
     if (depth > 0.0f)
     {
         Texture2D gpassMain = ResourceDescriptorHeap[ShaderParams.GPassMainBufferIndex];
@@ -454,6 +456,41 @@ float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspe
     color += LensFlare(UV, depth);
     color = saturate(color);
     
+    
+    uint xSize = GlobalData.RenderSizeX;
+    uint ySize = GlobalData.RenderSizeY;
+    uint xx = clamp(Position.x, 0, xSize);
+    uint yy = clamp(Position.y, 0, ySize - 1);
+    uint transparencyIdx = yy * xSize + xx;
+    uint transparencyNodeCount = TransparencyHeadBuffer[transparencyIdx];
+    ParticleTransparencyNodePacked nodes[MAX_TRANSPARENCY_LAYERS];
+    uint validCount = 0;
+    for (uint i = 0; i < transparencyNodeCount && i < MAX_TRANSPARENCY_LAYERS; i++)
+    {
+        nodes[i] = TransparencyListBuffer[transparencyIdx * MAX_TRANSPARENCY_LAYERS + i];
+        validCount++;
+    }
+    // sort nodes by depth
+    for (uint j = 1; j < validCount; j++)
+    {
+        ParticleTransparencyNodePacked insert = nodes[j];
+        uint k = j;
+        while (k > 0)
+        {
+            if (insert.Depth >= nodes[k - 1].Depth)
+                break;
+            nodes[k] = nodes[k - 1];
+            --k;
+        }
+        nodes[k] = insert;
+    }
+    float3 withTransparency = color;
+    for (uint node = 0; node < validCount; node++)
+    {
+        float4 tr = Unorm4x8ToF4Norm(nodes[node].Color);
+        withTransparency = lerp(withTransparency, tr.xyz, tr.w);
+    }
+    return float4(withTransparency, 1.f);
     
     
     return float4(color, 1.f);

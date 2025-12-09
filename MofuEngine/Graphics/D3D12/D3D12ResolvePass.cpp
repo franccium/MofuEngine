@@ -8,6 +8,7 @@
 #include "FFX/SSSR.h"
 #include "Graphics/GraphicsTypes.h"
 #include "Effects/D3D12KawaseBlur.h"
+#include "D3D12Transpacency.h"
 
 namespace mofu::graphics::d3d12::resolve {
 namespace {
@@ -18,6 +19,8 @@ struct ResolveRootParameterIndices
 		GlobalShaderData = 0,
 		RootConstants,
 		GISettings,
+		TransparencyHeadBuffer,
+		TransparencyListBuffer,
 
 		Count
 	};
@@ -38,6 +41,7 @@ struct ResolveRootConstants
 		MaterialPropertiesBufferIndex,
 		ReflectionsStrength,
 		VB_HalfRes,
+		TransparencyListBufferIndex,
 
 		DoTonemap,
 		Count
@@ -83,6 +87,8 @@ bool CreateRootSignature()
 	parameters[ResolveRootParameterIndices::GlobalShaderData].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
 	parameters[ResolveRootParameterIndices::RootConstants].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 	parameters[ResolveRootParameterIndices::GISettings].AsCBV(D3D12_SHADER_VISIBILITY_PIXEL, 2);
+	parameters[ResolveRootParameterIndices::TransparencyHeadBuffer].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 0);
+	parameters[ResolveRootParameterIndices::TransparencyListBuffer].AsSRV(D3D12_SHADER_VISIBILITY_PIXEL, 1);
 
 	struct D3D12_STATIC_SAMPLER_DESC samplers[]
 	{
@@ -294,6 +300,7 @@ void ResolvePass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo
 	shaderParams->SSSR_Enabled = (u32)(graphics::debug::RenderingSettings.ReflectionsEnabled & graphics::debug::RenderingSettings.Reflections_FFXSSSR);
 	shaderParams->VBAO_Enabled = (u32)graphics::debug::RenderingSettings.VBAOEnabled;
 	shaderParams->VB_HalfRes = (u32)graphics::debug::RenderingSettings.VB_HalfRes;
+	shaderParams->TransparencyListBufferIndex = transparency::GetTransparencyListIndex();
 	shaderParams->DisplayAO = (u32)graphics::debug::RenderingSettings.DisplayAO;
 	shaderParams->RenderGUI = (u32)graphics::debug::RenderingSettings.RenderGUI;
 #endif
@@ -327,7 +334,7 @@ void ResolvePass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo
 			ssilvbSrvIndex = effects::GetBlurUpResultSrvIndex();
 		}
 
-		core::SetRenderSizeViewport(cmdList);
+		core::SetRenderSizeViewport(cmdList, surface);
 	}
 
 	shaderParams->MiscBufferIndex = ssilvbSrvIndex;
@@ -339,6 +346,8 @@ void ResolvePass(DXGraphicsCommandList* cmdList, const D3D12FrameInfo& frameInfo
 	cmdList->SetGraphicsRootConstantBufferView(idx::GlobalShaderData, frameInfo.GlobalShaderData);
 	cmdList->SetGraphicsRootConstantBufferView(idx::RootConstants, core::CBuffer().GpuAddress(shaderParams));
 	cmdList->SetGraphicsRootConstantBufferView(idx::GISettings, core::CBuffer().GpuAddress(giSettings));
+	cmdList->SetGraphicsRootShaderResourceView(idx::TransparencyHeadBuffer, transparency::GetTransparencyHeadBufferGPUAddr());
+	cmdList->SetGraphicsRootShaderResourceView(idx::TransparencyListBuffer, transparency::GetTransparencyListGPUAddr());
 
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 

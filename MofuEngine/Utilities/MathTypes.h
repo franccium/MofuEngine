@@ -136,6 +136,15 @@ using m4x4a = DirectX::XMFLOAT4X4A;
 
 using xmm = DirectX::XMVECTOR;
 using xmmat = DirectX::XMMATRIX;
+
+using half = DirectX::PackedVector::HALF;
+using halfv2 = DirectX::PackedVector::XMHALF2;
+using halfv4 = DirectX::PackedVector::XMHALF4;
+
+using ubytev2 = DirectX::PackedVector::XMUBYTE2;
+using ubytev4 = DirectX::PackedVector::XMUBYTE4;
+using ubytev2 = DirectX::PackedVector::XMUBYTE2;
+using ubytev4 = DirectX::PackedVector::XMUBYTE4;
 #endif
 
 constexpr v2 v2zero{ 0.f, 0.f };

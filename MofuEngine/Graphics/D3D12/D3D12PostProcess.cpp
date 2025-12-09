@@ -124,7 +124,7 @@ struct GT7ToneMapCurve
 GT7ToneMapCurve _tonemapCurve{};
 #define HDR 0
 constexpr f32 GRAN_TURISMO_SDR_PAPER_WHITE{ 250.0f };
-constexpr f32 REFERENCE_LUMINANCE{ 100.0f };
+constexpr f32 REFERENCE_LUMINANCE{ 300.0f };
 constexpr f32 PhysicalToFrameBufferValue(f32 v) { return v / REFERENCE_LUMINANCE; }
 
 void

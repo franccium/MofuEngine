@@ -3,6 +3,7 @@
 #include "StandardTypes.h"
 #ifdef _WIN64
 #include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 #endif
 
 namespace mofu {

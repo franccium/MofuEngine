@@ -15,34 +15,6 @@ ConstantBuffer<GISettings> GIParams : register(b2, space0);
 SamplerState PointSampler : register(s0, space0);
 SamplerState LinearSampler : register(s1, space0);
 
-float4 Sample(uint index, SamplerState s, float2 uv)
-{
-    return 
-    Texture2D( ResourceDescriptorHeap[index]).
-    Sample(s, uv);
-}
-
-float4 Sample(uint index, SamplerState s, float2 uv, float mip)
-{
-    return 
-    Texture2D( ResourceDescriptorHeap[index]).
-    SampleLevel(s, uv, mip);
-}
-
-float4 SampleCube(uint index, SamplerState s, float3 n)
-{
-    return 
-    TextureCube( ResourceDescriptorHeap[index]).
-    Sample(s, n);
-}
-
-float4 SampleCube(uint index, SamplerState s, float3 n, float mip)
-{
-    return 
-    TextureCube( ResourceDescriptorHeap[index]).
-    SampleLevel(s, n, mip);
-}
-
 static const uint SectorCount = 32u;
 uint bitCount(uint value)
 {
@@ -53,10 +25,6 @@ uint bitCount(uint value)
 float randf(int x, int y)
 {
     return fmod(52.9829189f * fmod(0.06711056f * float(x) + 0.00583715f * float(y), 1.0f), 1.0f);
-}
-float randf(float x, float y)
-{
-    return fmod(52.9829189f * fmod(0.06711056f * x + 0.00583715f * y, 1.0f), 1.0f);
 }
 uint UpdateSectors(float minHorizon, float maxHorizon, uint bitfield)
 {

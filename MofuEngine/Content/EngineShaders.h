@@ -17,6 +17,7 @@ struct EngineShader
         SSILVB_PS,
         KawaseBlurDownPS,
         KawaseBlurUpPS,
+        ParticlesSimulationCS,
         Count
     };
 };
@@ -50,6 +51,7 @@ constexpr EngineShaderInfo ENGINE_SHADER_FILES[] {
     {EngineShader::SSILVB_PS, {"SSILVB.hlsl", "ApplySSILVB", ShaderType::Pixel}},
     {EngineShader::KawaseBlurDownPS, {"KawaseBlur.hlsl", "KawaseBlurDown", ShaderType::Pixel}},
     {EngineShader::KawaseBlurUpPS, {"KawaseBlur.hlsl", "KawaseBlurUp", ShaderType::Pixel}},
+    {EngineShader::ParticlesSimulationCS, {"ParticlesSimulation.hlsl", "ParticlesSimulationCS", ShaderType::Compute}},
 };
 static_assert(_countof(ENGINE_SHADER_FILES) == EngineShader::Count);
 

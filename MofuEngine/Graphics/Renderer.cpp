@@ -23,6 +23,7 @@ constexpr const char* ENGINE_SHADERS_PATHS[][EngineShader::Count]{
         ".\\shaders\\d3d12\\SSILVB.bin",
         ".\\shaders\\d3d12\\KawaseBlurDown.bin",
         ".\\shaders\\d3d12\\KawaseBlurUp.bin",
+        ".\\shaders\\d3d12\\ParticlesSimulation.bin",
     }
 };
 constexpr const char* ENGINE_DEBUG_SHADERS_PATHS[][EngineDebugShader::Count]{

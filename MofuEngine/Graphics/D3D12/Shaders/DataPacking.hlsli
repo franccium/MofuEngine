@@ -18,7 +18,7 @@ uint2 F3NormtoU2FixedPoint(float3 v)
     return uint2((vUint.x << 11) | (vUint.y >> 10), ((vUint.y & ((1 << 10) - 1)) << 21) | vUint.z);
 }
 
-uint U2FixedPointToF3Norm(uint2 v)
+float3 U2FixedPointToF3Norm(uint2 v)
 {
     const float maxVal = (1 << 20) - 1;
 	// in layout: [(21 bits of X - 11 bits of Y), (unused bit, remaining 10 bits of Y, 21 bits of Z)]
@@ -43,6 +43,18 @@ uint Pack2xFloat1(float low, float high)
 float2 Unpack2xFloat1(uint v)
 {
     return float2(f16tof32(v & 0xFFFF), f16tof32((v >> 16) & 0xFFFF));
+}
+
+uint F4NormToUnorm4x8(float4 v)
+{
+    uint4 u = uint4(round(saturate(v) * 255.0));
+    return (0x000000FF & u.x) | ((u.y << 8) & 0x0000FF00) | ((u.z << 16) & 0x00FF0000) | ((u.w << 24) & 0xFF000000);
+}
+
+float4 Unorm4x8ToF4Norm(uint p)
+{
+    return float4(float(p & 0x000000FF) / 255.0, float((p & 0x0000FF00) >> 8) / 255.0,
+		float((p & 0x00FF0000) >> 16) / 255.0, float((p & 0xFF000000) >> 24) / 255.0);
 }
 
 #endif

@@ -6,6 +6,7 @@ namespace mofu::graphics::d3d12 {
 class DescriptorHeap;
 class ConstantBuffer;
 namespace camera { class D3D12Camera; }
+class D3D12Surface;
 
 struct D3D12FrameInfo
 {
@@ -96,6 +97,6 @@ info::DisplayInfo GetDisplayInfo();
 void StartCompute();
 void ExecuteCompute();
 
-void SetRenderSizeViewport(DXGraphicsCommandList* const cmdList);
+void SetRenderSizeViewport(DXGraphicsCommandList* const cmdList, const D3D12Surface& surface);
 u32v2 RenderResolution();
 }

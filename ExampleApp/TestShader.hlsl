@@ -102,26 +102,6 @@ RaytracingAccelerationStructure SceneAS[] : register(t0, space121);
 
 #define TILE_SIZE 32
 
-float4 Sample(uint index, SamplerState s, float2 uv)
-{
-    return Texture2D(ResourceDescriptorHeap[index]).Sample(s, uv);
-}
-
-float4 Sample(uint index, SamplerState s, float2 uv, float mip)
-{
-    return Texture2D(ResourceDescriptorHeap[index]).SampleLevel(s, uv, mip);
-}
-
-float4 SampleCube(uint index, SamplerState s, float3 n)
-{
-    return TextureCube(ResourceDescriptorHeap[index]).Sample(s, n);
-}
-
-float4 SampleCube(uint index, SamplerState s, float3 n, float mip)
-{
-     return TextureCube(ResourceDescriptorHeap[index]).SampleLevel(s, n, mip);
-}
-
 float3 PhongBRDF(float3 N, float3 L, float3 V, float3 diffuseColor, float3 specularColor, float shininess)
 {
     const float3 R = reflect(-L, N);

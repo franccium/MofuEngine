@@ -8,14 +8,14 @@
 // -----------------------------------------------------------------------------
 // Defines the SDR reference white level used in our tone mapping (typically 250 nits).
 // -----------------------------------------------------------------------------
-#define GRAN_TURISMO_SDR_PAPER_WHITE 250.0f // cd/m^2
+#define GRAN_TURISMO_SDR_PAPER_WHITE 300.0f // cd/m^2
 
 // -----------------------------------------------------------------------------
 // Gran Turismo luminance-scale conversion helpers.
 // In Gran Turismo, 1.0f in the linear frame-buffer space corresponds to
 // REFERENCE_LUMINANCE cd/m^2 of physical luminance (typically 100 cd/m^2).
 // --------------------------------------------------------
-#define REFERENCE_LUMINANCE 100.0f // cd/m^2 <-> 1.0f
+#define REFERENCE_LUMINANCE 300.0f // cd/m^2 <-> 1.0f
 #if TONE_MAPPING_UCS_ICTCP
 #define EXPONENT_SCALE_FACTOR 1.0f
 #else

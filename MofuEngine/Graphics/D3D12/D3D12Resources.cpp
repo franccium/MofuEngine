@@ -8,7 +8,11 @@ namespace mofu::graphics::d3d12 {
 D3D12Buffer::D3D12Buffer(const D3D12BufferInitInfo& info, bool isCpuAccessible)
 {
 	assert(info.size && info.alignment);
-	_size = (u32)math::AlignUp(info.size, info.alignment);
+	//FIXME: alignment
+	u32 alignment{ info.alignment };
+	const u64 mask{ alignment - 1 };
+	if ((alignment & mask) != 0) alignment = 128;
+	_size = (u32)math::AlignUp(info.size, alignment);
 	_buffer = d3dx::CreateResourceBuffer(info.data, _size, isCpuAccessible, info.initialState, info.flags, info.heap, info.allocationInfo.Offset);
 	_gpuAddress = _buffer->GetGPUVirtualAddress();
 	NAME_D3D12_OBJECT_INDEXED(_buffer, _size, L"D3D12 Buffer - size:");
@@ -618,7 +622,7 @@ RawBuffer::Initialize(const RawBufferInitInfo& info)
 		core::Device()->CreateUnorderedAccessView(_buffer.Buffer(), nullptr, &uavDesc, _uav.cpu);
 	}
 	const wchar_t* const name{ info.Name ? info.Name : L"Raw Buffer: " };
-	NAME_D3D12_OBJECT_INDEXED(_buffer.Buffer(), Stride * _elementCount, name);
+	NAME_D3D12_OBJECT_INDEXED(_buffer.Buffer(), info.Stride * _elementCount, name);
 }
 
 void*

@@ -25,7 +25,7 @@
 #include "D3D12ResolvePass.h"
 #include "Effects/D3D12KawaseBlur.h"
 #include "Particles/D3D12ParticleSystem.h"
-
+#include "D3D12Transpacency.h"
 #include "FFX/SSSR.h"
 
 #include "tracy/TracyD3D12.hpp"
@@ -38,7 +38,7 @@
 #else
 #define ENABLE_DEBUG_LAYER 0
 #endif
-#define ENABLE_GPU_BASED_VALIDATION 0
+#define ENABLE_GPU_BASED_VALIDATION 1
 
 #define RENDER_SCENE_ONTO_GUI_IMAGE 1
 
@@ -58,9 +58,9 @@ bool _rtUpdateRequested{ false };
 bool _physicsCleared{ false };
 
 info::DisplayInfo _displayInfo{};
-u32v2 _renderResolution{ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
-u32v2 _targetResolution{ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
-u32v2 _lastTargetResolution{ 0, 0 };
+u32v2 _renderDimensions{ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
+u32v2 _targetDimensions{ graphics::DEFAULT_WIDTH, graphics::DEFAULT_HEIGHT };
+u32v2 _lastTargetDimensions{ 0, 0 };
 D3D12_VIEWPORT _dlssRenderResViewport;
 D3D12_RECT _dlssRenderResScissorRect;
 
@@ -362,7 +362,7 @@ InitializeModules()
     //    assert(false);
     //    DEBUG_LOG("Can't initialize DLSS");
     //}
-    success &= (gpass::Initialize() && resolve::Initialize() && fx::Initialize() && light::InitializeLightCulling());
+    success &= (transparency::Initialize() && gpass::Initialize() && resolve::Initialize() && fx::Initialize() && light::InitializeLightCulling());
 #if PARTICLE_SYSTEM_ON
     success &= particles::Initialize();
 #endif
@@ -464,13 +464,13 @@ GetD3D12FrameInfo(const FrameInfo& info, ConstantBuffer& cbuffer, const D3D12Sur
 	XMStoreFloat3(&data.CameraDirection, camera.Direction());
     //data.ViewWidth = surface.Viewport()->Width;
     //data.ViewHeight = surface.Viewport()->Height;
-    data.ViewWidth = _targetResolution.x;
-    data.ViewHeight = _targetResolution.y;
+    data.ViewWidth = _targetDimensions.x;
+    data.ViewHeight = _targetDimensions.y;
     data.DirectionalLightsCount = graphics::light::GetDirectionalLightsCount(info.LightSetIdx);
     data.AmbientLight = graphics::light::GetAmbientLight(info.LightSetIdx);
     data.SkyboxSrvIndex = graphics::light::GetLightSet(info.LightSetIdx).SkyboxSrvIndex;
-    data.RenderSizeX = (f32)_renderResolution.x;
-    data.RenderSizeY = (f32)_renderResolution.y;
+    data.RenderSizeX = (f32)_renderDimensions.x;
+    data.RenderSizeY = (f32)_renderDimensions.y;
 #if IS_DLSS_ENABLED
     data.Jitter = camera.CurrentJitter();
     data.Jitter = camera.PrevJitter();
@@ -657,6 +657,7 @@ Shutdown()
     upload::Shutdown();
     content::Shutdown();
     ffx::sssr::Shutdown();
+    transparency::Shutdown();
 #if PHYSICS_DEBUG_RENDER_ENABLED
     graphics::d3d12::debug::Shutdown();
 #endif
@@ -1121,30 +1122,33 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     gpass::StartNewFrame(d3d12FrameInfo);
 
-    if (_lastTargetResolution.x != _targetResolution.x || _lastTargetResolution.y != _targetResolution.y)
+    if (_lastTargetDimensions.x != _targetDimensions.x || _lastTargetDimensions.y != _targetDimensions.y)
     {
 #if IS_DLSS_ENABLED
-        dlss::SetTargetResolution(_targetResolution);
+        dlss::SetTargetResolution(_targetDimensions);
+        _renderDimensions = dlss::GetOptimalResolution();
+#else
+        _renderDimensions = { surface.Width(), surface.Height() };
 #endif
-        _renderResolution = dlss::GetOptimalResolution();
         _dlssRenderResViewport.TopLeftX = 0.f;
         _dlssRenderResViewport.TopLeftY = 0.f;
-        _dlssRenderResViewport.Width = (float)_renderResolution.x;
-        _dlssRenderResViewport.Height = (float)_renderResolution.y;
+        _dlssRenderResViewport.Width = (float)_renderDimensions.x;
+        _dlssRenderResViewport.Height = (float)_renderDimensions.y;
         _dlssRenderResViewport.MinDepth = 0.f;
         _dlssRenderResViewport.MaxDepth = 1.f;
-        _dlssRenderResScissorRect = { 0, 0, (i32)_renderResolution.x, (i32)_renderResolution.y };
+        _dlssRenderResScissorRect = { 0, 0, (i32)_renderDimensions.x, (i32)_renderDimensions.y };
 
-        camera::GetCamera(frameInfo.CameraID).ViewWidth((f32)_renderResolution.x);
-        camera::GetCamera(frameInfo.CameraID).ViewHeight((f32)_renderResolution.y);
-        camera::UpdateRenderResolution(_renderResolution);
-        gpass::SetBufferSize(_renderResolution);
-        resolve::SetBufferSize(_renderResolution);
-        effects::CreateFXBuffers(_renderResolution);
-        fx::SetBufferSize(_renderResolution);
-        ffx::sssr::CreateBuffer(_renderResolution);
+        camera::GetCamera(frameInfo.CameraID).ViewWidth((f32)_renderDimensions.x);
+        camera::GetCamera(frameInfo.CameraID).ViewHeight((f32)_renderDimensions.y);
+        camera::UpdateRenderResolution(_renderDimensions);
+        transparency::CreateBuffers(_renderDimensions);
+        gpass::SetBufferSize(_renderDimensions);
+        resolve::SetBufferSize(_renderDimensions);
+        effects::CreateFXBuffers(_renderDimensions);
+        fx::SetBufferSize(_renderDimensions);
+        ffx::sssr::CreateBuffer(_renderDimensions);
 
-        _lastTargetResolution = _targetResolution;
+        _lastTargetDimensions = _targetDimensions;
     }
 
     ID3D12DescriptorHeap* const heaps[]{ srvDescHeap.Heap() };
@@ -1176,6 +1180,7 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
 
     DXGraphicsCommandList* const* depthBundles{ gfxCommand.CommandListsBundle() };
     DXGraphicsCommandList* const* mainBundles{ &gfxCommand.CommandListsBundle()[MAIN_BUNDLE_INDEX] };
+
 
     {
         // Depth Prepass
@@ -1294,6 +1299,17 @@ RenderSurface(surface_id id, FrameInfo frameInfo)
     if(graphics::debug::RenderingSettings.EnablePhysicsDebugRendering)
         graphics::d3d12::debug::Render(d3d12FrameInfo);
 #endif
+    
+    transparency::AddBarriersForRendering(barriers);
+    particles::AddBarriersForSimulation(barriers);
+    barriers.ApplyBarriers(cmdListFXSetup);
+    particles::Update(cmdListFXSetup, d3d12FrameInfo);
+    particles::AddBarriersForRendering(barriers);
+    barriers.ApplyBarriers(cmdListFXSetup);
+    particles::Render();
+
+
+    transparency::AddBarriersForReading(barriers);
 
     if (graphics::debug::RenderingSettings.ReflectionsEnabled && graphics::debug::RenderingSettings.Reflections_FFXSSSR)
     {
@@ -1440,7 +1456,7 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
     shaders::ReloadShader(shaderID);
     switch (shaderID)
     {
-    case EngineShader::SSILVB_PS:
+        case EngineShader::SSILVB_PS:
         resolve::ResetShaders();
         break;
         case EngineShader::PostProcessPS:
@@ -1451,6 +1467,9 @@ void OnShadersRecompiled(EngineShader::ID shaderID)
             break;
         case EngineShader::MainResolvePS:
             resolve::ResetShaders();
+            break;
+        case EngineShader::ParticlesSimulationCS:
+            particles::ResetShaders();
             break;
         case EngineShader::LightCullingCS:
             light::ResetShaders();
@@ -1473,7 +1492,7 @@ void StartCompute()
 }
 
 void
-SetRenderSizeViewport(DXGraphicsCommandList* const cmdList)
+SetRenderSizeViewport(DXGraphicsCommandList* const cmdList, const D3D12Surface& surface)
 {
 #if IS_DLSS_ENABLED
     cmdList->RSSetViewports(1, &_dlssRenderResViewport);
@@ -1491,12 +1510,12 @@ void ExecuteCompute()
 
 u32v2 RenderResolution()
 {
-    return _renderResolution;
+    return _renderDimensions;
 }
 
 u32v2 TargetResolution()
 {
-    return _targetResolution;
+    return _targetDimensions;
 }
 
 D3D12_VIEWPORT DLSSRenderResolutionViewport()

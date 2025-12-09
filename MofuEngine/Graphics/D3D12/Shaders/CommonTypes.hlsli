@@ -240,6 +240,7 @@ struct ResolveConstants
     float ReflectionsStrength;
     uint RenderGUI;
     uint VB_HalfRes;
+    uint TransparencyListBufferIndex;
     uint VBAO_Enabled;
     uint DisplayAO;
     uint SSSR_Enabled;

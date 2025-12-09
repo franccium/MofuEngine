@@ -11,25 +11,26 @@
 #define PARTICLES_BATCH_SIZE_Y 1
 
 // Particle Flags
-#define PARTICLE_SET_IDX_MASK 0xFFFFu
-
-#define PARTICLE_ALLOCATION_MASK 0x1FFFFu
-#define PARTICLE_IS_ALLOCATED 0x10000u
+// 0x00000FFF --> occupied by set index - up to 4096
+#define PARTICLE_SET_IDX_MASK 0xFFFu
 
 // light mode
-#define PARTICLE_LIGHT_MODE_COUNT 3
+#define PARTICLE_LIGHT_MODE_COUNT 3u
 #define PARTICLE_LIGHT_MODE_MASK 0x6000000u
-#define PARTICLE_LIGHT_MODE_NONE 0x0U
+#define PARTICLE_LIGHT_MODE_NONE 0x0u
 #define PARTICLE_LIGHT_MODE_LIGHT 0x2000000u
 #define PARTICLE_LIGHT_MODE_LIGHTSHADOW 0x4000000u
 #define PARTICLE_LIGHT_CULLED 0x8000000u
 
 // state
-#define PARTICLE_STATE_MASK 0xF0000u
-#define PARTICLE_STATE_ALLOCATED 0x10000u
-#define PARTICLE_STATE_ALIVE 0x20000u
-#define PARTICLE_STATE_MOVING 0x40000u
-#define PARTICLE_STATE_NEED_INIT 0x80000u
+#define PARTICLE_STATE_MASK 0xF000u
+#define PARTICLE_STATE_ALIVE 0x1000u
+#define PARTICLE_STATE_ALLOCATED 0x2000u
+#define PARTICLE_STATE_ACCELERATING 0x4000u
+#define PARTICLE_STATE_NEED_INIT 0x8000u
+
+#define PARTICLE_MODULATION_MODE_LIFETIME 0x8000000u
+#define PARTICLE_MODULATION_MODE_SPEED 0x10000000u
 
 // type
 #define PARTICLE_TYPE_COUNT 3
@@ -39,24 +40,25 @@
 #define PARTICLE_TYPE_3 0x200000u
 
 // billboard mode
-#define PARTICLE_BILLBOARD_MODE_MASK 0x1800000u
+#define PARTICLE_BILLBOARD_MODE_MASK 0x800000u
 #define PARTICLE_BILLBOARD_MODE_SCREENALIGN 0x0u
 #define PARTICLE_BILLBOARD_MODE_VELOCITYORIENT 0x800000u
 
 // collision
 #define PARTICLE_COLLIDE_DEPTHBUFFER 0x400000u
-#define PARTICLE_COLLISION_THRESHOLD 0.5f
+#define PARTICLES_COLLISION_THRESHOLD 0.5f
+#define PARTICLE_COLLIDED 0x10000u
 
-// section managements
+// section management
 #define PARTICLES_BUFFER_SECTION_COUNT PARTICLE_LIGHT_MODE_COUNT
 #define PARTICLES_SWAP_ATTEMPTS_COUNT 2048
 #define PARTICLES_SWAP_FAILURE_ATTEMPTS_COUNT PARTICLES_SWAP_ATTEMPTS_COUNT
 #define PARTICLES_SWAP_HELP_THRESHOLD 6
 #define PARTICLES_SWAP_SELF_RESOLVE_THRESHOLD 8
 
-#define PARTICLES_HW_RASTERIZATION_THRESHOLD 1024
-#define PARTICLES_MAX_SET_SCALE 64
-#define PARTICLES_NEIGHBOR_MAX_DISTANCE 0.5
+#define PARTICLES_HW_RASTERIZATION_THRESHOLD 512u
+#define PARTICLES_MAX_SET_SCALE 64.f
+#define PARTICLES_NEIGHBOR_MAX_DISTANCE 0.5f
 
 #define QUAD_VERTEX_COUNT 4
 
@@ -73,6 +75,18 @@ struct ParticleDataPacked
     float AnimTime;
 };
 
+struct ParticleTransparencyNodePacked
+{
+    uint Color;
+    float Depth;
+};
+
+struct ParticleTransparencyNode
+{
+    float4 Color;
+    float Depth;
+};
+
 struct ParticleSet
 {
     float4 Size; // w - particle scale
@@ -80,14 +94,14 @@ struct ParticleSet
     float ParticlesSpawnedPerSecond;
     float3 ParticleColor;
     float LightRadius;
-    float3 MaxVelocity;
     float InitialAge;
+    uint MaxSizeAndSpeed;
     uint IsAllocated;
-    uint ParticleType;
-    uint ParticleLightMode;
+    uint SetFlags; // determines the type, light mode and modulation mode
     uint MaxAllocatedParticles;
     uint TextureIndex;
     uint ParticleStartIndex;
+    uint _pad;
 };
 
 struct ParticleBufferState

@@ -16,4 +16,7 @@ using uint = u32;
 namespace content {
 #include "Content/Shaders/ContentTypes.hlsli"
 }
+namespace particles {
+#include "D3D12/Shaders/ParticlesTypes.hlsli"
+}
 }
