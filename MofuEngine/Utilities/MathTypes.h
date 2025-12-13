@@ -154,7 +154,7 @@ constexpr v2 v2one{ 1.f, 1.f };
 constexpr v3 v3one{ 1.f, 1.f, 1.f };
 constexpr v4 v4one{ 1.f, 1.f, 1.f, 1.f };
 constexpr v3 v3up{ 0.f, 1.f, 0.f };
-constexpr v3 v3forward{ 0.f, 0.f, -1.f };
+constexpr v3 v3forward{ 0.f, 0.f, 1.f };
 
 constexpr quat quatIndentity{ 0.f, 0.f, 0.f, 1.f };
 

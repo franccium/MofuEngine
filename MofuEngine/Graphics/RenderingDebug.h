@@ -51,6 +51,11 @@ struct Settings
 		f32 SliceCount{ 3.0f };
 		f32 HitThickness{ 0.982f };
 	} SSILVB;
+
+	struct Particles_Settings
+	{
+		u32 Seed{ 82352 };
+	} Particles;
 };
 extern Settings RenderingSettings;
 

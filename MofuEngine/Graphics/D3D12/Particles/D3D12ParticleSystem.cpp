@@ -5,6 +5,7 @@
 #include "../D3D12Transpacency.h"
 #include "Utilities/DataPacking.h"
 #include "Graphics/GraphicsTypes.h"
+#include "Graphics/RenderingDebug.h"
 
 namespace mofu::graphics::d3d12::particles {
 namespace {
@@ -117,7 +118,7 @@ TestParticleData()
 	ParticleSetData& data1{ setsData[0] };
 	data1.Size = v4{ 1.f, 1.f, 1.f, 1.f };
 	data1.Position = v3{ 1.f, 1.f, 1.f };
-	data1.ParticlesSpawnedPerSecond = 500.f;
+	data1.ParticlesSpawnedPerSecond = 5.f;
 	data1.ParticleColor = v3{ 1.f, 0.f, 1.f };
 	data1.LightRadius = 1.f;
 	data1.InitialAge = 10.f;
@@ -133,8 +134,8 @@ TestParticleData()
 
 	ParticleSetData& data2{ setsData[1] };
 	data2.Size = v4{ 1.f, 1.f, 1.f, 1.f };
-	data2.Position = v3{ 10.f, -10.f, 10.f };
-	data2.ParticlesSpawnedPerSecond = 250.f;
+	data2.Position = v3{ 0.f, 1.f, 1.f };
+	data2.ParticlesSpawnedPerSecond = 5.f;
 	data2.ParticleColor = v3{ 0.f, 1.f, 1.f };
 	data2.LightRadius = 1.f;
 	data2.InitialAge = 10.f;
@@ -288,6 +289,7 @@ Update(DXGraphicsCommandList* const cmdList, const D3D12FrameInfo& frameInfo)
 
 	hlsl::particles::ParticleSimulationData* const simulationData{ cbuffer.AllocateSpace<hlsl::particles::ParticleSimulationData>() };
 	simulationData->DepthBufferIndex = gpass::DepthBuffer().SRV().index;
+	simulationData->Seed = graphics::debug::RenderingSettings.Particles.Seed;
 
 	cmdList->SetComputeRootSignature(_simulationRootSig);
 	cmdList->SetPipelineState(_simulationPSO);
@@ -303,8 +305,7 @@ Update(DXGraphicsCommandList* const cmdList, const D3D12FrameInfo& frameInfo)
 	cmdList->SetComputeRootUnorderedAccessView(param::TransparencyListHeadBuffer, transparency::GetTransparencyHeadBufferGPUAddr());
 	cmdList->SetComputeRootUnorderedAccessView(param::TransparencyListBuffer, transparency::GetTransparencyListGPUAddr());
 
-	//cmdList->Dispatch(_threadGroupCount.x, _threadGroupCount.y, 1);
-	cmdList->Dispatch(1, 1, 1);
+	cmdList->Dispatch(_threadGroupCount.x, _threadGroupCount.y, 1);
 }
 
 void Render()

@@ -484,14 +484,16 @@ float4 MainResolvePS(in noperspective float4 Position : SV_Position, in noperspe
         }
         nodes[k] = insert;
     }
-    float3 withTransparency = color;
-    for (uint node = 0; node < validCount; node++)
-    {
-        float4 tr = Unorm4x8ToF4Norm(nodes[node].Color);
-        withTransparency = lerp(withTransparency, tr.xyz, tr.w);
-    }
-    return float4(withTransparency, 1.f);
     
+    if (validCount > 0 && depth < nodes[0].Depth)
+    {
+        for (uint node = 0; node < validCount; node++)
+        {
+            float4 tr = Unorm4x8ToF4Norm(nodes[node].Color);
+            color = lerp(color, tr.xyz, tr.w);
+            //color = lerp(0.0f.xxx, 1.1f.xxx, nodes[0].Depth * 100.f);
+        }
+    }
     
     return float4(color, 1.f);
 }

@@ -56,7 +56,7 @@
 #define PARTICLES_SWAP_HELP_THRESHOLD 6
 #define PARTICLES_SWAP_SELF_RESOLVE_THRESHOLD 8
 
-#define PARTICLES_HW_RASTERIZATION_THRESHOLD 512u
+#define PARTICLES_HW_RASTERIZATION_THRESHOLD 1024u // up to 32x32 quads are software rasterized
 #define PARTICLES_MAX_SET_SCALE 64.f
 #define PARTICLES_NEIGHBOR_MAX_DISTANCE 0.5f
 
@@ -65,6 +65,7 @@
 struct ParticleSimulationData
 {
     uint DepthBufferIndex;
+    uint Seed;
 };
 
 #define PARTICLE_DATA_STRIDE 5

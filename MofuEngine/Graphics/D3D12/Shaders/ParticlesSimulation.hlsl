@@ -30,6 +30,51 @@ SamplerState PointSampler : register(s0, space0);
 	particlesDataBuffer.Store((PARTICLE_DATA_STRIDE * (idx) + 3) << 2, data.Position.y); \
 	particlesDataBuffer.Store((PARTICLE_DATA_STRIDE * (idx) + 4) << 2, asuint(data.AnimTime))
 
+uint RandU(uint v)
+{
+    v = v * v;
+    v ^= (v << 13);
+    v ^= (v >> 17);
+    v ^= (v << 5);
+    return v;
+}
+
+float RandF_01(inout uint seed)
+{
+    seed = RandU(seed);
+    return float(seed) * (1.0f / 4294967296.0f);
+}
+
+float RandF_01_constSeed(uint seed)
+{
+    seed = RandU(seed);
+    return float(seed) * (1.0f / 4294967296.0f);
+}
+
+float RandF_neg11(inout uint seed)
+{
+    seed = RandU(seed);
+    return 2.f * float(seed) * (1.0f / 4294967296.0f) - 1.f;
+}
+
+float RandF_neg11_constSeed(uint seed)
+{
+    seed = RandU(seed);
+    return 2.f * float(seed) * (1.0f / 4294967296.0f) - 1.f;
+}
+
+float3 RandF3_01(inout uint seed)
+{
+    seed = RandU(seed);
+    return float3(RandF_01(seed), RandF_01(seed), RandF_01(seed));
+}
+
+float3 RandF3_neg11(inout uint seed)
+{
+    seed = RandU(seed);
+    return float3(RandF_neg11(seed), RandF_neg11(seed), RandF_neg11(seed));
+}
+
 ParticleDataPacked PackParticleData(ParticleSet set, float3 pos, float4 velocityAge)
 {
     pos.xyz -= set.Position;
@@ -63,17 +108,17 @@ void StoreParticle(ParticleSet set, uint particleIdx, float flags, float3 pos, f
     FlagsBuffer[particleIdx] = flags;
 }
 
+// saves a color sample and its depth to the transparency list and increases the head's item count
+// the caller is responsible for making sure the sample position fits in the buffer
 void SaveTransparencyEntry(uint2 screenSize, uint2 screenPos, float4 color, float depth)
 {
     if(color.a <= 0.f) return;
     
     uint bufferIdx = screenPos.y * screenSize.x + screenPos.x;
-    if(TransparencyListHeadBuffer[bufferIdx] >= MAX_TRANSPARENCY_LAYERS) return;
-    uint listIdx;
     
+    uint listIdx;
     InterlockedAdd(TransparencyListHeadBuffer[bufferIdx], 1, listIdx);
-    if (listIdx >= MAX_TRANSPARENCY_LAYERS) return;
-    --listIdx;
+    if(listIdx > MAX_TRANSPARENCY_LAYERS) return;
     
     ParticleTransparencyNodePacked node;
     node.Depth = depth;
@@ -112,134 +157,19 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
     if (particleIdx >= MAX_PARTICLE_COUNT)
         return;
     
-    
-    //uint2 ss = uint2(GlobalData.RenderSizeX, GlobalData.RenderSizeY);
-    //float2 asfasdf = float2(30.f, 90.f);
-    //float2 awgwgaw = float2(40.f, 100.f);
-    //// particles which are too big should be sent to the hardware rasterizer
-    //if ((awgwgaw.y - awgwgaw.x) * (asfasdf.y - asfasdf.x) > PARTICLES_HW_RASTERIZATION_THRESHOLD)
-    //{
-    //    //TODO:
-    //}
-
-    //if (awgwgaw.y - awgwgaw.x <= 1.0f || asfasdf.y - asfasdf.x <= 1.0f)
-    //{
-    //    uint x = uint(asfasdf.y);
-    //    uint y = uint(awgwgaw.y);
-        
-    //    float4 color = float4(1.f, 0.f, 0.f, 1.f);
-        
-    //    SaveTransparencyEntry(ss, uint2(x, y), color, 0.2f);
-    //}
-    //else
-    //{
-    //    for (uint y = uint(awgwgaw.x); y < uint(awgwgaw.y); y++)
-    //    {
-    //        for (uint x = uint(asfasdf.x); x < uint(asfasdf.y); x++)
-    //        {
-    //            float4 color = float4(1.f, 0.f, 0.f, 1.f);
-                
-    //            SaveTransparencyEntry(ss, uint2(x, y), color, 0.2f);
-    //        }
-    //    }
-    //}
-    
-    
-    
-    //uint xSize = GlobalData.RenderSizeX - 800;
-    //uint ySize = GlobalData.RenderSizeY - 400;
-    ////for (uint x = 0; x < 1067 * 600 - 1; x++)
-    //for (uint x = 0; x < xSize * ySize - 1; x++)
-    //{
-    //    TransparencyListHeadBuffer[x] = 1;
-        
-    //    ParticleTransparencyNodePacked node;
-    //    node.Depth = 0.2f;
-    //    node.Color = F4NormToUnorm4x8(float4(1.f, 1.f, 0.f, 1.f));
-    //    TransparencyList[x * MAX_TRANSPARENCY_LAYERS + 0] = node;
-    //}
-    //return;
     uint x = threadID.x;
     uint y = threadID.x;
     x = clamp(x, 0, GlobalData.RenderSizeX);
     y = clamp(y, 0, GlobalData.RenderSizeY - 2);
-    //const uint bufferII = x;
-    ////FlagsBuffer[x] = uint(2);
-    //uint2 screenPos = uint2(x, y);
-    //uint2 ss = uint2(GlobalData.RenderSizeX, GlobalData.RenderSizeY);
-    //uint bufferIdx = screenPos.y * ss.x + screenPos.x;
-    //if (bufferIdx > ss.x * ss.y)
-    //    return;
-    //if (TransparencyListHeadBuffer[bufferIdx] >= MAX_TRANSPARENCY_LAYERS)
-    //    return;
-    //uint listIdx;
-    
-    //InterlockedAdd(TransparencyListHeadBuffer[bufferIdx], 1, listIdx);
-    //if (listIdx >= MAX_TRANSPARENCY_LAYERS)
-    //    return;
-    //--listIdx;
-    
-    //ParticleTransparencyNodePacked node;
-    //node.Depth = 0.2f;
-    //node.Color = F4NormToUnorm4x8(float4(1.f, 0.f, 0.f, 1.f));
-    
-    //TransparencyList[bufferIdx * MAX_TRANSPARENCY_LAYERS + listIdx] = node;
-    
-    //SaveTransparencyEntry(uint2(GlobalData.RenderSizeX, GlobalData.RenderSizeY), uint2(x, y), float4(0.1f, 0.6f, 0.9f, 1.f), 0.00001f);
-    
-#ifdef NO_PARTICLE_SET_BUFFER
-    uint flags = 0;
-    float age;
-    float animTime;
-    const uint lightShadowCount = BufferState.ParticleCount[0];
-    const uint lightCount = BufferState.ParticleCount[1];
-    const uint noLightCount = BufferState.ParticleCount[2];
-    
-    // the layout is by light mode: lightShadow | light | none
-    uint3 startIndices = uint3(0, lightShadowCount, lightShadowCount + lightCount);
-    uint3 endIndices = uint3(lightShadowCount, lightShadowCount + lightCount, lightShadowCount + lightCount + noLightCount);
-    uint3 lightModes = uint3(PARTICLE_LIGHT_MODE_LIGHTSHADOW, PARTICLE_LIGHT_MODE_LIGHT, PARTICLE_LIGHT_MODE_NONE);
-    
-    // allocate particle
-    ParticleSet set;
-    float setParticleCount;
-    float setParticlesPerSecond;
-    for (uint light = 0; light < PARTICLE_LIGHT_MODE_COUNT; light++)
-    {
-        const uint particleBufferOffset = startIndices[light];
-        for (uint setIdx = 0; setIdx < MAX_PARTICLE_SET_COUNT; setIdx++)
-        {
-            set = GetParticleSet(setIdx);
-            
-            setParticleCount = set.MaxAllocatedParticles;
-            setParticlesPerSecond = set.ParticlesSpawnedPerSecond;
-            
-            if (set.ParticleLightMode == lightModes[light])
-            {
-                // if the particle is in this set, allocate it
-                if (particleIdx >= particleBufferOffset && particleIdx < particleBufferOffset + setParticleCount)
-                {
-                    flags |= PARTICLE_IS_ALLOCATED | setIdx | lightModes[light] | set.ParticleType;
-                    // at the beginning, light will not be visible
-                    flags |= PARTICLE_LIGHT_CULLED;
-                    
-                    age = float(particleIdx - particleBufferOffset) / setParticlesPerSecond;
-                    StoreParticle(set, particleIdx, flags, float3(0.f, 0.f, 0.f), age, float3(0.f, 0.f, 0.f), animTime);
-                    return;
-                }
-                
-                particleBufferOffset += setParticleCount;
-            }
-        }
-    }
-#endif
-    
+
     uint flags = FlagsBuffer[particleIdx];
+    // return if its not initialized in the flags buffer - doesn't belong to any set
     if (flags == 0) return;
     
     uint setIdx = flags & PARTICLE_SET_IDX_MASK;
     ParticleSet set = ParticleSetBuffer[setIdx];
-    if (particleIdx - set.ParticleStartIndex > ceil(set.ParticlesSpawnedPerSecond * set.InitialAge))
+    const float maxSetParticleCount = ceil(set.ParticlesSpawnedPerSecond * set.InitialAge);
+    if (particleIdx - set.ParticleStartIndex > maxSetParticleCount)
     {
         FlagsBuffer[particleIdx] = 0;
         return;
@@ -259,13 +189,14 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
     
     ParticleDataPacked packedData;
     GetParticleData(packedData, ParticleDataBuffer, particleIdx);
-    const float maxSetParticleCount = ceil(set.ParticlesSpawnedPerSecond * set.InitialAge);
     
     float3 position;
     float4 velocityAge;
     UnpackParticleData(set, packedData, position, velocityAge);
     float3 velocity = velocityAge.xyz;
     float age = velocityAge.w;
+    
+    uint seed = SimulationData.Seed * particleIdx;
     
     float initialAge;
     float lightRadius;
@@ -283,37 +214,7 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
             isAlive = true;
             age = set.InitialAge - age;
             position = set.Position;
-            velocity = float3(0.2f, 0.3f, 0.2f);
-            /*
-            switch (set.ParticleType)
-            {
-                case PARTICLE_TYPE_1:
-                    initialAge = set.InitialAge;
-                    age = initialAge;
-                    lightRadius = set.LightRadius;
-                    position = set.Position;
-                    velocity = float3(0.5f, 0.f, 0.f);
-                    flags |= PARTICLE_STATE_ACCELERATING;
-                    break;
-                
-                case PARTICLE_TYPE_2:
-                    initialAge = set.InitialAge;
-                    age = initialAge;
-                    lightRadius = set.LightRadius;
-                    position = set.Position;
-                    velocity = float3(0.3f, 0.7f, 0.f);
-                    flags |= PARTICLE_STATE_ACCELERATING;
-                    break;
-                
-                case PARTICLE_TYPE_3:
-                    initialAge = set.InitialAge;
-                    age = initialAge;
-                    lightRadius = set.LightRadius;
-                    position = set.Position;
-                    velocity = float3(0.1f, 0.3f, 0.3f);
-                    flags |= PARTICLE_STATE_ACCELERATING;
-                    break;
-            }*/
+            velocity = float3(0.8f, 0.8f, 0.8f) * RandF3_neg11(seed);
             
             flags |= PARTICLE_STATE_ALIVE | set.SetFlags;
             StoreParticle(set, particleIdx, flags, position, age, velocity, 0);
@@ -335,6 +236,7 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
     }
     
     //////// Simulate Particle
+    //velocity = float3(0.8f, 0.8f, 0.8f) * RandF3_neg11(seed);
     position += velocity * dt;
  
     float4 vertexPos = float4(position, 1.f);
@@ -392,8 +294,8 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
         //}
     }
     
+    // store the particle's final data
     StoreParticle(set, particleIdx, flags, position, age, velocity, animTime);
-    
     //if (animTime >= 1.f) return;
     
     //////// Rasterize Particle
@@ -437,7 +339,8 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
         }
     }
 
-    float2 vertexPos_uv = vertexPos_CS.xy / vertexPos_CS.w;
+    const float3 vertexPos_VS = vertexPos_CS.xyz / vertexPos_CS.w;
+    float2 vertexPos_uv = vertexPos_VS.xy;
     vertexPos_uv = vertexPos_uv * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
     
     float2 minMaxX;
@@ -455,8 +358,8 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
             minMaxY = quadVtx[0].y.xx;
         }
         
-        minMaxX = float2(min(minMaxX.x, quadVtx[vtx].x), max(minMaxX.x, quadVtx[vtx].x));
-        minMaxY = float2(min(minMaxY.x, quadVtx[vtx].y), max(minMaxY.x, quadVtx[vtx].y));
+        minMaxX = float2(min(minMaxX.x, quadVtx[vtx].x), max(minMaxX.y, quadVtx[vtx].x));
+        minMaxY = float2(min(minMaxY.x, quadVtx[vtx].y), max(minMaxY.y, quadVtx[vtx].y));
     }
     
     if (minMaxX.y < 0.0f || minMaxX.x > 1.0f || minMaxY.y < 0.0f || minMaxY.x > 1.0f)
@@ -465,24 +368,26 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
     const float2 screenSize = float2(GlobalData.RenderSizeX, GlobalData.RenderSizeY);
     const float2 vertexScreenPos = vertexPos_uv * screenSize;
 
+    //const uint2 u_minMaxX = clamp(floor(minMaxX * screenSize.x), 0, floor(screenSize.x - 1.f));
+    //const uint2 u_minMaxY = clamp(floor(minMaxY * screenSize.y), 0, floor(screenSize.y - 1.f));
+
     minMaxX = clamp(minMaxX * screenSize.x, 0.f, screenSize.x - 1.f);
     minMaxY = clamp(minMaxY * screenSize.y, 0.f, screenSize.y - 1.f);
-
     // particles which are too big should be sent to the hardware rasterizer
-    if ((minMaxY.y - minMaxY.x) * (minMaxX.y - minMaxX.x) > PARTICLES_HW_RASTERIZATION_THRESHOLD)
+    if ((minMaxX.y - minMaxX.x) * (minMaxY.y - minMaxY.x) > PARTICLES_HW_RASTERIZATION_THRESHOLD)
     {
         //TODO:
         return;
     }
 
-    if (minMaxY.y - minMaxY.x <= 1.0f || minMaxX.y - minMaxX.x <= 1.0f)
+    if (minMaxX.y - minMaxX.x <= 1.0f || minMaxY.y - minMaxY.x <= 1.0f)
     {
-        uint x = uint(minMaxX.y);
+        uint x = uint(minMaxX.x);
         uint y = uint(minMaxY.y);
         
-        float4 color = float4(0.f, 0.f, 1.f, 0.5f);
+        float4 color = float4(0.f, 0.f, 1.f, 1.0f);
         
-        SaveTransparencyEntry(uint2(screenSize.x, screenSize.y), uint2(x, y), color, vertexPos.z);
+        SaveTransparencyEntry(uint2(screenSize.x, screenSize.y), uint2(x, y), color, vertexPos_VS.z);
     }
     else
     {
@@ -490,9 +395,9 @@ void ParticlesSimulationCS(uint3 threadID : SV_DispatchThreadID)
         {
             for (uint x = uint(minMaxX.x); x < uint(minMaxX.y); x++)
             {
-                float4 color = float4(0.6f, 0.3f, 0.f, 0.1f);
+                float4 color = float4(0.9f, 0.3f, 0.3f, 0.7f);
                 
-                SaveTransparencyEntry(uint2(screenSize.x, screenSize.y), uint2(x, y), color, vertexPos.z);
+                SaveTransparencyEntry(uint2(screenSize.x, screenSize.y), uint2(x, y), color, vertexPos_VS.z);
             }
         }
     }

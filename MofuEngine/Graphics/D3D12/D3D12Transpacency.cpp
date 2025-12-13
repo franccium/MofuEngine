@@ -3,8 +3,6 @@
 
 namespace mofu::graphics::d3d12::transparency {
 namespace {
-//StructuredBuffer _transparencyHeadBuffer;
-//StructuredBuffer _transparencyListBuffer;
 UAVClearableBuffer _transparencyHeadBuffer;
 UAVClearableBuffer _transparencyListBuffer;
 constexpr f32 CLEAR_VALUE[4]{ 0.f, 0.f, 0.f, 0.f };
@@ -23,20 +21,6 @@ CreateBuffers(u32v2 renderDimensions)
 {
 	_transparencyHeadBuffer.Release();
 	_transparencyListBuffer.Release();
-
-	/*StructuredBufferInitInfo info{};
-	info.ElementCount = renderDimensions.x * renderDimensions.y;
-	info.Stride = sizeof(u32);
-	info.CreateUAV = true;
-	info.Name = L"Transparency List Head Buffer";
-	info.InitialState = D3D12_RESOURCE_STATE_COMMON;
-	_transparencyHeadBuffer = StructuredBuffer{ info };
-
-	info.ElementCount = renderDimensions.x * renderDimensions.y * MAX_TRANSPARENCY_LAYERS;
-	info.Stride = sizeof(hlsl::particles::ParticleTransparencyNodePacked);
-	info.CreateUAV = true;
-	info.Name = L"Transparency List Buffer";
-	_transparencyListBuffer = StructuredBuffer{ info };*/
 
 	u32 size{ sizeof(u32) * renderDimensions.x * renderDimensions.y };
 	D3D12BufferInitInfo info{ UAVClearableBuffer::GetDefaultInitInfo(size) };
